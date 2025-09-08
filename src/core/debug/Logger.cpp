@@ -20,7 +20,7 @@
 namespace {
     constexpr size_t MAX_LOG_QUEUE_SIZE = 512;
 
-#if LOG_FILE_WRITE == 1
+#ifdef LOG_FILE_WRITE
     std::ofstream           logFile;
 #endif
     std::thread             logThread;
@@ -29,36 +29,50 @@ namespace {
 
     std::atomic<bool> running{false};
 
-    struct LogMessage {
+    struct Log {
         Logger::Level level = Logger::Level::DEBUG;
         std::string message;
         std::chrono::system_clock::time_point timestamp;
 
-        LogMessage() = default;
+        Log() = default;
 
-        LogMessage(const Logger::Level lvl, std::string msg)
+        Log(const Logger::Level lvl, std::string msg)
             : level(lvl), message(std::move(msg)), timestamp(std::chrono::system_clock::now()) {}
     };
 
-    std::queue<LogMessage> logQueue;
+    std::queue<Log> logQueue;
 
     constexpr std::array<const char*, static_cast<size_t>(Logger::Level::COUNT)> levelStrings = {
-        "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"
+        "DEBUG", "VERROBE", "INFO", "WARNING", "ERROR", "FATAL"
     };
 
     template<typename Stream>
-    void writeLogPrefix(Stream& os, const LogMessage& logMessage) {
-        const auto time = std::chrono::system_clock::to_time_t(logMessage.timestamp);
+    void writeLogMessage(Stream& os, const Log& log) {
+        const auto time = std::chrono::system_clock::to_time_t(log.timestamp);
         std::tm tm {};
         Engine::localtime(tm, &time);
 
-        os << std::put_time(&tm, "[%Y-%m-%d %H:%M:%S] ")
-           << '[' << levelStrings[static_cast<size_t>(logMessage.level)] << "]: ";
+        std::ostringstream prefixStream;
+        prefixStream << std::put_time(&tm, "[%Y-%m-%d %H:%M:%S] ")
+                     << '[' << levelStrings[static_cast<size_t>(log.level)] << "]: ";
+
+        const std::string prefix = prefixStream.str();
+
+        // Output individual lines of the log message
+        std::istringstream messageStream(log.message);
+        std::string line;
+        bool firstLine = true;
+
+        while (std::getline(messageStream, line)) {
+            // Indent multi-line messages to match the prefix's length
+            os << (firstLine ? prefix : std::string(prefix.size(), ' ')) << line << '\n';
+            firstLine = false;
+        }
     }
 
     void logWorker() {
         while (running || !logQueue.empty()) {
-            LogMessage entry;
+            Log entry;
             {
                 // Acquire the mutex to safely access the shared log queue
                 std::unique_lock lock(logMutex);
@@ -71,17 +85,15 @@ namespace {
                 logQueue.pop();
             }
 
-#if LOG_FILE_WRITE == 1
+#ifdef LOG_FILE_WRITE
             if (logFile.is_open()) {
-                writeLogPrefix(logFile, entry);
-                logFile << entry.message << '\n';
+                writeLogMessage(logFile, entry);
             }
 #endif
-            writeLogPrefix(std::cout, entry);
-            std::cout << entry.message << '\n';
+            writeLogMessage(std::cout, entry);
 
             if (entry.level >= Logger::Level::ERROR) {
-#if LOG_FILE_WRITE == 1
+#ifdef LOG_FILE_WRITE
                 logFile.flush();
 #endif
                 std::cout.flush();
@@ -127,7 +139,7 @@ namespace {
 namespace Logger {
 
     void init() {
-#if LOG_FILE_WRITE == 1
+#ifdef LOG_FILE_WRITE
         const auto now  = std::chrono::system_clock::now();
         const auto time = std::chrono::system_clock::to_time_t(now);
         std::tm tm{};
@@ -162,7 +174,7 @@ namespace Logger {
             logThread.join();
         }
 
-#if LOG_FILE_WRITE == 1
+#ifdef LOG_FILE_WRITE
         if (logFile.is_open()) {
             logFile.close();
         }
@@ -177,12 +189,13 @@ namespace Logger {
             logQueue.pop();
         }
 
-        logQueue.push(std::move(LogMessage{level, message}));
+        logQueue.push(std::move(Log{level, message}));
         lock.unlock();
         logCv.notify_one();
     }
 
     void debug  (const std::string& message) { log(Level::DEBUG  , message); }
+    void verbose(const std::string& message) { log(Level::VERBOSE, message); }
     void info   (const std::string& message) { log(Level::INFO   , message); }
     void warning(const std::string& message) { log(Level::WARNING, message); }
     void error  (const std::string& message) { log(Level::ERROR  , message); }

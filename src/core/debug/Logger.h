@@ -5,12 +5,13 @@
 #include <string>
 
 namespace Logger {
-    enum class Level : size_t { DEBUG, INFO, WARNING, ERROR, FATAL, COUNT };
+    enum class Level : size_t { DEBUG, VERBOSE, INFO, WARNING, ERROR, FATAL, COUNT };
 
     void init();
     void shutdown();
 
     void debug  (const std::string& message);
+    void verbose(const std::string& message);
     void info   (const std::string& message);
     void warning(const std::string& message);
     void error  (const std::string& message);

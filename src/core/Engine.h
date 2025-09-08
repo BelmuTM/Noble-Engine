@@ -3,7 +3,7 @@
 #define BAZARENGINE_ENGINE_H
 
 // Behavior macros
-#define LOG_FILE_WRITE 1
+#define LOG_FILE_WRITE
 
 #include <ctime>
 #include <string>

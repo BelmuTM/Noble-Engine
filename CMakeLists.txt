@@ -15,6 +15,13 @@ find_package(Vulkan REQUIRED)
 target_include_directories(BazarEngine PRIVATE ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(BazarEngine PRIVATE ${Vulkan_LIBRARIES})
 
+#Vulkan debug utils
+option(ENABLE_VULKAN_DEBUG_UTILS "Enable Vulkan debug utils extension" ON)
+
+if(ENABLE_VULKAN_DEBUG_UTILS)
+    add_compile_definitions(VULKAN_DEBUG_UTILS)
+endif()
+
 # Include source headers
 target_include_directories(BazarEngine PRIVATE ${CMAKE_SOURCE_DIR}/src)
 

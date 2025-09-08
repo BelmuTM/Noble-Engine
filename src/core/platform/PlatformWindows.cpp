@@ -47,7 +47,7 @@ namespace Platform {
         return true;
     }
 
-    Window::Window(const int width, const int height, const std::string &title) {
+    Window::Window(const int width, const int height, const std::string& title) {
         static bool registered = false;
         if (!registered) {
             WNDCLASS wc      = {};
@@ -66,12 +66,12 @@ namespace Platform {
         const auto wTitle = std::wstring(title.begin(), title.end());
 
         handle = CreateWindowEx(
-        0,
-        CLASS_NAME,
-        wTitle.c_str(),
-        WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, width, height,
-        nullptr, nullptr, g_hInstance, nullptr
+            0,
+            CLASS_NAME,
+            wTitle.c_str(),
+            WS_OVERLAPPEDWINDOW,
+            CW_USEDEFAULT, CW_USEDEFAULT, width, height,
+            nullptr, nullptr, g_hInstance, nullptr
         );
 
         if (!handle) {
