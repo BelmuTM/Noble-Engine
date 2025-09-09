@@ -33,7 +33,7 @@ int main() {
 
         frameCount++;
 
-        auto timeSinceLastUpdate =
+        const auto timeSinceLastUpdate =
             std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastFpsUpdate).count();
         if (timeSinceLastUpdate >= 1) {
             framerate     = frameCount;

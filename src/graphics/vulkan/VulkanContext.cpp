@@ -1,11 +1,20 @@
 #include "VulkanContext.h"
 
-#include <cstring>
+#include <map>
 #include <memory>
 #include <unordered_set>
 
 #include "core/Engine.h"
 #include "core/debug/Logger.h"
+
+constexpr uint32_t VULKAN_VERSION = VK_API_VERSION_1_4;
+
+std::vector deviceExtensions = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    VK_KHR_SPIRV_1_4_EXTENSION_NAME,
+    VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+    VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME
+};
 
 #ifdef VULKAN_DEBUG_UTILS
 static const std::vector validationLayers = {
@@ -20,10 +29,17 @@ VulkanContext::~VulkanContext() {
 bool VulkanContext::init() {
     createInstance();
     setupDebugMessenger();
+    pickPhysicalDevice();
+    createLogicalDevice();
     return true;
 }
 
 void VulkanContext::shutdown() {
+    if (logicalDevice != VK_NULL_HANDLE) {
+        vkDestroyDevice(logicalDevice, nullptr);
+        logicalDevice = VK_NULL_HANDLE;
+    }
+
     if (debugMessenger != VK_NULL_HANDLE) {
         destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
         debugMessenger = VK_NULL_HANDLE;
@@ -50,22 +66,20 @@ std::vector<const char*> VulkanContext::getRequiredExtensions() {
 
 void VulkanContext::createInstance() {
     constexpr VkApplicationInfo applicationInfo{
-        .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+        .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
         .pApplicationName   = "Bazar",
         .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
         .pEngineName        = "BazarEngine",
         .engineVersion      = VK_MAKE_VERSION(1, 0, 0),
-        .apiVersion         = VK_API_VERSION_1_4
+        .apiVersion         = VULKAN_VERSION
     };
 
-    auto extensions = getRequiredExtensions();
-
-    // Enumerate available extensions
-    uint32_t extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-
-    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
+    const auto extensions = getRequiredExtensions();
+    // Enumerate available instance extensions
+    uint32_t instanceExtensionCount = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, nullptr);
+    std::vector<VkExtensionProperties> availableExtensions(instanceExtensionCount);
+    vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, availableExtensions.data());
 
     // Ensure enabled extensions are supported by the drivers
     std::unordered_set<std::string> availableExtensionNames;
@@ -84,12 +98,9 @@ void VulkanContext::createInstance() {
 
 #ifdef VULKAN_DEBUG_UTILS
 
-    Logger::info("foooooooooooo");
-
     layers = validationLayers;
-
+    // Enumerate available validation layers
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
     std::vector<VkLayerProperties> availableLayers(layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
@@ -187,9 +198,130 @@ void VulkanContext::setupDebugMessenger() {
         .pfnUserCallback = &debugCallback
     };
 
-    if (createDebugUtilsMessengerEXT(instance, &debugUtilsMessengerCreateInfo, nullptr, &debugMessenger)
-        != VK_SUCCESS) {
+    const VkResult result = createDebugUtilsMessengerEXT(instance, &debugUtilsMessengerCreateInfo, nullptr,
+                                                         &debugMessenger);
+
+    if (result != VK_SUCCESS) {
         Logger::error("Failed to create Vulkan debug utils messenger");
     }
 #endif
 }
+
+void VulkanContext::pickPhysicalDevice() {
+    // Enumerate available devides
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+    if (deviceCount == 0) {
+        Logger::error("Failed to find graphics devices with Vulkan support");
+        return;
+    }
+
+    std::vector<VkPhysicalDevice> availableDevices(deviceCount);
+    vkEnumeratePhysicalDevices(instance, &deviceCount, availableDevices.data());
+
+    // Picking the best candidate within available devices
+    std::multimap<int, VkPhysicalDevice> candidates;
+
+    for (const auto device : availableDevices) {
+        VkPhysicalDeviceProperties properties;
+        vkGetPhysicalDeviceProperties(device, &properties);
+        VkPhysicalDeviceFeatures features;
+        vkGetPhysicalDeviceFeatures(device, &features);
+
+        // Eliminate current candidate device if critical conditions aren't met
+        if (properties.apiVersion < VK_API_VERSION_1_3 || !features.geometryShader) {
+            continue;
+        }
+
+        // Enumerate available device extensions
+        uint32_t deviceExtensionCount = 0;
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &deviceExtensionCount, nullptr);
+        std::vector<VkExtensionProperties> availableDeviceExtensions(deviceExtensionCount);
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &deviceExtensionCount, availableDeviceExtensions.data());
+
+        std::unordered_set<std::string> availableDeviceExtensionNames;
+        for (const auto& [extensionName, specVersion] : availableDeviceExtensions) {
+            availableDeviceExtensionNames.insert(extensionName);
+        }
+
+        // Check required extensions support on current candidate device
+        bool foundRequiredDeviceExtension = true;
+        for (const char* requiredDeviceExtension : deviceExtensions) {
+            if (!availableDeviceExtensionNames.contains(requiredDeviceExtension)) {
+                foundRequiredDeviceExtension = false;
+                break;
+            }
+        }
+        if (!foundRequiredDeviceExtension) continue;
+
+        // Scoring current candidate device according to preferred properties
+        uint32_t deviceScore = 0;
+        if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+            deviceScore += 1000;
+        }
+        deviceScore += properties.limits.maxImageDimension2D;
+
+        candidates.insert(std::make_pair(deviceScore, device));
+    }
+
+    if (candidates.rend()->first > 0) {
+        physicalDevice = candidates.rend()->second;
+
+        VkPhysicalDeviceProperties properties;
+        vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+        Logger::info("Using graphics device \"" + std::string(properties.deviceName) + "\"");
+    } else {
+        Logger::error("Failed to find suitable graphics devices");
+    }
+}
+
+void VulkanContext::createLogicalDevice() {
+    // Enumerate queue family properties
+    uint32_t queueFamilyPropertyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nullptr);
+    std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyPropertyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, queueFamilyProperties.data());
+
+    // Find a queue family with graphics capabilities
+    uint32_t queueFamilyIndex = -1;
+    for (int i = 0; i < queueFamilyProperties.size(); i++) {
+        if (queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            queueFamilyIndex = i;
+            break;
+        }
+    }
+
+    // Queue priority is constant and set to one because we are using a single queue
+    static constexpr float queuePriority = 1.0f;
+
+    VkDeviceQueueCreateInfo deviceQueueCreateInfo{
+        .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        .queueFamilyIndex = queueFamilyIndex,
+        .queueCount       = 1,
+        .pQueuePriorities = &queuePriority
+    };
+
+    VkPhysicalDeviceVulkan13Features deviceFeatures{
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES
+    };
+
+    VkDeviceCreateInfo deviceCreateInfo{
+        .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        .pNext                   = &deviceFeatures,
+        .queueCreateInfoCount    = 1,
+        .pQueueCreateInfos       = &deviceQueueCreateInfo,
+        .enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size()),
+        .ppEnabledExtensionNames = deviceExtensions.data()
+    };
+
+    const VkResult result = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice);
+
+    if (result == VK_SUCCESS) {
+        vkGetDeviceQueue(logicalDevice, queueFamilyIndex, 0, &graphicsQueue);
+    } else {
+        Logger::error("Failed to create Vulkan logical device");
+    }
+}
+

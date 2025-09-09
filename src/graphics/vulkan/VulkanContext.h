@@ -17,11 +17,17 @@ public:
 private:
     VkInstance               instance       = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
+    VkPhysicalDevice         physicalDevice = VK_NULL_HANDLE;
+    VkDevice                 logicalDevice  = VK_NULL_HANDLE;
+    VkQueue                  graphicsQueue  = VK_NULL_HANDLE;
 
     static std::vector<const char*> getRequiredExtensions();
 
     void createInstance();
     void setupDebugMessenger();
+
+    void pickPhysicalDevice();
+    void createLogicalDevice();
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT      severity,
                                                         VkDebugUtilsMessageTypeFlagsEXT             type,

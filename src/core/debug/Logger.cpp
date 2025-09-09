@@ -21,7 +21,7 @@ namespace {
     constexpr size_t MAX_LOG_QUEUE_SIZE = 512;
 
 #ifdef LOG_FILE_WRITE
-    std::ofstream           logFile;
+    std::ofstream logFile;
 #endif
     std::thread             logThread;
     std::mutex              logMutex;
@@ -30,14 +30,15 @@ namespace {
     std::atomic<bool> running{false};
 
     struct Log {
-        Logger::Level level = Logger::Level::DEBUG;
-        std::string message;
+        Logger::Level                         level = Logger::Level::DEBUG;
+        std::string                           message;
         std::chrono::system_clock::time_point timestamp;
 
         Log() = default;
 
         Log(const Logger::Level lvl, std::string msg)
-            : level(lvl), message(std::move(msg)), timestamp(std::chrono::system_clock::now()) {}
+            : level(lvl), message(std::move(msg)), timestamp(std::chrono::system_clock::now()) {
+        }
     };
 
     std::queue<Log> logQueue;
@@ -49,7 +50,7 @@ namespace {
     template<typename Stream>
     void writeLogMessage(Stream& os, const Log& log) {
         const auto time = std::chrono::system_clock::to_time_t(log.timestamp);
-        std::tm tm {};
+        std::tm    tm{};
         Engine::localtime(tm, &time);
 
         std::ostringstream prefixStream;
@@ -60,8 +61,8 @@ namespace {
 
         // Output individual lines of the log message
         std::istringstream messageStream(log.message);
-        std::string line;
-        bool firstLine = true;
+        std::string        line;
+        bool               firstLine = true;
 
         while (std::getline(messageStream, line)) {
             // Indent multi-line messages to match the prefix's length
@@ -137,12 +138,11 @@ namespace {
 }
 
 namespace Logger {
-
     void init() {
 #ifdef LOG_FILE_WRITE
         const auto now  = std::chrono::system_clock::now();
         const auto time = std::chrono::system_clock::to_time_t(now);
-        std::tm tm{};
+        std::tm    tm{};
         Engine::localtime(tm, &time);
 
         std::ostringstream oss;
