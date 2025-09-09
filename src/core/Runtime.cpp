@@ -18,18 +18,18 @@ int main() {
     window.show();
 
     VulkanContext vulkanContext;
-    vulkanContext.init();
+    vulkanContext.init(window.nativeHandle());
 
-    using high_resolution_clock = std::chrono::high_resolution_clock;
+    using highResolutionClock = std::chrono::high_resolution_clock;
 
-    auto previousTime  = high_resolution_clock::now();
+    auto previousTime  = highResolutionClock::now();
     auto lastFpsUpdate = previousTime;
 
     int frameCount = 0;
     int framerate  = 0;
 
     while (Platform::pollEvents()) {
-        auto currentTime = high_resolution_clock::now();
+        auto currentTime = highResolutionClock::now();
 
         frameCount++;
 

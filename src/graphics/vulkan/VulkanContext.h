@@ -10,21 +10,32 @@ class VulkanContext final : public GraphicsAPI {
 public:
     ~VulkanContext() override;
 
-    bool init() override;
+    bool init(const WindowHandle& _window) override;
     void shutdown() override;
     void drawFrame() override;
 
 private:
+    WindowHandle window = nullptr;
+
     VkInstance               instance       = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
+
     VkPhysicalDevice         physicalDevice = VK_NULL_HANDLE;
     VkDevice                 logicalDevice  = VK_NULL_HANDLE;
+
     VkQueue                  graphicsQueue  = VK_NULL_HANDLE;
+    VkQueue                  presentQueue   = VK_NULL_HANDLE;
+
+    VkSurfaceKHR             surface        = VK_NULL_HANDLE;
 
     static std::vector<const char*> getRequiredExtensions();
 
     void createInstance();
     void setupDebugMessenger();
+
+    void createSurface();
+
+    static bool isPhysicalDeviceSuitable(VkPhysicalDevice device);
 
     void pickPhysicalDevice();
     void createLogicalDevice();

@@ -9,7 +9,7 @@ public:
     GraphicsAPI() = default;
     virtual ~GraphicsAPI() = default;
 
-    virtual bool init() = 0;
+    virtual bool init(const WindowHandle& window) = 0;
     virtual void shutdown() = 0;
     virtual void drawFrame() = 0;
 };

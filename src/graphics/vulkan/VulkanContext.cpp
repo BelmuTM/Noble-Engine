@@ -1,11 +1,16 @@
 #include "VulkanContext.h"
-
-#include <map>
-#include <memory>
-#include <unordered_set>
-
 #include "core/Engine.h"
 #include "core/debug/Logger.h"
+
+#include <algorithm>
+#include <memory>
+#include <ranges>
+#include <unordered_set>
+
+#if defined(_WIN32) || defined(_WIN64)
+#include <Windows.h>
+#include <vulkan/vulkan_win32.h>
+#endif
 
 constexpr uint32_t VULKAN_VERSION = VK_API_VERSION_1_4;
 
@@ -26,15 +31,22 @@ VulkanContext::~VulkanContext() {
     shutdown();
 }
 
-bool VulkanContext::init() {
+bool VulkanContext::init(const WindowHandle& _window) {
+    window = _window;
     createInstance();
     setupDebugMessenger();
+    createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
     return true;
 }
 
 void VulkanContext::shutdown() {
+    if (surface != VK_NULL_HANDLE) {
+        vkDestroySurfaceKHR(instance, surface, nullptr);
+        surface = VK_NULL_HANDLE;
+    }
+
     if (logicalDevice != VK_NULL_HANDLE) {
         vkDestroyDevice(logicalDevice, nullptr);
         logicalDevice = VK_NULL_HANDLE;
@@ -56,11 +68,9 @@ void VulkanContext::drawFrame() {
 
 std::vector<const char*> VulkanContext::getRequiredExtensions() {
     auto extensions = Platform::getVulkanExtensions();
-
 #ifdef VULKAN_DEBUG_UTILS
     extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
-
     return extensions;
 }
 
@@ -191,7 +201,7 @@ void VulkanContext::setupDebugMessenger() {
         VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
         VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT);
 
-    VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo{
+    constexpr VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo{
         .sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
         .messageSeverity = severityFlags,
         .messageType     = messageTypeFlags,
@@ -207,6 +217,57 @@ void VulkanContext::setupDebugMessenger() {
 #endif
 }
 
+void VulkanContext::createSurface() {
+    if (!window) {
+        Engine::fatalExit("Failed to create Vulkan window surface: window handle is null");
+    }
+
+#if defined(_WIN32) || defined(_WIN64)
+
+    const VkWin32SurfaceCreateInfoKHR surfaceCreateInfo{
+        .sType     = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
+        .hinstance = GetModuleHandle(nullptr),
+        .hwnd      = static_cast<HWND>(window)
+    };
+
+    const VkResult result = vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface);
+
+    if (result != VK_SUCCESS) {
+        Engine::fatalExit("Failed to create Vulkan window surface");
+    }
+
+#elif defined(__linux__)
+    // TO-DO
+#endif
+}
+
+bool VulkanContext::isPhysicalDeviceSuitable(const VkPhysicalDevice device) {
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(device, &properties);
+    VkPhysicalDeviceFeatures features;
+    vkGetPhysicalDeviceFeatures(device, &features);
+
+    // Eliminate current candidate device if critical conditions aren't met
+    if (properties.apiVersion < VK_API_VERSION_1_3) {
+        return false;
+    }
+
+    // Enumerate available device extensions
+    uint32_t deviceExtensionCount = 0;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &deviceExtensionCount, nullptr);
+    std::vector<VkExtensionProperties> availableDeviceExtensions(deviceExtensionCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &deviceExtensionCount, availableDeviceExtensions.data());
+
+    std::unordered_set<std::string> availableExtensionNames;
+    std::ranges::transform(availableDeviceExtensions,
+                           std::inserter(availableExtensionNames, availableExtensionNames.end()),
+                           [](const VkExtensionProperties& ext) { return std::string(ext.extensionName); });
+
+    return std::ranges::all_of(deviceExtensions, [&](const char* requiredExtension) {
+        return availableExtensionNames.contains(requiredExtension);
+    });
+}
+
 void VulkanContext::pickPhysicalDevice() {
     // Enumerate available devides
     uint32_t deviceCount = 0;
@@ -220,60 +281,35 @@ void VulkanContext::pickPhysicalDevice() {
     std::vector<VkPhysicalDevice> availableDevices(deviceCount);
     vkEnumeratePhysicalDevices(instance, &deviceCount, availableDevices.data());
 
-    // Picking the best candidate within available devices
-    std::multimap<int, VkPhysicalDevice> candidates;
+    // Picking the best suitable candidate within available devices
+    auto suitablePhysicalDevices = availableDevices | std::views::filter([&](const auto& device) {
+        return isPhysicalDeviceSuitable(device);
+    });
 
-    for (const auto device : availableDevices) {
-        VkPhysicalDeviceProperties properties;
-        vkGetPhysicalDeviceProperties(device, &properties);
-        VkPhysicalDeviceFeatures features;
-        vkGetPhysicalDeviceFeatures(device, &features);
+    const auto it = std::ranges::begin(suitablePhysicalDevices);
 
-        // Eliminate current candidate device if critical conditions aren't met
-        if (properties.apiVersion < VK_API_VERSION_1_3 || !features.geometryShader) {
-            continue;
-        }
-
-        // Enumerate available device extensions
-        uint32_t deviceExtensionCount = 0;
-        vkEnumerateDeviceExtensionProperties(device, nullptr, &deviceExtensionCount, nullptr);
-        std::vector<VkExtensionProperties> availableDeviceExtensions(deviceExtensionCount);
-        vkEnumerateDeviceExtensionProperties(device, nullptr, &deviceExtensionCount, availableDeviceExtensions.data());
-
-        std::unordered_set<std::string> availableDeviceExtensionNames;
-        for (const auto& [extensionName, specVersion] : availableDeviceExtensions) {
-            availableDeviceExtensionNames.insert(extensionName);
-        }
-
-        // Check required extensions support on current candidate device
-        bool foundRequiredDeviceExtension = true;
-        for (const char* requiredDeviceExtension : deviceExtensions) {
-            if (!availableDeviceExtensionNames.contains(requiredDeviceExtension)) {
-                foundRequiredDeviceExtension = false;
-                break;
-            }
-        }
-        if (!foundRequiredDeviceExtension) continue;
-
-        // Scoring current candidate device according to preferred properties
-        uint32_t deviceScore = 0;
-        if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-            deviceScore += 1000;
-        }
-        deviceScore += properties.limits.maxImageDimension2D;
-
-        candidates.insert(std::make_pair(deviceScore, device));
-    }
-
-    if (candidates.rend()->first > 0) {
-        physicalDevice = candidates.rend()->second;
+    if (it != std::ranges::end(suitablePhysicalDevices)) {
+        physicalDevice = *it;
 
         VkPhysicalDeviceProperties properties;
         vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 
+        VkSurfaceCapabilitiesKHR surfaceCapabilitiesKHR{};
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilitiesKHR);
+
+        uint32_t surfaceFormatCount = 0;
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &surfaceFormatCount, nullptr);
+        std::vector<VkSurfaceFormatKHR> surfaceFormats(surfaceFormatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &surfaceFormatCount, surfaceFormats.data());
+
+        uint32_t surfacePresentModeCount = 0;
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &surfacePresentModeCount, nullptr);
+        std::vector<VkPresentModeKHR> surfacePresentModes(surfacePresentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &surfacePresentModeCount, surfacePresentModes.data());
+
         Logger::info("Using graphics device \"" + std::string(properties.deviceName) + "\"");
     } else {
-        Logger::error("Failed to find suitable graphics devices");
+        Engine::fatalExit("Failed to find suitable graphics devices");
     }
 }
 
@@ -285,20 +321,60 @@ void VulkanContext::createLogicalDevice() {
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, queueFamilyProperties.data());
 
     // Find a queue family with graphics capabilities
-    uint32_t queueFamilyIndex = -1;
+    uint32_t graphicsFamilyIndex = -1;
     for (int i = 0; i < queueFamilyProperties.size(); i++) {
         if (queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-            queueFamilyIndex = i;
+            graphicsFamilyIndex = i;
             break;
         }
     }
 
+    if (graphicsFamilyIndex == -1) {
+        Logger::error("Failed to find a queue with graphics capabilities");
+        return;
+    }
+
+    // Find a queue with presentation capabilities
+    uint32_t presentFamilyIndex = -1;
+    VkBool32 presentSupport     = VK_FALSE;
+    // Check if the graphics queue family also supports present
+    vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, graphicsFamilyIndex, surface, &presentSupport);
+    // If not found, find a queue family that supports present
+    if (!presentSupport) {
+        // Find another queue family that support both graphics and present
+        for (size_t i = 0; i < queueFamilyProperties.size(); i++) {
+            vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupport);
+            if (queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT && presentSupport) {
+                graphicsFamilyIndex = i;
+                presentFamilyIndex  = i;
+                break;
+            }
+        }
+        // If not found, find a queue family that only supports present
+        if (presentFamilyIndex == -1) {
+            for (size_t i = 0; i < queueFamilyProperties.size(); i++) {
+                vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupport);
+                if (presentSupport) {
+                    presentFamilyIndex = i;
+                    break;
+                }
+            }
+        }
+    } else {
+        presentFamilyIndex = graphicsFamilyIndex;
+    }
+
+    if (presentFamilyIndex == -1) {
+        Logger::error("Failed to find a queue with presentation capabilities");
+        return;
+    }
+
     // Queue priority is constant and set to one because we are using a single queue
-    static constexpr float queuePriority = 1.0f;
+    static constexpr float queuePriority = 0.0f;
 
     VkDeviceQueueCreateInfo deviceQueueCreateInfo{
         .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-        .queueFamilyIndex = queueFamilyIndex,
+        .queueFamilyIndex = graphicsFamilyIndex,
         .queueCount       = 1,
         .pQueuePriorities = &queuePriority
     };
@@ -307,7 +383,7 @@ void VulkanContext::createLogicalDevice() {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES
     };
 
-    VkDeviceCreateInfo deviceCreateInfo{
+    const VkDeviceCreateInfo deviceCreateInfo{
         .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
         .pNext                   = &deviceFeatures,
         .queueCreateInfoCount    = 1,
@@ -319,9 +395,9 @@ void VulkanContext::createLogicalDevice() {
     const VkResult result = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice);
 
     if (result == VK_SUCCESS) {
-        vkGetDeviceQueue(logicalDevice, queueFamilyIndex, 0, &graphicsQueue);
+        vkGetDeviceQueue(logicalDevice, graphicsFamilyIndex, 0, &graphicsQueue);
+        vkGetDeviceQueue(logicalDevice, presentFamilyIndex , 0, &presentQueue );
     } else {
         Logger::error("Failed to create Vulkan logical device");
     }
 }
-
