@@ -27,7 +27,7 @@ LRESULT CALLBACK windowProc(const HWND hwnd, const UINT uMsg, const WPARAM wPara
 
 namespace Platform {
     bool init() {
-        g_hInstance = GetModuleHandle(nullptr);
+        if (!g_hInstance) g_hInstance = GetModuleHandle(nullptr);
         return true;
     }
 

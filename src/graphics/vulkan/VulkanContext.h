@@ -4,10 +4,15 @@
 
 #include "graphics/GraphicsAPI.h"
 
+#include "VulkanInstance.h"
+#include "VulkanDevice.h"
+#include "VulkanSurface.h"
+
 #include <vulkan/vulkan.h>
 
 class VulkanContext final : public GraphicsAPI {
 public:
+    VulkanContext() = default;
     ~VulkanContext() override;
 
     bool init(const WindowHandle& _window) override;
@@ -15,44 +20,18 @@ public:
     void drawFrame() override;
 
 private:
-    WindowHandle window = nullptr;
+    VulkanInstance instance;
+    VulkanDevice   device;
+    VulkanSurface  surface;
 
-    VkInstance               instance       = VK_NULL_HANDLE;
-    VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
+    struct SwapchainSupportInfo {
+        VkSurfaceCapabilitiesKHR        capabilities;
+        std::vector<VkSurfaceFormatKHR> formats;
+        std::vector<VkPresentModeKHR>   presentModes;
+    };
 
-    VkPhysicalDevice         physicalDevice = VK_NULL_HANDLE;
-    VkDevice                 logicalDevice  = VK_NULL_HANDLE;
-
-    VkQueue                  graphicsQueue  = VK_NULL_HANDLE;
-    VkQueue                  presentQueue   = VK_NULL_HANDLE;
-
-    VkSurfaceKHR             surface        = VK_NULL_HANDLE;
-
-    static std::vector<const char*> getRequiredExtensions();
-
-    void createInstance();
-    void setupDebugMessenger();
-
-    void createSurface();
-
-    static bool isPhysicalDeviceSuitable(VkPhysicalDevice device);
-
-    void pickPhysicalDevice();
-    void createLogicalDevice();
-
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT      severity,
-                                                        VkDebugUtilsMessageTypeFlagsEXT             type,
-                                                        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-                                                        void*);
-
-    static VkResult createDebugUtilsMessengerEXT(VkInstance                                instance,
-                                                 const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-                                                 const VkAllocationCallbacks*              pAllocator,
-                                                 VkDebugUtilsMessengerEXT*                 pMessenger);
-
-    static void destroyDebugUtilsMessengerEXT(VkInstance                   instance,
-                                              VkDebugUtilsMessengerEXT     messenger,
-                                              const VkAllocationCallbacks* pAllocator);
+    static SwapchainSupportInfo querySwapchainSupport(VkPhysicalDevice device, VkSurfaceKHR _surface);
+    void                        createSwapchain();
 };
 
 #endif //BAZARENGINE_VULKANCONTEXT_H

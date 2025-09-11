@@ -6,12 +6,12 @@
 
 class GraphicsAPI {
 public:
-    GraphicsAPI() = default;
+    GraphicsAPI()          = default;
     virtual ~GraphicsAPI() = default;
 
-    virtual bool init(const WindowHandle& window) = 0;
-    virtual void shutdown() = 0;
-    virtual void drawFrame() = 0;
+    [[nodiscard]] virtual bool init(const WindowHandle& window) = 0;
+    virtual void               shutdown() = 0;
+    virtual void               drawFrame() = 0;
 };
 
 #endif //BAZARENGINE_GRAPHICSAPI_H

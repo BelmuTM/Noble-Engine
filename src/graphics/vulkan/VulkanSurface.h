@@ -1,0 +1,35 @@
+#pragma once
+#ifndef BAZARENGINE_VULKANSURFACE_H
+#define BAZARENGINE_VULKANSURFACE_H
+
+#include "core/platform/Platform.h"
+
+#include <string>
+
+#include <vulkan/vulkan.h>
+
+class VulkanSurface {
+public:
+    VulkanSurface() = default;
+    ~VulkanSurface();
+
+    // Implicit conversion operator
+    operator VkSurfaceKHR() const { return surface; }
+
+    VulkanSurface(const VulkanSurface&)            = delete;
+    VulkanSurface& operator=(const VulkanSurface&) = delete;
+    VulkanSurface(VulkanSurface&&)                 = delete;
+    VulkanSurface& operator=(VulkanSurface&&)      = delete;
+
+    [[nodiscard]] bool create(VkInstance* _instance, const WindowHandle& _window, std::string& errorMessage) noexcept;
+    void               destroy() noexcept;
+
+private:
+    VkInstance*  instance = nullptr;
+    WindowHandle window   = nullptr;
+    VkSurfaceKHR surface  = VK_NULL_HANDLE;
+
+    bool createSurface(std::string& errorMessage);
+};
+
+#endif //BAZARENGINE_VULKANSURFACE_H
