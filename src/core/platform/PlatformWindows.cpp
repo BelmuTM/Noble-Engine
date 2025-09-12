@@ -1,19 +1,32 @@
 #define UNICODE
 
+// Windows 10 flags
+#define WINVER       0x0A00
+#define _WIN32_WINNT 0x0A00
+
 #include "Platform.h"
 #include "core/Engine.h"
 #include "../res/resource.h"
 
-#include <iostream>
+#include <cmath>
 
 #include <Windows.h>
+#undef ERROR
 
-#include <vulkan/vulkan.h>
 #include <vulkan/vulkan_win32.h>
+
+#include "core/debug/Logger.h"
 
 static HINSTANCE g_hInstance = nullptr;
 
-static constexpr wchar_t CLASS_NAME[] = L"EngineWindowClass";
+static constexpr wchar_t CLASS_NAME[] = L"BazarEngine_Window";
+
+std::vector<const char*> Platform::getVulkanExtensions() {
+    return {
+        VK_KHR_SURFACE_EXTENSION_NAME,
+        VK_KHR_WIN32_SURFACE_EXTENSION_NAME
+    };
+}
 
 LRESULT CALLBACK windowProc(const HWND hwnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam) {
     switch (uMsg) {
@@ -48,6 +61,16 @@ namespace Platform {
     }
 
     Window::Window(const int width, const int height, const std::string& title) {
+        _width  = width;
+        _height = height;
+
+        if (!g_hInstance) {
+            g_hInstance = GetModuleHandle(nullptr);
+        }
+
+        handle = std::make_unique<NativeHandle>();
+        handle->hInstance = g_hInstance;
+
         static bool registered = false;
         if (!registered) {
             WNDCLASS wc      = {};
@@ -65,7 +88,7 @@ namespace Platform {
 
         const auto wTitle = std::wstring(title.begin(), title.end());
 
-        handle = CreateWindowEx(
+        handle->windowHandle = CreateWindowEx(
             0,
             CLASS_NAME,
             wTitle.c_str(),
@@ -74,30 +97,46 @@ namespace Platform {
             nullptr, nullptr, g_hInstance, nullptr
         );
 
-        if (!handle) {
+        if (!handle->windowHandle) {
             Engine::fatalExit("Failed to create window");
         }
     }
 
     Window::~Window() {
         if (handle) {
-            DestroyWindow(static_cast<HWND>(handle));
-            handle = nullptr;
+            if (handle->windowHandle) DestroyWindow(static_cast<HWND>(handle->windowHandle));
+            handle->windowHandle = nullptr;
         }
     }
 
     void Window::show() const {
-        ShowWindow(static_cast<HWND>(handle), SW_SHOW);
+        ShowWindow(static_cast<HWND>(handle->windowHandle), SW_SHOW);
     }
 
     void Window::hide() const {
-        ShowWindow(static_cast<HWND>(handle), SW_HIDE);
+        ShowWindow(static_cast<HWND>(handle->windowHandle), SW_HIDE);
     }
 
-    std::vector<const char*> getVulkanExtensions() {
-        return {
-            VK_KHR_SURFACE_EXTENSION_NAME,
-            VK_KHR_WIN32_SURFACE_EXTENSION_NAME
-        };
+    void Window::getFrameBufferSize(int& width, int& height) const {
+        if (!handle || !handle->windowHandle) {
+            Logger::error("Failed to get framebuffer size: window handle is null");
+            return;
+        }
+        const auto hwnd = static_cast<HWND>(handle->windowHandle);
+
+        RECT rect;
+        if (!GetClientRect(hwnd, &rect)) {
+            width  = 0;
+            height = 0;
+            return;
+        }
+        const int logicalWidth  = rect.right  - rect.left;
+        const int logicalHeight = rect.bottom - rect.top;
+
+        const int   dpi   = static_cast<int>(GetDpiForWindow(hwnd));
+        const float scale = static_cast<float>(dpi) / 96.0f;
+
+        width  = static_cast<int>(std::lround(logicalWidth  * scale));
+        height = static_cast<int>(std::lround(logicalHeight * scale));
     }
 }

@@ -4,6 +4,7 @@
 
 #include "core/platform/Platform.h"
 
+#include <memory>
 #include <string>
 
 #include <vulkan/vulkan.h>
@@ -21,13 +22,16 @@ public:
     VulkanSurface(VulkanSurface&&)                 = delete;
     VulkanSurface& operator=(VulkanSurface&&)      = delete;
 
-    [[nodiscard]] bool create(VkInstance* _instance, const WindowHandle& _window, std::string& errorMessage) noexcept;
-    void               destroy() noexcept;
+    [[nodiscard]] bool create(
+        VkInstance* instance, const Platform::Window& window, std::string& errorMessage
+    ) noexcept;
+    void destroy() noexcept;
 
 private:
-    VkInstance*  instance = nullptr;
-    WindowHandle window   = nullptr;
-    VkSurfaceKHR surface  = VK_NULL_HANDLE;
+    const Platform::Window* _window = nullptr;
+
+    VkInstance*  _instance = nullptr;
+    VkSurfaceKHR surface   = VK_NULL_HANDLE;
 
     bool createSurface(std::string& errorMessage);
 };

@@ -19,18 +19,25 @@ public:
     [[nodiscard]] bool create(VkInstance instance, VkSurfaceKHR surface, std::string& errorMessage) noexcept;
     void               destroy() noexcept;
 
-private:
     struct QueueFamilyIndices {
         uint32_t graphicsFamily = UINT32_MAX;
         uint32_t presentFamily  = UINT32_MAX;
 
-        bool isComplete() const {
+        [[nodiscard]] bool isComplete() const {
             return graphicsFamily != UINT32_MAX && presentFamily != UINT32_MAX;
         }
     };
 
+    [[nodiscard]] VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; }
+    [[nodiscard]] VkDevice         getLogicalDevice () const { return logicalDevice ; }
+
+    [[nodiscard]] const QueueFamilyIndices& getQueueFamilyIndices() const { return _queueFamilyIndices; }
+
+private:
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice         logicalDevice  = VK_NULL_HANDLE;
+
+    QueueFamilyIndices _queueFamilyIndices;
 
     VkQueue graphicsQueue = VK_NULL_HANDLE;
     VkQueue presentQueue  = VK_NULL_HANDLE;
@@ -39,7 +46,7 @@ private:
     bool        pickPhysicalDevice(VkInstance instance, std::string& errorMessage);
 
     static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
-    bool                      createLogicalDevice(VkSurfaceKHR surface, std::string& errorMessage);
+    bool                      createLogicalDevice(QueueFamilyIndices queueFamilyIndices, std::string& errorMessage);
 };
 
 #endif //BAZARENGINE_VULKANDEVICE_H

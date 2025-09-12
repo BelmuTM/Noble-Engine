@@ -194,6 +194,10 @@ namespace Logger {
         logCv.notify_one();
     }
 
+    std::string formatErrorMessage(const std::string& functionName, const int errorCode) {
+        return functionName + " failed (error code: " + (errorCode == -1 ? "N/A" : std::to_string(errorCode)) + ")";
+    }
+
     void debug  (const std::string& message) { log(Level::DEBUG  , message); }
     void verbose(const std::string& message) { log(Level::VERBOSE, message); }
     void info   (const std::string& message) { log(Level::INFO   , message); }

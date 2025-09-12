@@ -2,6 +2,9 @@
 #ifndef BAZARENGINE_LOGGER_H
 #define BAZARENGINE_LOGGER_H
 
+#define ERROR_MESSAGE(func) Logger::formatErrorMessage(#func)
+#define ERROR_MESSAGE_CODE(func, errorCode) Logger::formatErrorMessage(#func, errorCode)
+
 #include <string>
 
 namespace Logger {
@@ -9,6 +12,8 @@ namespace Logger {
 
     void init();
     void shutdown();
+
+    std::string formatErrorMessage(const std::string& functionName, int errorCode = -1);
 
     void debug  (const std::string& message);
     void verbose(const std::string& message);

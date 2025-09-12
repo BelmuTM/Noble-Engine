@@ -7,31 +7,22 @@
 #include "VulkanInstance.h"
 #include "VulkanDevice.h"
 #include "VulkanSurface.h"
-
-#include <vulkan/vulkan.h>
+#include "VulkanSwapchain.h"
 
 class VulkanContext final : public GraphicsAPI {
 public:
     VulkanContext() = default;
     ~VulkanContext() override;
 
-    bool init(const WindowHandle& _window) override;
+    bool init(const Platform::Window& window) override;
     void shutdown() override;
     void drawFrame() override;
 
 private:
-    VulkanInstance instance;
-    VulkanDevice   device;
-    VulkanSurface  surface;
-
-    struct SwapchainSupportInfo {
-        VkSurfaceCapabilitiesKHR        capabilities;
-        std::vector<VkSurfaceFormatKHR> formats;
-        std::vector<VkPresentModeKHR>   presentModes;
-    };
-
-    static SwapchainSupportInfo querySwapchainSupport(VkPhysicalDevice device, VkSurfaceKHR _surface);
-    void                        createSwapchain();
+    VulkanInstance  instance;
+    VulkanDevice    device;
+    VulkanSurface   surface;
+    VulkanSwapchain swapchain;
 };
 
 #endif //BAZARENGINE_VULKANCONTEXT_H

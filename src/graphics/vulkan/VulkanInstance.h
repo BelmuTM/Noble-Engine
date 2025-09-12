@@ -35,19 +35,25 @@ private:
     bool createInstance(std::string& errorMessage);
     void setupDebugMessenger();
 
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT      severity,
-                                                        VkDebugUtilsMessageTypeFlagsEXT             type,
-                                                        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-                                                        void*);
+    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+        VkDebugUtilsMessageSeverityFlagBitsEXT      severity,
+        VkDebugUtilsMessageTypeFlagsEXT             type,
+        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+        void*
+    );
 
-    static VkResult createDebugUtilsMessengerEXT(VkInstance                                instance,
-                                                 const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-                                                 const VkAllocationCallbacks*              pAllocator,
-                                                 VkDebugUtilsMessengerEXT*                 pMessenger);
+    static VkResult createDebugUtilsMessengerEXT(
+        VkInstance                                instance,
+        const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+        const VkAllocationCallbacks*              pAllocator,
+        VkDebugUtilsMessengerEXT*                 pMessenger
+    );
 
-    static void destroyDebugUtilsMessengerEXT(VkInstance                   instance,
-                                              VkDebugUtilsMessengerEXT     messenger,
-                                              const VkAllocationCallbacks* pAllocator);
+    static void destroyDebugUtilsMessengerEXT(
+        VkInstance                   instance,
+        VkDebugUtilsMessengerEXT     messenger,
+        const VkAllocationCallbacks* pAllocator
+    );
 };
 
 #endif //BAZARENGINE_VULKANINSTANCE_H

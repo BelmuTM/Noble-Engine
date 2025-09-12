@@ -11,14 +11,14 @@ int main() {
     Logger::Manager loggerManager;
 
     if (!Platform::init()) {
-        Engine::fatalExit("Failed to init platform");
+        Engine::fatalExit(ERROR_MESSAGE(Platform::init));
     }
 
     const Platform::Window window(800, 600, "BazarEngine");
     window.show();
 
     VulkanContext vulkanContext;
-    vulkanContext.init(window.nativeHandle());
+    vulkanContext.init(window);
 
     using highResolutionClock = std::chrono::high_resolution_clock;
 

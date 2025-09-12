@@ -1,4 +1,5 @@
 #include "VulkanDevice.h"
+#include "VulkanLogger.h"
 #include "core/debug/Logger.h"
 
 #include <algorithm>
@@ -6,7 +7,7 @@
 #include <unordered_set>
 #include <vector>
 
-static std::vector deviceExtensions = {
+static const std::vector deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     VK_KHR_SPIRV_1_4_EXTENSION_NAME,
     VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
@@ -17,9 +18,22 @@ VulkanDevice::~VulkanDevice() {
     destroy();
 }
 
-bool VulkanDevice::create(const VkInstance instance, const VkSurfaceKHR surface, std::string& errorMessage) noexcept {
+bool VulkanDevice::create(VkInstance instance, VkSurfaceKHR surface, std::string& errorMessage) noexcept {
     if (!pickPhysicalDevice(instance, errorMessage)) return false;
-    if (!createLogicalDevice(surface, errorMessage)) return false;
+
+    _queueFamilyIndices = findQueueFamilies(physicalDevice, surface);
+
+    if (_queueFamilyIndices.graphicsFamily == UINT32_MAX) {
+        errorMessage = "Failed to find a queue with graphics capabilities";
+        return false;
+    }
+
+    if (_queueFamilyIndices.presentFamily == UINT32_MAX) {
+        errorMessage = "Failed to find a queue with presentation capabilities";
+        return false;
+    }
+
+    if (!createLogicalDevice(_queueFamilyIndices, errorMessage)) return false;
     return true;
 }
 
@@ -28,9 +42,10 @@ void VulkanDevice::destroy() noexcept {
         vkDestroyDevice(logicalDevice, nullptr);
         logicalDevice = VK_NULL_HANDLE;
     }
+    _queueFamilyIndices = {};
 }
 
-bool VulkanDevice::isPhysicalDeviceSuitable(const VkPhysicalDevice device) {
+bool VulkanDevice::isPhysicalDeviceSuitable(VkPhysicalDevice device) {
     VkPhysicalDeviceProperties properties;
     vkGetPhysicalDeviceProperties(device, &properties);
     VkPhysicalDeviceFeatures features;
@@ -57,7 +72,7 @@ bool VulkanDevice::isPhysicalDeviceSuitable(const VkPhysicalDevice device) {
     });
 }
 
-bool VulkanDevice::pickPhysicalDevice(const VkInstance instance, std::string& errorMessage) {
+bool VulkanDevice::pickPhysicalDevice(VkInstance instance, std::string& errorMessage) {
     // Enumerate available devides
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -91,8 +106,10 @@ bool VulkanDevice::pickPhysicalDevice(const VkInstance instance, std::string& er
     return true;
 }
 
-VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(const VkPhysicalDevice device,
-                                                                 const VkSurfaceKHR     surface) {
+VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
+    VkPhysicalDevice device,
+    VkSurfaceKHR     surface
+) {
     QueueFamilyIndices indices;
 
     // Enumerate queue family properties
@@ -141,19 +158,7 @@ VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(const VkPhysica
     return indices;
 }
 
-bool VulkanDevice::createLogicalDevice(const VkSurfaceKHR surface, std::string& errorMessage) {
-    QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice, surface);
-
-    if (queueFamilyIndices.graphicsFamily == UINT32_MAX) {
-        errorMessage = "Failed to find a queue with graphics capabilities";
-        return false;
-    }
-
-    if (queueFamilyIndices.presentFamily == UINT32_MAX) {
-        errorMessage = "Failed to find a queue with presentation capabilities";
-        return false;
-    }
-
+bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndices, std::string& errorMessage) {
     // Queue priority is constant and set to one because we are using a single queue
     static constexpr float queuePriority = 1.0f;
 
@@ -179,7 +184,7 @@ bool VulkanDevice::createLogicalDevice(const VkSurfaceKHR surface, std::string& 
 
     const VkResult result = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice);
     if (result != VK_SUCCESS) {
-        errorMessage = "Failed to create logical device";
+        errorMessage = VK_ERROR_MESSAGE(vkCreateDevice, result);
         return false;
     }
 

@@ -1,4 +1,6 @@
 #include "VulkanInstance.h"
+#include "VulkanLogger.h"
+
 #include "core/Engine.h"
 #include "core/debug/Logger.h"
 #include "core/platform/Platform.h"
@@ -112,15 +114,17 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
 
     const VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
     if (result != VK_SUCCESS) {
-        errorMessage = "Failed to create Vulkan instance";
+        errorMessage = VK_ERROR_MESSAGE(vkCreateInstance, result);
         return false;
     }
     return true;
 }
 
-VkBool32 VulkanInstance::debugCallback(const VkDebugUtilsMessageSeverityFlagBitsEXT severity,
-                                       VkDebugUtilsMessageTypeFlagsEXT              type,
-                                       const VkDebugUtilsMessengerCallbackDataEXT*  pCallbackData, void*) {
+VkBool32 VulkanInstance::debugCallback(
+    const VkDebugUtilsMessageSeverityFlagBitsEXT severity,
+    VkDebugUtilsMessageTypeFlagsEXT              type,
+    const VkDebugUtilsMessengerCallbackDataEXT*  pCallbackData, void*
+) {
     switch (severity) {
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
             Logger::verbose(pCallbackData->pMessage);
@@ -139,10 +143,12 @@ VkBool32 VulkanInstance::debugCallback(const VkDebugUtilsMessageSeverityFlagBits
     return VK_FALSE;
 }
 
-VkResult VulkanInstance::createDebugUtilsMessengerEXT(const VkInstance                          instance,
-                                                      const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-                                                      const VkAllocationCallbacks*              pAllocator,
-                                                      VkDebugUtilsMessengerEXT*                 pMessenger) {
+VkResult VulkanInstance::createDebugUtilsMessengerEXT(
+    VkInstance                                instance,
+    const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+    const VkAllocationCallbacks*              pAllocator,
+    VkDebugUtilsMessengerEXT*                 pMessenger
+) {
     const auto createDebugUtilsMessengerEXTFunction = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
         vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
 
@@ -152,9 +158,11 @@ VkResult VulkanInstance::createDebugUtilsMessengerEXT(const VkInstance          
     return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
 
-void VulkanInstance::destroyDebugUtilsMessengerEXT(const VkInstance               instance,
-                                                   const VkDebugUtilsMessengerEXT messenger,
-                                                   const VkAllocationCallbacks*   pAllocator) {
+void VulkanInstance::destroyDebugUtilsMessengerEXT(
+    VkInstance                   instance,
+    VkDebugUtilsMessengerEXT     messenger,
+    const VkAllocationCallbacks* pAllocator
+) {
     const auto destroyDebugUtilsMessengerEXTFunction = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
         vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
 
@@ -185,7 +193,7 @@ void VulkanInstance::setupDebugMessenger() {
     const VkResult result = createDebugUtilsMessengerEXT(instance, &debugUtilsMessengerCreateInfo, nullptr,
                                                          &debugMessenger);
     if (result != VK_SUCCESS) {
-        Logger::error("Failed to create Vulkan debug utils messenger");
+        Logger::error(VK_ERROR_MESSAGE(createDebugUtilsMessengerEXT, result));
     }
 
 #endif
