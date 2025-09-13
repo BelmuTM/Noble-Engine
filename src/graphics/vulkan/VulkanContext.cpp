@@ -27,6 +27,10 @@ bool VulkanContext::init(const Platform::Window& window) {
 }
 
 void VulkanContext::shutdown() {
+    swapchain.destroy();
+    surface.destroy();
+    device.destroy();
+    instance.destroy();
 }
 
 void VulkanContext::drawFrame() {

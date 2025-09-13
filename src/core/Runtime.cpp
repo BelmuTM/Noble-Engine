@@ -17,10 +17,10 @@ int main() {
     const Platform::Window window(800, 600, "BazarEngine");
     window.show();
 
+    using highResolutionClock = std::chrono::high_resolution_clock;
+
     VulkanContext vulkanContext;
     vulkanContext.init(window);
-
-    using highResolutionClock = std::chrono::high_resolution_clock;
 
     auto previousTime  = highResolutionClock::now();
     auto lastFpsUpdate = previousTime;

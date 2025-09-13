@@ -73,14 +73,14 @@ namespace Platform {
 
         static bool registered = false;
         if (!registered) {
-            WNDCLASS wc      = {};
+            WNDCLASS wc{};
             wc.lpfnWndProc   = windowProc;
             wc.hInstance     = g_hInstance;
             wc.hIcon         = LoadIcon(g_hInstance, MAKEINTRESOURCE(IDI_ICON));
             wc.lpszClassName = CLASS_NAME;
 
             if (!RegisterClass(&wc)) {
-                Engine::fatalExit("Failed to register Window class");
+                Engine::fatalExit("Failed to register window class");
             }
 
             registered = true;

@@ -4,18 +4,21 @@
 
 #include "core/platform/Platform.h"
 
-#include <memory>
 #include <string>
 
-#include <vulkan/vulkan.h>
+#define VULKAN_HPP_NO_EXCEPTIONS
+#if defined(_WIN32) || defined(_WIN64)
+#define VK_USE_PLATFORM_WIN32_KHR
+#endif
+#include <vulkan/vulkan.hpp>
 
 class VulkanSurface {
 public:
     VulkanSurface() = default;
-    ~VulkanSurface();
+    ~VulkanSurface() = default;
 
     // Implicit conversion operator
-    operator VkSurfaceKHR() const { return surface; }
+    operator vk::SurfaceKHR() const { return surface; }
 
     VulkanSurface(const VulkanSurface&)            = delete;
     VulkanSurface& operator=(const VulkanSurface&) = delete;
@@ -23,15 +26,15 @@ public:
     VulkanSurface& operator=(VulkanSurface&&)      = delete;
 
     [[nodiscard]] bool create(
-        VkInstance* instance, const Platform::Window& window, std::string& errorMessage
+        vk::Instance* instance, const Platform::Window& window, std::string& errorMessage
     ) noexcept;
     void destroy() noexcept;
 
 private:
     const Platform::Window* _window = nullptr;
 
-    VkInstance*  _instance = nullptr;
-    VkSurfaceKHR surface   = VK_NULL_HANDLE;
+    vk::Instance*  _instance = nullptr;
+    vk::SurfaceKHR surface{};
 
     bool createSurface(std::string& errorMessage);
 };

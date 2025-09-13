@@ -1,5 +1,5 @@
 #include "VulkanDevice.h"
-#include "VulkanLogger.h"
+#include "VulkanDebugger.h"
 #include "core/debug/Logger.h"
 
 #include <algorithm>
@@ -14,11 +14,9 @@ static const std::vector deviceExtensions = {
     VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME
 };
 
-VulkanDevice::~VulkanDevice() {
-    destroy();
-}
-
-bool VulkanDevice::create(VkInstance instance, VkSurfaceKHR surface, std::string& errorMessage) noexcept {
+bool VulkanDevice::create(
+    const vk::Instance instance, const vk::SurfaceKHR surface, std::string& errorMessage
+) noexcept {
     if (!pickPhysicalDevice(instance, errorMessage)) return false;
 
     _queueFamilyIndices = findQueueFamilies(physicalDevice, surface);
@@ -38,55 +36,47 @@ bool VulkanDevice::create(VkInstance instance, VkSurfaceKHR surface, std::string
 }
 
 void VulkanDevice::destroy() noexcept {
-    if (logicalDevice != VK_NULL_HANDLE) {
-        vkDestroyDevice(logicalDevice, nullptr);
-        logicalDevice = VK_NULL_HANDLE;
+    if (logicalDevice) {
+        logicalDevice.destroy();
+        logicalDevice = nullptr;
     }
     _queueFamilyIndices = {};
 }
 
-bool VulkanDevice::isPhysicalDeviceSuitable(VkPhysicalDevice device) {
-    VkPhysicalDeviceProperties properties;
-    vkGetPhysicalDeviceProperties(device, &properties);
-    VkPhysicalDeviceFeatures features;
-    vkGetPhysicalDeviceFeatures(device, &features);
+bool VulkanDevice::isPhysicalDeviceSuitable(const vk::PhysicalDevice device) {
+    const vk::PhysicalDeviceProperties properties = device.getProperties();
+    const vk::PhysicalDeviceFeatures   features   = device.getFeatures();
 
     // Eliminate current candidate device if critical conditions aren't met
     if (properties.apiVersion < VK_API_VERSION_1_3) {
         return false;
     }
 
-    // Enumerate available device extensions
-    uint32_t deviceExtensionCount = 0;
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &deviceExtensionCount, nullptr);
-    std::vector<VkExtensionProperties> availableDeviceExtensions(deviceExtensionCount);
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &deviceExtensionCount, availableDeviceExtensions.data());
+    const auto availableDeviceExtensions = device.enumerateDeviceExtensionProperties();
+    if (availableDeviceExtensions.result != vk::Result::eSuccess) {
+        return false;
+    }
 
     std::unordered_set<std::string> availableExtensionNames;
-    std::ranges::transform(availableDeviceExtensions,
+    std::ranges::transform(availableDeviceExtensions.value,
                            std::inserter(availableExtensionNames, availableExtensionNames.end()),
-                           [](const VkExtensionProperties& ext) { return std::string(ext.extensionName); });
+                           [](const vk::ExtensionProperties& ext) { return std::string(ext.extensionName); });
 
     return std::ranges::all_of(deviceExtensions, [&](const char* requiredExtension) {
         return availableExtensionNames.contains(requiredExtension);
     });
 }
 
-bool VulkanDevice::pickPhysicalDevice(VkInstance instance, std::string& errorMessage) {
+bool VulkanDevice::pickPhysicalDevice(const vk::Instance instance, std::string& errorMessage) {
     // Enumerate available devides
-    uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+    const auto availableDevices = VK_CHECK_RESULT(instance.enumeratePhysicalDevices(), errorMessage);
 
-    if (deviceCount == 0) {
-        errorMessage = "Failed to find graphics device with Vulkan support";
+    if (availableDevices.result != vk::Result::eSuccess) {
         return false;
     }
 
-    std::vector<VkPhysicalDevice> availableDevices(deviceCount);
-    vkEnumeratePhysicalDevices(instance, &deviceCount, availableDevices.data());
-
     // Picking the best suitable candidate within available devices
-    auto suitablePhysicalDevices = availableDevices | std::views::filter([&](const auto& device) {
+    auto suitablePhysicalDevices = availableDevices.value | std::views::filter([&](const auto& device) {
         return isPhysicalDeviceSuitable(device);
     });
 
@@ -99,43 +89,34 @@ bool VulkanDevice::pickPhysicalDevice(VkInstance instance, std::string& errorMes
 
     physicalDevice = *it;
 
-    VkPhysicalDeviceProperties properties;
-    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-
-    Logger::info("Using graphics device \"" + std::string(properties.deviceName) + "\"");
+    Logger::info("Using graphics device \"" + std::string(physicalDevice.getProperties().deviceName) + "\"");
     return true;
 }
 
 VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
-    VkPhysicalDevice device,
-    VkSurfaceKHR     surface
+    const vk::PhysicalDevice device, const vk::SurfaceKHR surface
 ) {
     QueueFamilyIndices indices;
-
-    // Enumerate queue family properties
-    uint32_t queueFamilyPropertyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, nullptr);
-    std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyPropertyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, queueFamilyProperties.data());
+    const auto queueFamilyProperties = device.getQueueFamilyProperties();
 
     // Find a queue family with graphics capabilities
     for (int i = 0; i < queueFamilyProperties.size(); i++) {
-        if (queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+        if (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics) {
             indices.graphicsFamily = i;
             break;
         }
     }
 
     // Find a queue with presentation capabilities
-    VkBool32 presentSupport = VK_FALSE;
     // Check if the graphics queue family also supports present
-    vkGetPhysicalDeviceSurfaceSupportKHR(device, indices.graphicsFamily, surface, &presentSupport);
+    vk::Bool32 presentSupport = device.getSurfaceSupportKHR(indices.graphicsFamily, surface).value;
     // If not found, find a queue family that supports present
     if (!presentSupport) {
         // Find another queue family that support both graphics and present
         for (size_t i = 0; i < queueFamilyProperties.size(); i++) {
-            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
-            if (queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT && presentSupport) {
+            presentSupport = device.getSurfaceSupportKHR(i, surface).value;
+
+            if (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics && presentSupport) {
                 indices.graphicsFamily = i;
                 indices.presentFamily  = i;
                 break;
@@ -144,7 +125,8 @@ VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
         // If not found, find a queue family that only supports present
         if (indices.presentFamily == UINT32_MAX) {
             for (size_t i = 0; i < queueFamilyProperties.size(); i++) {
-                vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+                presentSupport = device.getSurfaceSupportKHR(i, surface).value;
+
                 if (presentSupport) {
                     indices.presentFamily = i;
                     break;
@@ -162,33 +144,27 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
     // Queue priority is constant and set to one because we are using a single queue
     static constexpr float queuePriority = 1.0f;
 
-    VkDeviceQueueCreateInfo deviceQueueCreateInfo{
-        .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-        .queueFamilyIndex = queueFamilyIndices.graphicsFamily,
-        .queueCount       = 1,
-        .pQueuePriorities = &queuePriority
-    };
+    vk::DeviceQueueCreateInfo deviceQueueCreateInfo;
+    deviceQueueCreateInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
+    deviceQueueCreateInfo.queueCount       = 1;
+    deviceQueueCreateInfo.pQueuePriorities = &queuePriority;
 
-    VkPhysicalDeviceVulkan13Features deviceFeatures{
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES
-    };
+    constexpr vk::PhysicalDeviceVulkan13Features deviceFeatures;
 
-    const VkDeviceCreateInfo deviceCreateInfo{
-        .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        .pNext                   = &deviceFeatures,
-        .queueCreateInfoCount    = 1,
-        .pQueueCreateInfos       = &deviceQueueCreateInfo,
-        .enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size()),
-        .ppEnabledExtensionNames = deviceExtensions.data()
-    };
+    vk::DeviceCreateInfo deviceCreateInfo;
+    deviceCreateInfo.pNext                   = &deviceFeatures;
+    deviceCreateInfo.queueCreateInfoCount    = 1;
+    deviceCreateInfo.pQueueCreateInfos       = &deviceQueueCreateInfo;
+    deviceCreateInfo.enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size());
+    deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    const VkResult result = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice);
-    if (result != VK_SUCCESS) {
-        errorMessage = VK_ERROR_MESSAGE(vkCreateDevice, result);
+    const auto deviceCreate = VK_CHECK_RESULT(physicalDevice.createDevice(deviceCreateInfo), errorMessage);
+    if (deviceCreate.result != vk::Result::eSuccess) {
         return false;
     }
+    logicalDevice = deviceCreate.value;
 
-    vkGetDeviceQueue(logicalDevice, queueFamilyIndices.graphicsFamily, 0, &graphicsQueue);
-    vkGetDeviceQueue(logicalDevice, queueFamilyIndices.presentFamily , 0, &presentQueue);
+    graphicsQueue = logicalDevice.getQueue(queueFamilyIndices.graphicsFamily, 0);
+    presentQueue  = logicalDevice.getQueue(queueFamilyIndices.presentFamily, 0);
     return true;
 }

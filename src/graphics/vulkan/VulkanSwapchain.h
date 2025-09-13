@@ -8,12 +8,13 @@
 #include <string>
 #include <vector>
 
-#include <vulkan/vulkan_core.h>
+#define VULKAN_HPP_NO_EXCEPTIONS
+#include <vulkan/vulkan.hpp>
 
 class VulkanSwapchain {
 public:
-    VulkanSwapchain() = default;
-    ~VulkanSwapchain();
+    VulkanSwapchain()  = default;
+    ~VulkanSwapchain() = default;
 
     VulkanSwapchain(const VulkanSwapchain&)            = delete;
     VulkanSwapchain& operator=(const VulkanSwapchain&) = delete;
@@ -21,34 +22,36 @@ public:
     VulkanSwapchain& operator=(VulkanSwapchain&&)      = delete;
 
     [[nodiscard]] bool create(
-        const Platform::Window& window, const VulkanDevice& device, VkSurfaceKHR surface, std::string& errorMessage
+        const Platform::Window& window, const VulkanDevice& device, vk::SurfaceKHR surface, std::string& errorMessage
     ) noexcept;
     void destroy() noexcept;
 
 private:
+    struct SwapchainSupportInfo {
+        vk::SurfaceCapabilitiesKHR        capabilities;
+        std::vector<vk::SurfaceFormatKHR> formats;
+        std::vector<vk::PresentModeKHR>   presentModes;
+    };
+
     const VulkanDevice*     _device = nullptr;
     const Platform::Window* _window = nullptr;
 
-    VkSwapchainKHR           swapchain = VK_NULL_HANDLE;
-    std::vector<VkImage>     swapchainImages;
-    std::vector<VkImageView> swapchainImageViews;
+    vk::SwapchainKHR           swapchain{};
+    std::vector<vk::Image>     swapchainImages;
+    std::vector<vk::ImageView> swapchainImageViews;
 
-    VkFormat   swapchainImageFormat = VK_FORMAT_UNDEFINED;
-    VkExtent2D swapchainExtent{};
+    vk::Format   swapchainImageFormat = vk::Format::eUndefined;
+    vk::Extent2D swapchainExtent{};
 
-    bool createSwapchain(VkSurfaceKHR surface, std::string& errorMessage);
+    bool createSwapchain(vk::SurfaceKHR surface, std::string& errorMessage);
 
-    struct SwapchainSupportInfo {
-        VkSurfaceCapabilitiesKHR        capabilities;
-        std::vector<VkSurfaceFormatKHR> formats;
-        std::vector<VkPresentModeKHR>   presentModes;
-    };
+    bool createImageViews(std::string& errorMessage);
 
-    static SwapchainSupportInfo querySwapchainSupport(VkPhysicalDevice device, VkSurfaceKHR _surface);
+    static SwapchainSupportInfo querySwapchainSupport(vk::PhysicalDevice device, vk::SurfaceKHR _surface);
 
-    static VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-    static VkPresentModeKHR   choosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-    [[nodiscard]] VkExtent2D  chooseSwapExtent2D(const VkSurfaceCapabilitiesKHR& capabilities) const;
+    static vk::SurfaceFormatKHR chooseSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats);
+    static vk::PresentModeKHR   choosePresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes);
+    [[nodiscard]] vk::Extent2D  chooseSwapExtent2D(const vk::SurfaceCapabilitiesKHR& capabilities) const;
 };
 
 #endif //BAZARENGINE_VULKANSWAPCHAIN_H

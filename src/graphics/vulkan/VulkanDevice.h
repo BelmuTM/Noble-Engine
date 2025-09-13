@@ -4,19 +4,20 @@
 
 #include <string>
 
-#include <vulkan/vulkan.h>
+#define VULKAN_HPP_NO_EXCEPTIONS
+#include <vulkan/vulkan.hpp>
 
 class VulkanDevice {
 public:
     VulkanDevice() = default;
-    ~VulkanDevice();
+    ~VulkanDevice() = default;
 
     VulkanDevice(const VulkanDevice&)            = delete;
     VulkanDevice& operator=(const VulkanDevice&) = delete;
     VulkanDevice(VulkanDevice&&)                 = delete;
     VulkanDevice& operator=(VulkanDevice&&)      = delete;
 
-    [[nodiscard]] bool create(VkInstance instance, VkSurfaceKHR surface, std::string& errorMessage) noexcept;
+    [[nodiscard]] bool create(vk::Instance instance, vk::SurfaceKHR surface, std::string& errorMessage) noexcept;
     void               destroy() noexcept;
 
     struct QueueFamilyIndices {
@@ -28,24 +29,24 @@ public:
         }
     };
 
-    [[nodiscard]] VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; }
-    [[nodiscard]] VkDevice         getLogicalDevice () const { return logicalDevice ; }
+    [[nodiscard]] vk::PhysicalDevice getPhysicalDevice() const { return physicalDevice; }
+    [[nodiscard]] vk::Device         getLogicalDevice () const { return logicalDevice ; }
 
     [[nodiscard]] const QueueFamilyIndices& getQueueFamilyIndices() const { return _queueFamilyIndices; }
 
 private:
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-    VkDevice         logicalDevice  = VK_NULL_HANDLE;
+    vk::PhysicalDevice physicalDevice{};
+    vk::Device         logicalDevice {};
 
     QueueFamilyIndices _queueFamilyIndices;
 
-    VkQueue graphicsQueue = VK_NULL_HANDLE;
-    VkQueue presentQueue  = VK_NULL_HANDLE;
+    vk::Queue graphicsQueue{};
+    vk::Queue presentQueue {};
 
-    static bool isPhysicalDeviceSuitable(VkPhysicalDevice device);
-    bool        pickPhysicalDevice(VkInstance instance, std::string& errorMessage);
+    static bool isPhysicalDeviceSuitable(vk::PhysicalDevice device);
+    bool        pickPhysicalDevice(vk::Instance instance, std::string& errorMessage);
 
-    static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
+    static QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface);
     bool                      createLogicalDevice(QueueFamilyIndices queueFamilyIndices, std::string& errorMessage);
 };
 
