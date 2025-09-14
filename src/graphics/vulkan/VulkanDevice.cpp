@@ -70,7 +70,6 @@ bool VulkanDevice::isPhysicalDeviceSuitable(const vk::PhysicalDevice device) {
 bool VulkanDevice::pickPhysicalDevice(const vk::Instance instance, std::string& errorMessage) {
     // Enumerate available devides
     const auto availableDevices = VK_CHECK_RESULT(instance.enumeratePhysicalDevices(), errorMessage);
-
     if (availableDevices.result != vk::Result::eSuccess) {
         return false;
     }
@@ -165,6 +164,6 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
     logicalDevice = deviceCreate.value;
 
     graphicsQueue = logicalDevice.getQueue(queueFamilyIndices.graphicsFamily, 0);
-    presentQueue  = logicalDevice.getQueue(queueFamilyIndices.presentFamily, 0);
+    presentQueue  = logicalDevice.getQueue(queueFamilyIndices.presentFamily , 0);
     return true;
 }

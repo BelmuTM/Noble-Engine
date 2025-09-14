@@ -1,6 +1,6 @@
 #pragma once
-#ifndef BAZARENGINE_PLATFORM_H
-#define BAZARENGINE_PLATFORM_H
+#ifndef NOBLEENGINE_PLATFORM_H
+#define NOBLEENGINE_PLATFORM_H
 
 #include <memory>
 #include <string>
@@ -64,4 +64,4 @@ namespace Platform {
     std::vector<const char*> getVulkanExtensions();
 }
 
-#endif //BAZARENGINE_PLATFORM_H
+#endif //NOBLEENGINE_PLATFORM_H

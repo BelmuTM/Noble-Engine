@@ -47,7 +47,7 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
     vk::ApplicationInfo applicationInfo{};
     applicationInfo.pApplicationName   = "Bazar";
     applicationInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.pEngineName        = "BazarEngine";
+    applicationInfo.pEngineName        = "NobleEngine";
     applicationInfo.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
     applicationInfo.apiVersion         = Engine::VULKAN_VERSION;
 

@@ -1,6 +1,6 @@
 #pragma once
-#ifndef BAZARENGINE_GRAPHICSAPI_H
-#define BAZARENGINE_GRAPHICSAPI_H
+#ifndef NOBLEENGINE_GRAPHICSAPI_H
+#define NOBLEENGINE_GRAPHICSAPI_H
 
 #include "core/platform/Platform.h"
 
@@ -14,4 +14,4 @@ public:
     virtual void               drawFrame() = 0;
 };
 
-#endif //BAZARENGINE_GRAPHICSAPI_H
+#endif //NOBLEENGINE_GRAPHICSAPI_H

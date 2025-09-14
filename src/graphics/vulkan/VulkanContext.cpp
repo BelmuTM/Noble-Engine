@@ -1,5 +1,8 @@
 #include "VulkanContext.h"
-#include "core/Engine.h"
+
+#include <ranges>
+
+#include "core/debug/Logger.h"
 
 VulkanContext::~VulkanContext() {
     shutdown();
@@ -7,30 +10,21 @@ VulkanContext::~VulkanContext() {
 
 bool VulkanContext::init(const Platform::Window& window) {
     std::string errorMessage;
-
-    if (!instance.create(errorMessage)) {
-        Engine::fatalExit(errorMessage);
-    }
-
-    if (!surface.create(&instance.getVkInstance(), window, errorMessage)) {
-        Engine::fatalExit(errorMessage);
-    }
-
-    if (!device.create(instance, surface, errorMessage)) {
-        Engine::fatalExit(errorMessage);
-    }
-
-    if (!swapchain.create(window, device, surface, errorMessage)) {
-        Engine::fatalExit(errorMessage);
-    }
+    createVulkanEntity(instance, errorMessage);
+    createVulkanEntity(surface, errorMessage, &instance.getVkInstance(), window);
+    createVulkanEntity(device, errorMessage, instance, surface);
+    createVulkanEntity(swapchain, errorMessage, window, device, surface);
+    Logger::info("Created Vulkan entities");
     return true;
 }
 
 void VulkanContext::shutdown() {
-    swapchain.destroy();
-    surface.destroy();
-    device.destroy();
-    instance.destroy();
+    // Iterate each destroy function and call them
+    for (auto & it : std::ranges::reverse_view(deletionQueue)) {
+        it();
+    }
+    deletionQueue.clear();
+    Logger::info("Destroyed Vulkan entities");
 }
 
 void VulkanContext::drawFrame() {

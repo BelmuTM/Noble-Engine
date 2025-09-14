@@ -1,6 +1,6 @@
 #pragma once
-#ifndef BAZARENGINE_VULKANSURFACE_H
-#define BAZARENGINE_VULKANSURFACE_H
+#ifndef NOBLEENGINE_VULKANSURFACE_H
+#define NOBLEENGINE_VULKANSURFACE_H
 
 #include "core/platform/Platform.h"
 
@@ -39,4 +39,4 @@ private:
     bool createSurface(std::string& errorMessage);
 };
 
-#endif //BAZARENGINE_VULKANSURFACE_H
+#endif //NOBLEENGINE_VULKANSURFACE_H

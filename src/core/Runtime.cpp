@@ -14,7 +14,7 @@ int main() {
         Engine::fatalExit(ERROR_MESSAGE(Platform::init));
     }
 
-    const Platform::Window window(800, 600, "BazarEngine");
+    const Platform::Window window(800, 600, "Noble Engine");
     window.show();
 
     using highResolutionClock = std::chrono::high_resolution_clock;

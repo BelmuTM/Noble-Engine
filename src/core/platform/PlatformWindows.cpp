@@ -19,7 +19,7 @@
 
 static HINSTANCE g_hInstance = nullptr;
 
-static constexpr wchar_t CLASS_NAME[] = L"BazarEngine_Window";
+static constexpr wchar_t CLASS_NAME[] = L"NobleEngine_Window";
 
 std::vector<const char*> Platform::getVulkanExtensions() {
     return {

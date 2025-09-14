@@ -1,6 +1,6 @@
 #pragma once
-#ifndef BAZARENGINE_LOGGER_H
-#define BAZARENGINE_LOGGER_H
+#ifndef NOBLEENGINE_LOGGER_H
+#define NOBLEENGINE_LOGGER_H
 
 #define ERROR_MESSAGE(func) Logger::formatErrorMessage(#func)
 #define ERROR_MESSAGE_CODE(func, errorCode) Logger::formatErrorMessage(#func, errorCode)
@@ -29,4 +29,4 @@ namespace Logger {
     };
 }
 
-#endif //BAZARENGINE_LOGGER_H
+#endif //NOBLEENGINE_LOGGER_H

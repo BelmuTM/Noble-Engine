@@ -1,6 +1,6 @@
 #pragma once
-#ifndef BAZARENGINE_ENGINE_H
-#define BAZARENGINE_ENGINE_H
+#ifndef NOBLEENGINE_ENGINE_H
+#define NOBLEENGINE_ENGINE_H
 
 // Behavior macros
 #define LOG_FILE_WRITE
@@ -19,4 +19,4 @@ namespace Engine {
     [[noreturn]] void fatalExit(const std::string& message);
 }
 
-#endif //BAZARENGINE_ENGINE_H
+#endif //NOBLEENGINE_ENGINE_H

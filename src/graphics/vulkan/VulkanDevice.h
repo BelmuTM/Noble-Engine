@@ -1,6 +1,6 @@
 #pragma once
-#ifndef BAZARENGINE_VULKANDEVICE_H
-#define BAZARENGINE_VULKANDEVICE_H
+#ifndef NOBLEENGINE_VULKANDEVICE_H
+#define NOBLEENGINE_VULKANDEVICE_H
 
 #include <string>
 
@@ -50,4 +50,4 @@ private:
     bool                      createLogicalDevice(QueueFamilyIndices queueFamilyIndices, std::string& errorMessage);
 };
 
-#endif //BAZARENGINE_VULKANDEVICE_H
+#endif //NOBLEENGINE_VULKANDEVICE_H

@@ -1,6 +1,6 @@
 #pragma once
-#ifndef BAZARENGINE_VULKANSWAPCHAIN_H
-#define BAZARENGINE_VULKANSWAPCHAIN_H
+#ifndef NOBLEENGINE_VULKANSWAPCHAIN_H
+#define NOBLEENGINE_VULKANSWAPCHAIN_H
 
 #include "core/platform/Platform.h"
 #include "VulkanDevice.h"
@@ -54,4 +54,4 @@ private:
     [[nodiscard]] vk::Extent2D  chooseSwapExtent2D(const vk::SurfaceCapabilitiesKHR& capabilities) const;
 };
 
-#endif //BAZARENGINE_VULKANSWAPCHAIN_H
+#endif //NOBLEENGINE_VULKANSWAPCHAIN_H

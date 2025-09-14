@@ -1,6 +1,6 @@
 #pragma once
-#ifndef BAZARENGINE_VULKANDEBUGGER_H
-#define BAZARENGINE_VULKANDEBUGGER_H
+#ifndef NOBLEENGINE_VULKANDEBUGGER_H
+#define NOBLEENGINE_VULKANDEBUGGER_H
 
 #include <string>
 
@@ -25,4 +25,4 @@ namespace VulkanDebugger {
 
 #define VK_CHECK_RESULT(expr, errorVar) VulkanDebugger::checkVulkanResult(#expr, [&]{ return expr; }, errorVar)
 
-#endif //BAZARENGINE_VULKANDEBUGGER_H
+#endif //NOBLEENGINE_VULKANDEBUGGER_H

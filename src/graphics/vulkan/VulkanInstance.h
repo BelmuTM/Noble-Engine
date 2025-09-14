@@ -1,6 +1,6 @@
 #pragma once
-#ifndef BAZARENGINE_VULKANINSTANCE_H
-#define BAZARENGINE_VULKANINSTANCE_H
+#ifndef NOBLEENGINE_VULKANINSTANCE_H
+#define NOBLEENGINE_VULKANINSTANCE_H
 
 #include <string>
 #include <vector>
@@ -44,4 +44,4 @@ private:
     );
 };
 
-#endif //BAZARENGINE_VULKANINSTANCE_H
+#endif //NOBLEENGINE_VULKANINSTANCE_H

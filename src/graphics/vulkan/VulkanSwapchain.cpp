@@ -173,8 +173,8 @@ bool VulkanSwapchain::createImageViews(std::string& errorMessage) {
 
     const vk::Device logicalDevice = _device->getLogicalDevice();
 
-    for (size_t i = 0; i < swapchainImages.size(); i++) {
-        imageViewCreateInfo.image = swapchainImages[i];
+    for (const auto swapchainImage : swapchainImages) {
+        imageViewCreateInfo.image = swapchainImage;
 
         const auto imageViewCreate = VK_CHECK_RESULT(logicalDevice.createImageView(imageViewCreateInfo), errorMessage);
         if (imageViewCreate.result != vk::Result::eSuccess) {
