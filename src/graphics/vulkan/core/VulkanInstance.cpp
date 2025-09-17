@@ -1,5 +1,5 @@
 #include "VulkanInstance.h"
-#include "VulkanDebugger.h"
+#include "../common/VulkanDebugger.h"
 
 #include "core/Engine.h"
 #include "core/debug/Logger.h"
@@ -45,7 +45,7 @@ std::vector<const char*> VulkanInstance::getRequiredExtensions() {
 
 bool VulkanInstance::createInstance(std::string& errorMessage) {
     vk::ApplicationInfo applicationInfo{};
-    applicationInfo.pApplicationName   = "Bazar";
+    applicationInfo.pApplicationName   = "Noble";
     applicationInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     applicationInfo.pEngineName        = "NobleEngine";
     applicationInfo.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
@@ -100,11 +100,10 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
 
     // Create the instance
     vk::InstanceCreateInfo instanceInfo{};
-    instanceInfo.pApplicationInfo        = &applicationInfo;
-    instanceInfo.enabledExtensionCount   = static_cast<uint32_t>(extensions.size());
-    instanceInfo.ppEnabledExtensionNames = extensions.data();
-    instanceInfo.enabledLayerCount       = static_cast<uint32_t>(layers.size());
-    instanceInfo.ppEnabledLayerNames     = layers.data();
+    instanceInfo
+        .setPApplicationInfo(&applicationInfo)
+        .setPEnabledExtensionNames(extensions)
+        .setPEnabledLayerNames(layers);
 
     const auto instanceCreate = VK_CHECK_RESULT(vk::createInstance(instanceInfo, nullptr), errorMessage);
     if (instanceCreate.result != vk::Result::eSuccess) {

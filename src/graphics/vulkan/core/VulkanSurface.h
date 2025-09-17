@@ -26,14 +26,14 @@ public:
     VulkanSurface& operator=(VulkanSurface&&)      = delete;
 
     [[nodiscard]] bool create(
-        vk::Instance* instance, const Platform::Window& window, std::string& errorMessage
+        const vk::Instance* instance, const Platform::Window& window, std::string& errorMessage
     ) noexcept;
     void destroy() noexcept;
 
 private:
     const Platform::Window* _window = nullptr;
+    const vk::Instance*   _instance = nullptr;
 
-    vk::Instance*  _instance = nullptr;
     vk::SurfaceKHR surface{};
 
     bool createSurface(std::string& errorMessage);

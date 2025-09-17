@@ -1,5 +1,5 @@
 #include "VulkanDevice.h"
-#include "VulkanDebugger.h"
+#include "../common/VulkanDebugger.h"
 #include "core/debug/Logger.h"
 
 #include <algorithm>
@@ -143,21 +143,29 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
     // Queue priority is constant and set to one because we are using a single queue
     static constexpr float queuePriority = 1.0f;
 
-    vk::DeviceQueueCreateInfo deviceQueueCreateInfo;
-    deviceQueueCreateInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
-    deviceQueueCreateInfo.queueCount       = 1;
-    deviceQueueCreateInfo.pQueuePriorities = &queuePriority;
+    vk::DeviceQueueCreateInfo deviceQueueInfo{};
+    deviceQueueInfo
+        .setQueueFamilyIndex(queueFamilyIndices.graphicsFamily)
+        .setQueueCount(1)
+        .setQueuePriorities(queuePriority);
 
-    constexpr vk::PhysicalDeviceVulkan13Features deviceFeatures;
+    vk::PhysicalDeviceVulkan11Features deviceFeatures_1_1{};
+    deviceFeatures_1_1
+        .setShaderDrawParameters(vk::True);
 
-    vk::DeviceCreateInfo deviceCreateInfo;
-    deviceCreateInfo.pNext                   = &deviceFeatures;
-    deviceCreateInfo.queueCreateInfoCount    = 1;
-    deviceCreateInfo.pQueueCreateInfos       = &deviceQueueCreateInfo;
-    deviceCreateInfo.enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size());
-    deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
+    vk::PhysicalDeviceVulkan13Features deviceFeatures_1_3{};
+    deviceFeatures_1_3
+        .setPNext(&deviceFeatures_1_1)
+        .setDynamicRendering(vk::True);
 
-    const auto deviceCreate = VK_CHECK_RESULT(physicalDevice.createDevice(deviceCreateInfo), errorMessage);
+    vk::DeviceCreateInfo deviceInfo{};
+    deviceInfo
+        .setPNext(&deviceFeatures_1_3)
+        .setQueueCreateInfoCount(1)
+        .setQueueCreateInfos(deviceQueueInfo)
+        .setPEnabledExtensionNames(deviceExtensions);
+
+    const auto deviceCreate = VK_CHECK_RESULT(physicalDevice.createDevice(deviceInfo), errorMessage);
     if (deviceCreate.result != vk::Result::eSuccess) {
         return false;
     }

@@ -9,6 +9,8 @@
 #include "VulkanSurface.h"
 #include "VulkanSwapchain.h"
 
+#include "../pipeline/VulkanGraphicsPipeline.h"
+
 #include "core/Engine.h"
 
 #include <functional>
@@ -27,15 +29,16 @@ private:
     VulkanDevice    device;
     VulkanSurface   surface;
     VulkanSwapchain swapchain;
+    VulkanGraphicsPipeline pipeline;
 
-    std::vector<std::function<void()>> deletionQueue;
+    std::vector<std::function<void()>> entityDeletionQueue;
 
     template<typename Resource, typename... Args>
     void createVulkanEntity(Resource& res, std::string& errorMessage, Args&&... args) {
         if (!res.create(std::forward<Args>(args)..., errorMessage)) {
             Engine::fatalExit(errorMessage);
         }
-        deletionQueue.push_back([&res] { res.destroy(); });
+        entityDeletionQueue.push_back([&res] { res.destroy(); });
     }
 };
 

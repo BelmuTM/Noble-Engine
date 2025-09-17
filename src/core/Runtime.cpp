@@ -5,7 +5,7 @@
 #include <chrono>
 #include <iostream>
 
-#include "graphics/vulkan/VulkanContext.h"
+#include "../graphics/vulkan/core/VulkanContext.h"
 
 int main() {
     Logger::Manager loggerManager;

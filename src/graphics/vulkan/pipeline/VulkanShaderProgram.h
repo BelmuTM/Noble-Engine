@@ -1,0 +1,35 @@
+#pragma once
+#ifndef NOBLEENGINE_VULKANSHADERPROGRAM_H
+#define NOBLEENGINE_VULKANSHADERPROGRAM_H
+
+#include <vector>
+
+#define VULKAN_HPP_NO_EXCEPTIONS
+#include <vulkan/vulkan.hpp>
+
+class VulkanShaderProgram {
+public:
+    explicit VulkanShaderProgram(const vk::Device* device) : _device(device) {
+    }
+
+    ~VulkanShaderProgram();
+
+    bool loadFromFiles(const std::vector<std::string>& shaderPaths, std::string& errorMessage);
+
+    [[nodiscard]] const std::vector<vk::PipelineShaderStageCreateInfo>& getStages() const { return shaderStages; }
+
+private:
+    const vk::Device* _device;
+
+    std::vector<vk::ShaderModule>                  shaderModules;
+    std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
+
+    void clearShaderModules();
+
+    static std::string extractStageExtension(const std::string& path) noexcept;
+    static std::vector<char> readShaderFile(const std::string& path) noexcept;
+
+    vk::ShaderModule createShaderModule(const std::vector<char>& code, std::string& errorMessage) const;
+};
+
+#endif //NOBLEENGINE_VULKANSHADERPROGRAM_H

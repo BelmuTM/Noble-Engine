@@ -14,16 +14,17 @@ bool VulkanContext::init(const Platform::Window& window) {
     createVulkanEntity(surface, errorMessage, &instance.getVkInstance(), window);
     createVulkanEntity(device, errorMessage, instance, surface);
     createVulkanEntity(swapchain, errorMessage, window, device, surface);
+    createVulkanEntity(pipeline, errorMessage, &device.getLogicalDevice(), swapchain);
     Logger::info("Created Vulkan entities");
     return true;
 }
 
 void VulkanContext::shutdown() {
     // Iterate each destroy function and call them
-    for (auto & it : std::ranges::reverse_view(deletionQueue)) {
+    for (auto & it : std::ranges::reverse_view(entityDeletionQueue)) {
         it();
     }
-    deletionQueue.clear();
+    entityDeletionQueue.clear();
     Logger::info("Destroyed Vulkan entities");
 }
 

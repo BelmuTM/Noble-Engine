@@ -12,11 +12,6 @@ public:
     VulkanDevice() = default;
     ~VulkanDevice() = default;
 
-    VulkanDevice(const VulkanDevice&)            = delete;
-    VulkanDevice& operator=(const VulkanDevice&) = delete;
-    VulkanDevice(VulkanDevice&&)                 = delete;
-    VulkanDevice& operator=(VulkanDevice&&)      = delete;
-
     [[nodiscard]] bool create(vk::Instance instance, vk::SurfaceKHR surface, std::string& errorMessage) noexcept;
     void               destroy() noexcept;
 
@@ -30,7 +25,9 @@ public:
     };
 
     [[nodiscard]] vk::PhysicalDevice getPhysicalDevice() const { return physicalDevice; }
-    [[nodiscard]] vk::Device         getLogicalDevice () const { return logicalDevice ; }
+
+    [[nodiscard]] vk::Device  getLogicalDevice() const { return logicalDevice; }
+    [[nodiscard]] vk::Device& getLogicalDevice()       { return logicalDevice; }
 
     [[nodiscard]] const QueueFamilyIndices& getQueueFamilyIndices() const { return _queueFamilyIndices; }
 

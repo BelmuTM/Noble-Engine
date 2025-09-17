@@ -1,10 +1,7 @@
 #include "VulkanSwapchain.h"
-#include "VulkanDebugger.h"
+#include "../common/VulkanDebugger.h"
 
 #include "core/debug/Logger.h"
-
-#include <algorithm>
-#include <limits>
 
 bool VulkanSwapchain::create(
     const Platform::Window& window, const VulkanDevice& device, const vk::SurfaceKHR surface, std::string& errorMessage
@@ -31,6 +28,7 @@ void VulkanSwapchain::destroy() noexcept {
 
     if (swapchain) {
         _device->getLogicalDevice().destroySwapchainKHR(swapchain);
+        _window   = nullptr;
         swapchain = nullptr;
     }
 }
@@ -113,39 +111,40 @@ bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string&
         imageCount = std::min(imageCount, capabilities.maxImageCount);
     }
 
-    vk::SwapchainCreateInfoKHR swapchainCreateInfo{};
-    swapchainCreateInfo.flags            = vk::SwapchainCreateFlagsKHR();
-    swapchainCreateInfo.surface          = surface;
-    swapchainCreateInfo.minImageCount    = minImageCount;
-    swapchainCreateInfo.imageFormat      = surfaceFormat.format;
-    swapchainCreateInfo.imageColorSpace  = surfaceFormat.colorSpace;
-    swapchainCreateInfo.imageExtent      = swapExtent;
-    swapchainCreateInfo.imageArrayLayers = 1;
-    swapchainCreateInfo.imageUsage       = vk::ImageUsageFlagBits::eColorAttachment;
-    swapchainCreateInfo.imageSharingMode = vk::SharingMode::eExclusive;
-    swapchainCreateInfo.preTransform     = capabilities.currentTransform;
-    swapchainCreateInfo.compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-    swapchainCreateInfo.presentMode      = presentMode;
-    swapchainCreateInfo.clipped          = vk::True;
-    swapchainCreateInfo.oldSwapchain     = nullptr;
+    vk::SwapchainCreateInfoKHR swapchainInfo{};
+    swapchainInfo
+        .setFlags(vk::SwapchainCreateFlagsKHR{})
+        .setSurface(surface)
+        .setMinImageCount(minImageCount)
+        .setImageFormat(surfaceFormat.format)
+        .setImageColorSpace(surfaceFormat.colorSpace)
+        .setImageExtent(swapExtent)
+        .setImageArrayLayers(1)
+        .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
+        .setImageSharingMode(vk::SharingMode::eExclusive)
+        .setPreTransform(capabilities.currentTransform)
+        .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
+        .setPresentMode(presentMode)
+        .setClipped(VK_TRUE)
+        .setOldSwapchain(nullptr);
 
     auto [graphicsFamily, presentFamily] = _device->getQueueFamilyIndices();
 
     const uint32_t queueFamilyIndices[] = {graphicsFamily, presentFamily};
 
     if (graphicsFamily != presentFamily) {
-        swapchainCreateInfo.imageSharingMode      = vk::SharingMode::eConcurrent;
-        swapchainCreateInfo.queueFamilyIndexCount = 2;
-        swapchainCreateInfo.pQueueFamilyIndices   = queueFamilyIndices;
+        swapchainInfo.setImageSharingMode(vk::SharingMode::eConcurrent);
+        swapchainInfo.setQueueFamilyIndexCount(2);
+        swapchainInfo.setQueueFamilyIndices(queueFamilyIndices);
     } else {
-        swapchainCreateInfo.imageSharingMode      = vk::SharingMode::eExclusive;
-        swapchainCreateInfo.queueFamilyIndexCount = 0;
-        swapchainCreateInfo.pQueueFamilyIndices   = nullptr;
+        swapchainInfo.setImageSharingMode(vk::SharingMode::eExclusive);
+        swapchainInfo.setQueueFamilyIndexCount(0);
+        swapchainInfo.setQueueFamilyIndices(nullptr);
     }
 
     const vk::Device logicalDevice = _device->getLogicalDevice();
 
-    const auto swapchainCreate = VK_CHECK_RESULT(logicalDevice.createSwapchainKHR(swapchainCreateInfo), errorMessage);
+    const auto swapchainCreate = VK_CHECK_RESULT(logicalDevice.createSwapchainKHR(swapchainInfo), errorMessage);
     if (swapchainCreate.result != vk::Result::eSuccess) {
         return false;
     }
@@ -166,17 +165,18 @@ bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string&
 bool VulkanSwapchain::createImageViews(std::string& errorMessage) {
     swapchainImageViews.clear();
 
-    vk::ImageViewCreateInfo imageViewCreateInfo{};
-    imageViewCreateInfo.viewType         = vk::ImageViewType::e2D;
-    imageViewCreateInfo.format           = swapchainImageFormat;
-    imageViewCreateInfo.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+    vk::ImageViewCreateInfo imageViewInfo{};
+    imageViewInfo
+        .setViewType(vk::ImageViewType::e2D)
+        .setFormat(swapchainImageFormat)
+        .setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
 
     const vk::Device logicalDevice = _device->getLogicalDevice();
 
     for (const auto swapchainImage : swapchainImages) {
-        imageViewCreateInfo.image = swapchainImage;
+        imageViewInfo.image = swapchainImage;
 
-        const auto imageViewCreate = VK_CHECK_RESULT(logicalDevice.createImageView(imageViewCreateInfo), errorMessage);
+        const auto imageViewCreate = VK_CHECK_RESULT(logicalDevice.createImageView(imageViewInfo), errorMessage);
         if (imageViewCreate.result != vk::Result::eSuccess) {
             return false;
         }

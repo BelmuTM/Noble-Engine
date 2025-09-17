@@ -26,6 +26,10 @@ public:
     ) noexcept;
     void destroy() noexcept;
 
+    [[nodiscard]] const vk::Format* getFormat() const { return &swapchainImageFormat; }
+
+    [[nodiscard]] vk::Extent2D getExtent2D() const { return swapchainExtent; }
+
 private:
     struct SwapchainSupportInfo {
         vk::SurfaceCapabilitiesKHR        capabilities;
@@ -40,7 +44,7 @@ private:
     std::vector<vk::Image>     swapchainImages;
     std::vector<vk::ImageView> swapchainImageViews;
 
-    vk::Format   swapchainImageFormat = vk::Format::eUndefined;
+    vk::Format swapchainImageFormat = vk::Format::eUndefined;
     vk::Extent2D swapchainExtent{};
 
     bool createSwapchain(vk::SurfaceKHR surface, std::string& errorMessage);
