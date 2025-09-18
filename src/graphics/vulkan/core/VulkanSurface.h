@@ -4,17 +4,17 @@
 
 #include "core/platform/Platform.h"
 
-#include <string>
-
-#define VULKAN_HPP_NO_EXCEPTIONS
 #if defined(_WIN32) || defined(_WIN64)
 #define VK_USE_PLATFORM_WIN32_KHR
 #endif
-#include <vulkan/vulkan.hpp>
+
+#include "graphics/vulkan/common/VulkanHeader.h"
+
+#include <string>
 
 class VulkanSurface {
 public:
-    VulkanSurface() = default;
+    VulkanSurface()  = default;
     ~VulkanSurface() = default;
 
     // Implicit conversion operator
@@ -31,8 +31,8 @@ public:
     void destroy() noexcept;
 
 private:
-    const Platform::Window* _window = nullptr;
-    const vk::Instance*   _instance = nullptr;
+    const Platform::Window* _window   = nullptr;
+    const vk::Instance*     _instance = nullptr;
 
     vk::SurfaceKHR surface{};
 

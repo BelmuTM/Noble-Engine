@@ -3,18 +3,20 @@
 #define NOBLEENGINE_VULKANSWAPCHAIN_H
 
 #include "core/platform/Platform.h"
+
 #include "VulkanDevice.h"
+#include "graphics/vulkan/common/VulkanHeader.h"
 
 #include <string>
 #include <vector>
-
-#define VULKAN_HPP_NO_EXCEPTIONS
-#include <vulkan/vulkan.hpp>
 
 class VulkanSwapchain {
 public:
     VulkanSwapchain()  = default;
     ~VulkanSwapchain() = default;
+
+    // Implicit conversion operator
+    operator vk::SwapchainKHR() const { return swapchain; }
 
     VulkanSwapchain(const VulkanSwapchain&)            = delete;
     VulkanSwapchain& operator=(const VulkanSwapchain&) = delete;
@@ -26,7 +28,13 @@ public:
     ) noexcept;
     void destroy() noexcept;
 
-    [[nodiscard]] const vk::Format* getFormat() const { return &swapchainImageFormat; }
+    //[[nodiscard]] const vk::SwapchainKHR& handle() const { return swapchain; }
+
+    [[nodiscard]] std::vector<vk::Image> getImages() const { return swapchainImages; }
+
+    [[nodiscard]] std::vector<vk::ImageView> getImageViews() const { return swapchainImageViews; }
+
+    [[nodiscard]] vk::Format getFormat() const { return swapchainImageFormat; }
 
     [[nodiscard]] vk::Extent2D getExtent2D() const { return swapchainExtent; }
 
@@ -44,11 +52,10 @@ private:
     std::vector<vk::Image>     swapchainImages;
     std::vector<vk::ImageView> swapchainImageViews;
 
-    vk::Format swapchainImageFormat = vk::Format::eUndefined;
+    vk::Format   swapchainImageFormat = vk::Format::eUndefined;
     vk::Extent2D swapchainExtent{};
 
     bool createSwapchain(vk::SurfaceKHR surface, std::string& errorMessage);
-
     bool createImageViews(std::string& errorMessage);
 
     static SwapchainSupportInfo querySwapchainSupport(vk::PhysicalDevice device, vk::SurfaceKHR _surface);

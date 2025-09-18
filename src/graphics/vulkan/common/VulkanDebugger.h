@@ -7,15 +7,21 @@
 #include <vulkan/vulkan.hpp>
 
 namespace VulkanDebugger {
-    inline std::string formatVulkanErrorMessage(const std::string& expression, vk::Result result) {
-        return "Vulkan call failed: " + expression + ", result=" + vk::to_string(result);
-    }
+    std::string formatVulkanErrorMessage(const std::string& expression, vk::Result result);
 
-    template <typename F>
-    auto checkVulkanResult(const char* exprStr, F&& func, std::string& errorMessage) {
+    template <typename Func>
+    auto checkVulkanResult(const char* exprStr, Func&& func, std::string& errorMessage) {
         auto returnValue = func();
-        if (returnValue.result != vk::Result::eSuccess) {
-            errorMessage = formatVulkanErrorMessage(exprStr, returnValue.result);
+
+        if constexpr (std::is_same_v<decltype(returnValue), vk::Result>) {
+            if (returnValue != vk::Result::eSuccess) {
+                errorMessage = formatVulkanErrorMessage(exprStr, returnValue);
+            }
+        } else {
+            // assume vk::ResultValue<T>
+            if (returnValue.result != vk::Result::eSuccess) {
+                errorMessage = formatVulkanErrorMessage(exprStr, returnValue.result);
+            }
         }
         return returnValue;
     }

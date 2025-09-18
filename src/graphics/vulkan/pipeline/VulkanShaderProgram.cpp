@@ -1,5 +1,5 @@
 #include "VulkanShaderProgram.h"
-#include "../common/VulkanDebugger.h"
+#include "graphics/vulkan/common/VulkanDebugger.h"
 
 #include <fstream>
 #include <unordered_map>

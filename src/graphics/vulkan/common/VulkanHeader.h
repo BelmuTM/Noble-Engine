@@ -1,0 +1,8 @@
+#pragma once
+#ifndef NOBLEENGINE_VULKANHEADER_H
+#define NOBLEENGINE_VULKANHEADER_H
+
+#define VULKAN_HPP_NO_EXCEPTIONS
+#include <vulkan/vulkan.hpp>
+
+#endif //NOBLEENGINE_VULKANHEADER_H

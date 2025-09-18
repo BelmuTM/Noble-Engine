@@ -1,5 +1,5 @@
 #include "VulkanInstance.h"
-#include "../common/VulkanDebugger.h"
+#include "graphics/vulkan/common/VulkanDebugger.h"
 
 #include "core/Engine.h"
 #include "core/debug/Logger.h"
@@ -78,10 +78,7 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
     layers = validationLayers;
 
     const auto availableLayers = VK_CHECK_RESULT(vk::enumerateInstanceLayerProperties(), errorMessage);
-
-    if (availableLayers.result != vk::Result::eSuccess) {
-        return false;
-    }
+    if (availableLayers.result != vk::Result::eSuccess) return false;
 
     // Ensure enabled validation layers are supported by the drivers
     std::unordered_set<std::string> availableLayerNames;
@@ -106,9 +103,8 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
         .setPEnabledLayerNames(layers);
 
     const auto instanceCreate = VK_CHECK_RESULT(vk::createInstance(instanceInfo, nullptr), errorMessage);
-    if (instanceCreate.result != vk::Result::eSuccess) {
-        return false;
-    }
+    if (instanceCreate.result != vk::Result::eSuccess) return false;
+
     instance = instanceCreate.value;
     return true;
 }
@@ -157,9 +153,8 @@ bool VulkanInstance::setupDebugMessenger(std::string& errorMessage) {
     const auto debugUtilsMessengerCreate =
         VK_CHECK_RESULT(instance.createDebugUtilsMessengerEXT(debugUtilsMessengerInfo, nullptr, dldi), errorMessage);
 
-    if (debugUtilsMessengerCreate.result != vk::Result::eSuccess) {
-        return false;
-    }
+    if (debugUtilsMessengerCreate.result != vk::Result::eSuccess) return false;
+
     debugMessenger = debugUtilsMessengerCreate.value;
 
 #endif

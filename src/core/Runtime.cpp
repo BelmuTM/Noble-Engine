@@ -5,7 +5,8 @@
 #include <chrono>
 #include <iostream>
 
-#include "../graphics/vulkan/core/VulkanContext.h"
+#include "graphics/vulkan/common/VulkanDebugger.h"
+#include "graphics/vulkan/core/VulkanRenderer.h"
 
 int main() {
     Logger::Manager loggerManager;
@@ -19,8 +20,8 @@ int main() {
 
     using highResolutionClock = std::chrono::high_resolution_clock;
 
-    VulkanContext vulkanContext;
-    vulkanContext.init(window);
+    VulkanRenderer renderer;
+    renderer.init(window);
 
     auto previousTime  = highResolutionClock::now();
     auto lastFpsUpdate = previousTime;
@@ -30,6 +31,8 @@ int main() {
 
     while (Platform::pollEvents()) {
         auto currentTime = highResolutionClock::now();
+
+        renderer.drawFrame();
 
         frameCount++;
 
@@ -45,6 +48,8 @@ int main() {
 
         previousTime = currentTime;
     }
+
+    renderer.getContext().getDevice().getLogicalDevice().waitIdle();
 
     Platform::shutdown();
 

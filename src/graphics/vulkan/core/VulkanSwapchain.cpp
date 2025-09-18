@@ -1,5 +1,5 @@
 #include "VulkanSwapchain.h"
-#include "../common/VulkanDebugger.h"
+#include "graphics/vulkan/common/VulkanDebugger.h"
 
 #include "core/debug/Logger.h"
 
@@ -28,9 +28,10 @@ void VulkanSwapchain::destroy() noexcept {
 
     if (swapchain) {
         _device->getLogicalDevice().destroySwapchainKHR(swapchain);
-        _window   = nullptr;
-        swapchain = nullptr;
     }
+
+    _window   = nullptr;
+    swapchain = nullptr;
 }
 
 VulkanSwapchain::SwapchainSupportInfo VulkanSwapchain::querySwapchainSupport(
@@ -125,7 +126,7 @@ bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string&
         .setPreTransform(capabilities.currentTransform)
         .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
         .setPresentMode(presentMode)
-        .setClipped(VK_TRUE)
+        .setClipped(vk::True)
         .setOldSwapchain(nullptr);
 
     auto [graphicsFamily, presentFamily] = _device->getQueueFamilyIndices();
@@ -145,20 +146,17 @@ bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string&
     const vk::Device logicalDevice = _device->getLogicalDevice();
 
     const auto swapchainCreate = VK_CHECK_RESULT(logicalDevice.createSwapchainKHR(swapchainInfo), errorMessage);
-    if (swapchainCreate.result != vk::Result::eSuccess) {
-        return false;
-    }
+    if (swapchainCreate.result != vk::Result::eSuccess) return false;
+
     swapchain = swapchainCreate.value;
 
     swapchainImageFormat = surfaceFormat.format;
     swapchainExtent      = swapExtent;
 
     const auto availableSwapchainImages = VK_CHECK_RESULT(logicalDevice.getSwapchainImagesKHR(swapchain), errorMessage);
-    if (availableSwapchainImages.result != vk::Result::eSuccess) {
-        return false;
-    }
-    swapchainImages = availableSwapchainImages.value;
+    if (availableSwapchainImages.result != vk::Result::eSuccess) return false;
 
+    swapchainImages = availableSwapchainImages.value;
     return true;
 }
 
@@ -177,9 +175,8 @@ bool VulkanSwapchain::createImageViews(std::string& errorMessage) {
         imageViewInfo.image = swapchainImage;
 
         const auto imageViewCreate = VK_CHECK_RESULT(logicalDevice.createImageView(imageViewInfo), errorMessage);
-        if (imageViewCreate.result != vk::Result::eSuccess) {
-            return false;
-        }
+        if (imageViewCreate.result != vk::Result::eSuccess) return false;
+
         swapchainImageViews.emplace_back(imageViewCreate.value);
     }
     return true;

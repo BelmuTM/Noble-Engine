@@ -1,5 +1,6 @@
 #include "VulkanDevice.h"
-#include "../common/VulkanDebugger.h"
+#include "graphics/vulkan/common/VulkanDebugger.h"
+
 #include "core/debug/Logger.h"
 
 #include <algorithm>
@@ -53,9 +54,7 @@ bool VulkanDevice::isPhysicalDeviceSuitable(const vk::PhysicalDevice device) {
     }
 
     const auto availableDeviceExtensions = device.enumerateDeviceExtensionProperties();
-    if (availableDeviceExtensions.result != vk::Result::eSuccess) {
-        return false;
-    }
+    if (availableDeviceExtensions.result != vk::Result::eSuccess) return false;
 
     std::unordered_set<std::string> availableExtensionNames;
     std::ranges::transform(availableDeviceExtensions.value,
@@ -70,9 +69,7 @@ bool VulkanDevice::isPhysicalDeviceSuitable(const vk::PhysicalDevice device) {
 bool VulkanDevice::pickPhysicalDevice(const vk::Instance instance, std::string& errorMessage) {
     // Enumerate available devides
     const auto availableDevices = VK_CHECK_RESULT(instance.enumeratePhysicalDevices(), errorMessage);
-    if (availableDevices.result != vk::Result::eSuccess) {
-        return false;
-    }
+    if (availableDevices.result != vk::Result::eSuccess) return false;
 
     // Picking the best suitable candidate within available devices
     auto suitablePhysicalDevices = availableDevices.value | std::views::filter([&](const auto& device) {
@@ -156,7 +153,8 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
     vk::PhysicalDeviceVulkan13Features deviceFeatures_1_3{};
     deviceFeatures_1_3
         .setPNext(&deviceFeatures_1_1)
-        .setDynamicRendering(vk::True);
+        .setDynamicRendering(vk::True)
+        .setSynchronization2(vk::True);
 
     vk::DeviceCreateInfo deviceInfo{};
     deviceInfo
@@ -166,9 +164,8 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
         .setPEnabledExtensionNames(deviceExtensions);
 
     const auto deviceCreate = VK_CHECK_RESULT(physicalDevice.createDevice(deviceInfo), errorMessage);
-    if (deviceCreate.result != vk::Result::eSuccess) {
-        return false;
-    }
+    if (deviceCreate.result != vk::Result::eSuccess) return false;
+
     logicalDevice = deviceCreate.value;
 
     graphicsQueue = logicalDevice.getQueue(queueFamilyIndices.graphicsFamily, 0);

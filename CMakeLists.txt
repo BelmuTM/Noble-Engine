@@ -78,7 +78,7 @@ function(add_slang_shader_target TARGET)
                     -fvk-use-entrypoint-name
                     -o ${SPV_FILE}
                 DEPENDS ${SOURCE}
-                COMMENT "Compiling shader ${SOURCE_NAME} (${STAGE_NAME})"
+                COMMENT "Building SPIR-V ${SPV_FILE}"
                 VERBATIM
             )
         endforeach()

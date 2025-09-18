@@ -2,10 +2,9 @@
 #ifndef NOBLEENGINE_VULKANDEVICE_H
 #define NOBLEENGINE_VULKANDEVICE_H
 
-#include <string>
+#include "graphics/vulkan/common/VulkanHeader.h"
 
-#define VULKAN_HPP_NO_EXCEPTIONS
-#include <vulkan/vulkan.hpp>
+#include <string>
 
 class VulkanDevice {
 public:
@@ -31,14 +30,17 @@ public:
 
     [[nodiscard]] const QueueFamilyIndices& getQueueFamilyIndices() const { return _queueFamilyIndices; }
 
+    [[nodiscard]] vk::Queue getGraphicsQueue() const { return graphicsQueue; }
+    [[nodiscard]] vk::Queue getPresentQueue() const { return presentQueue; }
+
 private:
     vk::PhysicalDevice physicalDevice{};
-    vk::Device         logicalDevice {};
+    vk::Device         logicalDevice{};
 
     QueueFamilyIndices _queueFamilyIndices;
 
     vk::Queue graphicsQueue{};
-    vk::Queue presentQueue {};
+    vk::Queue presentQueue{};
 
     static bool isPhysicalDeviceSuitable(vk::PhysicalDevice device);
     bool        pickPhysicalDevice(vk::Instance instance, std::string& errorMessage);

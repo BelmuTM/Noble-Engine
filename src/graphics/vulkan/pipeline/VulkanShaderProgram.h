@@ -2,10 +2,9 @@
 #ifndef NOBLEENGINE_VULKANSHADERPROGRAM_H
 #define NOBLEENGINE_VULKANSHADERPROGRAM_H
 
-#include <vector>
+#include "graphics/vulkan/common/VulkanHeader.h"
 
-#define VULKAN_HPP_NO_EXCEPTIONS
-#include <vulkan/vulkan.hpp>
+#include <vector>
 
 class VulkanShaderProgram {
 public:

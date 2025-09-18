@@ -2,31 +2,26 @@
 
 #include <ranges>
 
-#include "core/debug/Logger.h"
-
 VulkanContext::~VulkanContext() {
-    shutdown();
+    destroy();
 }
 
-bool VulkanContext::init(const Platform::Window& window) {
-    std::string errorMessage;
-    createVulkanEntity(instance, errorMessage);
-    createVulkanEntity(surface, errorMessage, &instance.getVkInstance(), window);
-    createVulkanEntity(device, errorMessage, instance, surface);
-    createVulkanEntity(swapchain, errorMessage, window, device, surface);
-    createVulkanEntity(pipeline, errorMessage, &device.getLogicalDevice(), swapchain);
-    Logger::info("Created Vulkan entities");
+bool VulkanContext::create(const Platform::Window& window, std::string& errorMessage) {
+    const auto rollback = [&](void*) { destroy(); };
+    std::unique_ptr<void, decltype(rollback)> guard(nullptr, rollback);
+
+    if (!createVulkanEntity(instance, errorMessage)) return false;
+    if (!createVulkanEntity(surface, errorMessage, &instance.getVkInstance(), window)) return false;
+    if (!createVulkanEntity(device, errorMessage, instance, surface)) return false;
+    if (!createVulkanEntity(swapchain, errorMessage, window, device, surface)) return false;
+
+    guard.release();
     return true;
 }
 
-void VulkanContext::shutdown() {
-    // Iterate each destroy function and call them
-    for (auto & it : std::ranges::reverse_view(entityDeletionQueue)) {
-        it();
+void VulkanContext::destroy() {
+    for (auto& destroyFunction : std::ranges::reverse_view(entityDeletionQueue)) {
+        if (destroyFunction) destroyFunction();
     }
     entityDeletionQueue.clear();
-    Logger::info("Destroyed Vulkan entities");
-}
-
-void VulkanContext::drawFrame() {
 }
