@@ -15,6 +15,8 @@ namespace Logger {
 
     std::string formatErrorMessage(const std::string& functionName, int errorCode = -1);
 
+    void log(Level level, const std::string& message);
+
     void debug  (const std::string& message);
     void verbose(const std::string& message);
     void info   (const std::string& message);

@@ -45,8 +45,8 @@ private:
         std::vector<vk::PresentModeKHR>   presentModes;
     };
 
-    const VulkanDevice*     _device = nullptr;
     const Platform::Window* _window = nullptr;
+    const VulkanDevice*     _device = nullptr;
 
     vk::SwapchainKHR           swapchain{};
     std::vector<vk::Image>     swapchainImages;

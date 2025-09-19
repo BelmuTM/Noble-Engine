@@ -32,7 +32,7 @@ public:
 
 private:
     const Platform::Window* _window   = nullptr;
-    const vk::Instance*     _instance = nullptr;
+    const vk::Instance*     _instance = VK_NULL_HANDLE;
 
     vk::SurfaceKHR surface{};
 

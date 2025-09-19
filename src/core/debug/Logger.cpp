@@ -27,7 +27,7 @@ namespace {
     std::mutex              logMutex;
     std::condition_variable logCv;
 
-    std::atomic<bool> running{false};
+    std::atomic running{false};
 
     struct Log {
         Logger::Level                         level = Logger::Level::DEBUG;
@@ -198,12 +198,12 @@ namespace Logger {
         return functionName + " failed (error code: " + (errorCode == -1 ? "N/A" : std::to_string(errorCode)) + ")";
     }
 
-    void debug(const std::string& message) { log(Level::DEBUG, message); }
+    void debug  (const std::string& message) { log(Level::DEBUG, message); }
     void verbose(const std::string& message) { log(Level::VERBOSE, message); }
-    void info(const std::string& message) { log(Level::INFO, message); }
+    void info   (const std::string& message) { log(Level::INFO, message); }
     void warning(const std::string& message) { log(Level::WARNING, message); }
-    void error(const std::string& message) { log(Level::ERROR, message); }
-    void fatal(const std::string& message) { log(Level::FATAL, message); }
+    void error  (const std::string& message) { log(Level::ERROR, message); }
+    void fatal  (const std::string& message) { log(Level::FATAL, message); }
 
     Manager::Manager() {
         init();

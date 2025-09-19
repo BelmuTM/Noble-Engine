@@ -38,17 +38,17 @@ VulkanSwapchain::SwapchainSupportInfo VulkanSwapchain::querySwapchainSupport(
     const vk::PhysicalDevice device, const vk::SurfaceKHR _surface
 ) {
     std::string errorMessage;
-    const auto surfaceCapabilities = VK_CHECK_RESULT(device.getSurfaceCapabilitiesKHR(_surface), errorMessage);
+    const auto surfaceCapabilities = VK_CALL(device.getSurfaceCapabilitiesKHR(_surface), errorMessage);
     if (surfaceCapabilities.result != vk::Result::eSuccess) {
         Logger::error(errorMessage);
     }
 
-    const auto surfaceFormats = VK_CHECK_RESULT(device.getSurfaceFormatsKHR(_surface), errorMessage);
+    const auto surfaceFormats = VK_CALL(device.getSurfaceFormatsKHR(_surface), errorMessage);
     if (surfaceFormats.result != vk::Result::eSuccess) {
         Logger::error(errorMessage);
     }
 
-    const auto surfacePresentModes = VK_CHECK_RESULT(device.getSurfacePresentModesKHR(_surface), errorMessage);
+    const auto surfacePresentModes = VK_CALL(device.getSurfacePresentModesKHR(_surface), errorMessage);
     if (surfacePresentModes.result != vk::Result::eSuccess) {
         Logger::error(errorMessage);
     }
@@ -145,18 +145,12 @@ bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string&
 
     const vk::Device logicalDevice = _device->getLogicalDevice();
 
-    const auto swapchainCreate = VK_CHECK_RESULT(logicalDevice.createSwapchainKHR(swapchainInfo), errorMessage);
-    if (swapchainCreate.result != vk::Result::eSuccess) return false;
-
-    swapchain = swapchainCreate.value;
+    VK_CREATE(logicalDevice.createSwapchainKHR(swapchainInfo), swapchain, errorMessage);
 
     swapchainImageFormat = surfaceFormat.format;
     swapchainExtent      = swapExtent;
 
-    const auto availableSwapchainImages = VK_CHECK_RESULT(logicalDevice.getSwapchainImagesKHR(swapchain), errorMessage);
-    if (availableSwapchainImages.result != vk::Result::eSuccess) return false;
-
-    swapchainImages = availableSwapchainImages.value;
+    VK_CREATE(logicalDevice.getSwapchainImagesKHR(swapchain), swapchainImages, errorMessage);
     return true;
 }
 
@@ -174,7 +168,7 @@ bool VulkanSwapchain::createImageViews(std::string& errorMessage) {
     for (const auto swapchainImage : swapchainImages) {
         imageViewInfo.image = swapchainImage;
 
-        const auto imageViewCreate = VK_CHECK_RESULT(logicalDevice.createImageView(imageViewInfo), errorMessage);
+        const auto imageViewCreate = VK_CALL(logicalDevice.createImageView(imageViewInfo), errorMessage);
         if (imageViewCreate.result != vk::Result::eSuccess) return false;
 
         swapchainImageViews.emplace_back(imageViewCreate.value);

@@ -94,7 +94,7 @@ vk::ShaderModule VulkanShaderProgram::createShaderModule(
     shaderModuleInfo.codeSize = code.size() * sizeof(char);
     shaderModuleInfo.pCode    = reinterpret_cast<const uint32_t*>(code.data());
 
-    const auto shaderModuleCreate = VK_CHECK_RESULT(_device->createShaderModule(shaderModuleInfo), errorMessage);
+    const auto shaderModuleCreate = VK_CALL(_device->createShaderModule(shaderModuleInfo), errorMessage);
     if (shaderModuleCreate.result != vk::Result::eSuccess) {
         return {};
     }

@@ -32,7 +32,7 @@ if(ENABLE_VULKAN_DEBUG_UTILS)
 endif()
 
 ##########################################################
-#                   SHADERS COMPILATION                  #
+#                  SHADERS COMPILATION                   #
 ##########################################################
 
 # Slang setup

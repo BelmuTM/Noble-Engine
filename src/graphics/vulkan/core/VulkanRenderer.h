@@ -22,12 +22,16 @@ private:
     VulkanContext          context;
     VulkanGraphicsPipeline graphicsPipeline;
 
-    vk::CommandPool   commandPool{};
-    vk::CommandBuffer commandBuffer{};
+    int8_t currentFrame = 0;
 
-    vk::Semaphore              imageAvailableSemaphore{};
+    vk::CommandPool                commandPool{};
+    std::vector<vk::CommandBuffer> commandBuffers{};
+
+    std::vector<vk::Semaphore> imageAvailableSemaphores{};
     std::vector<vk::Semaphore> renderFinishedSemaphores{};
-    vk::Fence                  drawFence{};
+    std::vector<vk::Fence>     inFlightFences{};
+
+    std::vector<vk::Fence> imagesInFlight{};
 
     bool createCommandPool(std::string& errorMessage);
     bool createCommandBuffer(std::string& errorMessage);
@@ -35,6 +39,7 @@ private:
     bool createSyncObjects(std::string& errorMessage);
 
     void transitionImageLayout(
+        vk::CommandBuffer       commandBuffer,
         uint32_t                imageIndex,
         vk::ImageLayout         oldLayout,
         vk::ImageLayout         newLayout,
@@ -44,7 +49,7 @@ private:
         vk::PipelineStageFlags2 dstStageMask
     );
 
-    void recordCommandBuffer(uint32_t imageIndex);
+    void recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 };
 
 #endif //NOBLEENGINE_VULKANRENDERER_H

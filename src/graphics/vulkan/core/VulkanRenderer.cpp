@@ -7,49 +7,51 @@
 #include "core/Engine.h"
 #include "core/debug/Logger.h"
 
+static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+
+static constexpr vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
+
 VulkanRenderer::~VulkanRenderer() {
     shutdown();
 }
 
 bool VulkanRenderer::init(const Platform::Window& window) {
     std::string errorMessage = "Failed to create Vulkan context: no error message provided";
-    if (!context.create(window, errorMessage)) {
-        Engine::fatalExit(errorMessage);
-    }
 
-    if (!createSyncObjects(errorMessage)) {
+    const auto rollbackAndExit = [&](void*) {
+        shutdown();
         Engine::fatalExit(errorMessage);
-    }
+    };
+    std::unique_ptr<void, decltype(rollbackAndExit)> guard(nullptr, rollbackAndExit);
 
-    if (!createCommandPool(errorMessage)) {
-        Engine::fatalExit(errorMessage);
-    }
-
-    if (!createCommandBuffer(errorMessage)) {
-        Engine::fatalExit(errorMessage);
-    }
+    if (!context.create(window, errorMessage)) return false;
+    if (!createCommandPool(errorMessage)) return false;
+    if (!createCommandBuffer(errorMessage)) return false;
+    if (!createSyncObjects(errorMessage)) return false;
 
     if (!graphicsPipeline.create(&context.getDevice().getLogicalDevice(), context.getSwapchain(), errorMessage)) {
-        Engine::fatalExit(errorMessage);
+        return false;
     }
+
+    imagesInFlight.resize(context.getSwapchain().getImages().size(), VK_NULL_HANDLE);
+
+    guard.release();
     return true;
 }
 
 void VulkanRenderer::shutdown() {
     const vk::Device& logicalDevice = context.getDevice().getLogicalDevice();
 
-    if (imageAvailableSemaphore) {
-        logicalDevice.destroySemaphore(imageAvailableSemaphore);
-        imageAvailableSemaphore = nullptr;
+    for (const auto& imageSemaphore : imageAvailableSemaphores) {
+        logicalDevice.destroySemaphore(imageSemaphore);
     }
 
-    for (const auto& semaphore : renderFinishedSemaphores) {
-        logicalDevice.destroySemaphore(semaphore);
+    for (const auto& renderSemaphore : renderFinishedSemaphores) {
+        logicalDevice.destroySemaphore(renderSemaphore);
     }
 
-    if (drawFence) {
-        logicalDevice.destroyFence(drawFence);
-        drawFence = nullptr;
+    for (const auto& fence : inFlightFences) {
+        logicalDevice.destroyFence(fence);
     }
 
     if (commandPool) {
@@ -69,50 +71,48 @@ void VulkanRenderer::drawFrame() {
     const vk::Device& logicalDevice = device.getLogicalDevice();
     vk::SwapchainKHR  swapchain     = context.getSwapchain();
 
-    const auto nextImageAcquire = VK_CHECK_RESULT(
-        logicalDevice.acquireNextImageKHR(swapchain, UINT64_MAX, imageAvailableSemaphore, nullptr),
-        errorMessage
-        );
+    while (vk::Result::eTimeout == logicalDevice.waitForFences(inFlightFences[currentFrame], vk::True, UINT64_MAX)) {}
 
-    if (nextImageAcquire.result != vk::Result::eSuccess) {
-        Logger::error("Failed to acquire Vulkan swapchain image");
-        return;
-    }
+    uint32_t imageIndex;
+    VK_CREATE_VOID_LOG(logicalDevice.acquireNextImageKHR(swapchain, UINT64_MAX, imageAvailableSemaphores[currentFrame],
+                       nullptr), imageIndex, Logger::Level::ERROR);
 
-    const uint32_t imageIndex = nextImageAcquire.value;
     if (imageIndex >= context.getSwapchain().getImages().size()) {
         Logger::error("Failed to record Vulkan command buffer: image index exceeds limit");
         return;
     }
 
-    recordCommandBuffer(imageIndex);
-
-    const vk::Result fencesReset = VK_CHECK_RESULT(logicalDevice.resetFences(drawFence), errorMessage);
-    if (fencesReset != vk::Result::eSuccess) {
-        Logger::error(errorMessage);
-        return;
+    if (imagesInFlight[imageIndex]) {
+        VK_CALL_LOG(logicalDevice.waitForFences(imagesInFlight[imageIndex], vk::True, UINT64_MAX),
+                    Logger::Level::ERROR);
     }
 
-    vk::PipelineStageFlags waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
-    const vk::SubmitInfo submitInfo(imageAvailableSemaphore, waitDestinationStageMask, commandBuffer,
-                                    renderFinishedSemaphores[imageIndex]);
+    imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
-    const auto commandBufferSubmit =
-        VK_CHECK_RESULT(device.getGraphicsQueue().submit(submitInfo, drawFence), errorMessage);
+    VK_TRY_VOID_LOG(logicalDevice.resetFences(inFlightFences[currentFrame]), Logger::Level::ERROR);
 
-    if (commandBufferSubmit != vk::Result::eSuccess) {
-        Logger::error(errorMessage);
-        return;
-    }
+    VK_CALL_LOG(commandBuffers[currentFrame].reset(), Logger::Level::ERROR);
 
-    while (vk::Result::eTimeout == logicalDevice.waitForFences(drawFence, vk::True, UINT64_MAX)) {}
+    recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
+
+    constexpr vk::PipelineStageFlags waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
+    vk::SubmitInfo submitInfo{};
+    submitInfo
+        .setWaitSemaphoreCount(1)
+        .setPWaitSemaphores(&imageAvailableSemaphores[currentFrame])
+        .setPWaitDstStageMask(&waitDestinationStageMask)
+        .setCommandBufferCount(1)
+        .setPCommandBuffers(&commandBuffers[currentFrame])
+        .setSignalSemaphoreCount(1)
+        .setPSignalSemaphores(&renderFinishedSemaphores[imageIndex]);
+
+    VK_TRY_VOID_LOG(device.getGraphicsQueue().submit(submitInfo, inFlightFences[currentFrame]), Logger::Level::ERROR);
 
     const vk::PresentInfoKHR presentInfo(renderFinishedSemaphores[imageIndex], swapchain, imageIndex);
 
-    const vk::Result imagePresent = device.getPresentQueue().presentKHR(presentInfo);
-    if (imagePresent != vk::Result::eSuccess) {
-        Logger::error(errorMessage);
-    }
+    VK_CALL_LOG(device.getPresentQueue().presentKHR(presentInfo), Logger::Level::ERROR);
+
+    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 bool VulkanRenderer::createCommandPool(std::string& errorMessage) {
@@ -124,7 +124,7 @@ bool VulkanRenderer::createCommandPool(std::string& errorMessage) {
         .setQueueFamilyIndex(device.getQueueFamilyIndices().graphicsFamily);
 
     const auto commandPoolCreate =
-        VK_CHECK_RESULT(device.getLogicalDevice().createCommandPool(commandPoolInfo), errorMessage);
+        VK_CALL(device.getLogicalDevice().createCommandPool(commandPoolInfo), errorMessage);
 
     if (commandPoolCreate.result != vk::Result::eSuccess) return false;
 
@@ -137,46 +137,44 @@ bool VulkanRenderer::createCommandBuffer(std::string& errorMessage) {
     allocateInfo
         .setCommandPool(commandPool)
         .setLevel(vk::CommandBufferLevel::ePrimary)
-        .setCommandBufferCount(1);
+        .setCommandBufferCount(MAX_FRAMES_IN_FLIGHT);
 
     const vk::Device& logicalDevice = context.getDevice().getLogicalDevice();
 
     const auto commandBuffersAllocate =
-        VK_CHECK_RESULT(logicalDevice.allocateCommandBuffers(allocateInfo), errorMessage);
+        VK_CALL(logicalDevice.allocateCommandBuffers(allocateInfo), errorMessage);
     if (commandBuffersAllocate.result != vk::Result::eSuccess) return false;
 
-    commandBuffer = commandBuffersAllocate.value.front();
+    commandBuffers = commandBuffersAllocate.value;
     return true;
 }
 
 bool VulkanRenderer::createSyncObjects(std::string& errorMessage) {
-    const auto imageAvailableSemaphoreCreate =
-        VK_CHECK_RESULT(context.getDevice().getLogicalDevice().createSemaphore({}), errorMessage);
-    if (imageAvailableSemaphoreCreate.result != vk::Result::eSuccess) return false;
+    const vk::Device& logicalDevice = context.getDevice().getLogicalDevice();
 
-    imageAvailableSemaphore = imageAvailableSemaphoreCreate.value;
+    imageAvailableSemaphores.clear();
+    renderFinishedSemaphores.clear();
+    inFlightFences.clear();
 
+    imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     renderFinishedSemaphores.resize(context.getSwapchain().getImages().size());
-
-    for (size_t i = 0; i < renderFinishedSemaphores.size(); i++) {
-        const auto renderFinishedSemaphoreCreate =
-            VK_CHECK_RESULT(context.getDevice().getLogicalDevice().createSemaphore({}), errorMessage);
-        if (renderFinishedSemaphoreCreate.result != vk::Result::eSuccess) return false;
-
-        renderFinishedSemaphores[i] = renderFinishedSemaphoreCreate.value;
-    }
+    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
     constexpr vk::FenceCreateInfo fenceInfo{vk::FenceCreateFlagBits::eSignaled};
 
-    const auto drawFenceCreate =
-        VK_CHECK_RESULT(context.getDevice().getLogicalDevice().createFence(fenceInfo), errorMessage);
-    if (drawFenceCreate.result != vk::Result::eSuccess) return false;
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        VK_CREATE(logicalDevice.createSemaphore({}), imageAvailableSemaphores[i], errorMessage);
+        VK_CREATE(logicalDevice.createFence(fenceInfo), inFlightFences[i], errorMessage);
+    }
 
-    drawFence = drawFenceCreate.value;
+    for (size_t i = 0; i < renderFinishedSemaphores.size(); i++) {
+        VK_CREATE(logicalDevice.createSemaphore({}), renderFinishedSemaphores[i], errorMessage);
+    }
     return true;
 }
 
 void VulkanRenderer::transitionImageLayout(
+    const vk::CommandBuffer       commandBuffer,
     const uint32_t                imageIndex,
     const vk::ImageLayout         oldLayout,
     const vk::ImageLayout         newLayout,
@@ -217,23 +215,26 @@ void VulkanRenderer::transitionImageLayout(
     commandBuffer.pipelineBarrier2(dependencyInfo);
 }
 
-void VulkanRenderer::recordCommandBuffer(const uint32_t imageIndex) {
-    std::string errorMessage;
-
+void VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer, const uint32_t imageIndex) {
     if (commandBuffer == vk::CommandBuffer{}) {
         Logger::error("Failed to record Vulkan command buffer: command buffer is null");
         return;
     }
 
     constexpr vk::CommandBufferBeginInfo beginInfo{};
+    VK_TRY_VOID_LOG(commandBuffer.begin(beginInfo), Logger::Level::ERROR);
 
-    const vk::Result commandBufferBegin = VK_CHECK_RESULT(commandBuffer.begin(beginInfo), errorMessage);
-    if (commandBufferBegin != vk::Result::eSuccess) {
-        Logger::error(errorMessage);
-        return;
-    }
+    const VulkanSwapchain& swapchain = context.getSwapchain();
+    const vk::Extent2D     extent    = swapchain.getExtent2D();
+
+    const vk::Viewport viewport = {
+        0.0f, 0.0f, static_cast<float>(extent.width), static_cast<float>(extent.height), 0.0f, 1.0f
+    };
+
+    const auto scissor = vk::Rect2D(vk::Offset2D(0, 0), extent);
 
     transitionImageLayout(
+        commandBuffer,
         imageIndex,
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eColorAttachmentOptimal,
@@ -243,10 +244,9 @@ void VulkanRenderer::recordCommandBuffer(const uint32_t imageIndex) {
         vk::PipelineStageFlagBits2::eColorAttachmentOutput
     );
 
-    constexpr vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
     vk::RenderingAttachmentInfo attachmentInfo{};
     attachmentInfo
-        .setImageView(context.getSwapchain().getImageViews()[imageIndex])
+        .setImageView(swapchain.getImageViews()[imageIndex])
         .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
         .setLoadOp(vk::AttachmentLoadOp::eClear)
         .setStoreOp(vk::AttachmentStoreOp::eStore)
@@ -254,29 +254,24 @@ void VulkanRenderer::recordCommandBuffer(const uint32_t imageIndex) {
 
     vk::RenderingInfo renderingInfo{};
     renderingInfo
-        .setRenderArea({{0, 0}, context.getSwapchain().getExtent2D()})
+        .setRenderArea({{0, 0}, extent})
         .setLayerCount(1)
         .setColorAttachmentCount(1)
         .setPColorAttachments(&attachmentInfo);
 
     commandBuffer.beginRendering(renderingInfo);
 
-    const vk::Extent2D extent = context.getSwapchain().getExtent2D();
-
-    const vk::Viewport viewport = {
-        0.0f, 0.0f, static_cast<float>(extent.width), static_cast<float>(extent.height), 0.0f, 1.0f
-    };
-
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
 
     commandBuffer.setViewport(0, viewport);
-    commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), extent));
+    commandBuffer.setScissor(0, scissor);
 
     commandBuffer.draw(3, 1, 0, 0);
 
     commandBuffer.endRendering();
 
     transitionImageLayout(
+        commandBuffer,
         imageIndex,
         vk::ImageLayout::eColorAttachmentOptimal,
         vk::ImageLayout::ePresentSrcKHR,
@@ -286,8 +281,5 @@ void VulkanRenderer::recordCommandBuffer(const uint32_t imageIndex) {
         vk::PipelineStageFlagBits2::eBottomOfPipe
     );
 
-    const vk::Result commandBufferEnd = VK_CHECK_RESULT(commandBuffer.end(), errorMessage);
-    if (commandBufferEnd != vk::Result::eSuccess) {
-        Logger::error(errorMessage);
-    }
+    VK_CALL_LOG(commandBuffer.end(), Logger::Level::ERROR);
 }

@@ -30,6 +30,92 @@ private:
     vk::Pipeline       pipeline{};
     vk::PipelineLayout pipelineLayout{};
 
+    // -------------------------------
+    //       Vulkan Info structs
+    // -------------------------------
+
+    static constexpr vk::PipelineVertexInputStateCreateInfo vertexInputInfo = []{
+        constexpr vk::PipelineVertexInputStateCreateInfo info{};
+        return info;
+    }();
+
+    static constexpr vk::PipelineInputAssemblyStateCreateInfo inputAssemblyInfo = []{
+        vk::PipelineInputAssemblyStateCreateInfo info{};
+        info
+            .setTopology(vk::PrimitiveTopology::eTriangleList)
+            .setPrimitiveRestartEnable(vk::False);
+        return info;
+    }();
+
+    static constexpr vk::PipelineViewportStateCreateInfo viewportInfo = []{
+        vk::PipelineViewportStateCreateInfo info{};
+        info
+            .setViewportCount(1)
+            .setScissorCount(1)
+            .setPViewports(nullptr)
+            .setPScissors(nullptr);
+        return info;
+    }();
+
+    static constexpr vk::PipelineRasterizationStateCreateInfo rasterizationInfo = []{
+        vk::PipelineRasterizationStateCreateInfo info{};
+        info
+            .setDepthClampEnable(vk::False)
+            .setRasterizerDiscardEnable(vk::False)
+            .setPolygonMode(vk::PolygonMode::eFill)
+            .setCullMode(vk::CullModeFlagBits::eNone)
+            .setFrontFace(vk::FrontFace::eClockwise)
+            .setDepthBiasEnable(vk::False)
+            .setLineWidth(1.0f);
+        return info;
+    }();
+
+    static constexpr vk::PipelineMultisampleStateCreateInfo multisamplingInfo = []{
+        vk::PipelineMultisampleStateCreateInfo info{};
+        info
+            .setRasterizationSamples(vk::SampleCountFlagBits::e1)
+            .setSampleShadingEnable(vk::False);
+        return info;
+    }();
+
+    static constexpr vk::PipelineColorBlendAttachmentState colorBlendAttachment = []{
+        vk::PipelineColorBlendAttachmentState info{};
+        info
+            .setColorWriteMask(
+                vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+            )
+            .setBlendEnable(vk::True)
+            .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
+            .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+            .setColorBlendOp(vk::BlendOp::eAdd)
+            .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
+            .setDstAlphaBlendFactor(vk::BlendFactor::eZero)
+            .setAlphaBlendOp(vk::BlendOp::eAdd);
+        return info;
+    }();
+
+    static constexpr vk::PipelineColorBlendStateCreateInfo colorBlendInfo = []{
+        vk::PipelineColorBlendStateCreateInfo info{};
+        info
+            .setLogicOpEnable(vk::False)
+            .setLogicOp(vk::LogicOp::eCopy)
+            .setAttachmentCount(1)
+            .setPAttachments(&colorBlendAttachment);
+        return info;
+    }();
+
+    static constexpr std::array<vk::DynamicState, 2> dynamicStates = {
+        vk::DynamicState::eViewport,
+        vk::DynamicState::eScissor
+    };
+
+    inline static const vk::PipelineDynamicStateCreateInfo dynamicStateInfo = []{
+        vk::PipelineDynamicStateCreateInfo info{};
+        info.setDynamicStates(dynamicStates);
+        return info;
+    }();
+
     bool createPipelineLayout(std::string& errorMessage);
     bool createPipeline(std::string& errorMessage);
 };

@@ -35,10 +35,7 @@ bool VulkanSurface::createSurface(std::string& errorMessage) {
     surfaceInfo.hinstance = _window->hInstance();
     surfaceInfo.hwnd      = static_cast<HWND>(_window->nativeHandle());
 
-    const auto win32SurfaceCreate = VK_CHECK_RESULT(_instance->createWin32SurfaceKHR(surfaceInfo), errorMessage);
-    if (win32SurfaceCreate.result != vk::Result::eSuccess) return false;
-
-    surface = win32SurfaceCreate.value;
+    VK_CREATE(_instance->createWin32SurfaceKHR(surfaceInfo), surface, errorMessage);
     return true;
 
 #elif defined(__linux__)

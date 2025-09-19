@@ -68,7 +68,7 @@ bool VulkanDevice::isPhysicalDeviceSuitable(const vk::PhysicalDevice device) {
 
 bool VulkanDevice::pickPhysicalDevice(const vk::Instance instance, std::string& errorMessage) {
     // Enumerate available devides
-    const auto availableDevices = VK_CHECK_RESULT(instance.enumeratePhysicalDevices(), errorMessage);
+    const auto availableDevices = VK_CALL(instance.enumeratePhysicalDevices(), errorMessage);
     if (availableDevices.result != vk::Result::eSuccess) return false;
 
     // Picking the best suitable candidate within available devices
@@ -163,10 +163,7 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
         .setQueueCreateInfos(deviceQueueInfo)
         .setPEnabledExtensionNames(deviceExtensions);
 
-    const auto deviceCreate = VK_CHECK_RESULT(physicalDevice.createDevice(deviceInfo), errorMessage);
-    if (deviceCreate.result != vk::Result::eSuccess) return false;
-
-    logicalDevice = deviceCreate.value;
+    VK_CREATE(physicalDevice.createDevice(deviceInfo), logicalDevice, errorMessage);
 
     graphicsQueue = logicalDevice.getQueue(queueFamilyIndices.graphicsFamily, 0);
     presentQueue  = logicalDevice.getQueue(queueFamilyIndices.presentFamily , 0);

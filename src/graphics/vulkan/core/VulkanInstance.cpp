@@ -53,7 +53,7 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
 
     const auto extensions = getRequiredExtensions();
 
-    auto availableExtensions = VK_CHECK_RESULT(vk::enumerateInstanceExtensionProperties(), errorMessage);
+    auto availableExtensions = VK_CALL(vk::enumerateInstanceExtensionProperties(), errorMessage);
     if (availableExtensions.result != vk::Result::eSuccess) {
         return false;
     }
@@ -77,7 +77,7 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
 
     layers = validationLayers;
 
-    const auto availableLayers = VK_CHECK_RESULT(vk::enumerateInstanceLayerProperties(), errorMessage);
+    const auto availableLayers = VK_CALL(vk::enumerateInstanceLayerProperties(), errorMessage);
     if (availableLayers.result != vk::Result::eSuccess) return false;
 
     // Ensure enabled validation layers are supported by the drivers
@@ -102,10 +102,7 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
         .setPEnabledExtensionNames(extensions)
         .setPEnabledLayerNames(layers);
 
-    const auto instanceCreate = VK_CHECK_RESULT(vk::createInstance(instanceInfo, nullptr), errorMessage);
-    if (instanceCreate.result != vk::Result::eSuccess) return false;
-
-    instance = instanceCreate.value;
+    VK_CREATE(vk::createInstance(instanceInfo, nullptr), instance, errorMessage);
     return true;
 }
 
@@ -144,19 +141,15 @@ bool VulkanInstance::setupDebugMessenger(std::string& errorMessage) {
         vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance);
 
     vk::DebugUtilsMessengerCreateInfoEXT debugUtilsMessengerInfo{};
-    debugUtilsMessengerInfo.messageSeverity = severityFlags;
-    debugUtilsMessengerInfo.messageType     = messageTypeFlags;
-    debugUtilsMessengerInfo.pfnUserCallback = &debugCallback;
+    debugUtilsMessengerInfo
+        .setMessageSeverity(severityFlags)
+        .setMessageType(messageTypeFlags)
+        .setPfnUserCallback(&debugCallback);
 
     const vk::detail::DispatchLoaderDynamic dldi(instance, vkGetInstanceProcAddr);
 
-    const auto debugUtilsMessengerCreate =
-        VK_CHECK_RESULT(instance.createDebugUtilsMessengerEXT(debugUtilsMessengerInfo, nullptr, dldi), errorMessage);
-
-    if (debugUtilsMessengerCreate.result != vk::Result::eSuccess) return false;
-
-    debugMessenger = debugUtilsMessengerCreate.value;
-
+    VK_CREATE(instance.createDebugUtilsMessengerEXT(debugUtilsMessengerInfo, nullptr, dldi), debugMessenger,
+              errorMessage);
 #endif
     return true;
 }
