@@ -15,7 +15,9 @@ VulkanRenderer::~VulkanRenderer() {
     shutdown();
 }
 
-bool VulkanRenderer::init(const Platform::Window& window) {
+bool VulkanRenderer::init(Platform::Window& window) {
+    _window = &window;
+
     std::string errorMessage = "Failed to create Vulkan context: no error message provided";
 
     const auto rollbackAndExit = [&](void*) {
@@ -42,17 +44,8 @@ bool VulkanRenderer::init(const Platform::Window& window) {
 void VulkanRenderer::shutdown() {
     const vk::Device& logicalDevice = context.getDevice().getLogicalDevice();
 
-    for (const auto& imageSemaphore : imageAvailableSemaphores) {
-        logicalDevice.destroySemaphore(imageSemaphore);
-    }
-
-    for (const auto& renderSemaphore : renderFinishedSemaphores) {
-        logicalDevice.destroySemaphore(renderSemaphore);
-    }
-
-    for (const auto& fence : inFlightFences) {
-        logicalDevice.destroyFence(fence);
-    }
+    cleanupOldSyncObjects();
+    destroySyncObjects();
 
     if (commandPool) {
         logicalDevice.destroyCommandPool(commandPool);
@@ -60,7 +53,6 @@ void VulkanRenderer::shutdown() {
     }
 
     graphicsPipeline.destroy();
-
     context.destroy();
 }
 
@@ -73,9 +65,28 @@ void VulkanRenderer::drawFrame() {
 
     while (vk::Result::eTimeout == logicalDevice.waitForFences(inFlightFences[currentFrame], vk::True, UINT64_MAX)) {}
 
-    uint32_t imageIndex;
-    VK_CREATE_VOID_LOG(logicalDevice.acquireNextImageKHR(swapchain, UINT64_MAX, imageAvailableSemaphores[currentFrame],
-                       nullptr), imageIndex, Logger::Level::ERROR);
+    const auto nextImageAcquire =
+        VK_CALL(logicalDevice.acquireNextImageKHR(swapchain, UINT64_MAX, imageAvailableSemaphores[currentFrame],
+                nullptr), errorMessage);
+
+    if (nextImageAcquire.result == vk::Result::eErrorOutOfDateKHR ||
+        nextImageAcquire.result == vk::Result::eSuboptimalKHR) {
+
+        if (!recreateSwapchain(errorMessage)) {
+            Logger::error(errorMessage);
+            return;
+        }
+
+        _window->setFramebufferResized(false);
+        return;
+    }
+
+    if (nextImageAcquire.result != vk::Result::eSuccess) {
+        Logger::error(VulkanDebugger::formatVulkanErrorMessage("acquireNextImageKHR", nextImageAcquire.result));
+        return;
+    }
+
+    uint32_t imageIndex = nextImageAcquire.value;
 
     if (imageIndex >= context.getSwapchain().getImages().size()) {
         Logger::error("Failed to record Vulkan command buffer: image index exceeds limit");
@@ -109,11 +120,29 @@ void VulkanRenderer::drawFrame() {
     VK_TRY_VOID_LOG(device.getGraphicsQueue().submit(submitInfo, inFlightFences[currentFrame]), Logger::Level::ERROR);
 
     const vk::PresentInfoKHR presentInfo(renderFinishedSemaphores[imageIndex], swapchain, imageIndex);
+    const auto queuePresent = VK_CALL_LOG(device.getPresentQueue().presentKHR(presentInfo), Logger::Level::ERROR);
 
-    VK_CALL_LOG(device.getPresentQueue().presentKHR(presentInfo), Logger::Level::ERROR);
+    if (queuePresent == vk::Result::eErrorOutOfDateKHR || queuePresent == vk::Result::eSuboptimalKHR) {
+        if (!recreateSwapchain(errorMessage)) {
+            Logger::error(errorMessage);
+            return;
+        }
+    }
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
+
+bool VulkanRenderer::recreateSwapchain(std::string& errorMessage) {
+    if (!context.getSwapchain().recreate(context.getSurface(), errorMessage)) return false;
+
+    oldFences.insert(oldFences.end(), inFlightFences.begin(), inFlightFences.end());
+    oldImageAvailable.insert(oldImageAvailable.end(), imageAvailableSemaphores.begin(), imageAvailableSemaphores.end());
+    oldRenderFinished.insert(oldRenderFinished.end(), renderFinishedSemaphores.begin(), renderFinishedSemaphores.end());
+
+    if (!createSyncObjects(errorMessage)) return false;
+    return true;
+}
+
 
 bool VulkanRenderer::createCommandPool(std::string& errorMessage) {
     VulkanDevice device = context.getDevice();
@@ -152,10 +181,6 @@ bool VulkanRenderer::createCommandBuffer(std::string& errorMessage) {
 bool VulkanRenderer::createSyncObjects(std::string& errorMessage) {
     const vk::Device& logicalDevice = context.getDevice().getLogicalDevice();
 
-    imageAvailableSemaphores.clear();
-    renderFinishedSemaphores.clear();
-    inFlightFences.clear();
-
     imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     renderFinishedSemaphores.resize(context.getSwapchain().getImages().size());
     inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
@@ -171,6 +196,49 @@ bool VulkanRenderer::createSyncObjects(std::string& errorMessage) {
         VK_CREATE(logicalDevice.createSemaphore({}), renderFinishedSemaphores[i], errorMessage);
     }
     return true;
+}
+
+void VulkanRenderer::destroySyncObjects() {
+    const vk::Device& logicalDevice = context.getDevice().getLogicalDevice();
+
+    for (const auto& imageSemaphore : imageAvailableSemaphores) {
+        logicalDevice.destroySemaphore(imageSemaphore);
+    }
+
+    for (const auto& renderSemaphore : renderFinishedSemaphores) {
+        logicalDevice.destroySemaphore(renderSemaphore);
+    }
+
+    for (const auto& fence : inFlightFences) {
+        logicalDevice.destroyFence(fence);
+    }
+
+    imageAvailableSemaphores.clear();
+    renderFinishedSemaphores.clear();
+    inFlightFences.clear();
+}
+
+void VulkanRenderer::cleanupOldSyncObjects() {
+    const vk::Device& logicalDevice = context.getDevice().getLogicalDevice();
+
+    for (auto it = oldFences.begin(); it != oldFences.end(); ) {
+        if (logicalDevice.getFenceStatus(*it) == vk::Result::eSuccess) {
+            logicalDevice.destroyFence(*it);
+            it = oldFences.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    for (auto it = oldImageAvailable.begin(); it != oldImageAvailable.end(); ) {
+        logicalDevice.destroySemaphore(*it);
+        it = oldImageAvailable.erase(it);
+    }
+
+    for (auto it = oldRenderFinished.begin(); it != oldRenderFinished.end(); ) {
+        logicalDevice.destroySemaphore(*it);
+        it = oldRenderFinished.erase(it);
+    }
 }
 
 void VulkanRenderer::transitionImageLayout(

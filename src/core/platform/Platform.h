@@ -30,7 +30,8 @@ namespace Platform {
         [[nodiscard]] int getWidth () const { return _width ; }
         [[nodiscard]] int getHeight() const { return _height; }
 
-        void getFrameBufferSize(int& width, int& height) const;
+        void getFramebufferSize(int& width, int& height) const;
+        void setFramebufferResized(const bool resized) { framebufferResized = resized; }
 
         [[nodiscard]] WindowHandle nativeHandle() const {
             return handle->windowHandle;
@@ -47,6 +48,8 @@ namespace Platform {
     private:
         int _width;
         int _height;
+
+        bool framebufferResized = false;
 
         struct NativeHandle {
             WindowHandle windowHandle = nullptr;

@@ -28,11 +28,31 @@ std::vector<const char*> Platform::getVulkanExtensions() {
     };
 }
 
-LRESULT CALLBACK windowProc(const HWND hwnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam) {
-    switch (uMsg) {
-        case WM_DESTROY:
-            PostQuitMessage(0);
-            return 0;
+LRESULT CALLBACK windowProc(HWND hwnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam) {
+    Platform::Window* window = nullptr;
+
+    if (uMsg == WM_NCCREATE) {
+        const auto createStruct = reinterpret_cast<CREATESTRUCT*>(lParam);
+        window = static_cast<Platform::Window*>(createStruct->lpCreateParams);
+        SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(window));
+    } else {
+        window = reinterpret_cast<Platform::Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    }
+
+    if (window) {
+        switch (uMsg) {
+            case WM_SIZE:
+                if (wParam != SIZE_MINIMIZED) {
+                    window->setFramebufferResized(true);
+                }
+                return 0;
+
+            case WM_DESTROY:
+                PostQuitMessage(0);
+                return 0;
+
+            default: break;
+        }
     }
 
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -80,7 +100,8 @@ namespace Platform {
             wc.lpszClassName = CLASS_NAME;
 
             if (!RegisterClass(&wc)) {
-                Engine::fatalExit("Failed to register window class");
+                const DWORD error = GetLastError();
+                Engine::fatalExit("Failed to register window class (error code: " + std::to_string(error) + ")");
             }
 
             registered = true;
@@ -98,8 +119,11 @@ namespace Platform {
         );
 
         if (!handle->windowHandle) {
-            Engine::fatalExit("Failed to create window");
+            const DWORD error = GetLastError();
+            Engine::fatalExit("Failed to create window (error code: " + std::to_string(error) + ")");
         }
+
+        SetWindowLongPtr(static_cast<HWND>(handle->windowHandle), GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     }
 
     Window::~Window() {
@@ -117,7 +141,7 @@ namespace Platform {
         ShowWindow(static_cast<HWND>(handle->windowHandle), SW_HIDE);
     }
 
-    void Window::getFrameBufferSize(int& width, int& height) const {
+    void Window::getFramebufferSize(int& width, int& height) const {
         if (!handle || !handle->windowHandle) {
             Logger::error("Failed to get framebuffer size: window handle is null");
             return;

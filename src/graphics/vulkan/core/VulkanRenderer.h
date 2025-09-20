@@ -12,17 +12,19 @@ public:
     VulkanRenderer() = default;
     ~VulkanRenderer() override;
 
-    bool init(const Platform::Window& window) override;
+    bool init(Platform::Window& window) override;
     void shutdown() override;
     void drawFrame() override;
 
     VulkanContext& getContext() { return context; }
 
 private:
+    Platform::Window* _window;
+
     VulkanContext          context;
     VulkanGraphicsPipeline graphicsPipeline;
 
-    int8_t currentFrame = 0;
+    unsigned int currentFrame = 0;
 
     vk::CommandPool                commandPool{};
     std::vector<vk::CommandBuffer> commandBuffers{};
@@ -31,12 +33,20 @@ private:
     std::vector<vk::Semaphore> renderFinishedSemaphores{};
     std::vector<vk::Fence>     inFlightFences{};
 
+    std::vector<vk::Fence>     oldFences{};
+    std::vector<vk::Semaphore> oldImageAvailable{};
+    std::vector<vk::Semaphore> oldRenderFinished{};
+
     std::vector<vk::Fence> imagesInFlight{};
+
+    bool recreateSwapchain(std::string& errorMessage);
 
     bool createCommandPool(std::string& errorMessage);
     bool createCommandBuffer(std::string& errorMessage);
 
     bool createSyncObjects(std::string& errorMessage);
+    void destroySyncObjects();
+    void cleanupOldSyncObjects();
 
     void transitionImageLayout(
         vk::CommandBuffer       commandBuffer,

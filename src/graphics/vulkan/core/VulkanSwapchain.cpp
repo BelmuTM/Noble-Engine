@@ -34,6 +34,15 @@ void VulkanSwapchain::destroy() noexcept {
     swapchain = nullptr;
 }
 
+bool VulkanSwapchain::recreate(const vk::SurfaceKHR surface, std::string& errorMessage) {
+    VK_CALL(_device->getLogicalDevice().waitIdle(), errorMessage);
+
+    destroy();
+
+    if (!create(*_window, *_device, surface, errorMessage)) return false;
+    return true;
+}
+
 VulkanSwapchain::SwapchainSupportInfo VulkanSwapchain::querySwapchainSupport(
     const vk::PhysicalDevice device, const vk::SurfaceKHR _surface
 ) {
@@ -86,7 +95,7 @@ vk::Extent2D VulkanSwapchain::chooseSwapExtent2D(const vk::SurfaceCapabilitiesKH
     }
 
     int width, height;
-    _window->getFrameBufferSize(width, height);
+    _window->getFramebufferSize(width, height);
 
     return {
         std::clamp<uint32_t>(width , capabilities.minImageExtent.width , capabilities.maxImageExtent.width),

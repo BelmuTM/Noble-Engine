@@ -28,6 +28,8 @@ public:
     ) noexcept;
     void destroy() noexcept;
 
+    [[nodiscard]] bool recreate(vk::SurfaceKHR surface, std::string& errorMessage);
+
     //[[nodiscard]] const vk::SwapchainKHR& handle() const { return swapchain; }
 
     [[nodiscard]] std::vector<vk::Image> getImages() const { return swapchainImages; }
