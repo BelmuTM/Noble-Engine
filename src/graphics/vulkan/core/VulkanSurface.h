@@ -26,7 +26,7 @@ public:
     VulkanSurface& operator=(VulkanSurface&&)      = delete;
 
     [[nodiscard]] bool create(
-        const vk::Instance* instance, const Platform::Window& window, std::string& errorMessage
+        const vk::Instance& instance, const Platform::Window& window, std::string& errorMessage
     ) noexcept;
     void destroy() noexcept;
 

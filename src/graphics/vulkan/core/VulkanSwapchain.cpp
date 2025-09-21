@@ -86,7 +86,7 @@ vk::PresentModeKHR VulkanSwapchain::choosePresentMode(const std::vector<vk::Pres
             return availableMode;
         }
     }
-    return vk::PresentModeKHR::eFifo;
+    return vk::PresentModeKHR::eImmediate;
 }
 
 vk::Extent2D VulkanSwapchain::chooseSwapExtent2D(const vk::SurfaceCapabilitiesKHR& capabilities) const {

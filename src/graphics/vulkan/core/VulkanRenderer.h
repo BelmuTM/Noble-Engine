@@ -3,11 +3,16 @@
 #define NOBLEENGINE_VULKANRENDERER_H
 
 #include "graphics/GraphicsAPI.h"
+#include "graphics/vulkan/common/VulkanEntityOwner.h"
+
+#include "core/platform/Platform.h"
+
+#include "VulkanCommandManager.h"
 #include "VulkanContext.h"
+#include "VulkanSyncObjects.h"
+#include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
 
-#include "graphics/vulkan/common/VulkanHeader.h"
-
-class VulkanRenderer final : public GraphicsAPI {
+class VulkanRenderer final : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {
 public:
     VulkanRenderer() = default;
     ~VulkanRenderer() override;
@@ -19,47 +24,25 @@ public:
     VulkanContext& getContext() { return context; }
 
 private:
-    Platform::Window* _window;
+    Platform::Window* _window = nullptr;
 
     VulkanContext          context;
     VulkanGraphicsPipeline graphicsPipeline;
+    VulkanSyncObjects      syncObjects;
+    VulkanCommandManager   commandManager;
 
     unsigned int currentFrame = 0;
 
-    vk::CommandPool                commandPool{};
-    std::vector<vk::CommandBuffer> commandBuffers{};
+    bool handleFramebufferResize(std::string& errorMessage);
 
-    std::vector<vk::Semaphore> imageAvailableSemaphores{};
-    std::vector<vk::Semaphore> renderFinishedSemaphores{};
-    std::vector<vk::Fence>     inFlightFences{};
+    std::optional<uint32_t> acquireNextImage(std::string& errorMessage);
 
-    std::vector<vk::Fence>     oldFences{};
-    std::vector<vk::Semaphore> oldImageAvailable{};
-    std::vector<vk::Semaphore> oldRenderFinished{};
+    void waitForImageFence(uint32_t imageIndex);
 
-    std::vector<vk::Fence> imagesInFlight{};
+    void recordCurrentCommandBuffer(uint32_t imageIndex);
+    bool submitCommandBuffer(uint32_t imageIndex, std::string& errorMessage);
 
     bool recreateSwapchain(std::string& errorMessage);
-
-    bool createCommandPool(std::string& errorMessage);
-    bool createCommandBuffer(std::string& errorMessage);
-
-    bool createSyncObjects(std::string& errorMessage);
-    void destroySyncObjects();
-    void cleanupOldSyncObjects();
-
-    void transitionImageLayout(
-        vk::CommandBuffer       commandBuffer,
-        uint32_t                imageIndex,
-        vk::ImageLayout         oldLayout,
-        vk::ImageLayout         newLayout,
-        vk::AccessFlags2        srcAccessMask,
-        vk::AccessFlags2        dstAccessMask,
-        vk::PipelineStageFlags2 srcStageMask,
-        vk::PipelineStageFlags2 dstStageMask
-    );
-
-    void recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 };
 
 #endif //NOBLEENGINE_VULKANRENDERER_H

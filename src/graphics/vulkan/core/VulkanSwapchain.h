@@ -15,9 +15,6 @@ public:
     VulkanSwapchain()  = default;
     ~VulkanSwapchain() = default;
 
-    // Implicit conversion operator
-    operator vk::SwapchainKHR() const { return swapchain; }
-
     VulkanSwapchain(const VulkanSwapchain&)            = delete;
     VulkanSwapchain& operator=(const VulkanSwapchain&) = delete;
     VulkanSwapchain(VulkanSwapchain&&)                 = delete;
@@ -30,7 +27,7 @@ public:
 
     [[nodiscard]] bool recreate(vk::SurfaceKHR surface, std::string& errorMessage);
 
-    //[[nodiscard]] const vk::SwapchainKHR& handle() const { return swapchain; }
+    [[nodiscard]] const vk::SwapchainKHR& handle() const { return swapchain; }
 
     [[nodiscard]] std::vector<vk::Image> getImages() const { return swapchainImages; }
 

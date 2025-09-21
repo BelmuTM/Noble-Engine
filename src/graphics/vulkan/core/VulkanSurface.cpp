@@ -6,10 +6,10 @@
 #endif
 
 bool VulkanSurface::create(
-    const vk::Instance* instance, const Platform::Window& window, std::string& errorMessage
+    const vk::Instance& instance, const Platform::Window& window, std::string& errorMessage
 ) noexcept {
     _window   = &window;
-    _instance = instance;
+    _instance = &instance;
 
     if (!createSurface(errorMessage)) { return false; }
     return true;

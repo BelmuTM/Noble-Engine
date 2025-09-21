@@ -2,15 +2,10 @@
 #include "VulkanShaderProgram.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-static const std::vector dynamicStates = {
-    vk::DynamicState::eViewport,
-    vk::DynamicState::eScissor
-};
-
 bool VulkanGraphicsPipeline::create(
-    const vk::Device* device, const VulkanSwapchain& swapchain, std::string& errorMessage
+    const vk::Device& device, const VulkanSwapchain& swapchain, std::string& errorMessage
 ) noexcept {
-    _device    = device;
+    _device    = &device;
     _swapchain = &swapchain;
 
     if (!createPipelineLayout(errorMessage)) return false;
@@ -45,7 +40,7 @@ bool VulkanGraphicsPipeline::createPipelineLayout(std::string& errorMessage) {
 }
 
 bool VulkanGraphicsPipeline::createPipeline(std::string& errorMessage) {
-        VulkanShaderProgram meowProgram(_device);
+    VulkanShaderProgram meowProgram(_device);
     if (!meowProgram.loadFromFiles({"../../shaders/spv/meow.vert.spv", "../../shaders/spv/meow.frag.spv"}, errorMessage)) {
         return false;
     }

@@ -19,7 +19,7 @@ public:
     VulkanGraphicsPipeline& operator=(VulkanGraphicsPipeline&&)      = delete;
 
     [[nodiscard]] bool create(
-        const vk::Device* device, const VulkanSwapchain& swapchain, std::string& errorMessage
+        const vk::Device& device, const VulkanSwapchain& swapchain, std::string& errorMessage
     ) noexcept;
     void destroy() noexcept;
 

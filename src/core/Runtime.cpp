@@ -2,10 +2,11 @@
 #include "debug/Logger.h"
 #include "platform/Platform.h"
 
+#include <atomic>
 #include <chrono>
 #include <iostream>
+#include <thread>
 
-#include "graphics/vulkan/common/VulkanDebugger.h"
 #include "graphics/vulkan/core/VulkanRenderer.h"
 
 int main() {
@@ -18,38 +19,47 @@ int main() {
     Platform::Window window(800, 600, "Noble Engine");
     window.show();
 
-    using highResolutionClock = std::chrono::high_resolution_clock;
-
     VulkanRenderer renderer;
     renderer.init(window);
 
-    auto previousTime  = highResolutionClock::now();
-    auto lastFpsUpdate = previousTime;
+    std::atomic running = true;
 
-    int frameCount = 0;
-    int framerate  = 0;
+    std::thread engineThread([&]() {
+        using highResolutionClock = std::chrono::high_resolution_clock;
 
-    while (Platform::pollEvents()) {
-        auto currentTime = highResolutionClock::now();
+        auto previousTime  = highResolutionClock::now();
+        auto lastFpsUpdate = previousTime;
 
-        renderer.drawFrame();
+        int frameCount = 0;
+        int framerate  = 0;
 
-        frameCount++;
+        while (running) {
+            auto currentTime = highResolutionClock::now();
 
-        const auto timeSinceLastUpdate =
-            std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastFpsUpdate).count();
-        if (timeSinceLastUpdate >= 1) {
-            framerate     = frameCount;
-            frameCount    = 0;
-            lastFpsUpdate = currentTime;
+            renderer.drawFrame();
 
-            Logger::info(std::to_string(framerate) + " fps");
+            frameCount++;
+
+            const auto timeSinceLastUpdate =
+                std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastFpsUpdate).count();
+            if (timeSinceLastUpdate >= 1) {
+                framerate     = frameCount;
+                frameCount    = 0;
+                lastFpsUpdate = currentTime;
+
+                Logger::info(std::to_string(framerate) + " fps");
+            }
+
+            previousTime = currentTime;
+
+            std::this_thread::yield();
         }
+    });
 
-        previousTime = currentTime;
-    }
+    while (Platform::pollEvents()) {}
 
-    renderer.getContext().getDevice().getLogicalDevice().waitIdle();
+    running = false;
+    engineThread.join();
 
     Platform::shutdown();
 

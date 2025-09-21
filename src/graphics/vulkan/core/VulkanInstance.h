@@ -23,8 +23,8 @@ public:
     [[nodiscard]] bool create(std::string& errorMessage) noexcept;
     void               destroy() noexcept;
 
-    [[nodiscard]] vk::Instance&       getVkInstance()       { return instance; }
-    [[nodiscard]] vk::Instance const& getVkInstance() const { return instance; }
+    //[[nodiscard]] vk::Instance&       getVkInstance()       { return instance; }
+    //[[nodiscard]] vk::Instance const& getVkInstance() const { return instance; }
 
 private:
     vk::Instance               instance{};

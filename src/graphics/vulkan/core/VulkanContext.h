@@ -2,15 +2,14 @@
 #ifndef NOBLEENGINE_VULKANCONTEXT_H
 #define NOBLEENGINE_VULKANCONTEXT_H
 
+#include "graphics/vulkan/common/VulkanEntityOwner.h"
+
 #include "VulkanInstance.h"
 #include "VulkanDevice.h"
 #include "VulkanSurface.h"
 #include "VulkanSwapchain.h"
-#include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
 
-#include <functional>
-
-class VulkanContext {
+class VulkanContext final : public VulkanEntityOwner<VulkanContext> {
 public:
     VulkanContext() = default;
     ~VulkanContext();
@@ -28,17 +27,6 @@ private:
     VulkanDevice    device;
     VulkanSurface   surface;
     VulkanSwapchain swapchain;
-
-    std::vector<std::function<void()>> entityDeletionQueue;
-
-    template<typename Resource, typename... Args>
-    bool createVulkanEntity(Resource& res, std::string& errorMessage, Args&&... args) {
-        if (!res.create(std::forward<Args>(args)..., errorMessage)) {
-            return false;
-        }
-        entityDeletionQueue.push_back([&res] { res.destroy(); });
-        return true;
-    }
 };
 
 #endif //NOBLEENGINE_VULKANCONTEXT_H

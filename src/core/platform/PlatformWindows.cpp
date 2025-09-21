@@ -5,7 +5,10 @@
 #define _WIN32_WINNT 0x0A00
 
 #include "Platform.h"
+
 #include "core/Engine.h"
+#include "core/debug/Logger.h"
+
 #include "../res/resource.h"
 
 #include <cmath>
@@ -14,8 +17,6 @@
 #undef ERROR
 
 #include <vulkan/vulkan_win32.h>
-
-#include "core/debug/Logger.h"
 
 static HINSTANCE g_hInstance = nullptr;
 

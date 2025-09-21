@@ -31,6 +31,8 @@ namespace Platform {
         [[nodiscard]] int getHeight() const { return _height; }
 
         void getFramebufferSize(int& width, int& height) const;
+
+        [[nodiscard]] bool isFramebufferResized() const { return framebufferResized; }
         void setFramebufferResized(const bool resized) { framebufferResized = resized; }
 
         [[nodiscard]] WindowHandle nativeHandle() const {

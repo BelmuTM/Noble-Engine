@@ -13,6 +13,11 @@ public:
 
     ~VulkanShaderProgram();
 
+    VulkanShaderProgram(const VulkanShaderProgram&)            = delete;
+    VulkanShaderProgram& operator=(const VulkanShaderProgram&) = delete;
+    VulkanShaderProgram(VulkanShaderProgram&&)                 = delete;
+    VulkanShaderProgram& operator=(VulkanShaderProgram&&)      = delete;
+
     bool loadFromFiles(const std::vector<std::string>& shaderPaths, std::string& errorMessage);
 
     [[nodiscard]] const std::vector<vk::PipelineShaderStageCreateInfo>& getStages() const { return shaderStages; }
