@@ -24,8 +24,8 @@ public:
 
 private:
     VulkanInstance  instance;
-    VulkanDevice    device;
     VulkanSurface   surface;
+    VulkanDevice    device;
     VulkanSwapchain swapchain;
 };
 

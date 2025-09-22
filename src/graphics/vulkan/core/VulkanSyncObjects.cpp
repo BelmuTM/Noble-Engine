@@ -5,7 +5,7 @@ bool VulkanSyncObjects::create(
     const vk::Device& device, const uint32_t framesInFlight, const uint32_t swapchainImageCount,
     std::string& errorMessage
 ) noexcept {
-    _device = &device;
+    _device = device;
 
     if (!createSyncObjects(framesInFlight, swapchainImageCount, errorMessage)) return false;
 
@@ -14,9 +14,10 @@ bool VulkanSyncObjects::create(
 }
 
 void VulkanSyncObjects::destroy() noexcept {
+    if (!_device) return;
+
     cleanupOldSyncObjects();
     destroySyncObjects();
-    _device = nullptr;
 }
 
 void VulkanSyncObjects::backup() {
@@ -35,27 +36,27 @@ bool VulkanSyncObjects::createSyncObjects(
     constexpr vk::FenceCreateInfo fenceInfo{vk::FenceCreateFlagBits::eSignaled};
 
     for (size_t i = 0; i < framesInFlight; i++) {
-        VK_CREATE(_device->createSemaphore({}), imageAvailableSemaphores[i], errorMessage);
-        VK_CREATE(_device->createFence(fenceInfo), inFlightFences[i], errorMessage);
+        VK_CREATE(_device.createSemaphore({}), imageAvailableSemaphores[i], errorMessage);
+        VK_CREATE(_device.createFence(fenceInfo), inFlightFences[i], errorMessage);
     }
 
     for (auto& renderFinishedSemaphore : renderFinishedSemaphores) {
-        VK_CREATE(_device->createSemaphore({}), renderFinishedSemaphore, errorMessage);
+        VK_CREATE(_device.createSemaphore({}), renderFinishedSemaphore, errorMessage);
     }
     return true;
 }
 
 void VulkanSyncObjects::destroySyncObjects() {
     for (const auto& imageSemaphore : imageAvailableSemaphores) {
-        _device->destroySemaphore(imageSemaphore);
+        _device.destroySemaphore(imageSemaphore);
     }
 
     for (const auto& renderSemaphore : renderFinishedSemaphores) {
-        _device->destroySemaphore(renderSemaphore);
+        _device.destroySemaphore(renderSemaphore);
     }
 
     for (const auto& fence : inFlightFences) {
-        _device->destroyFence(fence);
+        _device.destroyFence(fence);
     }
 
     imageAvailableSemaphores.clear();
@@ -64,22 +65,19 @@ void VulkanSyncObjects::destroySyncObjects() {
 }
 
 void VulkanSyncObjects::cleanupOldSyncObjects() {
-    for (auto it = oldFences.begin(); it != oldFences.end();) {
-        if (_device->getFenceStatus(*it) == vk::Result::eSuccess) {
-            _device->destroyFence(*it);
-            it = oldFences.erase(it);
-        } else {
-            ++it;
-        }
+    for (const auto& imageSemaphore : oldImageAvailable) {
+        _device.destroySemaphore(imageSemaphore);
     }
 
-    for (auto it = oldImageAvailable.begin(); it != oldImageAvailable.end();) {
-        _device->destroySemaphore(*it);
-        it = oldImageAvailable.erase(it);
+    for (const auto& renderSemaphore : oldRenderFinished) {
+        _device.destroySemaphore(renderSemaphore);
     }
 
-    for (auto it = oldRenderFinished.begin(); it != oldRenderFinished.end();) {
-        _device->destroySemaphore(*it);
-        it = oldRenderFinished.erase(it);
+    for (const auto& fence : oldFences) {
+        _device.destroyFence(fence);
     }
+
+    oldImageAvailable.clear();
+    oldRenderFinished.clear();
+    oldFences.clear();
 }

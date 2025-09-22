@@ -18,11 +18,17 @@ public:
         return true;
     }
 
-    ~VulkanEntityOwner() {
+    void flushDeletionQueue() {
+        if (entityDeletionQueue.empty()) return;
+
         for (auto& destroyFunction : std::ranges::reverse_view(entityDeletionQueue)) {
             if (destroyFunction) destroyFunction();
         }
         entityDeletionQueue.clear();
+    }
+
+    ~VulkanEntityOwner() {
+        flushDeletionQueue();
     }
 };
 

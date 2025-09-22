@@ -9,7 +9,7 @@
 
 class VulkanInstance {
 public:
-    VulkanInstance() = default;
+    VulkanInstance()  = default;
     ~VulkanInstance() = default;
 
     // Implicit conversion operator
@@ -40,6 +40,7 @@ private:
         vk::DebugUtilsMessageTypeFlagsEXT             type,
         const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData,
         void*
+
     );
 };
 

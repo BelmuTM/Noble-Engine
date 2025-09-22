@@ -1,4 +1,7 @@
 #include "VulkanSwapchain.h"
+
+#include <iostream>
+
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 #include "core/debug/Logger.h"
@@ -20,7 +23,7 @@ void VulkanSwapchain::destroy() noexcept {
     for (auto& imageView : swapchainImageViews) {
         if (imageView) {
             _device->getLogicalDevice().destroyImageView(imageView);
-            imageView = nullptr;
+            imageView = VK_NULL_HANDLE;
         }
     }
 
@@ -28,10 +31,8 @@ void VulkanSwapchain::destroy() noexcept {
 
     if (swapchain) {
         _device->getLogicalDevice().destroySwapchainKHR(swapchain);
+        swapchain = VK_NULL_HANDLE;
     }
-
-    _window   = nullptr;
-    swapchain = nullptr;
 }
 
 bool VulkanSwapchain::recreate(const vk::SurfaceKHR surface, std::string& errorMessage) {
@@ -44,23 +45,11 @@ bool VulkanSwapchain::recreate(const vk::SurfaceKHR surface, std::string& errorM
 }
 
 VulkanSwapchain::SwapchainSupportInfo VulkanSwapchain::querySwapchainSupport(
-    const vk::PhysicalDevice device, const vk::SurfaceKHR _surface
+    const vk::PhysicalDevice device, const vk::SurfaceKHR _surface, std::string& errorMessage
 ) {
-    std::string errorMessage;
     const auto surfaceCapabilities = VK_CALL(device.getSurfaceCapabilitiesKHR(_surface), errorMessage);
-    if (surfaceCapabilities.result != vk::Result::eSuccess) {
-        Logger::error(errorMessage);
-    }
-
-    const auto surfaceFormats = VK_CALL(device.getSurfaceFormatsKHR(_surface), errorMessage);
-    if (surfaceFormats.result != vk::Result::eSuccess) {
-        Logger::error(errorMessage);
-    }
-
+    const auto surfaceFormats      = VK_CALL(device.getSurfaceFormatsKHR(_surface), errorMessage);
     const auto surfacePresentModes = VK_CALL(device.getSurfacePresentModesKHR(_surface), errorMessage);
-    if (surfacePresentModes.result != vk::Result::eSuccess) {
-        Logger::error(errorMessage);
-    }
 
     return {surfaceCapabilities.value, surfaceFormats.value, surfacePresentModes.value};
 }
@@ -104,11 +93,20 @@ vk::Extent2D VulkanSwapchain::chooseSwapExtent2D(const vk::SurfaceCapabilitiesKH
 }
 
 bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string& errorMessage) {
-    const auto [capabilities, formats, presentModes] = querySwapchainSupport(_device->getPhysicalDevice(), surface);
+    if (!_window) return false;
 
-    const vk::SurfaceFormatKHR surfaceFormat = chooseSurfaceFormat(formats);
-    const vk::PresentModeKHR   presentMode   = choosePresentMode(presentModes);
-    const vk::Extent2D         swapExtent    = chooseSwapExtent2D(capabilities);
+    int width, height;
+    _window->getFramebufferSize(width, height);
+    if (width == 0 || height == 0) {
+        return false;
+    }
+
+    const auto [capabilities, formats, presentModes] =
+        querySwapchainSupport(_device->getPhysicalDevice(), surface, errorMessage);
+
+    const vk::SurfaceFormatKHR& surfaceFormat = chooseSurfaceFormat(formats);
+    const vk::PresentModeKHR&   presentMode   = choosePresentMode(presentModes);
+    const vk::Extent2D&         swapExtent    = chooseSwapExtent2D(capabilities);
 
     auto minImageCount = std::max(3u, capabilities.minImageCount);
          minImageCount = capabilities.maxImageCount > 0 && minImageCount > capabilities.maxImageCount
@@ -152,7 +150,7 @@ bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string&
         swapchainInfo.setQueueFamilyIndices(nullptr);
     }
 
-    const vk::Device logicalDevice = _device->getLogicalDevice();
+    const vk::Device& logicalDevice = _device->getLogicalDevice();
 
     VK_CREATE(logicalDevice.createSwapchainKHR(swapchainInfo), swapchain, errorMessage);
 
@@ -164,15 +162,16 @@ bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string&
 }
 
 bool VulkanSwapchain::createImageViews(std::string& errorMessage) {
+    const vk::Device& logicalDevice = _device->getLogicalDevice();
+
     swapchainImageViews.clear();
+    swapchainImageViews.reserve(swapchainImages.size());
 
     vk::ImageViewCreateInfo imageViewInfo{};
     imageViewInfo
         .setViewType(vk::ImageViewType::e2D)
         .setFormat(swapchainImageFormat)
         .setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
-
-    const vk::Device logicalDevice = _device->getLogicalDevice();
 
     for (const auto swapchainImage : swapchainImages) {
         imageViewInfo.image = swapchainImage;

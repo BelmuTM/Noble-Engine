@@ -8,7 +8,7 @@
 
 class VulkanShaderProgram {
 public:
-    explicit VulkanShaderProgram(const vk::Device* device) : _device(device) {
+    explicit VulkanShaderProgram(const vk::Device& device) : _device(device) {
     }
 
     ~VulkanShaderProgram();
@@ -23,10 +23,10 @@ public:
     [[nodiscard]] const std::vector<vk::PipelineShaderStageCreateInfo>& getStages() const { return shaderStages; }
 
 private:
-    const vk::Device* _device;
+    const vk::Device _device{};
 
-    std::vector<vk::ShaderModule>                  shaderModules;
-    std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
+    std::vector<vk::ShaderModule>                  shaderModules{};
+    std::vector<vk::PipelineShaderStageCreateInfo> shaderStages{};
 
     void clearShaderModules();
 

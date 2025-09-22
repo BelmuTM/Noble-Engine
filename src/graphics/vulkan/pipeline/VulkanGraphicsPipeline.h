@@ -5,6 +5,24 @@
 #include "graphics/vulkan/core/VulkanSwapchain.h"
 #include "graphics/vulkan/common/VulkanHeader.h"
 
+#include <glm/glm.hpp>
+
+struct Vertex {
+    glm::vec2 position;
+    glm::vec3 color;
+
+    static vk::VertexInputBindingDescription getBindingDescription() {
+        return {0, sizeof(Vertex), vk::VertexInputRate::eVertex};
+    }
+
+    static std::array<vk::VertexInputAttributeDescription, 2> getAttributeDescriptions() {
+        return {
+            vk::VertexInputAttributeDescription{0, 0, vk::Format::eR32G32Sfloat   , offsetof(Vertex, position)},
+            vk::VertexInputAttributeDescription{1, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, color   )}
+        };
+    }
+};
+
 class VulkanGraphicsPipeline {
 public:
     VulkanGraphicsPipeline()  = default;
@@ -19,13 +37,18 @@ public:
     VulkanGraphicsPipeline& operator=(VulkanGraphicsPipeline&&)      = delete;
 
     [[nodiscard]] bool create(
-        const vk::Device& device, const VulkanSwapchain& swapchain, std::string& errorMessage
+        const VulkanDevice& device, const VulkanSwapchain& swapchain, std::string& errorMessage
     ) noexcept;
     void destroy() noexcept;
 
+    [[nodiscard]] vk::Buffer getVertexBuffer() const { return vertexBuffer; }
+
 private:
-    const vk::Device*      _device    = nullptr;
+    const VulkanDevice*    _device    = nullptr;
     const VulkanSwapchain* _swapchain = nullptr;
+
+    vk::Buffer       vertexBuffer{};
+    vk::DeviceMemory vertexBufferMemory{};
 
     vk::Pipeline       pipeline{};
     vk::PipelineLayout pipelineLayout{};
@@ -33,11 +56,6 @@ private:
     // -------------------------------
     //       Vulkan Info structs
     // -------------------------------
-
-    static constexpr vk::PipelineVertexInputStateCreateInfo vertexInputInfo = []{
-        constexpr vk::PipelineVertexInputStateCreateInfo info{};
-        return info;
-    }();
 
     static constexpr vk::PipelineInputAssemblyStateCreateInfo inputAssemblyInfo = []{
         vk::PipelineInputAssemblyStateCreateInfo info{};
@@ -115,6 +133,13 @@ private:
         info.setDynamicStates(dynamicStates);
         return info;
     }();
+
+    bool createBuffer(
+        vk::Buffer& buffer, vk::DeviceMemory& bufferMemory, vk::DeviceSize size, vk::BufferUsageFlags usage,
+        vk::MemoryPropertyFlags properties, std::string& errorMessage
+    ) const;
+
+    bool createVertexBuffer(std::string& errorMessage);
 
     bool createPipelineLayout(std::string& errorMessage);
     bool createPipeline(std::string& errorMessage);

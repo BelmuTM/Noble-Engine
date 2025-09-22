@@ -4,7 +4,6 @@
 
 #include <atomic>
 #include <chrono>
-#include <iostream>
 #include <thread>
 
 #include "graphics/vulkan/core/VulkanRenderer.h"
@@ -13,16 +12,18 @@ int main() {
     Logger::Manager loggerManager;
 
     if (!Platform::init()) {
-        Engine::fatalExit(ERROR_MESSAGE(Platform::init));
+        Engine::fatalExit("Failed to init platform");
     }
 
     Platform::Window window(800, 600, "Noble Engine");
     window.show();
 
     VulkanRenderer renderer;
-    renderer.init(window);
+    if (!renderer.init(window)) {
+        Engine::fatalExit("Failed to init Vulkan renderer");
+    }
 
-    std::atomic running = true;
+    std::atomic running(true);
 
     std::thread engineThread([&]() {
         using highResolutionClock = std::chrono::high_resolution_clock;
@@ -38,7 +39,7 @@ int main() {
 
             renderer.drawFrame();
 
-            frameCount++;
+            ++frameCount;
 
             const auto timeSinceLastUpdate =
                 std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastFpsUpdate).count();
@@ -58,7 +59,7 @@ int main() {
 
     while (Platform::pollEvents()) {}
 
-    running = false;
+    running.store(false);
     engineThread.join();
 
     Platform::shutdown();

@@ -31,7 +31,7 @@ public:
     std::vector<vk::Fence> imagesInFlight{};
 
 private:
-    const vk::Device* _device = nullptr;
+    vk::Device _device{};
 
     bool createSyncObjects(uint32_t framesInFlight, uint32_t swapchainImageCount, std::string& errorMessage);
     void destroySyncObjects();

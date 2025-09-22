@@ -9,7 +9,7 @@ bool VulkanSurface::create(
     const vk::Instance& instance, const Platform::Window& window, std::string& errorMessage
 ) noexcept {
     _window   = &window;
-    _instance = &instance;
+    _instance = instance;
 
     if (!createSurface(errorMessage)) { return false; }
     return true;
@@ -17,10 +17,11 @@ bool VulkanSurface::create(
 
 void VulkanSurface::destroy() noexcept {
     if (surface && _instance) {
-        _instance->destroySurfaceKHR(surface);
-        _window = nullptr;
-        surface = nullptr;
+        _instance.destroySurfaceKHR(surface);
+        surface = VK_NULL_HANDLE;
     }
+    _window   = nullptr;
+    _instance = VK_NULL_HANDLE;
 }
 
 bool VulkanSurface::createSurface(std::string& errorMessage) {
@@ -35,7 +36,7 @@ bool VulkanSurface::createSurface(std::string& errorMessage) {
     surfaceInfo.hinstance = _window->hInstance();
     surfaceInfo.hwnd      = static_cast<HWND>(_window->nativeHandle());
 
-    VK_CREATE(_instance->createWin32SurfaceKHR(surfaceInfo), surface, errorMessage);
+    VK_CREATE(_instance.createWin32SurfaceKHR(surfaceInfo), surface, errorMessage);
     return true;
 
 #elif defined(__linux__)

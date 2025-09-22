@@ -143,6 +143,9 @@ namespace Platform {
     }
 
     void Window::getFramebufferSize(int& width, int& height) const {
+        width  = 0;
+        height = 0;
+
         if (!handle || !handle->windowHandle) {
             Logger::error("Failed to get framebuffer size: window handle is null");
             return;
@@ -150,11 +153,8 @@ namespace Platform {
         const auto hwnd = static_cast<HWND>(handle->windowHandle);
 
         RECT rect;
-        if (!GetClientRect(hwnd, &rect)) {
-            width  = 0;
-            height = 0;
-            return;
-        }
+        if (!GetClientRect(hwnd, &rect)) return;
+
         const int logicalWidth  = rect.right  - rect.left;
         const int logicalHeight = rect.bottom - rect.top;
 

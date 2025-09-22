@@ -39,14 +39,14 @@ bool VulkanDevice::create(
 void VulkanDevice::destroy() noexcept {
     if (logicalDevice) {
         logicalDevice.destroy();
-        logicalDevice = nullptr;
+        logicalDevice = VK_NULL_HANDLE;
     }
     _queueFamilyIndices = {};
 }
 
 bool VulkanDevice::isPhysicalDeviceSuitable(const vk::PhysicalDevice device) {
-    const vk::PhysicalDeviceProperties properties = device.getProperties();
-    const vk::PhysicalDeviceFeatures   features   = device.getFeatures();
+    const vk::PhysicalDeviceProperties& properties = device.getProperties();
+    //const vk::PhysicalDeviceFeatures&   features   = device.getFeatures();
 
     // Eliminate current candidate device if critical conditions aren't met
     if (properties.apiVersion < VK_API_VERSION_1_3) {
@@ -93,7 +93,7 @@ VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
     const vk::PhysicalDevice device, const vk::SurfaceKHR surface
 ) {
     QueueFamilyIndices indices;
-    const auto queueFamilyProperties = device.getQueueFamilyProperties();
+    const auto& queueFamilyProperties = device.getQueueFamilyProperties();
 
     // Find a queue family with graphics capabilities
     for (int i = 0; i < queueFamilyProperties.size(); i++) {
@@ -168,4 +168,16 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
     graphicsQueue = logicalDevice.getQueue(queueFamilyIndices.graphicsFamily, 0);
     presentQueue  = logicalDevice.getQueue(queueFamilyIndices.presentFamily , 0);
     return true;
+}
+
+uint32_t VulkanDevice::findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const {
+    const vk::PhysicalDeviceMemoryProperties& memoryProperties = physicalDevice.getMemoryProperties();
+
+    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+        if (typeFilter & 1 << i &&
+            (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+    return UINT32_MAX;
 }

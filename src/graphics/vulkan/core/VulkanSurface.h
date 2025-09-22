@@ -31,9 +31,9 @@ public:
     void destroy() noexcept;
 
 private:
-    const Platform::Window* _window   = nullptr;
-    const vk::Instance*     _instance = VK_NULL_HANDLE;
+    const Platform::Window* _window = nullptr;
 
+    vk::Instance   _instance{};
     vk::SurfaceKHR surface{};
 
     bool createSurface(std::string& errorMessage);

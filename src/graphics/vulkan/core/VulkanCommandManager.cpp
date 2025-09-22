@@ -19,9 +19,11 @@ bool VulkanCommandManager::create(
 }
 
 void VulkanCommandManager::destroy() noexcept {
+    if (!_device) return;
+
     if (commandPool) {
         _device->getLogicalDevice().destroyCommandPool(commandPool);
-        commandPool = nullptr;
+        commandPool = VK_NULL_HANDLE;
     }
 
     _device    = nullptr;
@@ -106,9 +108,9 @@ void VulkanCommandManager::recordCommandBuffer(
     constexpr vk::CommandBufferBeginInfo beginInfo{};
     VK_TRY_VOID_LOG(commandBuffer.begin(beginInfo), Logger::Level::ERROR);
 
-    const vk::Extent2D extent = _swapchain->getExtent2D();
+    const vk::Extent2D& extent = _swapchain->getExtent2D();
 
-    const vk::Viewport viewport = {
+    const vk::Viewport& viewport = {
         0.0f, 0.0f, static_cast<float>(extent.width), static_cast<float>(extent.height), 0.0f, 1.0f
     };
 
@@ -143,6 +145,10 @@ void VulkanCommandManager::recordCommandBuffer(
     commandBuffer.beginRendering(renderingInfo);
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+
+    const vk::Buffer&     vertexBuffer = pipeline.getVertexBuffer();
+    const vk::DeviceSize& offset       = 0;
+    commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &offset);
 
     commandBuffer.setViewport(0, viewport);
     commandBuffer.setScissor(0, scissor);

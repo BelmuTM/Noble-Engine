@@ -12,12 +12,11 @@ static const std::unordered_map<std::string, std::pair<vk::ShaderStageFlagBits, 
 
 VulkanShaderProgram::~VulkanShaderProgram() {
     clearShaderModules();
-    _device = nullptr;
 }
 
 void VulkanShaderProgram::clearShaderModules() {
     for (const auto& module : shaderModules) {
-        _device->destroyShaderModule(module);
+        _device.destroyShaderModule(module);
     }
     shaderModules.clear();
 }
@@ -45,7 +44,7 @@ bool VulkanShaderProgram::loadFromFiles(const std::vector<std::string>& shaderPa
             return {};
         }
 
-        const vk::ShaderModule module = createShaderModule(bytecode, errorMessage);
+        const vk::ShaderModule& module = createShaderModule(bytecode, errorMessage);
         if (!module) {
             clearShaderModules();
             return false;
@@ -90,11 +89,12 @@ std::vector<char> VulkanShaderProgram::readShaderFile(const std::string& path) n
 vk::ShaderModule VulkanShaderProgram::createShaderModule(
     const std::vector<char>& code, std::string& errorMessage
 ) const {
-    vk::ShaderModuleCreateInfo shaderModuleInfo;
-    shaderModuleInfo.codeSize = code.size() * sizeof(char);
-    shaderModuleInfo.pCode    = reinterpret_cast<const uint32_t*>(code.data());
+    vk::ShaderModuleCreateInfo shaderModuleInfo{};
+    shaderModuleInfo
+        .setCodeSize(sizeof(char) * code.size())
+        .setPCode(reinterpret_cast<const uint32_t*>(code.data()));
 
-    const auto shaderModuleCreate = VK_CALL(_device->createShaderModule(shaderModuleInfo), errorMessage);
+    const auto shaderModuleCreate = VK_CALL(_device.createShaderModule(shaderModuleInfo), errorMessage);
     if (shaderModuleCreate.result != vk::Result::eSuccess) {
         return {};
     }

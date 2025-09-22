@@ -27,20 +27,20 @@ private:
     Platform::Window* _window = nullptr;
 
     VulkanContext          context;
-    VulkanGraphicsPipeline graphicsPipeline;
-    VulkanSyncObjects      syncObjects;
     VulkanCommandManager   commandManager;
+    VulkanSyncObjects      syncObjects;
+    VulkanGraphicsPipeline graphicsPipeline;
 
     unsigned int currentFrame = 0;
 
     bool handleFramebufferResize(std::string& errorMessage);
 
-    std::optional<uint32_t> acquireNextImage(std::string& errorMessage);
+    std::optional<uint32_t> acquireNextImage(std::string& errorMessage, bool& discardLogging);
 
     void waitForImageFence(uint32_t imageIndex);
 
     void recordCurrentCommandBuffer(uint32_t imageIndex);
-    bool submitCommandBuffer(uint32_t imageIndex, std::string& errorMessage);
+    bool submitCommandBuffer(uint32_t imageIndex, std::string& errorMessage, bool& discardLogging);
 
     bool recreateSwapchain(std::string& errorMessage);
 };

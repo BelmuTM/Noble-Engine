@@ -24,12 +24,12 @@ void VulkanInstance::destroy() noexcept {
     if (debugMessenger) {
         const vk::detail::DispatchLoaderDynamic dldi(instance, vkGetInstanceProcAddr);
         instance.destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, dldi);
-        debugMessenger = nullptr;
+        debugMessenger = VK_NULL_HANDLE;
     }
 
     if (instance) {
         instance.destroy();
-        instance = nullptr;
+        instance = VK_NULL_HANDLE;
     }
 }
 
@@ -51,12 +51,10 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
     applicationInfo.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
     applicationInfo.apiVersion         = Engine::VULKAN_VERSION;
 
-    const auto extensions = getRequiredExtensions();
+    const auto& extensions = getRequiredExtensions();
 
     auto availableExtensions = VK_CALL(vk::enumerateInstanceExtensionProperties(), errorMessage);
-    if (availableExtensions.result != vk::Result::eSuccess) {
-        return false;
-    }
+    if (availableExtensions.result != vk::Result::eSuccess) return false;
 
     // Ensure enabled extensions are supported by the drivers
     std::unordered_set<std::string> availableExtensionNames;
@@ -150,6 +148,7 @@ bool VulkanInstance::setupDebugMessenger(std::string& errorMessage) {
 
     VK_CREATE(instance.createDebugUtilsMessengerEXT(debugUtilsMessengerInfo, nullptr, dldi), debugMessenger,
               errorMessage);
+
 #endif
     return true;
 }

@@ -4,8 +4,6 @@
 #include "core/Engine.h"
 #include "core/debug/Logger.h"
 
-#include <iostream>
-
 static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
 VulkanRenderer::~VulkanRenderer() {
@@ -17,41 +15,58 @@ bool VulkanRenderer::init(Platform::Window& window) {
 
     std::string errorMessage = "Failed to create Vulkan context: no error message provided";
 
+    // Declare rollback guard
     const auto rollbackAndExit = [&](void*) {
         shutdown();
         Engine::fatalExit(errorMessage);
     };
     std::unique_ptr<void, decltype(rollbackAndExit)> guard(nullptr, rollbackAndExit);
 
-    if (!createVulkanEntity(&context, errorMessage, window)) return false;
+    // Create Vulkan context
+    if (!context.create(window, errorMessage)) return false;
 
-    const VulkanDevice&    device    = context.getDevice();
-    const VulkanSwapchain& swapchain = context.getSwapchain();
+    // Create entities
+    const VulkanDevice&    device              = context.getDevice();
+    const VulkanSwapchain& swapchain           = context.getSwapchain();
+    const vk::Device&      logicalDevice       = device.getLogicalDevice();
+    const uint32_t         swapchainImageCount = swapchain.getImages().size();
 
-    if (!createVulkanEntity(&commandManager, errorMessage, device, swapchain, MAX_FRAMES_IN_FLIGHT)) return false;
-
-    const vk::Device& logicalDevice       = device.getLogicalDevice();
-    const uint32_t    swapchainImageCount = swapchain.getImages().size();
-
+    if (!createVulkanEntity(&commandManager, errorMessage, device, swapchain, MAX_FRAMES_IN_FLIGHT))
+        return false;
     if (!createVulkanEntity(&syncObjects, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT, swapchainImageCount))
         return false;
+    if (!createVulkanEntity(&graphicsPipeline, errorMessage, device, swapchain))
+        return false;
 
-    if (!createVulkanEntity(&graphicsPipeline, errorMessage, logicalDevice, swapchain)) return false;
-
-    guard.release();
+    // Release rollback guard
+    if (guard.release()) return false;
     return true;
 }
 
 void VulkanRenderer::shutdown() {
-   VK_CALL_LOG(context.getDevice().getLogicalDevice().waitIdle(), Logger::Level::ERROR);
+    VK_CALL_LOG(context.getDevice().getLogicalDevice().waitIdle(), Logger::Level::ERROR);
+    flushDeletionQueue();
+
+    context.destroy();
 }
 
 void VulkanRenderer::drawFrame() {
+    bool discardLogging = false;
     std::string errorMessage;
+
+    // Declare error logging guard
+    const auto logError = [&](void*) {
+        if (!discardLogging) Logger::error(errorMessage);
+    };
+
+    std::unique_ptr<void, decltype(logError)> guard(nullptr, logError);
+
+    // Record frame
+    if (context.getSwapchain().handle() == VK_NULL_HANDLE) return;
 
     if (!handleFramebufferResize(errorMessage)) return;
 
-    const auto imageIndexOpt = acquireNextImage(errorMessage);
+    const auto imageIndexOpt = acquireNextImage(errorMessage, discardLogging);
     if (!imageIndexOpt) return;
 
     const uint32_t imageIndex = *imageIndexOpt;
@@ -59,23 +74,24 @@ void VulkanRenderer::drawFrame() {
     waitForImageFence(imageIndex);
     recordCurrentCommandBuffer(imageIndex);
 
-    if (!submitCommandBuffer(imageIndex, errorMessage)) return;
+    if (!submitCommandBuffer(imageIndex, errorMessage, discardLogging)) return;
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+
+    // Release error logging guard
+    if (guard.release()) {}
 }
 
 bool VulkanRenderer::handleFramebufferResize(std::string& errorMessage) {
     if (!_window->isFramebufferResized()) return true;
 
-    if (!recreateSwapchain(errorMessage)) {
-        Logger::error(errorMessage);
-        return false;
-    }
+    if (!recreateSwapchain(errorMessage)) return false;
+
     _window->setFramebufferResized(false);
     return true;
 }
 
-std::optional<uint32_t> VulkanRenderer::acquireNextImage(std::string& errorMessage) {
+std::optional<uint32_t> VulkanRenderer::acquireNextImage(std::string& errorMessage, bool& discardLogging) {
     const vk::Device&      logicalDevice = context.getDevice().getLogicalDevice();
     const VulkanSwapchain& swapchain     = context.getSwapchain();
 
@@ -90,12 +106,12 @@ std::optional<uint32_t> VulkanRenderer::acquireNextImage(std::string& errorMessa
 
     if (nextImageAcquire.result == vk::Result::eErrorOutOfDateKHR ||
         nextImageAcquire.result == vk::Result::eSuboptimalKHR) {
-        recreateSwapchain(errorMessage);
+        if (!recreateSwapchain(errorMessage)) return std::nullopt;
+        discardLogging = true;
         return std::nullopt;
     }
 
     if (nextImageAcquire.result != vk::Result::eSuccess) {
-        Logger::error(errorMessage);
         return std::nullopt;
     }
 
@@ -104,7 +120,6 @@ std::optional<uint32_t> VulkanRenderer::acquireNextImage(std::string& errorMessa
     if (imageIndex >= swapchain.getImages().size()) {
         errorMessage =
             "Failed to record Vulkan command buffer: image index exceeds limit (" + std::to_string(imageIndex) + ")";
-        Logger::error(errorMessage);
         return std::nullopt;
     }
     return imageIndex;
@@ -129,7 +144,7 @@ void VulkanRenderer::recordCurrentCommandBuffer(const uint32_t imageIndex) {
     commandManager.recordCommandBuffer(currentBuffer, imageIndex, graphicsPipeline);
 }
 
-bool VulkanRenderer::submitCommandBuffer(const uint32_t imageIndex, std::string& errorMessage) {
+bool VulkanRenderer::submitCommandBuffer(const uint32_t imageIndex, std::string& errorMessage, bool& discardLogging) {
     const VulkanDevice&     device    = context.getDevice();
     const vk::SwapchainKHR& swapchain = context.getSwapchain().handle();
 
@@ -156,24 +171,18 @@ bool VulkanRenderer::submitCommandBuffer(const uint32_t imageIndex, std::string&
     const auto queuePresent = VK_CALL(device.getPresentQueue().presentKHR(presentInfo), errorMessage);
 
     if (queuePresent == vk::Result::eErrorOutOfDateKHR || queuePresent == vk::Result::eSuboptimalKHR) {
-        if (!recreateSwapchain(errorMessage)) {
-            Logger::error(errorMessage);
-            return false;
-        }
+        if (!recreateSwapchain(errorMessage)) return false;
         _window->setFramebufferResized(false);
+        discardLogging = true;
         return true;
     }
-    if (queuePresent != vk::Result::eSuccess) {
-        Logger::error(errorMessage);
-        return false;
-    }
+    if (queuePresent != vk::Result::eSuccess) return false;
 
     return true;
 }
 
 bool VulkanRenderer::recreateSwapchain(std::string& errorMessage) {
     VulkanSwapchain& swapchain = context.getSwapchain();
-
     if (!swapchain.recreate(context.getSurface(), errorMessage)) return false;
 
     syncObjects.backup();

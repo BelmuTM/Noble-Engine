@@ -48,8 +48,8 @@ private:
     const VulkanDevice*     _device = nullptr;
 
     vk::SwapchainKHR           swapchain{};
-    std::vector<vk::Image>     swapchainImages;
-    std::vector<vk::ImageView> swapchainImageViews;
+    std::vector<vk::Image>     swapchainImages{};
+    std::vector<vk::ImageView> swapchainImageViews{};
 
     vk::Format   swapchainImageFormat = vk::Format::eUndefined;
     vk::Extent2D swapchainExtent{};
@@ -57,7 +57,9 @@ private:
     bool createSwapchain(vk::SurfaceKHR surface, std::string& errorMessage);
     bool createImageViews(std::string& errorMessage);
 
-    static SwapchainSupportInfo querySwapchainSupport(vk::PhysicalDevice device, vk::SurfaceKHR _surface);
+    static SwapchainSupportInfo querySwapchainSupport(
+        vk::PhysicalDevice device, vk::SurfaceKHR _surface, std::string& errorMessage
+    );
 
     static vk::SurfaceFormatKHR chooseSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats);
     static vk::PresentModeKHR   choosePresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes);

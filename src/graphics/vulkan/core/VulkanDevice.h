@@ -38,11 +38,13 @@ public:
     [[nodiscard]] vk::Queue getGraphicsQueue() const { return graphicsQueue; }
     [[nodiscard]] vk::Queue getPresentQueue() const { return presentQueue; }
 
+    [[nodiscard]] uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
+
 private:
     vk::PhysicalDevice physicalDevice{};
     vk::Device         logicalDevice{};
 
-    QueueFamilyIndices _queueFamilyIndices;
+    QueueFamilyIndices _queueFamilyIndices{};
 
     vk::Queue graphicsQueue{};
     vk::Queue presentQueue{};
