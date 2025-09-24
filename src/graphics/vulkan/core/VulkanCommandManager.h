@@ -4,7 +4,6 @@
 
 #include "VulkanSwapchain.h"
 #include "graphics/vulkan/common/VulkanHeader.h"
-#include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
 
 class VulkanCommandManager {
 public:
@@ -17,37 +16,25 @@ public:
     VulkanCommandManager& operator=(VulkanCommandManager&&)      = delete;
 
     [[nodiscard]] bool create(
-        const VulkanDevice& device, const VulkanSwapchain& swapchain, uint32_t commandBufferCount,
-        std::string& errorMessage
+        const VulkanDevice& device, uint32_t commandBufferCount, std::string& errorMessage
     ) noexcept;
     void destroy() noexcept;
 
-    [[nodiscard]] std::vector<vk::CommandBuffer>& getCommandBuffers() { return commandBuffers; }
+    [[nodiscard]] std::vector<vk::CommandBuffer>& getCommandBuffers() { return _commandBuffers; }
 
-    void recordCommandBuffer(
-        vk::CommandBuffer commandBuffer, uint32_t imageIndex, const VulkanGraphicsPipeline& pipeline
+    [[nodiscard]] bool createCommandBuffers(
+        std::vector<vk::CommandBuffer>& commandBuffers, uint32_t commandBufferCount, std::string& errorMessage
     ) const;
+
+    [[nodiscard]] bool createCommandBuffer(vk::CommandBuffer& commandBuffer, std::string& errorMessage) const;
 
 private:
-    const VulkanDevice*    _device    = nullptr;
-    const VulkanSwapchain* _swapchain = nullptr;
+    const VulkanDevice* _device = nullptr;
 
     vk::CommandPool                commandPool{};
-    std::vector<vk::CommandBuffer> commandBuffers{};
+    std::vector<vk::CommandBuffer> _commandBuffers{};
 
     bool createCommandPool(std::string& errorMessage);
-    bool createCommandBuffers(uint32_t commandBufferCount, std::string& errorMessage);
-
-    void transitionImageLayout(
-        vk::CommandBuffer       commandBuffer,
-        uint32_t                imageIndex,
-        vk::ImageLayout         oldLayout,
-        vk::ImageLayout         newLayout,
-        vk::AccessFlags2        srcAccessMask,
-        vk::AccessFlags2        dstAccessMask,
-        vk::PipelineStageFlags2 srcStageMask,
-        vk::PipelineStageFlags2 dstStageMask
-    ) const;
 };
 
 #endif //NOBLEENGINE_VULKANCOMMANDMANAGER_H

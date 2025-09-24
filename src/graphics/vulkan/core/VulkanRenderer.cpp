@@ -4,6 +4,8 @@
 #include "core/Engine.h"
 #include "core/debug/Logger.h"
 
+static constexpr vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
+
 static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
 VulkanRenderer::~VulkanRenderer() {
@@ -31,11 +33,11 @@ bool VulkanRenderer::init(Platform::Window& window) {
     const vk::Device&      logicalDevice       = device.getLogicalDevice();
     const uint32_t         swapchainImageCount = swapchain.getImages().size();
 
-    if (!createVulkanEntity(&commandManager, errorMessage, device, swapchain, MAX_FRAMES_IN_FLIGHT))
+    if (!createVulkanEntity(&commandManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT))
         return false;
     if (!createVulkanEntity(&syncObjects, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT, swapchainImageCount))
         return false;
-    if (!createVulkanEntity(&graphicsPipeline, errorMessage, device, swapchain))
+    if (!createVulkanEntity(&graphicsPipeline, errorMessage, device, swapchain, commandManager))
         return false;
 
     // Release rollback guard
@@ -102,7 +104,7 @@ std::optional<uint32_t> VulkanRenderer::acquireNextImage(std::string& errorMessa
 
     const auto nextImageAcquire =
         VK_CALL(logicalDevice.acquireNextImageKHR(swapchain.handle(), UINT64_MAX, imageAvailableSemaphore, nullptr),
-                errorMessage);
+            errorMessage);
 
     if (nextImageAcquire.result == vk::Result::eErrorOutOfDateKHR ||
         nextImageAcquire.result == vk::Result::eSuboptimalKHR) {
@@ -141,7 +143,7 @@ void VulkanRenderer::recordCurrentCommandBuffer(const uint32_t imageIndex) {
     const vk::CommandBuffer& currentBuffer = commandManager.getCommandBuffers()[currentFrame];
     VK_CALL_LOG(currentBuffer.reset(), Logger::Level::ERROR);
 
-    commandManager.recordCommandBuffer(currentBuffer, imageIndex, graphicsPipeline);
+    recordCommandBuffer(currentBuffer, imageIndex);
 }
 
 bool VulkanRenderer::submitCommandBuffer(const uint32_t imageIndex, std::string& errorMessage, bool& discardLogging) {
@@ -165,7 +167,7 @@ bool VulkanRenderer::submitCommandBuffer(const uint32_t imageIndex, std::string&
         .setSignalSemaphoreCount(1)
         .setPSignalSemaphores(&renderFinishedSemaphore);
 
-    VK_TRY_LOG(device.getGraphicsQueue().submit(submitInfo, inFlightFence), Logger::Level::ERROR);
+    VK_TRY(device.getGraphicsQueue().submit(submitInfo, inFlightFence), errorMessage);
 
     const vk::PresentInfoKHR presentInfo(renderFinishedSemaphore, swapchain, imageIndex);
     const auto queuePresent = VK_CALL(device.getPresentQueue().presentKHR(presentInfo), errorMessage);
@@ -179,6 +181,124 @@ bool VulkanRenderer::submitCommandBuffer(const uint32_t imageIndex, std::string&
     if (queuePresent != vk::Result::eSuccess) return false;
 
     return true;
+}
+
+void VulkanRenderer::transitionImageLayout(
+    const vk::CommandBuffer       commandBuffer,
+    const uint32_t                imageIndex,
+    const vk::ImageLayout         oldLayout,
+    const vk::ImageLayout         newLayout,
+    const vk::AccessFlags2        srcAccessMask,
+    const vk::AccessFlags2        dstAccessMask,
+    const vk::PipelineStageFlags2 srcStageMask,
+    const vk::PipelineStageFlags2 dstStageMask
+) const {
+    // Specify which part of the image to transition
+    vk::ImageSubresourceRange subresourceRange{};
+    subresourceRange
+        .setAspectMask(vk::ImageAspectFlagBits::eColor)
+        .setBaseMipLevel(0)
+        .setLevelCount(1)
+        .setBaseArrayLayer(0)
+        .setLayerCount(1);
+
+    // Define how the transition operates and what to change
+    vk::ImageMemoryBarrier2 barrier{};
+    barrier
+        .setSrcStageMask(srcStageMask)
+        .setSrcAccessMask(srcAccessMask)
+        .setDstStageMask(dstStageMask)
+        .setDstAccessMask(dstAccessMask)
+        .setOldLayout(oldLayout)
+        .setNewLayout(newLayout)
+        .setSrcQueueFamilyIndex(vk::QueueFamilyIgnored) // No ownership transfer to another queue family
+        .setDstQueueFamilyIndex(vk::QueueFamilyIgnored)
+        .setImage(context.getSwapchain().getImages()[imageIndex])
+        .setSubresourceRange(subresourceRange);
+
+    vk::DependencyInfo dependencyInfo{};
+    dependencyInfo
+        .setDependencyFlags({})
+        .setImageMemoryBarrierCount(1) // Can have multiple barriers per transition
+        .setPImageMemoryBarriers(&barrier);
+
+    commandBuffer.pipelineBarrier2(dependencyInfo);
+}
+
+void VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer, const uint32_t imageIndex) const {
+    if (commandBuffer == vk::CommandBuffer{}) {
+        Logger::error("Failed to record Vulkan command buffer: command buffer is null");
+        return;
+    }
+
+    constexpr vk::CommandBufferBeginInfo beginInfo{};
+    VK_TRY_VOID_LOG(commandBuffer.begin(beginInfo), Logger::Level::ERROR);
+
+    const VulkanSwapchain& swapchain = context.getSwapchain();
+    const vk::Extent2D&    extent    = swapchain.getExtent2D();
+
+    const vk::Viewport& viewport = {
+        0.0f, 0.0f, static_cast<float>(extent.width), static_cast<float>(extent.height), 0.0f, 1.0f
+    };
+
+    const auto scissor = vk::Rect2D(vk::Offset2D(0, 0), extent);
+
+    transitionImageLayout(
+        commandBuffer,
+        imageIndex,
+        vk::ImageLayout::eUndefined,
+        vk::ImageLayout::eColorAttachmentOptimal,
+        {},
+        vk::AccessFlagBits2::eColorAttachmentWrite,
+        vk::PipelineStageFlagBits2::eTopOfPipe,
+        vk::PipelineStageFlagBits2::eColorAttachmentOutput
+    );
+
+    vk::RenderingAttachmentInfo attachmentInfo{};
+    attachmentInfo
+        .setImageView(swapchain.getImageViews()[imageIndex])
+        .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eStore)
+        .setClearValue(clearColor);
+
+    vk::RenderingInfo renderingInfo{};
+    renderingInfo
+        .setRenderArea({{0, 0}, extent})
+        .setLayerCount(1)
+        .setColorAttachmentCount(1)
+        .setPColorAttachments(&attachmentInfo);
+
+    commandBuffer.beginRendering(renderingInfo);
+
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
+
+    const vk::Buffer&    vertexBuffer = graphicsPipeline.getVertexBuffer();
+    const vk::Buffer&    indexBuffer  = graphicsPipeline.getIndexBuffer();
+    const vk::DeviceSize offset       = 0;
+
+    commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &offset);
+    commandBuffer.bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16);
+
+    commandBuffer.setViewport(0, viewport);
+    commandBuffer.setScissor(0, scissor);
+
+    commandBuffer.drawIndexed(indices.size(), 1, 0, 0, 0);
+
+    commandBuffer.endRendering();
+
+    transitionImageLayout(
+        commandBuffer,
+        imageIndex,
+        vk::ImageLayout::eColorAttachmentOptimal,
+        vk::ImageLayout::ePresentSrcKHR,
+        vk::AccessFlagBits2::eColorAttachmentWrite,
+        {},
+        vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+        vk::PipelineStageFlagBits2::eBottomOfPipe
+    );
+
+    VK_CALL_LOG(commandBuffer.end(), Logger::Level::ERROR);
 }
 
 bool VulkanRenderer::recreateSwapchain(std::string& errorMessage) {

@@ -7,8 +7,8 @@
 
 #include "core/platform/Platform.h"
 
-#include "VulkanCommandManager.h"
 #include "VulkanContext.h"
+#include "VulkanCommandManager.h"
 #include "VulkanSyncObjects.h"
 #include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
 
@@ -20,8 +20,6 @@ public:
     bool init(Platform::Window& window) override;
     void shutdown() override;
     void drawFrame() override;
-
-    VulkanContext& getContext() { return context; }
 
 private:
     Platform::Window* _window = nullptr;
@@ -41,6 +39,19 @@ private:
 
     void recordCurrentCommandBuffer(uint32_t imageIndex);
     bool submitCommandBuffer(uint32_t imageIndex, std::string& errorMessage, bool& discardLogging);
+
+    void transitionImageLayout(
+        vk::CommandBuffer       commandBuffer,
+        uint32_t                imageIndex,
+        vk::ImageLayout         oldLayout,
+        vk::ImageLayout         newLayout,
+        vk::AccessFlags2        srcAccessMask,
+        vk::AccessFlags2        dstAccessMask,
+        vk::PipelineStageFlags2 srcStageMask,
+        vk::PipelineStageFlags2 dstStageMask
+    ) const;
+
+    void recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     bool recreateSwapchain(std::string& errorMessage);
 };

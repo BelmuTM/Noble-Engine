@@ -50,10 +50,10 @@ private:
     vk::Queue presentQueue{};
 
     static bool isPhysicalDeviceSuitable(vk::PhysicalDevice device);
-    bool        pickPhysicalDevice(vk::Instance instance, std::string& errorMessage);
+    bool pickPhysicalDevice(vk::Instance instance, std::string& errorMessage);
 
     static QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface);
-    bool                      createLogicalDevice(QueueFamilyIndices queueFamilyIndices, std::string& errorMessage);
+    bool createLogicalDevice(QueueFamilyIndices queueFamilyIndices, std::string& errorMessage);
 };
 
 #endif //NOBLEENGINE_VULKANDEVICE_H

@@ -40,7 +40,6 @@ private:
         vk::DebugUtilsMessageTypeFlagsEXT             type,
         const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData,
         void*
-
     );
 };
 

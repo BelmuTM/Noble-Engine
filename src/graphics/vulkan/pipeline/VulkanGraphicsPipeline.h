@@ -2,8 +2,9 @@
 #ifndef NOBLEENGINE_VULKANGRAPHICSPIPELINE_H
 #define NOBLEENGINE_VULKANGRAPHICSPIPELINE_H
 
-#include "graphics/vulkan/core/VulkanSwapchain.h"
 #include "graphics/vulkan/common/VulkanHeader.h"
+#include "graphics/vulkan/core/VulkanSwapchain.h"
+#include "graphics/vulkan/core/VulkanCommandManager.h"
 
 #include <glm/glm.hpp>
 
@@ -23,6 +24,20 @@ struct Vertex {
     }
 };
 
+const std::vector<Vertex> vertices = {
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+};
+
+const std::vector<uint16_t> indices = {
+    0, 1, 2, 2, 3, 0
+};
+
+static const vk::DeviceSize vertexBufferSize = sizeof(vertices[0]) * vertices.size();
+static const vk::DeviceSize indexBufferSize  = sizeof(indices[0])  * indices.size();
+
 class VulkanGraphicsPipeline {
 public:
     VulkanGraphicsPipeline()  = default;
@@ -37,18 +52,27 @@ public:
     VulkanGraphicsPipeline& operator=(VulkanGraphicsPipeline&&)      = delete;
 
     [[nodiscard]] bool create(
-        const VulkanDevice& device, const VulkanSwapchain& swapchain, std::string& errorMessage
+        const VulkanDevice& device, const VulkanSwapchain& swapchain, const VulkanCommandManager& commandManager,
+        std::string& errorMessage
     ) noexcept;
     void destroy() noexcept;
 
     [[nodiscard]] vk::Buffer getVertexBuffer() const { return vertexBuffer; }
+    [[nodiscard]] vk::Buffer getIndexBuffer()  const { return indexBuffer; }
 
 private:
-    const VulkanDevice*    _device    = nullptr;
-    const VulkanSwapchain* _swapchain = nullptr;
+    const VulkanDevice*         _device         = nullptr;
+    const VulkanSwapchain*      _swapchain      = nullptr;
+    const VulkanCommandManager* _commandManager = nullptr;
+
+    vk::Buffer       stagingBuffer{};
+    vk::DeviceMemory stagingBufferMemory{};
 
     vk::Buffer       vertexBuffer{};
     vk::DeviceMemory vertexBufferMemory{};
+
+    vk::Buffer       indexBuffer{};
+    vk::DeviceMemory indexBufferMemory{};
 
     vk::Pipeline       pipeline{};
     vk::PipelineLayout pipelineLayout{};
@@ -135,11 +159,27 @@ private:
     }();
 
     bool createBuffer(
-        vk::Buffer& buffer, vk::DeviceMemory& bufferMemory, vk::DeviceSize size, vk::BufferUsageFlags usage,
-        vk::MemoryPropertyFlags properties, std::string& errorMessage
+        vk::Buffer&                   buffer,
+        vk::DeviceMemory&             bufferMemory,
+        const vk::DeviceSize          size,
+        const vk::BufferUsageFlags    usage,
+        const vk::MemoryPropertyFlags properties,
+        std::string&                  errorMessage
     ) const;
 
+    bool copyBuffer(
+        vk::Buffer&    srcBuffer,
+        vk::Buffer&    dstBuffer,
+        vk::DeviceSize size,
+        vk::DeviceSize srcOffset,
+        vk::DeviceSize dstOffset,
+        std::string&   errorMessage
+    ) const;
+
+    bool createStagingBuffer(std::string& errorMessage);
+    void destroyStagingBuffer();
     bool createVertexBuffer(std::string& errorMessage);
+    bool createIndexBuffer(std::string& errorMessage);
 
     bool createPipelineLayout(std::string& errorMessage);
     bool createPipeline(std::string& errorMessage);

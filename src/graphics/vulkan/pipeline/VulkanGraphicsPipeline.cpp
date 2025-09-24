@@ -2,21 +2,23 @@
 #include "VulkanShaderProgram.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-const std::vector<Vertex> vertices = {
-    {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
-};
+// TO-DO: reuse global staging buffer pool
 
 bool VulkanGraphicsPipeline::create(
-    const VulkanDevice& device, const VulkanSwapchain& swapchain, std::string& errorMessage
+    const VulkanDevice& device, const VulkanSwapchain& swapchain, const VulkanCommandManager& commandManager,
+    std::string& errorMessage
 ) noexcept {
-    _device    = &device;
-    _swapchain = &swapchain;
+    _device         = &device;
+    _swapchain      = &swapchain;
+    _commandManager = &commandManager;
 
     if (!createPipelineLayout(errorMessage)) return false;
     if (!createPipeline(errorMessage))       return false;
+    if (!createStagingBuffer(errorMessage))  return false;
     if (!createVertexBuffer(errorMessage))   return false;
+    if (!createIndexBuffer(errorMessage))    return false;
+
+    destroyStagingBuffer();
     return true;
 }
 
@@ -31,6 +33,16 @@ void VulkanGraphicsPipeline::destroy() noexcept {
     if (vertexBufferMemory) {
         logicalDevice.freeMemory(vertexBufferMemory);
         vertexBufferMemory = VK_NULL_HANDLE;
+    }
+
+    if (indexBuffer) {
+        logicalDevice.destroyBuffer(indexBuffer);
+        indexBuffer = VK_NULL_HANDLE;
+    }
+
+    if (indexBufferMemory) {
+        logicalDevice.freeMemory(indexBufferMemory);
+        indexBufferMemory = VK_NULL_HANDLE;
     }
 
     if (pipeline) {
@@ -103,8 +115,12 @@ bool VulkanGraphicsPipeline::createPipeline(std::string& errorMessage) {
 }
 
 bool VulkanGraphicsPipeline::createBuffer(
-   vk::Buffer& buffer, vk::DeviceMemory& bufferMemory, const vk::DeviceSize size, const vk::BufferUsageFlags usage,
-   const vk::MemoryPropertyFlags properties, std::string& errorMessage
+    vk::Buffer& buffer,
+    vk::DeviceMemory& bufferMemory,
+    const vk::DeviceSize size,
+    const vk::BufferUsageFlags usage,
+    const vk::MemoryPropertyFlags properties,
+    std::string& errorMessage
 ) const {
     const vk::Device& logicalDevice = _device->getLogicalDevice();
 
@@ -130,21 +146,107 @@ bool VulkanGraphicsPipeline::createBuffer(
     return true;
 }
 
-bool VulkanGraphicsPipeline::createVertexBuffer(std::string& errorMessage) {
-    const vk::Device&     logicalDevice = _device->getLogicalDevice();
-    const vk::DeviceSize& bufferSize    = sizeof(vertices[0]) * vertices.size();
+bool VulkanGraphicsPipeline::copyBuffer(
+    vk::Buffer& srcBuffer,
+    vk::Buffer& dstBuffer,
+    vk::DeviceSize size,
+    vk::DeviceSize srcOffset,
+    vk::DeviceSize dstOffset,
+    std::string& errorMessage
+) const {
+    vk::CommandBuffer copyCommandBuffer;
+    if(!_commandManager->createCommandBuffer(copyCommandBuffer, errorMessage)) return false;
 
-    const vk::MemoryPropertyFlags& properties =
-        vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+    constexpr vk::CommandBufferBeginInfo beginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
+    VK_TRY(copyCommandBuffer.begin(beginInfo), errorMessage);
 
-    if (!createBuffer(vertexBuffer, vertexBufferMemory, bufferSize, vk::BufferUsageFlagBits::eVertexBuffer, properties,
-                      errorMessage)) return false;
+    copyCommandBuffer.copyBuffer(srcBuffer, dstBuffer, vk::BufferCopy(srcOffset, dstOffset, size));
+
+    VK_TRY(copyCommandBuffer.end(), errorMessage);
+
+    const vk::Queue& graphicsQueue = _device->getGraphicsQueue();
+
+    vk::SubmitInfo submitInfo{};
+    submitInfo
+        .setCommandBufferCount(1)
+        .setCommandBuffers(copyCommandBuffer);
+
+    VK_TRY(graphicsQueue.submit(submitInfo), errorMessage);
+    VK_TRY(graphicsQueue.waitIdle(), errorMessage);
+    return true;
+}
+
+bool VulkanGraphicsPipeline::createStagingBuffer(std::string& errorMessage) {
+    const vk::Device&    logicalDevice     = _device->getLogicalDevice();
+    const vk::DeviceSize stagingBufferSize = vertexBufferSize + indexBufferSize;
+
+    if (!createBuffer(
+            stagingBuffer,
+            stagingBufferMemory,
+            stagingBufferSize,
+            vk::BufferUsageFlagBits::eTransferSrc,
+            vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+            errorMessage
+            )) {
+        return false;
+    }
 
     // Mapping GPU allocated memory to CPU memory
-    void* data = nullptr;
-    VK_CREATE(logicalDevice.mapMemory(vertexBufferMemory, 0, bufferSize), data, errorMessage);
-    memcpy(data, vertices.data(), bufferSize);
-    logicalDevice.unmapMemory(vertexBufferMemory);
+    void* stagingData = nullptr;
+    VK_CREATE(logicalDevice.mapMemory(stagingBufferMemory, 0, stagingBufferSize), stagingData, errorMessage);
+    // Copying both vertex and index data into CPU memory using aliasing
+    memcpy(stagingData, vertices.data(), vertexBufferSize);
+    memcpy(static_cast<char*>(stagingData) + vertexBufferSize, indices.data(), indexBufferSize);
+    logicalDevice.unmapMemory(stagingBufferMemory);
+    return true;
+}
 
+void VulkanGraphicsPipeline::destroyStagingBuffer() {
+    const vk::Device& logicalDevice = _device->getLogicalDevice();
+
+    if (stagingBuffer) {
+        logicalDevice.destroyBuffer(stagingBuffer);
+        stagingBuffer = VK_NULL_HANDLE;
+    }
+
+    if (stagingBufferMemory) {
+        logicalDevice.freeMemory(stagingBufferMemory);
+        stagingBufferMemory = VK_NULL_HANDLE;
+    }
+}
+
+bool VulkanGraphicsPipeline::createVertexBuffer(std::string& errorMessage) {
+    const vk::Device& logicalDevice = _device->getLogicalDevice();
+
+    if (!createBuffer(
+        vertexBuffer,
+        vertexBufferMemory,
+        vertexBufferSize,
+        vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+        vk::MemoryPropertyFlagBits::eDeviceLocal,
+        errorMessage
+    )) {
+        return false;
+    }
+
+    if (!copyBuffer(stagingBuffer, vertexBuffer, vertexBufferSize, 0, 0, errorMessage)) return false;
+    return true;
+}
+
+bool VulkanGraphicsPipeline::createIndexBuffer(std::string& errorMessage) {
+    const vk::Device& logicalDevice = _device->getLogicalDevice();
+
+    if (!createBuffer(
+            indexBuffer,
+            indexBufferMemory,
+            indexBufferSize,
+            vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+            vk::MemoryPropertyFlagBits::eDeviceLocal,
+            errorMessage
+            )) {
+        return false;
+    }
+
+    if (!copyBuffer(stagingBuffer, indexBuffer, indexBufferSize, vertexBufferSize, 0, errorMessage)) return false;
     return true;
 }
