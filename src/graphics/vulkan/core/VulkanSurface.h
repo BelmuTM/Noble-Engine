@@ -28,6 +28,7 @@ public:
     [[nodiscard]] bool create(
         const vk::Instance& instance, const Platform::Window& window, std::string& errorMessage
     ) noexcept;
+
     void destroy() noexcept;
 
 private:

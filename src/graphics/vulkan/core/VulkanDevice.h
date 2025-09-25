@@ -17,7 +17,8 @@ public:
     VulkanDevice& operator=(VulkanDevice&&)      = delete;
 
     [[nodiscard]] bool create(vk::Instance instance, vk::SurfaceKHR surface, std::string& errorMessage) noexcept;
-    void               destroy() noexcept;
+
+    void destroy() noexcept;
 
     struct QueueFamilyIndices {
         uint32_t graphicsFamily = UINT32_MAX;

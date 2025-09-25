@@ -18,6 +18,7 @@ public:
     [[nodiscard]] bool create(
         const VulkanDevice& device, uint32_t commandBufferCount, std::string& errorMessage
     ) noexcept;
+
     void destroy() noexcept;
 
     [[nodiscard]] std::vector<vk::CommandBuffer>& getCommandBuffers() { return _commandBuffers; }

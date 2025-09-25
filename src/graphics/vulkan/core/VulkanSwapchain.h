@@ -23,6 +23,7 @@ public:
     [[nodiscard]] bool create(
         const Platform::Window& window, const VulkanDevice& device, vk::SurfaceKHR surface, std::string& errorMessage
     ) noexcept;
+
     void destroy() noexcept;
 
     [[nodiscard]] bool recreate(vk::SurfaceKHR surface, std::string& errorMessage);

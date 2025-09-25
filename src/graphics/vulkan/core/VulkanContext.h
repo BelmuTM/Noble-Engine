@@ -15,6 +15,7 @@ public:
     ~VulkanContext();
 
     bool create(const Platform::Window& window, std::string& errorMessage);
+
     void destroy();
 
     VulkanInstance&  getInstance()  { return instance; }

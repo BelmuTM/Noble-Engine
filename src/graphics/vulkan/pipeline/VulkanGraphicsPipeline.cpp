@@ -18,32 +18,15 @@ bool VulkanGraphicsPipeline::create(
     if (!createVertexBuffer(errorMessage))   return false;
     if (!createIndexBuffer(errorMessage))    return false;
 
-    destroyStagingBuffer();
+    stagingBuffer.destroy();
     return true;
 }
 
 void VulkanGraphicsPipeline::destroy() noexcept {
     const vk::Device& logicalDevice = _device->getLogicalDevice();
 
-    if (vertexBuffer) {
-        logicalDevice.destroyBuffer(vertexBuffer);
-        vertexBuffer = VK_NULL_HANDLE;
-    }
-
-    if (vertexBufferMemory) {
-        logicalDevice.freeMemory(vertexBufferMemory);
-        vertexBufferMemory = VK_NULL_HANDLE;
-    }
-
-    if (indexBuffer) {
-        logicalDevice.destroyBuffer(indexBuffer);
-        indexBuffer = VK_NULL_HANDLE;
-    }
-
-    if (indexBufferMemory) {
-        logicalDevice.freeMemory(indexBufferMemory);
-        indexBufferMemory = VK_NULL_HANDLE;
-    }
+    vertexBuffer.destroy();
+    indexBuffer.destroy();
 
     if (pipeline) {
         logicalDevice.destroyPipeline(pipeline);
@@ -114,139 +97,59 @@ bool VulkanGraphicsPipeline::createPipeline(std::string& errorMessage) {
     return true;
 }
 
-bool VulkanGraphicsPipeline::createBuffer(
-    vk::Buffer& buffer,
-    vk::DeviceMemory& bufferMemory,
-    const vk::DeviceSize size,
-    const vk::BufferUsageFlags usage,
-    const vk::MemoryPropertyFlags properties,
-    std::string& errorMessage
-) const {
-    const vk::Device& logicalDevice = _device->getLogicalDevice();
-
-    vk::BufferCreateInfo bufferInfo{};
-    bufferInfo
-        .setSize(size)
-        .setUsage(usage)
-        .setSharingMode(vk::SharingMode::eExclusive);
-
-    VK_CREATE(logicalDevice.createBuffer(bufferInfo), buffer, errorMessage);
-
-    const vk::MemoryRequirements& memoryRequirements = logicalDevice.getBufferMemoryRequirements(buffer);
-
-    const uint32_t memoryTypeIndex = _device->findMemoryType(memoryRequirements.memoryTypeBits, properties);
-
-    vk::MemoryAllocateInfo memoryAllocateInfo{};
-    memoryAllocateInfo
-        .setAllocationSize(memoryRequirements.size)
-        .setMemoryTypeIndex(memoryTypeIndex);
-
-    VK_CREATE(logicalDevice.allocateMemory(memoryAllocateInfo), bufferMemory, errorMessage);
-    VK_CALL(logicalDevice.bindBufferMemory(buffer, bufferMemory, 0), errorMessage);
-    return true;
-}
-
-bool VulkanGraphicsPipeline::copyBuffer(
-    vk::Buffer& srcBuffer,
-    vk::Buffer& dstBuffer,
-    vk::DeviceSize size,
-    vk::DeviceSize srcOffset,
-    vk::DeviceSize dstOffset,
-    std::string& errorMessage
-) const {
-    vk::CommandBuffer copyCommandBuffer;
-    if(!_commandManager->createCommandBuffer(copyCommandBuffer, errorMessage)) return false;
-
-    constexpr vk::CommandBufferBeginInfo beginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
-    VK_TRY(copyCommandBuffer.begin(beginInfo), errorMessage);
-
-    copyCommandBuffer.copyBuffer(srcBuffer, dstBuffer, vk::BufferCopy(srcOffset, dstOffset, size));
-
-    VK_TRY(copyCommandBuffer.end(), errorMessage);
-
-    const vk::Queue& graphicsQueue = _device->getGraphicsQueue();
-
-    vk::SubmitInfo submitInfo{};
-    submitInfo
-        .setCommandBufferCount(1)
-        .setCommandBuffers(copyCommandBuffer);
-
-    VK_TRY(graphicsQueue.submit(submitInfo), errorMessage);
-    VK_TRY(graphicsQueue.waitIdle(), errorMessage);
-    return true;
-}
-
 bool VulkanGraphicsPipeline::createStagingBuffer(std::string& errorMessage) {
-    const vk::Device&    logicalDevice     = _device->getLogicalDevice();
     const vk::DeviceSize stagingBufferSize = vertexBufferSize + indexBufferSize;
 
-    if (!createBuffer(
-            stagingBuffer,
-            stagingBufferMemory,
-            stagingBufferSize,
-            vk::BufferUsageFlagBits::eTransferSrc,
-            vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-            errorMessage
-            )) {
-        return false;
-    }
-
-    // Mapping GPU allocated memory to CPU memory
-    void* stagingData = nullptr;
-    VK_CREATE(logicalDevice.mapMemory(stagingBufferMemory, 0, stagingBufferSize), stagingData, errorMessage);
-    // Copying both vertex and index data into CPU memory using aliasing
-    memcpy(stagingData, vertices.data(), vertexBufferSize);
-    memcpy(static_cast<char*>(stagingData) + vertexBufferSize, indices.data(), indexBufferSize);
-    logicalDevice.unmapMemory(stagingBufferMemory);
-    return true;
-}
-
-void VulkanGraphicsPipeline::destroyStagingBuffer() {
-    const vk::Device& logicalDevice = _device->getLogicalDevice();
-
-    if (stagingBuffer) {
-        logicalDevice.destroyBuffer(stagingBuffer);
-        stagingBuffer = VK_NULL_HANDLE;
-    }
-
-    if (stagingBufferMemory) {
-        logicalDevice.freeMemory(stagingBufferMemory);
-        stagingBufferMemory = VK_NULL_HANDLE;
-    }
-}
-
-bool VulkanGraphicsPipeline::createVertexBuffer(std::string& errorMessage) {
-    const vk::Device& logicalDevice = _device->getLogicalDevice();
-
-    if (!createBuffer(
-        vertexBuffer,
-        vertexBufferMemory,
-        vertexBufferSize,
-        vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-        vk::MemoryPropertyFlagBits::eDeviceLocal,
+    if (!stagingBuffer.create(
+        stagingBufferSize,
+        vk::BufferUsageFlagBits::eTransferSrc,
+        vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+        _device,
         errorMessage
     )) {
         return false;
     }
 
-    if (!copyBuffer(stagingBuffer, vertexBuffer, vertexBufferSize, 0, 0, errorMessage)) return false;
+    // Mapping GPU allocated memory to CPU memory
+    void* stagingData = stagingBuffer.mapMemory(errorMessage);
+    if (!stagingData) return false;
+
+    // Copying both vertex and index data into CPU memory using aliasing
+    memcpy(stagingData, vertices.data(), vertexBufferSize);
+    memcpy(static_cast<char*>(stagingData) + vertexBufferSize, indices.data(), indexBufferSize);
+
+    stagingBuffer.unmapMemory();
+    return true;
+}
+
+bool VulkanGraphicsPipeline::createVertexBuffer(std::string& errorMessage) {
+    if (!vertexBuffer.create(
+        vertexBufferSize,
+        vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+        vk::MemoryPropertyFlagBits::eDeviceLocal,
+        _device,
+        errorMessage
+    )) {
+        return false;
+    }
+
+    if (!vertexBuffer.copyFrom(stagingBuffer, _commandManager, errorMessage))
+        return false;
     return true;
 }
 
 bool VulkanGraphicsPipeline::createIndexBuffer(std::string& errorMessage) {
-    const vk::Device& logicalDevice = _device->getLogicalDevice();
-
-    if (!createBuffer(
-            indexBuffer,
-            indexBufferMemory,
-            indexBufferSize,
-            vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-            vk::MemoryPropertyFlagBits::eDeviceLocal,
-            errorMessage
-            )) {
+    if (!indexBuffer.create(
+        indexBufferSize,
+        vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+        vk::MemoryPropertyFlagBits::eDeviceLocal,
+        _device,
+        errorMessage
+    )) {
         return false;
     }
 
-    if (!copyBuffer(stagingBuffer, indexBuffer, indexBufferSize, vertexBufferSize, 0, errorMessage)) return false;
+    if (!indexBuffer.copyFrom(stagingBuffer, _commandManager, errorMessage, indexBufferSize, vertexBufferSize, 0))
+        return false;
     return true;
 }

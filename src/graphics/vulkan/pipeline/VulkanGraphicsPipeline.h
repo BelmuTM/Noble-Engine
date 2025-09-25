@@ -3,7 +3,9 @@
 #define NOBLEENGINE_VULKANGRAPHICSPIPELINE_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
+#include "graphics/vulkan/core/VulkanDevice.h"
 #include "graphics/vulkan/core/VulkanSwapchain.h"
+#include "graphics/vulkan/core/VulkanBuffer.h"
 #include "graphics/vulkan/core/VulkanCommandManager.h"
 
 #include <glm/glm.hpp>
@@ -55,24 +57,20 @@ public:
         const VulkanDevice& device, const VulkanSwapchain& swapchain, const VulkanCommandManager& commandManager,
         std::string& errorMessage
     ) noexcept;
+
     void destroy() noexcept;
 
-    [[nodiscard]] vk::Buffer getVertexBuffer() const { return vertexBuffer; }
-    [[nodiscard]] vk::Buffer getIndexBuffer()  const { return indexBuffer; }
+    [[nodiscard]] const VulkanBuffer& getVertexBuffer() const { return vertexBuffer; }
+    [[nodiscard]] const VulkanBuffer& getIndexBuffer()  const { return indexBuffer; }
 
 private:
     const VulkanDevice*         _device         = nullptr;
     const VulkanSwapchain*      _swapchain      = nullptr;
     const VulkanCommandManager* _commandManager = nullptr;
 
-    vk::Buffer       stagingBuffer{};
-    vk::DeviceMemory stagingBufferMemory{};
-
-    vk::Buffer       vertexBuffer{};
-    vk::DeviceMemory vertexBufferMemory{};
-
-    vk::Buffer       indexBuffer{};
-    vk::DeviceMemory indexBufferMemory{};
+    VulkanBuffer stagingBuffer;
+    VulkanBuffer vertexBuffer;
+    VulkanBuffer indexBuffer;
 
     vk::Pipeline       pipeline{};
     vk::PipelineLayout pipelineLayout{};
@@ -158,26 +156,7 @@ private:
         return info;
     }();
 
-    bool createBuffer(
-        vk::Buffer&                   buffer,
-        vk::DeviceMemory&             bufferMemory,
-        const vk::DeviceSize          size,
-        const vk::BufferUsageFlags    usage,
-        const vk::MemoryPropertyFlags properties,
-        std::string&                  errorMessage
-    ) const;
-
-    bool copyBuffer(
-        vk::Buffer&    srcBuffer,
-        vk::Buffer&    dstBuffer,
-        vk::DeviceSize size,
-        vk::DeviceSize srcOffset,
-        vk::DeviceSize dstOffset,
-        std::string&   errorMessage
-    ) const;
-
     bool createStagingBuffer(std::string& errorMessage);
-    void destroyStagingBuffer();
     bool createVertexBuffer(std::string& errorMessage);
     bool createIndexBuffer(std::string& errorMessage);
 

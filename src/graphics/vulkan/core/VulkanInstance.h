@@ -21,7 +21,8 @@ public:
     VulkanInstance& operator=(VulkanInstance&&)      = delete;
 
     [[nodiscard]] bool create(std::string& errorMessage) noexcept;
-    void               destroy() noexcept;
+
+    void destroy() noexcept;
 
     //[[nodiscard]] vk::Instance&       getVkInstance()       { return instance; }
     //[[nodiscard]] vk::Instance const& getVkInstance() const { return instance; }

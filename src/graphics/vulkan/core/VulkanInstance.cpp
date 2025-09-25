@@ -107,7 +107,8 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
 vk::Bool32 VulkanInstance::debugCallback(
     const vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
     vk::DebugUtilsMessageTypeFlagsEXT              type,
-    const vk::DebugUtilsMessengerCallbackDataEXT*  pCallbackData, void*
+    const vk::DebugUtilsMessengerCallbackDataEXT*  pCallbackData,
+    void*
 ) {
     switch (severity) {
         case vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose:

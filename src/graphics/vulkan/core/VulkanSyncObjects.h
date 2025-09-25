@@ -17,7 +17,9 @@ public:
     [[nodiscard]] bool create(
         const vk::Device& device, uint32_t framesInFlight, uint32_t swapchainImageCount, std::string& errorMessage
     ) noexcept;
+
     void destroy() noexcept;
+
     void backup();
 
     std::vector<vk::Semaphore> imageAvailableSemaphores{};
