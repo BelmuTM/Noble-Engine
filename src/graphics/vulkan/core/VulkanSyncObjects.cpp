@@ -2,8 +2,10 @@
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 bool VulkanSyncObjects::create(
-    const vk::Device& device, const uint32_t framesInFlight, const uint32_t swapchainImageCount,
-    std::string& errorMessage
+    const vk::Device& device,
+    const uint32_t    framesInFlight,
+    const uint32_t    swapchainImageCount,
+    std::string&      errorMessage
 ) noexcept {
     _device = device;
 

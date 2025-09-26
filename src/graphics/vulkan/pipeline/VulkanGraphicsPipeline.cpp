@@ -5,18 +5,23 @@
 // TO-DO: reuse global staging buffer pool
 
 bool VulkanGraphicsPipeline::create(
-    const VulkanDevice& device, const VulkanSwapchain& swapchain, const VulkanCommandManager& commandManager,
-    std::string& errorMessage
+    const VulkanDevice&         device,
+    const VulkanSwapchain&      swapchain,
+    const VulkanCommandManager& commandManager,
+    const uint32_t              framesInFlight,
+    std::string&                errorMessage
 ) noexcept {
     _device         = &device;
     _swapchain      = &swapchain;
     _commandManager = &commandManager;
 
-    if (!createPipelineLayout(errorMessage)) return false;
-    if (!createPipeline(errorMessage))       return false;
-    if (!createStagingBuffer(errorMessage))  return false;
-    if (!createVertexBuffer(errorMessage))   return false;
-    if (!createIndexBuffer(errorMessage))    return false;
+    if (!createDescriptorSetLayout(errorMessage))            return false;
+    if (!createPipelineLayout(errorMessage))                 return false;
+    if (!createPipeline(errorMessage))                       return false;
+    if (!createStagingBuffer(errorMessage))                  return false;
+    if (!createVertexBuffer(errorMessage))                   return false;
+    if (!createIndexBuffer(errorMessage))                    return false;
+    if (!createUniformBuffers(framesInFlight, errorMessage)) return false;
 
     stagingBuffer.destroy();
     return true;
@@ -41,10 +46,30 @@ void VulkanGraphicsPipeline::destroy() noexcept {
     _swapchain = nullptr;
 }
 
+bool VulkanGraphicsPipeline::createDescriptorSetLayout(std::string& errorMessage) {
+    const vk::Device& logicalDevice = _device->getLogicalDevice();
+
+    vk::DescriptorSetLayoutBinding uboLayoutBinding{};
+    uboLayoutBinding
+        .setBinding(0)
+        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+        .setDescriptorCount(1)
+        .setStageFlags(vk::ShaderStageFlagBits::eAllGraphics);
+
+    vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
+    descriptorSetLayoutInfo
+        .setBindingCount(1)
+        .setBindings(uboLayoutBinding);
+
+    VK_CREATE(logicalDevice.createDescriptorSetLayout(descriptorSetLayoutInfo), descriptorSetLayout, errorMessage);
+    return true;
+}
+
 bool VulkanGraphicsPipeline::createPipelineLayout(std::string& errorMessage) {
     vk::PipelineLayoutCreateInfo layoutInfo{};
     layoutInfo
-        .setSetLayoutCount(0)
+        .setSetLayoutCount(1)
+        .setSetLayouts(descriptorSetLayout)
         .setPushConstantRangeCount(0);
 
     VK_CREATE(_device->getLogicalDevice().createPipelineLayout(layoutInfo), pipelineLayout, errorMessage);
@@ -151,5 +176,28 @@ bool VulkanGraphicsPipeline::createIndexBuffer(std::string& errorMessage) {
 
     if (!indexBuffer.copyFrom(stagingBuffer, _commandManager, errorMessage, indexBufferSize, vertexBufferSize, 0))
         return false;
+    return true;
+}
+
+bool VulkanGraphicsPipeline::createUniformBuffers(const uint32_t framesInFlight, std::string& errorMessage) {
+    vk::DeviceSize uniformBufferSize = sizeof(UniformBufferObject);
+
+    uniformBuffers.clear();
+
+    for (size_t i = 0; i < framesInFlight; i++) {
+        VulkanBuffer uniformBuffer;
+
+        if (!uniformBuffer.create(
+                uniformBufferSize,
+                vk::BufferUsageFlagBits::eUniformBuffer,
+                vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+                _device,
+                errorMessage
+                )) {
+            return false;
+        }
+
+        uniformBuffers.emplace_back(std::move(uniformBuffer));
+    }
     return true;
 }

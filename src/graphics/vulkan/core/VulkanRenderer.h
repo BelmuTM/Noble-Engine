@@ -54,6 +54,8 @@ private:
     void recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     bool recreateSwapchain(std::string& errorMessage);
+
+    void updateUniformBuffer();
 };
 
 #endif //NOBLEENGINE_VULKANRENDERER_H

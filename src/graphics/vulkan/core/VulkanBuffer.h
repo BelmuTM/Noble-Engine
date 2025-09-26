@@ -19,8 +19,9 @@ public:
 
     VulkanBuffer(const VulkanBuffer&)            = delete;
     VulkanBuffer& operator=(const VulkanBuffer&) = delete;
-    VulkanBuffer(VulkanBuffer&&)                 = delete;
-    VulkanBuffer& operator=(VulkanBuffer&&)      = delete;
+
+    VulkanBuffer(VulkanBuffer&&) noexcept;
+    VulkanBuffer& operator=(VulkanBuffer&&) noexcept;
 
     [[nodiscard]] bool create(
         const vk::DeviceSize          size,
@@ -65,12 +66,16 @@ public:
     void* mapMemory(std::string& errorMessage, vk::DeviceSize offset = 0, vk::DeviceSize size = VK_WHOLE_SIZE);
     void unmapMemory();
 
+    [[nodiscard]] void* getMappedPointer() const { return _mappedPointer; }
+
 private:
     const VulkanDevice* _device = nullptr;
 
     vk::Buffer       _buffer{};
     vk::DeviceSize   _bufferSize{};
     vk::DeviceMemory _bufferMemory{};
+
+    void* _mappedPointer = nullptr;
 };
 
 #endif // NOBLEENGINE_VULKANBUFFER_H

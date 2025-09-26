@@ -10,6 +10,12 @@
 
 #include <glm/glm.hpp>
 
+struct UniformBufferObject {
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 projection;
+};
+
 struct Vertex {
     glm::vec2 position;
     glm::vec3 color;
@@ -54,8 +60,11 @@ public:
     VulkanGraphicsPipeline& operator=(VulkanGraphicsPipeline&&)      = delete;
 
     [[nodiscard]] bool create(
-        const VulkanDevice& device, const VulkanSwapchain& swapchain, const VulkanCommandManager& commandManager,
-        std::string& errorMessage
+        const VulkanDevice&         device,
+        const VulkanSwapchain&      swapchain,
+        const VulkanCommandManager& commandManager,
+        uint32_t                    framesInFlight,
+        std::string&                errorMessage
     ) noexcept;
 
     void destroy() noexcept;
@@ -63,17 +72,23 @@ public:
     [[nodiscard]] const VulkanBuffer& getVertexBuffer() const { return vertexBuffer; }
     [[nodiscard]] const VulkanBuffer& getIndexBuffer()  const { return indexBuffer; }
 
+    [[nodiscard]] const std::vector<VulkanBuffer>& getUniformBuffers() const { return uniformBuffers; }
+
 private:
     const VulkanDevice*         _device         = nullptr;
     const VulkanSwapchain*      _swapchain      = nullptr;
     const VulkanCommandManager* _commandManager = nullptr;
 
+    vk::DescriptorSetLayout descriptorSetLayout{};
+
+    vk::Pipeline       pipeline{};
+    vk::PipelineLayout pipelineLayout{};
+
     VulkanBuffer stagingBuffer;
     VulkanBuffer vertexBuffer;
     VulkanBuffer indexBuffer;
 
-    vk::Pipeline       pipeline{};
-    vk::PipelineLayout pipelineLayout{};
+    std::vector<VulkanBuffer> uniformBuffers;
 
     // -------------------------------
     //       Vulkan Info structs
@@ -156,12 +171,15 @@ private:
         return info;
     }();
 
-    bool createStagingBuffer(std::string& errorMessage);
-    bool createVertexBuffer(std::string& errorMessage);
-    bool createIndexBuffer(std::string& errorMessage);
+    bool createDescriptorSetLayout(std::string& errorMessage);
 
     bool createPipelineLayout(std::string& errorMessage);
     bool createPipeline(std::string& errorMessage);
+
+    bool createStagingBuffer(std::string& errorMessage);
+    bool createVertexBuffer(std::string& errorMessage);
+    bool createIndexBuffer(std::string& errorMessage);
+    bool createUniformBuffers(uint32_t framesInFlight, std::string& errorMessage);
 };
 
 #endif //NOBLEENGINE_VULKANGRAPHICSPIPELINE_H

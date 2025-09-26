@@ -4,6 +4,11 @@
 #include "core/Engine.h"
 #include "core/debug/Logger.h"
 
+#include <chrono>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 static constexpr vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
 
 static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
@@ -37,7 +42,7 @@ bool VulkanRenderer::init(Platform::Window& window) {
         return false;
     if (!createVulkanEntity(&syncObjects, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT, swapchainImageCount))
         return false;
-    if (!createVulkanEntity(&graphicsPipeline, errorMessage, device, swapchain, commandManager))
+    if (!createVulkanEntity(&graphicsPipeline, errorMessage, device, swapchain, commandManager, MAX_FRAMES_IN_FLIGHT))
         return false;
 
     // Release rollback guard
@@ -75,6 +80,8 @@ void VulkanRenderer::drawFrame() {
 
     waitForImageFence(imageIndex);
     recordCurrentCommandBuffer(imageIndex);
+
+    updateUniformBuffer();
 
     if (!submitCommandBuffer(imageIndex, errorMessage, discardLogging)) return;
 
@@ -312,4 +319,25 @@ bool VulkanRenderer::recreateSwapchain(std::string& errorMessage) {
 
     if (!syncObjects.create(logicalDevice, MAX_FRAMES_IN_FLIGHT, swapchainImageCount, errorMessage)) return false;
     return true;
+}
+
+void VulkanRenderer::updateUniformBuffer() {
+    static auto startTime = std::chrono::high_resolution_clock::now();
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+    auto& uniformBuffers = graphicsPipeline.getUniformBuffers();
+
+    const vk::Extent2D& extent      = context.getSwapchain().getExtent2D();
+    const float         aspectRatio = static_cast<float>(extent.width) / static_cast<float>(extent.height);
+
+    UniformBufferObject ubo{};
+    ubo.model      = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.view       = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 1.0f);
+
+    ubo.projection[1][1] *= -1;
+
+    memcpy(uniformBuffers[currentFrame].getMappedPointer(), &ubo, sizeof(ubo));
 }

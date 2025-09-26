@@ -1,6 +1,35 @@
 #include "VulkanBuffer.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
+VulkanBuffer::VulkanBuffer(VulkanBuffer&& other) noexcept {
+    _device       = other._device;
+    _buffer       = other._buffer;
+    _bufferSize   = other._bufferSize;
+    _bufferMemory = other._bufferMemory;
+
+    other._device       = nullptr;
+    other._buffer       = VK_NULL_HANDLE;
+    other._bufferSize   = 0;
+    other._bufferMemory = VK_NULL_HANDLE;
+}
+
+VulkanBuffer& VulkanBuffer::operator=(VulkanBuffer&& other) noexcept {
+    if (this != &other) {
+        destroy();
+
+        _device       = other._device;
+        _buffer       = other._buffer;
+        _bufferSize   = other._bufferSize;
+        _bufferMemory = other._bufferMemory;
+
+        other._device       = nullptr;
+        other._buffer       = VK_NULL_HANDLE;
+        other._bufferSize   = 0;
+        other._bufferMemory = VK_NULL_HANDLE;
+    }
+    return *this;
+}
+
 bool VulkanBuffer::create(
     const vk::DeviceSize          size,
     const vk::BufferUsageFlags    usage,
@@ -126,11 +155,13 @@ void* VulkanBuffer::mapMemory(std::string& errorMessage, vk::DeviceSize offset, 
     if (memoryMap.result != vk::Result::eSuccess) {
         return nullptr;
     }
-    return memoryMap.value;
+    _mappedPointer = memoryMap.value;
+    return _mappedPointer;
 }
 
 void VulkanBuffer::unmapMemory() {
-    if (_device && _bufferMemory) {
+    if (_device && _bufferMemory && _mappedPointer) {
         _device->getLogicalDevice().unmapMemory(_bufferMemory);
+        _mappedPointer = nullptr;
     }
 }
