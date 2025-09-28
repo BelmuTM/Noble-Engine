@@ -15,7 +15,10 @@ public:
     VulkanSyncObjects& operator=(VulkanSyncObjects&&)      = delete;
 
     [[nodiscard]] bool create(
-        const vk::Device& device, uint32_t framesInFlight, uint32_t swapchainImageCount, std::string& errorMessage
+        const vk::Device& device,
+        uint32_t          framesInFlight,
+        uint32_t          swapchainImageCount,
+        std::string&      errorMessage
     ) noexcept;
 
     void destroy() noexcept;

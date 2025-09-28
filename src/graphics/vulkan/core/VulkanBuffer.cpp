@@ -2,30 +2,34 @@
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 VulkanBuffer::VulkanBuffer(VulkanBuffer&& other) noexcept {
-    _device       = other._device;
-    _buffer       = other._buffer;
-    _bufferSize   = other._bufferSize;
-    _bufferMemory = other._bufferMemory;
+    _device        = other._device;
+    _buffer        = other._buffer;
+    _bufferSize    = other._bufferSize;
+    _bufferMemory  = other._bufferMemory;
+    _mappedPointer = other._mappedPointer;
 
-    other._device       = nullptr;
-    other._buffer       = VK_NULL_HANDLE;
-    other._bufferSize   = 0;
-    other._bufferMemory = VK_NULL_HANDLE;
+    other._device        = nullptr;
+    other._buffer        = VK_NULL_HANDLE;
+    other._bufferSize    = 0;
+    other._bufferMemory  = VK_NULL_HANDLE;
+    other._mappedPointer = VK_NULL_HANDLE;
 }
 
 VulkanBuffer& VulkanBuffer::operator=(VulkanBuffer&& other) noexcept {
     if (this != &other) {
         destroy();
 
-        _device       = other._device;
-        _buffer       = other._buffer;
-        _bufferSize   = other._bufferSize;
-        _bufferMemory = other._bufferMemory;
+        _device        = other._device;
+        _buffer        = other._buffer;
+        _bufferSize    = other._bufferSize;
+        _bufferMemory  = other._bufferMemory;
+        _mappedPointer = other._mappedPointer;
 
-        other._device       = nullptr;
-        other._buffer       = VK_NULL_HANDLE;
-        other._bufferSize   = 0;
-        other._bufferMemory = VK_NULL_HANDLE;
+        other._device        = nullptr;
+        other._buffer        = VK_NULL_HANDLE;
+        other._bufferSize    = 0;
+        other._bufferMemory  = VK_NULL_HANDLE;
+        other._mappedPointer = VK_NULL_HANDLE;
     }
     return *this;
 }
@@ -97,11 +101,11 @@ bool VulkanBuffer::createBuffer(
 }
 
 bool VulkanBuffer::copyBuffer(
-    vk::Buffer&                 srcBuffer,
-    vk::Buffer&                 dstBuffer,
-    vk::DeviceSize              size,
-    vk::DeviceSize              srcOffset,
-    vk::DeviceSize              dstOffset,
+    const vk::Buffer&           srcBuffer,
+    const vk::Buffer&           dstBuffer,
+    const vk::DeviceSize        size,
+    const vk::DeviceSize        srcOffset,
+    const vk::DeviceSize        dstOffset,
     const VulkanDevice*         device,
     const VulkanCommandManager* commandManager,
     std::string&                errorMessage
@@ -129,13 +133,13 @@ bool VulkanBuffer::copyBuffer(
 }
 
 bool VulkanBuffer::copyFrom(
-    vk::Buffer&                 srcBuffer,
+    const vk::Buffer&           srcBuffer,
     const VulkanCommandManager* commandManager,
     std::string&                errorMessage,
     vk::DeviceSize              size,
-    vk::DeviceSize              srcOffset,
-    vk::DeviceSize              dstOffset
-) {
+    const vk::DeviceSize        srcOffset,
+    const vk::DeviceSize        dstOffset
+) const {
     if (size == VK_WHOLE_SIZE) size = _bufferSize;
 
     if (!copyBuffer(srcBuffer, _buffer, size, srcOffset, dstOffset, _device, commandManager, errorMessage))
@@ -143,7 +147,7 @@ bool VulkanBuffer::copyFrom(
     return true;
 }
 
-void* VulkanBuffer::mapMemory(std::string& errorMessage, vk::DeviceSize offset, vk::DeviceSize size) {
+void* VulkanBuffer::mapMemory(std::string& errorMessage, const vk::DeviceSize offset, vk::DeviceSize size) {
     if (!_device || !_bufferMemory) {
         errorMessage = "Failed to map buffer memory: device or memory not initialized";
         return nullptr;

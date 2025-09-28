@@ -11,8 +11,6 @@
 
 static constexpr vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
 
-static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
-
 VulkanRenderer::~VulkanRenderer() {
     shutdown();
 }
@@ -166,13 +164,10 @@ bool VulkanRenderer::submitCommandBuffer(const uint32_t imageIndex, std::string&
     constexpr vk::PipelineStageFlags waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
     vk::SubmitInfo submitInfo{};
     submitInfo
-        .setWaitSemaphoreCount(1)
-        .setPWaitSemaphores(&imageAvailableSemaphore)
+        .setWaitSemaphores(imageAvailableSemaphore)
         .setPWaitDstStageMask(&waitDestinationStageMask)
-        .setCommandBufferCount(1)
-        .setPCommandBuffers(&currentBuffer)
-        .setSignalSemaphoreCount(1)
-        .setPSignalSemaphores(&renderFinishedSemaphore);
+        .setCommandBuffers(currentBuffer)
+        .setSignalSemaphores(renderFinishedSemaphore);
 
     VK_TRY(device.getGraphicsQueue().submit(submitInfo, inFlightFence), errorMessage);
 
@@ -226,8 +221,7 @@ void VulkanRenderer::transitionImageLayout(
     vk::DependencyInfo dependencyInfo{};
     dependencyInfo
         .setDependencyFlags({})
-        .setImageMemoryBarrierCount(1) // Can have multiple barriers per transition
-        .setPImageMemoryBarriers(&barrier);
+        .setImageMemoryBarriers(barrier);
 
     commandBuffer.pipelineBarrier2(dependencyInfo);
 }
@@ -273,19 +267,23 @@ void VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer, 
     renderingInfo
         .setRenderArea({{0, 0}, extent})
         .setLayerCount(1)
-        .setColorAttachmentCount(1)
-        .setPColorAttachments(&attachmentInfo);
+        .setColorAttachments(attachmentInfo);
 
     commandBuffer.beginRendering(renderingInfo);
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
 
-    const vk::Buffer&    vertexBuffer = graphicsPipeline.getVertexBuffer();
-    const vk::Buffer&    indexBuffer  = graphicsPipeline.getIndexBuffer();
-    const vk::DeviceSize offset       = 0;
+    const vk::Buffer&        vertexBuffer = graphicsPipeline.getVertexBuffer();
+    const vk::Buffer&        indexBuffer  = graphicsPipeline.getIndexBuffer();
+    constexpr vk::DeviceSize offset       = 0;
 
     commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &offset);
     commandBuffer.bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16);
+
+    const vk::PipelineLayout& pipelineLayout = graphicsPipeline.getLayout();
+    const vk::DescriptorSet&  descriptorSet  = graphicsPipeline.getDescriptorSets()[currentFrame];
+
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, descriptorSet, nullptr);
 
     commandBuffer.setViewport(0, viewport);
     commandBuffer.setScissor(0, scissor);
@@ -324,8 +322,8 @@ bool VulkanRenderer::recreateSwapchain(std::string& errorMessage) {
 void VulkanRenderer::updateUniformBuffer() {
     static auto startTime = std::chrono::high_resolution_clock::now();
 
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+    const auto  currentTime      = std::chrono::high_resolution_clock::now();
+    const float frameTimeCounter = std::chrono::duration<float>(currentTime - startTime).count();
 
     auto& uniformBuffers = graphicsPipeline.getUniformBuffers();
 
@@ -333,9 +331,9 @@ void VulkanRenderer::updateUniformBuffer() {
     const float         aspectRatio = static_cast<float>(extent.width) / static_cast<float>(extent.height);
 
     UniformBufferObject ubo{};
-    ubo.model      = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.model      = glm::rotate(glm::mat4(1.0f), frameTimeCounter * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.view       = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 1.0f);
+    ubo.projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 10.0f);
 
     ubo.projection[1][1] *= -1;
 

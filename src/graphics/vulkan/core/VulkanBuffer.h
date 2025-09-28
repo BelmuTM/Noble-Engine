@@ -24,28 +24,28 @@ public:
     VulkanBuffer& operator=(VulkanBuffer&&) noexcept;
 
     [[nodiscard]] bool create(
-        const vk::DeviceSize          size,
-        const vk::BufferUsageFlags    usage,
-        const vk::MemoryPropertyFlags properties,
-        const VulkanDevice*           device,
-        std::string&                  errorMessage
+        vk::DeviceSize          size,
+        vk::BufferUsageFlags    usage,
+        vk::MemoryPropertyFlags properties,
+        const VulkanDevice*     device,
+        std::string&            errorMessage
     ) noexcept;
 
     void destroy() noexcept;
 
     static bool createBuffer(
-        vk::Buffer&                   buffer,
-        vk::DeviceMemory&             bufferMemory,
-        const vk::DeviceSize          size,
-        const vk::BufferUsageFlags    usage,
-        const vk::MemoryPropertyFlags properties,
-        const VulkanDevice*           device,
-        std::string&                  errorMessage
+        vk::Buffer&             buffer,
+        vk::DeviceMemory&       bufferMemory,
+        vk::DeviceSize          size,
+        vk::BufferUsageFlags    usage,
+        vk::MemoryPropertyFlags properties,
+        const VulkanDevice*     device,
+        std::string&            errorMessage
     );
 
     static bool copyBuffer(
-        vk::Buffer&                 srcBuffer,
-        vk::Buffer&                 dstBuffer,
+        const vk::Buffer&           srcBuffer,
+        const vk::Buffer&           dstBuffer,
         vk::DeviceSize              size,
         vk::DeviceSize              srcOffset,
         vk::DeviceSize              dstOffset,
@@ -55,13 +55,13 @@ public:
     );
 
     bool copyFrom(
-        vk::Buffer&                 srcBuffer,
+        const vk::Buffer&           srcBuffer,
         const VulkanCommandManager* commandManager,
         std::string&                errorMessage,
         vk::DeviceSize              size      = VK_WHOLE_SIZE,
         vk::DeviceSize              srcOffset = 0,
         vk::DeviceSize              dstOffset = 0
-    );
+    ) const;
 
     void* mapMemory(std::string& errorMessage, vk::DeviceSize offset = 0, vk::DeviceSize size = VK_WHOLE_SIZE);
     void unmapMemory();

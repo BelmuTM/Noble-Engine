@@ -159,7 +159,6 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
     vk::DeviceCreateInfo deviceInfo{};
     deviceInfo
         .setPNext(&deviceFeatures_1_3)
-        .setQueueCreateInfoCount(1)
         .setQueueCreateInfos(deviceQueueInfo)
         .setPEnabledExtensionNames(deviceExtensions);
 

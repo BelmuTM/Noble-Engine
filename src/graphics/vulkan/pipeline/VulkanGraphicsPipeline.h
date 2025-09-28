@@ -16,6 +16,8 @@ struct UniformBufferObject {
     glm::mat4 projection;
 };
 
+static constexpr vk::DeviceSize uniformBufferSize = sizeof(UniformBufferObject);
+
 struct Vertex {
     glm::vec2 position;
     glm::vec3 color;
@@ -69,10 +71,14 @@ public:
 
     void destroy() noexcept;
 
+    [[nodiscard]] const vk::PipelineLayout& getLayout() const { return pipelineLayout; }
+
     [[nodiscard]] const VulkanBuffer& getVertexBuffer() const { return vertexBuffer; }
     [[nodiscard]] const VulkanBuffer& getIndexBuffer()  const { return indexBuffer; }
 
     [[nodiscard]] const std::vector<VulkanBuffer>& getUniformBuffers() const { return uniformBuffers; }
+
+    [[nodiscard]] const std::vector<vk::DescriptorSet>& getDescriptorSets() const { return descriptorSets; }
 
 private:
     const VulkanDevice*         _device         = nullptr;
@@ -88,7 +94,10 @@ private:
     VulkanBuffer vertexBuffer;
     VulkanBuffer indexBuffer;
 
-    std::vector<VulkanBuffer> uniformBuffers;
+    std::vector<VulkanBuffer> uniformBuffers{};
+
+    vk::DescriptorPool             descriptorPool{};
+    std::vector<vk::DescriptorSet> descriptorSets{};
 
     // -------------------------------
     //       Vulkan Info structs
@@ -118,8 +127,8 @@ private:
             .setDepthClampEnable(vk::False)
             .setRasterizerDiscardEnable(vk::False)
             .setPolygonMode(vk::PolygonMode::eFill)
-            .setCullMode(vk::CullModeFlagBits::eNone)
-            .setFrontFace(vk::FrontFace::eClockwise)
+            .setCullMode(vk::CullModeFlagBits::eBack)
+            .setFrontFace(vk::FrontFace::eCounterClockwise)
             .setDepthBiasEnable(vk::False)
             .setLineWidth(1.0f);
         return info;
@@ -180,6 +189,9 @@ private:
     bool createVertexBuffer(std::string& errorMessage);
     bool createIndexBuffer(std::string& errorMessage);
     bool createUniformBuffers(uint32_t framesInFlight, std::string& errorMessage);
+
+    bool createDescriptorPool(uint32_t framesInFlight, std::string& errorMessage);
+    bool createDescriptorSets(uint32_t framesInFlight, std::string& errorMessage);
 };
 
 #endif //NOBLEENGINE_VULKANGRAPHICSPIPELINE_H

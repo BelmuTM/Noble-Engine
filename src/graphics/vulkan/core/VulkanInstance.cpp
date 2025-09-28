@@ -49,7 +49,7 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
     applicationInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     applicationInfo.pEngineName        = "NobleEngine";
     applicationInfo.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.apiVersion         = Engine::VULKAN_VERSION;
+    applicationInfo.apiVersion         = VULKAN_VERSION;
 
     const auto& extensions = getRequiredExtensions();
 
