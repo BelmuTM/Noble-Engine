@@ -1,6 +1,7 @@
 #include "VulkanDevice.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
+#include "core/Engine.h"
 #include "core/debug/Logger.h"
 
 #include <algorithm>
@@ -16,11 +17,15 @@ static const std::vector deviceExtensions = {
 };
 
 bool VulkanDevice::create(
-    const vk::Instance instance, const vk::SurfaceKHR surface, std::string& errorMessage
+    const vk::Instance&   instance,
+    const vk::SurfaceKHR& surface,
+    std::string&          errorMessage
 ) noexcept {
-    if (!pickPhysicalDevice(instance, errorMessage)) return false;
+    _instance = instance;
 
-    _queueFamilyIndices = findQueueFamilies(physicalDevice, surface);
+    if (!pickPhysicalDevice(errorMessage)) return false;
+
+    _queueFamilyIndices = findQueueFamilies(_physicalDevice, surface);
 
     if (_queueFamilyIndices.graphicsFamily == UINT32_MAX) {
         errorMessage = "Failed to find a queue with graphics capabilities";
@@ -33,13 +38,20 @@ bool VulkanDevice::create(
     }
 
     if (!createLogicalDevice(_queueFamilyIndices, errorMessage)) return false;
+
+    if (!createAllocator(errorMessage)) return false;
     return true;
 }
 
 void VulkanDevice::destroy() noexcept {
-    if (logicalDevice) {
-        logicalDevice.destroy();
-        logicalDevice = VK_NULL_HANDLE;
+    if (_allocator) {
+        vmaDestroyAllocator(_allocator);
+        _allocator = VK_NULL_HANDLE;
+    }
+
+    if (_logicalDevice) {
+        _logicalDevice.destroy();
+        _logicalDevice = VK_NULL_HANDLE;
     }
     _queueFamilyIndices = {};
 }
@@ -66,9 +78,9 @@ bool VulkanDevice::isPhysicalDeviceSuitable(const vk::PhysicalDevice device) {
     });
 }
 
-bool VulkanDevice::pickPhysicalDevice(const vk::Instance instance, std::string& errorMessage) {
+bool VulkanDevice::pickPhysicalDevice(std::string& errorMessage) {
     // Enumerate available devides
-    const auto availableDevices = VK_CALL(instance.enumeratePhysicalDevices(), errorMessage);
+    const auto availableDevices = VK_CALL(_instance.enumeratePhysicalDevices(), errorMessage);
     if (availableDevices.result != vk::Result::eSuccess) return false;
 
     // Picking the best suitable candidate within available devices
@@ -83,9 +95,9 @@ bool VulkanDevice::pickPhysicalDevice(const vk::Instance instance, std::string& 
         return false;
     }
 
-    physicalDevice = *it;
+    _physicalDevice = *it;
 
-    Logger::info("Using graphics device \"" + std::string(physicalDevice.getProperties().deviceName) + "\"");
+    Logger::info("Using graphics device \"" + std::string(_physicalDevice.getProperties().deviceName) + "\"");
     return true;
 }
 
@@ -162,21 +174,20 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
         .setQueueCreateInfos(deviceQueueInfo)
         .setPEnabledExtensionNames(deviceExtensions);
 
-    VK_CREATE(physicalDevice.createDevice(deviceInfo), logicalDevice, errorMessage);
+    VK_CREATE(_physicalDevice.createDevice(deviceInfo), _logicalDevice, errorMessage);
 
-    graphicsQueue = logicalDevice.getQueue(queueFamilyIndices.graphicsFamily, 0);
-    presentQueue  = logicalDevice.getQueue(queueFamilyIndices.presentFamily , 0);
+    _graphicsQueue = _logicalDevice.getQueue(queueFamilyIndices.graphicsFamily, 0);
+    _presentQueue  = _logicalDevice.getQueue(queueFamilyIndices.presentFamily , 0);
     return true;
 }
 
-uint32_t VulkanDevice::findMemoryType(const uint32_t typeFilter, const vk::MemoryPropertyFlags properties) const {
-    const vk::PhysicalDeviceMemoryProperties& memoryProperties = physicalDevice.getMemoryProperties();
+bool VulkanDevice::createAllocator(std::string& errorMessage) {
+    VmaAllocatorCreateInfo allocatorInfo{};
+    allocatorInfo.vulkanApiVersion = VULKAN_VERSION;
+    allocatorInfo.physicalDevice   = _physicalDevice;
+    allocatorInfo.device           = _logicalDevice;
+    allocatorInfo.instance         = _instance;
 
-    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
-        if (typeFilter & 1 << i &&
-            (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            return i;
-        }
-    }
-    return UINT32_MAX;
+    VK_TRY(vmaCreateAllocator(&allocatorInfo, &_allocator), errorMessage);
+    return true;
 }

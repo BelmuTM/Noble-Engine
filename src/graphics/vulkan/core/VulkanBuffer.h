@@ -24,23 +24,23 @@ public:
     VulkanBuffer& operator=(VulkanBuffer&&) noexcept;
 
     [[nodiscard]] bool create(
-        vk::DeviceSize          size,
-        vk::BufferUsageFlags    usage,
-        vk::MemoryPropertyFlags properties,
-        const VulkanDevice*     device,
-        std::string&            errorMessage
+        vk::DeviceSize       size,
+        vk::BufferUsageFlags usage,
+        VmaMemoryUsage       memoryUsage,
+        const VulkanDevice*  device,
+        std::string&         errorMessage
     ) noexcept;
 
     void destroy() noexcept;
 
     static bool createBuffer(
-        vk::Buffer&             buffer,
-        vk::DeviceMemory&       bufferMemory,
-        vk::DeviceSize          size,
-        vk::BufferUsageFlags    usage,
-        vk::MemoryPropertyFlags properties,
-        const VulkanDevice*     device,
-        std::string&            errorMessage
+        vk::Buffer&          buffer,
+        VmaAllocation&       allocation,
+        vk::DeviceSize       size,
+        vk::BufferUsageFlags usage,
+        VmaMemoryUsage       memoryUsage,
+        const VulkanDevice*  device,
+        std::string&         errorMessage
     );
 
     static bool copyBuffer(
@@ -63,7 +63,7 @@ public:
         vk::DeviceSize              dstOffset = 0
     ) const;
 
-    void* mapMemory(std::string& errorMessage, vk::DeviceSize offset = 0, vk::DeviceSize size = VK_WHOLE_SIZE);
+    void* mapMemory(std::string& errorMessage);
     void unmapMemory();
 
     [[nodiscard]] void* getMappedPointer() const { return _mappedPointer; }
@@ -71,9 +71,10 @@ public:
 private:
     const VulkanDevice* _device = nullptr;
 
-    vk::Buffer       _buffer{};
-    vk::DeviceSize   _bufferSize{};
-    vk::DeviceMemory _bufferMemory{};
+    vk::Buffer     _buffer{};
+    vk::DeviceSize _bufferSize{};
+
+    VmaAllocation _allocation{};
 
     void* _mappedPointer = nullptr;
 };

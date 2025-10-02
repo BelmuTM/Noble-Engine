@@ -11,10 +11,14 @@ namespace VulkanDebugger {
 
     template<typename ReturnValue>
     vk::Result getVulkanResult(ReturnValue returnValue) {
-        if constexpr (std::is_same_v<decltype(returnValue), vk::Result>) {
+        if constexpr (std::is_same_v<ReturnValue, vk::Result>) {
+            // HPP style
             return returnValue;
+        } else if constexpr (std::is_same_v<ReturnValue, VkResult>) {
+            // C style
+            return static_cast<vk::Result>(returnValue);
         } else {
-            // assume vk::ResultValue<T>
+            // Assume vk::ResultValue<T>
             return returnValue.result;
         }
     }

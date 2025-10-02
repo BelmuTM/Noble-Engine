@@ -5,13 +5,13 @@ VulkanBuffer::VulkanBuffer(VulkanBuffer&& other) noexcept {
     _device        = other._device;
     _buffer        = other._buffer;
     _bufferSize    = other._bufferSize;
-    _bufferMemory  = other._bufferMemory;
+    _allocation    = other._allocation;
     _mappedPointer = other._mappedPointer;
 
     other._device        = nullptr;
     other._buffer        = VK_NULL_HANDLE;
     other._bufferSize    = 0;
-    other._bufferMemory  = VK_NULL_HANDLE;
+    other._allocation    = VK_NULL_HANDLE;
     other._mappedPointer = VK_NULL_HANDLE;
 }
 
@@ -22,28 +22,28 @@ VulkanBuffer& VulkanBuffer::operator=(VulkanBuffer&& other) noexcept {
         _device        = other._device;
         _buffer        = other._buffer;
         _bufferSize    = other._bufferSize;
-        _bufferMemory  = other._bufferMemory;
+        _allocation    = other._allocation;
         _mappedPointer = other._mappedPointer;
 
         other._device        = nullptr;
         other._buffer        = VK_NULL_HANDLE;
         other._bufferSize    = 0;
-        other._bufferMemory  = VK_NULL_HANDLE;
+        other._allocation    = VK_NULL_HANDLE;
         other._mappedPointer = VK_NULL_HANDLE;
     }
     return *this;
 }
 
 bool VulkanBuffer::create(
-    const vk::DeviceSize          size,
-    const vk::BufferUsageFlags    usage,
-    const vk::MemoryPropertyFlags properties,
-    const VulkanDevice*           device,
-    std::string&                  errorMessage
+    const vk::DeviceSize       size,
+    const vk::BufferUsageFlags usage,
+    const VmaMemoryUsage       memoryUsage,
+    const VulkanDevice*        device,
+    std::string&               errorMessage
 ) noexcept {
     _device = device;
 
-    if (!createBuffer(_buffer, _bufferMemory, size, usage, properties, device, errorMessage)) return false;
+    if (!createBuffer(_buffer, _allocation, size, usage, memoryUsage, device, errorMessage)) return false;
 
     _bufferSize = size;
     return true;
@@ -52,31 +52,29 @@ bool VulkanBuffer::create(
 void VulkanBuffer::destroy() noexcept {
     if (!_device) return;
 
-    const vk::Device& logicalDevice = _device->getLogicalDevice();
+    const VmaAllocator allocator = _device->getAllocator();
 
-    if (_buffer) {
-        logicalDevice.destroyBuffer(_buffer);
-        _buffer = VK_NULL_HANDLE;
+    if (allocator && _buffer) {
+        unmapMemory();
+        vmaDestroyBuffer(allocator, _buffer, _allocation);
+        _buffer     = VK_NULL_HANDLE;
+        _allocation = VK_NULL_HANDLE;
     }
 
-    if (_bufferMemory) {
-        logicalDevice.freeMemory(_bufferMemory);
-        _bufferMemory = VK_NULL_HANDLE;
-    }
-
-    _device = nullptr;
+    _device        = nullptr;
+    _mappedPointer = nullptr;
 }
 
 bool VulkanBuffer::createBuffer(
-    vk::Buffer&                   buffer,
-    vk::DeviceMemory&             bufferMemory,
-    const vk::DeviceSize          size,
-    const vk::BufferUsageFlags    usage,
-    const vk::MemoryPropertyFlags properties,
-    const VulkanDevice*           device,
-    std::string&                  errorMessage
+    vk::Buffer&                buffer,
+    VmaAllocation&             allocation,
+    const vk::DeviceSize       size,
+    const vk::BufferUsageFlags usage,
+    const VmaMemoryUsage       memoryUsage,
+    const VulkanDevice*        device,
+    std::string&               errorMessage
 ) {
-    const vk::Device& logicalDevice = device->getLogicalDevice();
+    const VmaAllocator allocator = device->getAllocator();
 
     vk::BufferCreateInfo bufferInfo{};
     bufferInfo
@@ -84,19 +82,16 @@ bool VulkanBuffer::createBuffer(
         .setUsage(usage)
         .setSharingMode(vk::SharingMode::eExclusive);
 
-    VK_CREATE(logicalDevice.createBuffer(bufferInfo), buffer, errorMessage);
+    VmaAllocationCreateInfo allocationInfo{};
+    allocationInfo.usage = memoryUsage;
 
-    const vk::MemoryRequirements& memoryRequirements = logicalDevice.getBufferMemoryRequirements(buffer);
-
-    const uint32_t memoryTypeIndex = device->findMemoryType(memoryRequirements.memoryTypeBits, properties);
-
-    vk::MemoryAllocateInfo memoryAllocateInfo{};
-    memoryAllocateInfo
-        .setAllocationSize(memoryRequirements.size)
-        .setMemoryTypeIndex(memoryTypeIndex);
-
-    VK_CREATE(logicalDevice.allocateMemory(memoryAllocateInfo), bufferMemory, errorMessage);
-    VK_CALL(logicalDevice.bindBufferMemory(buffer, bufferMemory, 0), errorMessage);
+    VK_TRY(vmaCreateBuffer(allocator,
+               reinterpret_cast<const VkBufferCreateInfo*>(&bufferInfo),
+               &allocationInfo,
+               reinterpret_cast<VkBuffer*>(&buffer),
+               &allocation,
+               nullptr),
+        errorMessage);
     return true;
 }
 
@@ -147,25 +142,25 @@ bool VulkanBuffer::copyFrom(
     return true;
 }
 
-void* VulkanBuffer::mapMemory(std::string& errorMessage, const vk::DeviceSize offset, vk::DeviceSize size) {
-    if (!_device || !_bufferMemory) {
+void* VulkanBuffer::mapMemory(std::string& errorMessage) {
+    if (!_device || !_allocation) {
         errorMessage = "Failed to map buffer memory: device or memory not initialized";
         return nullptr;
     }
 
-    if (size == VK_WHOLE_SIZE) size = _bufferSize;
+    const VmaAllocator allocator = _device->getAllocator();
 
-    const auto memoryMap = VK_CALL(_device->getLogicalDevice().mapMemory(_bufferMemory, offset, size), errorMessage);
-    if (memoryMap.result != vk::Result::eSuccess) {
+    const auto memoryMap = VK_CALL(vmaMapMemory(allocator, _allocation, &_mappedPointer), errorMessage);
+    if (memoryMap != VK_SUCCESS) {
         return nullptr;
     }
-    _mappedPointer = memoryMap.value;
     return _mappedPointer;
 }
 
 void VulkanBuffer::unmapMemory() {
-    if (_device && _bufferMemory && _mappedPointer) {
-        _device->getLogicalDevice().unmapMemory(_bufferMemory);
+    if (_device && _allocation && _mappedPointer) {
+        const VmaAllocator allocator = _device->getAllocator();
+        vmaUnmapMemory(allocator, _allocation);
         _mappedPointer = nullptr;
     }
 }

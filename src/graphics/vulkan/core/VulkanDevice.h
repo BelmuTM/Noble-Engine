@@ -4,6 +4,8 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
+#include "graphics/vulkan/core/memory/VmaUsage.h"
+
 #include <string>
 
 class VulkanDevice {
@@ -16,7 +18,11 @@ public:
     VulkanDevice(VulkanDevice&&)                 = delete;
     VulkanDevice& operator=(VulkanDevice&&)      = delete;
 
-    [[nodiscard]] bool create(vk::Instance instance, vk::SurfaceKHR surface, std::string& errorMessage) noexcept;
+    [[nodiscard]] bool create(
+        const vk::Instance&   instance,
+        const vk::SurfaceKHR& surface,
+        std::string&          errorMessage
+    ) noexcept;
 
     void destroy() noexcept;
 
@@ -29,32 +35,38 @@ public:
         }
     };
 
-    [[nodiscard]] vk::PhysicalDevice getPhysicalDevice() const { return physicalDevice; }
+    [[nodiscard]] vk::PhysicalDevice getPhysicalDevice() const { return _physicalDevice; }
 
-    [[nodiscard]] vk::Device  getLogicalDevice() const { return logicalDevice; }
-    [[nodiscard]] vk::Device& getLogicalDevice()       { return logicalDevice; }
+    [[nodiscard]] vk::Device  getLogicalDevice() const { return _logicalDevice; }
+    [[nodiscard]] vk::Device& getLogicalDevice()       { return _logicalDevice; }
+
+    [[nodiscard]] VmaAllocator getAllocator() const { return _allocator; }
 
     [[nodiscard]] const QueueFamilyIndices& getQueueFamilyIndices() const { return _queueFamilyIndices; }
 
-    [[nodiscard]] vk::Queue getGraphicsQueue() const { return graphicsQueue; }
-    [[nodiscard]] vk::Queue getPresentQueue() const { return presentQueue; }
-
-    [[nodiscard]] uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
+    [[nodiscard]] vk::Queue getGraphicsQueue() const { return _graphicsQueue; }
+    [[nodiscard]] vk::Queue getPresentQueue() const { return _presentQueue; }
 
 private:
-    vk::PhysicalDevice physicalDevice{};
-    vk::Device         logicalDevice{};
+    vk::Instance _instance{};
+
+    vk::PhysicalDevice _physicalDevice{};
+    vk::Device         _logicalDevice{};
+
+    VmaAllocator _allocator{};
 
     QueueFamilyIndices _queueFamilyIndices{};
 
-    vk::Queue graphicsQueue{};
-    vk::Queue presentQueue{};
+    vk::Queue _graphicsQueue{};
+    vk::Queue _presentQueue{};
 
     static bool isPhysicalDeviceSuitable(vk::PhysicalDevice device);
-    bool pickPhysicalDevice(vk::Instance instance, std::string& errorMessage);
+    bool pickPhysicalDevice(std::string& errorMessage);
 
     static QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface);
     bool createLogicalDevice(QueueFamilyIndices queueFamilyIndices, std::string& errorMessage);
+
+    bool createAllocator(std::string& errorMessage);
 };
 
 #endif //NOBLEENGINE_VULKANDEVICE_H

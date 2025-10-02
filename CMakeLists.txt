@@ -8,7 +8,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Collect source files and add Windows resource file
 file(GLOB_RECURSE CPP_SOURCES "src/*.cpp" "src/*.h")
-add_executable(NobleEngine ${CPP_SOURCES} "res/resource.rc")
+add_executable(NobleEngine ${CPP_SOURCES} "res/resource.rc"
+        src/graphics/vulkan/core/memory/VmaUsage.h
+        src/graphics/vulkan/core/memory/VmaUsage.cpp)
 
 # Include source headers
 target_include_directories(NobleEngine PRIVATE ${CMAKE_SOURCE_DIR}/src)
@@ -30,6 +32,10 @@ option(ENABLE_VULKAN_DEBUG_UTILS "Enable Vulkan debug utils extension" ON)
 if(ENABLE_VULKAN_DEBUG_UTILS)
     add_compile_definitions(VULKAN_DEBUG_UTILS)
 endif()
+
+# Vulkan Memory Allocator (https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
+add_library(vma INTERFACE)
+target_include_directories(vma INTERFACE ${CMAKE_SOURCE_DIR}/lib/vma/include)
 
 ##########################################################
 #                  SHADERS COMPILATION                   #

@@ -134,12 +134,12 @@ bool VulkanGraphicsPipeline::createStagingBuffer(std::string& errorMessage) {
     const vk::DeviceSize stagingBufferSize = vertexBufferSize + indexBufferSize;
 
     if (!stagingBuffer.create(
-        stagingBufferSize,
-        vk::BufferUsageFlagBits::eTransferSrc,
-        vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-        _device,
-        errorMessage
-    )) {
+            stagingBufferSize,
+            vk::BufferUsageFlagBits::eTransferSrc,
+            VMA_MEMORY_USAGE_CPU_TO_GPU,
+            _device,
+            errorMessage
+        )) {
         return false;
     }
 
@@ -157,12 +157,12 @@ bool VulkanGraphicsPipeline::createStagingBuffer(std::string& errorMessage) {
 
 bool VulkanGraphicsPipeline::createVertexBuffer(std::string& errorMessage) {
     if (!vertexBuffer.create(
-        vertexBufferSize,
-        vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-        vk::MemoryPropertyFlagBits::eDeviceLocal,
-        _device,
-        errorMessage
-    )) {
+            vertexBufferSize,
+            vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+            VMA_MEMORY_USAGE_GPU_ONLY,
+            _device,
+            errorMessage
+        )) {
         return false;
     }
 
@@ -173,12 +173,12 @@ bool VulkanGraphicsPipeline::createVertexBuffer(std::string& errorMessage) {
 
 bool VulkanGraphicsPipeline::createIndexBuffer(std::string& errorMessage) {
     if (!indexBuffer.create(
-        indexBufferSize,
-        vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-        vk::MemoryPropertyFlagBits::eDeviceLocal,
-        _device,
-        errorMessage
-    )) {
+            indexBufferSize,
+            vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+            VMA_MEMORY_USAGE_GPU_ONLY,
+            _device,
+            errorMessage
+        )) {
         return false;
     }
 
@@ -196,10 +196,10 @@ bool VulkanGraphicsPipeline::createUniformBuffers(const uint32_t framesInFlight,
         if (!uniformBuffer.create(
                 uniformBufferSize,
                 vk::BufferUsageFlagBits::eUniformBuffer,
-                vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+                VMA_MEMORY_USAGE_CPU_TO_GPU,
                 _device,
                 errorMessage
-        )) {
+            )) {
             return false;
         }
 
