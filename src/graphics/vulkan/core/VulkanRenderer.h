@@ -11,6 +11,8 @@
 #include "VulkanCommandManager.h"
 #include "VulkanSyncObjects.h"
 #include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
+#include "graphics/vulkan/resources/VulkanMesh.h"
+#include "graphics/vulkan/resources/VulkanMeshManager.h"
 
 class VulkanRenderer final : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {
 public:
@@ -28,6 +30,8 @@ private:
     VulkanCommandManager   commandManager;
     VulkanSyncObjects      syncObjects;
     VulkanGraphicsPipeline graphicsPipeline;
+    VulkanMesh             mesh;
+    VulkanMeshManager      meshManager;
 
     unsigned int currentFrame = 0;
 
@@ -51,6 +55,7 @@ private:
         vk::PipelineStageFlags2 dstStageMask
     ) const;
 
+    static bool beginCommandBuffer(vk::CommandBuffer commandBuffer, std::string& errorMessage) ;
     void recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
     bool recreateSwapchain(std::string& errorMessage);

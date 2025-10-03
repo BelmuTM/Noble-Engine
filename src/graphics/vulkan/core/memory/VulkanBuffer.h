@@ -14,9 +14,6 @@ public:
     // Implicit conversion operators
     operator vk::Buffer() const { return _buffer; }
 
-    operator       vk::Buffer&()       { return _buffer; }
-    operator const vk::Buffer&() const { return _buffer; }
-
     VulkanBuffer(const VulkanBuffer&)            = delete;
     VulkanBuffer& operator=(const VulkanBuffer&) = delete;
 

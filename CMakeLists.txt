@@ -8,9 +8,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Collect source files and add Windows resource file
 file(GLOB_RECURSE CPP_SOURCES "src/*.cpp" "src/*.h")
-add_executable(NobleEngine ${CPP_SOURCES} "res/resource.rc"
-        src/graphics/vulkan/core/memory/VmaUsage.h
-        src/graphics/vulkan/core/memory/VmaUsage.cpp)
+add_executable(NobleEngine ${CPP_SOURCES} "res/resource.rc")
 
 # Include source headers
 target_include_directories(NobleEngine PRIVATE ${CMAKE_SOURCE_DIR}/src)

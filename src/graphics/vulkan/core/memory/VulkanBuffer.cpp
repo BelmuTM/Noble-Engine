@@ -106,7 +106,7 @@ bool VulkanBuffer::copyBuffer(
     std::string&                errorMessage
 ) {
     vk::CommandBuffer copyCommandBuffer;
-    if(!commandManager->createCommandBuffer(copyCommandBuffer, errorMessage)) return false;
+    if (!commandManager->createCommandBuffer(copyCommandBuffer, errorMessage)) return false;
 
     constexpr vk::CommandBufferBeginInfo beginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
     VK_TRY(copyCommandBuffer.begin(beginInfo), errorMessage);

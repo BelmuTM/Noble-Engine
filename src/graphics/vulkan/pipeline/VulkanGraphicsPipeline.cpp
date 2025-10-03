@@ -1,31 +1,24 @@
 #include "VulkanGraphicsPipeline.h"
 #include "VulkanShaderProgram.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
-
-// TO-DO: reuse global staging buffer pool
+#include "graphics/vulkan/resources/VulkanMesh.h"
 
 bool VulkanGraphicsPipeline::create(
-    const VulkanDevice&         device,
-    const VulkanSwapchain&      swapchain,
-    const VulkanCommandManager& commandManager,
-    const uint32_t              framesInFlight,
-    std::string&                errorMessage
+    const VulkanDevice&    device,
+    const VulkanSwapchain& swapchain,
+    const uint32_t         framesInFlight,
+    std::string&           errorMessage
 ) noexcept {
-    _device         = &device;
-    _swapchain      = &swapchain;
-    _commandManager = &commandManager;
+    _device    = &device;
+    _swapchain = &swapchain;
 
     if (!createDescriptorSetLayout(errorMessage))            return false;
     if (!createPipelineLayout(errorMessage))                 return false;
     if (!createPipeline(errorMessage))                       return false;
-    if (!createStagingBuffer(errorMessage))                  return false;
-    if (!createVertexBuffer(errorMessage))                   return false;
-    if (!createIndexBuffer(errorMessage))                    return false;
     if (!createUniformBuffers(framesInFlight, errorMessage)) return false;
     if (!createDescriptorPool(framesInFlight, errorMessage)) return false;
     if (!createDescriptorSets(framesInFlight, errorMessage)) return false;
 
-    stagingBuffer.destroy();
     return true;
 }
 
@@ -36,9 +29,6 @@ void VulkanGraphicsPipeline::destroy() noexcept {
         logicalDevice.destroyDescriptorPool(descriptorPool);
         descriptorPool = VK_NULL_HANDLE;
     }
-
-    vertexBuffer.destroy();
-    indexBuffer.destroy();
 
     for (auto& uniformBuffer : uniformBuffers) {
         uniformBuffer.destroy();
@@ -127,63 +117,6 @@ bool VulkanGraphicsPipeline::createPipeline(std::string& errorMessage) {
         .setRenderPass(nullptr);
 
     VK_CREATE(logicalDevice.createGraphicsPipeline(nullptr, pipelineInfo), pipeline, errorMessage);
-    return true;
-}
-
-bool VulkanGraphicsPipeline::createStagingBuffer(std::string& errorMessage) {
-    const vk::DeviceSize stagingBufferSize = vertexBufferSize + indexBufferSize;
-
-    if (!stagingBuffer.create(
-            stagingBufferSize,
-            vk::BufferUsageFlagBits::eTransferSrc,
-            VMA_MEMORY_USAGE_CPU_TO_GPU,
-            _device,
-            errorMessage
-        )) {
-        return false;
-    }
-
-    // Mapping GPU allocated memory to CPU memory
-    void* stagingData = stagingBuffer.mapMemory(errorMessage);
-    if (!stagingData) return false;
-
-    // Copying both vertex and index data into CPU memory using aliasing
-    memcpy(stagingData, vertices.data(), vertexBufferSize);
-    memcpy(static_cast<char*>(stagingData) + vertexBufferSize, indices.data(), indexBufferSize);
-
-    stagingBuffer.unmapMemory();
-    return true;
-}
-
-bool VulkanGraphicsPipeline::createVertexBuffer(std::string& errorMessage) {
-    if (!vertexBuffer.create(
-            vertexBufferSize,
-            vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-            VMA_MEMORY_USAGE_GPU_ONLY,
-            _device,
-            errorMessage
-        )) {
-        return false;
-    }
-
-    if (!vertexBuffer.copyFrom(stagingBuffer, _commandManager, errorMessage))
-        return false;
-    return true;
-}
-
-bool VulkanGraphicsPipeline::createIndexBuffer(std::string& errorMessage) {
-    if (!indexBuffer.create(
-            indexBufferSize,
-            vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-            VMA_MEMORY_USAGE_GPU_ONLY,
-            _device,
-            errorMessage
-        )) {
-        return false;
-    }
-
-    if (!indexBuffer.copyFrom(stagingBuffer, _commandManager, errorMessage, indexBufferSize, vertexBufferSize, 0))
-        return false;
     return true;
 }
 

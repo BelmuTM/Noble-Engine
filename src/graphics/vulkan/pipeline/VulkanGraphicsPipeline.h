@@ -3,10 +3,10 @@
 #define NOBLEENGINE_VULKANGRAPHICSPIPELINE_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
+#include "graphics/vulkan/core/VulkanCommandManager.h"
 #include "graphics/vulkan/core/VulkanDevice.h"
 #include "graphics/vulkan/core/VulkanSwapchain.h"
-#include "graphics/vulkan/core/VulkanBuffer.h"
-#include "graphics/vulkan/core/VulkanCommandManager.h"
+#include "graphics/vulkan/core/memory/VulkanBuffer.h"
 
 #include <glm/glm.hpp>
 
@@ -17,36 +17,6 @@ struct UniformBufferObject {
 };
 
 static constexpr vk::DeviceSize uniformBufferSize = sizeof(UniformBufferObject);
-
-struct Vertex {
-    glm::vec2 position;
-    glm::vec3 color;
-
-    static vk::VertexInputBindingDescription getBindingDescription() {
-        return {0, sizeof(Vertex), vk::VertexInputRate::eVertex};
-    }
-
-    static std::array<vk::VertexInputAttributeDescription, 2> getAttributeDescriptions() {
-        return {
-            vk::VertexInputAttributeDescription{0, 0, vk::Format::eR32G32Sfloat   , offsetof(Vertex, position)},
-            vk::VertexInputAttributeDescription{1, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, color   )}
-        };
-    }
-};
-
-const std::vector<Vertex> vertices = {
-    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
-};
-
-const std::vector<uint16_t> indices = {
-    0, 1, 2, 2, 3, 0
-};
-
-static const vk::DeviceSize vertexBufferSize = sizeof(vertices[0]) * vertices.size();
-static const vk::DeviceSize indexBufferSize  = sizeof(indices[0])  * indices.size();
 
 class VulkanGraphicsPipeline {
 public:
@@ -62,37 +32,28 @@ public:
     VulkanGraphicsPipeline& operator=(VulkanGraphicsPipeline&&)      = delete;
 
     [[nodiscard]] bool create(
-        const VulkanDevice&         device,
-        const VulkanSwapchain&      swapchain,
-        const VulkanCommandManager& commandManager,
-        uint32_t                    framesInFlight,
-        std::string&                errorMessage
+        const VulkanDevice&    device,
+        const VulkanSwapchain& swapchain,
+        uint32_t               framesInFlight,
+        std::string&           errorMessage
     ) noexcept;
 
     void destroy() noexcept;
 
     [[nodiscard]] const vk::PipelineLayout& getLayout() const { return pipelineLayout; }
 
-    [[nodiscard]] const VulkanBuffer& getVertexBuffer() const { return vertexBuffer; }
-    [[nodiscard]] const VulkanBuffer& getIndexBuffer()  const { return indexBuffer; }
-
     [[nodiscard]] const std::vector<VulkanBuffer>& getUniformBuffers() const { return uniformBuffers; }
 
     [[nodiscard]] const std::vector<vk::DescriptorSet>& getDescriptorSets() const { return descriptorSets; }
 
 private:
-    const VulkanDevice*         _device         = nullptr;
-    const VulkanSwapchain*      _swapchain      = nullptr;
-    const VulkanCommandManager* _commandManager = nullptr;
+    const VulkanDevice*    _device    = nullptr;
+    const VulkanSwapchain* _swapchain = nullptr;
 
     vk::DescriptorSetLayout descriptorSetLayout{};
 
     vk::Pipeline       pipeline{};
     vk::PipelineLayout pipelineLayout{};
-
-    VulkanBuffer stagingBuffer;
-    VulkanBuffer vertexBuffer;
-    VulkanBuffer indexBuffer;
 
     std::vector<VulkanBuffer> uniformBuffers{};
 
@@ -185,9 +146,6 @@ private:
     bool createPipelineLayout(std::string& errorMessage);
     bool createPipeline(std::string& errorMessage);
 
-    bool createStagingBuffer(std::string& errorMessage);
-    bool createVertexBuffer(std::string& errorMessage);
-    bool createIndexBuffer(std::string& errorMessage);
     bool createUniformBuffers(uint32_t framesInFlight, std::string& errorMessage);
 
     bool createDescriptorPool(uint32_t framesInFlight, std::string& errorMessage);

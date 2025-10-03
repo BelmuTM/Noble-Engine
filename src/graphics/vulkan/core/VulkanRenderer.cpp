@@ -1,5 +1,6 @@
 #include "VulkanRenderer.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
+#include "graphics/vulkan/resources/VulkanMesh.h"
 
 #include "core/Engine.h"
 #include "core/debug/Logger.h"
@@ -36,11 +37,15 @@ bool VulkanRenderer::init(Platform::Window& window) {
     const vk::Device&      logicalDevice       = device.getLogicalDevice();
     const uint32_t         swapchainImageCount = swapchain.getImages().size();
 
+    const std::vector<VulkanMesh> meshes = {mesh};
+
     if (!createVulkanEntity(&commandManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT))
         return false;
     if (!createVulkanEntity(&syncObjects, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT, swapchainImageCount))
         return false;
-    if (!createVulkanEntity(&graphicsPipeline, errorMessage, device, swapchain, commandManager, MAX_FRAMES_IN_FLIGHT))
+    if (!createVulkanEntity(&graphicsPipeline, errorMessage, device, swapchain, MAX_FRAMES_IN_FLIGHT))
+        return false;
+    if (!createVulkanEntity(&meshManager, errorMessage, device, commandManager, meshes))
         return false;
 
     // Release rollback guard
@@ -226,14 +231,24 @@ void VulkanRenderer::transitionImageLayout(
     commandBuffer.pipelineBarrier2(dependencyInfo);
 }
 
-void VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer, const uint32_t imageIndex) const {
+bool VulkanRenderer::beginCommandBuffer(const vk::CommandBuffer commandBuffer, std::string& errorMessage) {
     if (commandBuffer == vk::CommandBuffer{}) {
-        Logger::error("Failed to record Vulkan command buffer: command buffer is null");
-        return;
+        errorMessage = "Failed to beging record for Vulkan command buffer: command buffer is null";
+        return false;
     }
 
     constexpr vk::CommandBufferBeginInfo beginInfo{};
-    VK_TRY_VOID_LOG(commandBuffer.begin(beginInfo), Logger::Level::ERROR);
+    VK_TRY_LOG(commandBuffer.begin(beginInfo), Logger::Level::ERROR);
+    return true;
+}
+
+void VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer, const uint32_t imageIndex) const {
+    std::string errorMessage;
+
+    if (!beginCommandBuffer(commandBuffer, errorMessage)) {
+        Logger::error(errorMessage);
+        return;
+    }
 
     const VulkanSwapchain& swapchain = context.getSwapchain();
     const vk::Extent2D&    extent    = swapchain.getExtent2D();
@@ -273,12 +288,13 @@ void VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer, 
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
 
-    const vk::Buffer&        vertexBuffer = graphicsPipeline.getVertexBuffer();
-    const vk::Buffer&        indexBuffer  = graphicsPipeline.getIndexBuffer();
-    constexpr vk::DeviceSize offset       = 0;
+    const vk::Buffer&    vertexBuffer = meshManager.getVertexBuffer();
+    const vk::Buffer&    indexBuffer  = meshManager.getIndexBuffer();
+    const vk::DeviceSize vertexOffset = mesh.getVertexOffset();
+    const vk::DeviceSize indexOffset  = mesh.getIndexOffset();
 
-    commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &offset);
-    commandBuffer.bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16);
+    commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &vertexOffset);
+    commandBuffer.bindIndexBuffer(indexBuffer, indexOffset, vk::IndexType::eUint16);
 
     const vk::PipelineLayout& pipelineLayout = graphicsPipeline.getLayout();
     const vk::DescriptorSet&  descriptorSet  = graphicsPipeline.getDescriptorSets()[currentFrame];
@@ -288,7 +304,7 @@ void VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer, 
     commandBuffer.setViewport(0, viewport);
     commandBuffer.setScissor(0, scissor);
 
-    commandBuffer.drawIndexed(indices.size(), 1, 0, 0, 0);
+    commandBuffer.drawIndexed(mesh.getIndices().size(), 1, 0, 0, 0);
 
     commandBuffer.endRendering();
 
