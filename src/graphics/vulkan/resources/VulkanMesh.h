@@ -31,8 +31,8 @@ public:
     VulkanMesh(const VulkanMesh&) noexcept;
     VulkanMesh& operator=(const VulkanMesh&) noexcept;
 
-    VulkanMesh(VulkanMesh&&) noexcept;
-    VulkanMesh& operator=(VulkanMesh&&) noexcept;
+    VulkanMesh(VulkanMesh&&)            = delete;
+    VulkanMesh& operator=(VulkanMesh&&) = delete;
 
     [[nodiscard]] bool create(
         const VulkanDevice& device,
