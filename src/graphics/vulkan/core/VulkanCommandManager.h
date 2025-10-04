@@ -21,7 +21,8 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] std::vector<vk::CommandBuffer>& getCommandBuffers() { return _commandBuffers; }
+    [[nodiscard]]       std::vector<vk::CommandBuffer>& getCommandBuffers()       { return _commandBuffers; }
+    [[nodiscard]] const std::vector<vk::CommandBuffer>& getCommandBuffers() const { return _commandBuffers; }
 
     [[nodiscard]] bool createCommandBuffers(
         std::vector<vk::CommandBuffer>& commandBuffers, uint32_t commandBufferCount, std::string& errorMessage

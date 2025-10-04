@@ -31,11 +31,9 @@ public:
     [[nodiscard]] const vk::SwapchainKHR& handle() const { return swapchain; }
 
     [[nodiscard]] std::vector<vk::Image> getImages() const { return swapchainImages; }
-
     [[nodiscard]] std::vector<vk::ImageView> getImageViews() const { return swapchainImageViews; }
 
     [[nodiscard]] vk::Format getFormat() const { return swapchainImageFormat; }
-
     [[nodiscard]] vk::Extent2D getExtent2D() const { return swapchainExtent; }
 
 private:

@@ -9,7 +9,7 @@
 
 #include "VulkanContext.h"
 #include "VulkanCommandManager.h"
-#include "VulkanSyncObjects.h"
+#include "VulkanSwapchainManager.h"
 #include "graphics/vulkan/resources/VulkanDescriptor.h"
 #include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
 #include "graphics/vulkan/resources/VulkanUniformBuffers.h"
@@ -30,7 +30,7 @@ private:
 
     VulkanContext          context;
     VulkanCommandManager   commandManager;
-    VulkanSyncObjects      syncObjects;
+    VulkanSwapchainManager swapchainManager;
     VulkanDescriptor       descriptor;
     VulkanGraphicsPipeline pipeline;
 
@@ -41,15 +41,6 @@ private:
     VulkanFrameGraph frameGraph;
 
     unsigned int currentFrame = 0;
-
-    bool handleFramebufferResize(std::string& errorMessage);
-
-    std::optional<uint32_t> acquireNextImage(std::string& errorMessage, bool& discardLogging);
-
-    void waitForImageFence(uint32_t imageIndex);
-
-    void recordCurrentCommandBuffer(uint32_t imageIndex);
-    bool submitCommandBuffer(uint32_t imageIndex, std::string& errorMessage, bool& discardLogging);
 
     void transitionImageLayout(
         vk::CommandBuffer       commandBuffer,
@@ -62,10 +53,10 @@ private:
         vk::PipelineStageFlags2 dstStageMask
     ) const;
 
-    static bool beginCommandBuffer(vk::CommandBuffer commandBuffer, std::string& errorMessage) ;
-    void recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
+    static bool beginCommandBuffer(vk::CommandBuffer commandBuffer, std::string& errorMessage);
 
-    bool recreateSwapchain(std::string& errorMessage);
+    void recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
+    void recordCurrentCommandBuffer(uint32_t imageIndex);
 
     void updateUniformBuffer();
 };

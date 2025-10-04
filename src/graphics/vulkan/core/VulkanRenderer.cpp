@@ -36,13 +36,13 @@ bool VulkanRenderer::init(Platform::Window& window) {
     const vk::Device&      logicalDevice       = device.getLogicalDevice();
     const uint32_t         swapchainImageCount = swapchain.getImages().size();
 
-    if (!createVulkanEntity(&commandManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT)) return false;
-
-    if (!createVulkanEntity(&syncObjects, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT, swapchainImageCount))
+    if (!createVulkanEntity(
+        &swapchainManager, errorMessage, context, window, MAX_FRAMES_IN_FLIGHT, swapchainImageCount
+        ))
         return false;
 
-    if (!createVulkanEntity(&uniformBuffers, errorMessage, device, MAX_FRAMES_IN_FLIGHT)) return false;
-
+    if (!createVulkanEntity(&commandManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT))    return false;
+    if (!createVulkanEntity(&uniformBuffers, errorMessage, device, MAX_FRAMES_IN_FLIGHT))    return false;
     if (!createVulkanEntity(&descriptor, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT)) return false;
 
     vk::DescriptorSetLayoutBinding uboLayoutBinding{};
@@ -100,135 +100,25 @@ void VulkanRenderer::drawFrame() {
     bool discardLogging = false;
     std::string errorMessage;
 
-    // Declare error logging guard
     ScopeGuard guard{[&discardLogging, &errorMessage] {
         if (!discardLogging) Logger::error(errorMessage);
     }};
 
-    // Record frame
-    if (!handleFramebufferResize(errorMessage)) return;
+    if (!swapchainManager.handleFramebufferResize(errorMessage)) return;
 
-    const auto imageIndexOpt = acquireNextImage(errorMessage, discardLogging);
+    const auto imageIndexOpt = swapchainManager.acquireNextImage(currentFrame, errorMessage, discardLogging);
     if (!imageIndexOpt) return;
 
     const uint32_t imageIndex = *imageIndexOpt;
 
-    waitForImageFence(imageIndex);
     recordCurrentCommandBuffer(imageIndex);
-
     updateUniformBuffer();
 
-    if (!submitCommandBuffer(imageIndex, errorMessage, discardLogging)) return;
+    if (!swapchainManager.submitCommandBuffer(commandManager, currentFrame, imageIndex, errorMessage, discardLogging))
+        return;
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-
     guard.release();
-}
-
-bool VulkanRenderer::handleFramebufferResize(std::string& errorMessage) {
-    if (!_window->isFramebufferResized()) return true;
-
-    if (!recreateSwapchain(errorMessage)) return false;
-
-    _window->setFramebufferResized(false);
-    return true;
-}
-
-std::optional<uint32_t> VulkanRenderer::acquireNextImage(std::string& errorMessage, bool& discardLogging) {
-    const vk::Device&      logicalDevice = context.getDevice().getLogicalDevice();
-    const VulkanSwapchain& swapchain     = context.getSwapchain();
-
-    if (swapchain.handle() == VK_NULL_HANDLE) {
-        discardLogging = true;
-        return std::nullopt;
-    }
-
-    const vk::Semaphore& imageAvailableSemaphore = syncObjects.imageAvailableSemaphores[currentFrame];
-    const vk::Fence&     inFlightFence           = syncObjects.inFlightFences[currentFrame];
-
-    while (vk::Result::eTimeout == logicalDevice.waitForFences(inFlightFence, vk::True, UINT64_MAX)) {}
-
-    const auto nextImageAcquire =
-        VK_CALL(logicalDevice.acquireNextImageKHR(swapchain.handle(), UINT64_MAX, imageAvailableSemaphore, nullptr),
-            errorMessage);
-
-    if (nextImageAcquire.result == vk::Result::eErrorOutOfDateKHR ||
-        nextImageAcquire.result == vk::Result::eSuboptimalKHR) {
-        discardLogging = true;
-        if (!recreateSwapchain(errorMessage)) return std::nullopt;
-        return std::nullopt;
-    }
-
-    if (nextImageAcquire.result != vk::Result::eSuccess) {
-        return std::nullopt;
-    }
-
-    const uint32_t imageIndex = nextImageAcquire.value;
-
-    if (imageIndex >= swapchain.getImages().size()) {
-        errorMessage =
-            "Failed to record Vulkan command buffer: image index exceeds limit (" + std::to_string(imageIndex) + ")";
-        return std::nullopt;
-    }
-    return imageIndex;
-}
-
-void VulkanRenderer::waitForImageFence(const uint32_t imageIndex) {
-    const vk::Device& logicalDevice = context.getDevice().getLogicalDevice();
-    const vk::Fence&  inFlightFence = syncObjects.inFlightFences[currentFrame];
-
-    if (const vk::Fence imageInFlight = syncObjects.imagesInFlight[imageIndex]) {
-        VK_CALL_LOG(logicalDevice.waitForFences(imageInFlight, vk::True, UINT64_MAX), Logger::Level::ERROR);
-    }
-    syncObjects.imagesInFlight[imageIndex] = inFlightFence;
-
-    VK_TRY_VOID_LOG(logicalDevice.resetFences(inFlightFence), Logger::Level::ERROR);
-}
-
-void VulkanRenderer::recordCurrentCommandBuffer(const uint32_t imageIndex) {
-    const vk::CommandBuffer& currentBuffer = commandManager.getCommandBuffers()[currentFrame];
-    VK_CALL_LOG(currentBuffer.reset(), Logger::Level::ERROR);
-
-    recordCommandBuffer(currentBuffer, imageIndex);
-}
-
-bool VulkanRenderer::submitCommandBuffer(const uint32_t imageIndex, std::string& errorMessage, bool& discardLogging) {
-    const VulkanDevice&     device    = context.getDevice();
-    const vk::SwapchainKHR& swapchain = context.getSwapchain().handle();
-
-    if (swapchain == VK_NULL_HANDLE) {
-        discardLogging = true;
-        return false;
-    }
-
-    const vk::CommandBuffer& currentBuffer = commandManager.getCommandBuffers()[currentFrame];
-
-    const vk::Semaphore& imageAvailableSemaphore = syncObjects.imageAvailableSemaphores[currentFrame];
-    const vk::Fence&     inFlightFence           = syncObjects.inFlightFences[currentFrame];
-    const vk::Semaphore& renderFinishedSemaphore = syncObjects.renderFinishedSemaphores[imageIndex];
-
-    constexpr vk::PipelineStageFlags waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
-    vk::SubmitInfo submitInfo{};
-    submitInfo
-        .setWaitSemaphores(imageAvailableSemaphore)
-        .setPWaitDstStageMask(&waitDestinationStageMask)
-        .setCommandBuffers(currentBuffer)
-        .setSignalSemaphores(renderFinishedSemaphore);
-
-    VK_TRY(device.getGraphicsQueue().submit(submitInfo, inFlightFence), errorMessage);
-
-    const vk::PresentInfoKHR presentInfo(renderFinishedSemaphore, swapchain, imageIndex);
-    const auto queuePresent = VK_CALL(device.getPresentQueue().presentKHR(presentInfo), errorMessage);
-
-    if (queuePresent == vk::Result::eErrorOutOfDateKHR || queuePresent == vk::Result::eSuboptimalKHR) {
-        discardLogging = true;
-        if (!recreateSwapchain(errorMessage)) return false;
-        _window->setFramebufferResized(false);
-        return true;
-    }
-    if (queuePresent != vk::Result::eSuccess) return false;
-
-    return true;
 }
 
 void VulkanRenderer::transitionImageLayout(
@@ -353,19 +243,14 @@ void VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer, 
     VK_CALL_LOG(commandBuffer.end(), Logger::Level::ERROR);
 }
 
-bool VulkanRenderer::recreateSwapchain(std::string& errorMessage) {
-    VulkanSwapchain& swapchain = context.getSwapchain();
-    if (!swapchain.recreate(context.getSurface(), errorMessage)) return false;
+void VulkanRenderer::recordCurrentCommandBuffer(const uint32_t imageIndex) {
+    const vk::CommandBuffer& currentBuffer = commandManager.getCommandBuffers()[currentFrame];
+    VK_CALL_LOG(currentBuffer.reset(), Logger::Level::ERROR);
 
-    syncObjects.backup();
-
-    const vk::Device& logicalDevice       = context.getDevice().getLogicalDevice();
-    const uint32_t    swapchainImageCount = swapchain.getImages().size();
-
-    if (!syncObjects.create(logicalDevice, MAX_FRAMES_IN_FLIGHT, swapchainImageCount, errorMessage)) return false;
-    return true;
+    recordCommandBuffer(currentBuffer, imageIndex);
 }
 
+// TO-DO: move this to UBO manager helper
 void VulkanRenderer::updateUniformBuffer() {
     static auto startTime = std::chrono::high_resolution_clock::now();
 
