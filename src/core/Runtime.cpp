@@ -25,7 +25,7 @@ int main() {
 
     std::atomic running(true);
 
-    std::thread engineThread([&]() {
+    std::thread engineThread([&] {
         using highResolutionClock = std::chrono::high_resolution_clock;
 
         auto previousTime  = highResolutionClock::now();

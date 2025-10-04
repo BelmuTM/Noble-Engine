@@ -4,6 +4,8 @@
 #include <fstream>
 #include <unordered_map>
 
+static const std::string shaderFilesPath = "../../shaders/spv/";
+
 static const std::unordered_map<std::string, std::pair<vk::ShaderStageFlagBits, const char*>> stageData = {
     {"vert", {vk::ShaderStageFlagBits::eVertex,   "vertMain"}},
     {"frag", {vk::ShaderStageFlagBits::eFragment, "fragMain"}},
@@ -37,7 +39,7 @@ bool VulkanShaderProgram::loadFromFiles(const std::vector<std::string>& shaderPa
 
         const auto [stageFlag, entryPoint] = it->second;
 
-        const std::vector<char>& bytecode = readShaderFile(path);
+        const std::vector<char>& bytecode = readShaderFile(shaderFilesPath + path);
         if (bytecode.empty()) {
             errorMessage += "bytecode is empty (file does not exist or is zero bytes)";
             clearShaderModules();

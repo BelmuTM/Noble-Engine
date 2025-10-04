@@ -41,14 +41,16 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] const std::vector<Vertex> getVertices() const { return vertices; }
-    [[nodiscard]] const std::vector<uint16_t> getIndices() const { return indices; }
+    void load();
 
-    [[nodiscard]] const size_t getVerticesByteSize() const { return sizeof(Vertex) * vertices.size(); }
-    [[nodiscard]] const size_t getIndicesByteSize() const { return sizeof(uint16_t) * indices.size(); }
+    [[nodiscard]] std::vector<Vertex> getVertices() const { return vertices; }
+    [[nodiscard]] std::vector<uint16_t> getIndices() const { return indices; }
 
-    [[nodiscard]] const size_t getVertexOffset() const { return _vertexOffset; }
-    [[nodiscard]] const size_t getIndexOffset() const { return _indexOffset; }
+    [[nodiscard]] size_t getVerticesByteSize() const { return sizeof(Vertex) * vertices.size(); }
+    [[nodiscard]] size_t getIndicesByteSize() const { return sizeof(uint16_t) * indices.size(); }
+
+    [[nodiscard]] size_t getVertexOffset() const { return _vertexOffset; }
+    [[nodiscard]] size_t getIndexOffset() const { return _indexOffset; }
 
     void setVertexOffset(const size_t offset) {
         _vertexOffset = offset;

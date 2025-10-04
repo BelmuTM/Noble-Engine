@@ -3,20 +3,8 @@
 #define NOBLEENGINE_VULKANGRAPHICSPIPELINE_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
-#include "graphics/vulkan/core/VulkanCommandManager.h"
-#include "graphics/vulkan/core/VulkanDevice.h"
+#include "VulkanShaderProgram.h"
 #include "graphics/vulkan/core/VulkanSwapchain.h"
-#include "graphics/vulkan/core/memory/VulkanBuffer.h"
-
-#include <glm/glm.hpp>
-
-struct UniformBufferObject {
-    glm::mat4 model;
-    glm::mat4 view;
-    glm::mat4 projection;
-};
-
-static constexpr vk::DeviceSize uniformBufferSize = sizeof(UniformBufferObject);
 
 class VulkanGraphicsPipeline {
 public:
@@ -32,33 +20,24 @@ public:
     VulkanGraphicsPipeline& operator=(VulkanGraphicsPipeline&&)      = delete;
 
     [[nodiscard]] bool create(
-        const VulkanDevice&    device,
-        const VulkanSwapchain& swapchain,
-        uint32_t               framesInFlight,
-        std::string&           errorMessage
+        const vk::Device&          device,
+        const VulkanSwapchain&     swapchain,
+        vk::DescriptorSetLayout    descriptorSetLayout,
+        const VulkanShaderProgram& shaderProgram,
+        std::string&               errorMessage
     ) noexcept;
 
     void destroy() noexcept;
 
     [[nodiscard]] const vk::PipelineLayout& getLayout() const { return pipelineLayout; }
 
-    [[nodiscard]] const std::vector<VulkanBuffer>& getUniformBuffers() const { return uniformBuffers; }
-
-    [[nodiscard]] const std::vector<vk::DescriptorSet>& getDescriptorSets() const { return descriptorSets; }
-
 private:
-    const VulkanDevice*    _device    = nullptr;
-    const VulkanSwapchain* _swapchain = nullptr;
+    vk::Device _device{};
 
-    vk::DescriptorSetLayout descriptorSetLayout{};
+    const VulkanSwapchain* _swapchain = nullptr;
 
     vk::Pipeline       pipeline{};
     vk::PipelineLayout pipelineLayout{};
-
-    std::vector<VulkanBuffer> uniformBuffers{};
-
-    vk::DescriptorPool             descriptorPool{};
-    std::vector<vk::DescriptorSet> descriptorSets{};
 
     // -------------------------------
     //       Vulkan Info structs
@@ -141,15 +120,8 @@ private:
         return info;
     }();
 
-    bool createDescriptorSetLayout(std::string& errorMessage);
-
-    bool createPipelineLayout(std::string& errorMessage);
-    bool createPipeline(std::string& errorMessage);
-
-    bool createUniformBuffers(uint32_t framesInFlight, std::string& errorMessage);
-
-    bool createDescriptorPool(uint32_t framesInFlight, std::string& errorMessage);
-    bool createDescriptorSets(uint32_t framesInFlight, std::string& errorMessage);
+    bool createPipelineLayout(vk::DescriptorSetLayout descriptorSetLayout, std::string& errorMessage);
+    bool createPipeline(const VulkanShaderProgram& shaderProgram, std::string& errorMessage);
 };
 
 #endif //NOBLEENGINE_VULKANGRAPHICSPIPELINE_H

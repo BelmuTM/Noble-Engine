@@ -4,6 +4,7 @@
 
 #include "core/Engine.h"
 #include "core/debug/Logger.h"
+#include "core/debug/ErrorHandling.h"
 
 #include <chrono>
 
@@ -19,14 +20,12 @@ VulkanRenderer::~VulkanRenderer() {
 bool VulkanRenderer::init(Platform::Window& window) {
     _window = &window;
 
-    std::string errorMessage = "Failed to create Vulkan context: no error message provided";
+    std::string errorMessage = "Failed to create Vulkan renderer context: no error message provided";
 
-    // Declare rollback guard
-    const auto rollbackAndExit = [&](void*) {
+    ScopeGuard guard{[this, &errorMessage] {
         shutdown();
         Engine::fatalExit(errorMessage);
-    };
-    std::unique_ptr<void, decltype(rollbackAndExit)> guard(nullptr, rollbackAndExit);
+    }};
 
     // Create Vulkan context
     if (!context.create(window, errorMessage)) return false;
@@ -37,19 +36,56 @@ bool VulkanRenderer::init(Platform::Window& window) {
     const vk::Device&      logicalDevice       = device.getLogicalDevice();
     const uint32_t         swapchainImageCount = swapchain.getImages().size();
 
-    const std::vector<VulkanMesh> meshes = {mesh};
+    if (!createVulkanEntity(&commandManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT)) return false;
 
-    if (!createVulkanEntity(&commandManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT))
-        return false;
     if (!createVulkanEntity(&syncObjects, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT, swapchainImageCount))
         return false;
-    if (!createVulkanEntity(&graphicsPipeline, errorMessage, device, swapchain, MAX_FRAMES_IN_FLIGHT))
+
+    if (!createVulkanEntity(&uniformBuffers, errorMessage, device, MAX_FRAMES_IN_FLIGHT)) return false;
+
+    if (!createVulkanEntity(&descriptor, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT)) return false;
+
+    vk::DescriptorSetLayoutBinding uboLayoutBinding{};
+    uboLayoutBinding
+        .setBinding(0)
+        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+        .setDescriptorCount(1)
+        .setStageFlags(vk::ShaderStageFlagBits::eAllGraphics);
+
+    if (!descriptor.createSetLayout({uboLayoutBinding}, errorMessage)) return false;
+
+    VulkanShaderProgram program(logicalDevice);
+    if (!program.loadFromFiles({"meow.vert.spv", "meow.frag.spv"}, errorMessage)) {
         return false;
-    if (!createVulkanEntity(&meshManager, errorMessage, device, commandManager, meshes))
+    }
+
+    if (!createVulkanEntity(&pipeline, errorMessage, logicalDevice, swapchain, descriptor.getLayout(), program))
         return false;
 
-    // Release rollback guard
-    if (guard.release()) return false;
+    if (!descriptor.createPool(vk::DescriptorType::eUniformBuffer, errorMessage)) return false;
+    if (!descriptor.allocateSets(errorMessage)) return false;
+
+    uniformBuffers.bindToDescriptor(descriptor, uboLayoutBinding.binding);
+
+    VulkanMesh mesh{};
+    const std::vector meshes = {mesh};
+
+    if (!createVulkanEntity(&meshManager, errorMessage, device, commandManager, meshes)) return false;
+
+    DrawCall verticesDraw;
+    verticesDraw.pipeline = &pipeline;
+    verticesDraw.mesh     = mesh;
+
+    FramePass mainPass;
+    mainPass.name      = "MainPass";
+    mainPass.bindPoint = vk::PipelineBindPoint::eGraphics;
+    mainPass.drawCalls = { verticesDraw };
+
+    frameGraph.addPass(mainPass);
+
+    if (!createVulkanEntity(&frameGraph, errorMessage, meshManager)) return false;
+
+    guard.release();
     return true;
 }
 
@@ -65,15 +101,11 @@ void VulkanRenderer::drawFrame() {
     std::string errorMessage;
 
     // Declare error logging guard
-    const auto logError = [&](void*) {
+    ScopeGuard guard{[&discardLogging, &errorMessage] {
         if (!discardLogging) Logger::error(errorMessage);
-    };
-
-    std::unique_ptr<void, decltype(logError)> guard(nullptr, logError);
+    }};
 
     // Record frame
-    if (context.getSwapchain().handle() == VK_NULL_HANDLE) return;
-
     if (!handleFramebufferResize(errorMessage)) return;
 
     const auto imageIndexOpt = acquireNextImage(errorMessage, discardLogging);
@@ -90,8 +122,7 @@ void VulkanRenderer::drawFrame() {
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
-    // Release error logging guard
-    if (guard.release()) {}
+    guard.release();
 }
 
 bool VulkanRenderer::handleFramebufferResize(std::string& errorMessage) {
@@ -107,6 +138,11 @@ std::optional<uint32_t> VulkanRenderer::acquireNextImage(std::string& errorMessa
     const vk::Device&      logicalDevice = context.getDevice().getLogicalDevice();
     const VulkanSwapchain& swapchain     = context.getSwapchain();
 
+    if (swapchain.handle() == VK_NULL_HANDLE) {
+        discardLogging = true;
+        return std::nullopt;
+    }
+
     const vk::Semaphore& imageAvailableSemaphore = syncObjects.imageAvailableSemaphores[currentFrame];
     const vk::Fence&     inFlightFence           = syncObjects.inFlightFences[currentFrame];
 
@@ -118,8 +154,8 @@ std::optional<uint32_t> VulkanRenderer::acquireNextImage(std::string& errorMessa
 
     if (nextImageAcquire.result == vk::Result::eErrorOutOfDateKHR ||
         nextImageAcquire.result == vk::Result::eSuboptimalKHR) {
-        if (!recreateSwapchain(errorMessage)) return std::nullopt;
         discardLogging = true;
+        if (!recreateSwapchain(errorMessage)) return std::nullopt;
         return std::nullopt;
     }
 
@@ -160,6 +196,11 @@ bool VulkanRenderer::submitCommandBuffer(const uint32_t imageIndex, std::string&
     const VulkanDevice&     device    = context.getDevice();
     const vk::SwapchainKHR& swapchain = context.getSwapchain().handle();
 
+    if (swapchain == VK_NULL_HANDLE) {
+        discardLogging = true;
+        return false;
+    }
+
     const vk::CommandBuffer& currentBuffer = commandManager.getCommandBuffers()[currentFrame];
 
     const vk::Semaphore& imageAvailableSemaphore = syncObjects.imageAvailableSemaphores[currentFrame];
@@ -180,9 +221,9 @@ bool VulkanRenderer::submitCommandBuffer(const uint32_t imageIndex, std::string&
     const auto queuePresent = VK_CALL(device.getPresentQueue().presentKHR(presentInfo), errorMessage);
 
     if (queuePresent == vk::Result::eErrorOutOfDateKHR || queuePresent == vk::Result::eSuboptimalKHR) {
+        discardLogging = true;
         if (!recreateSwapchain(errorMessage)) return false;
         _window->setFramebufferResized(false);
-        discardLogging = true;
         return true;
     }
     if (queuePresent != vk::Result::eSuccess) return false;
@@ -200,6 +241,8 @@ void VulkanRenderer::transitionImageLayout(
     const vk::PipelineStageFlags2 srcStageMask,
     const vk::PipelineStageFlags2 dstStageMask
 ) const {
+    if (oldLayout == newLayout) return;
+
     // Specify which part of the image to transition
     vk::ImageSubresourceRange subresourceRange{};
     subresourceRange
@@ -242,22 +285,13 @@ bool VulkanRenderer::beginCommandBuffer(const vk::CommandBuffer commandBuffer, s
     return true;
 }
 
-void VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer, const uint32_t imageIndex) const {
+void VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer, const uint32_t imageIndex) {
     std::string errorMessage;
 
     if (!beginCommandBuffer(commandBuffer, errorMessage)) {
         Logger::error(errorMessage);
         return;
     }
-
-    const VulkanSwapchain& swapchain = context.getSwapchain();
-    const vk::Extent2D&    extent    = swapchain.getExtent2D();
-
-    const vk::Viewport& viewport = {
-        0.0f, 0.0f, static_cast<float>(extent.width), static_cast<float>(extent.height), 0.0f, 1.0f
-    };
-
-    const auto scissor = vk::Rect2D(vk::Offset2D(0, 0), extent);
 
     transitionImageLayout(
         commandBuffer,
@@ -269,6 +303,9 @@ void VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer, 
         vk::PipelineStageFlagBits2::eTopOfPipe,
         vk::PipelineStageFlagBits2::eColorAttachmentOutput
     );
+
+    const VulkanSwapchain& swapchain = context.getSwapchain();
+    const vk::Extent2D&    extent    = swapchain.getExtent2D();
 
     vk::RenderingAttachmentInfo attachmentInfo{};
     attachmentInfo
@@ -284,29 +321,23 @@ void VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer, 
         .setLayerCount(1)
         .setColorAttachments(attachmentInfo);
 
-    commandBuffer.beginRendering(renderingInfo);
+    const vk::Viewport& viewport = {
+        0.0f, 0.0f, static_cast<float>(extent.width), static_cast<float>(extent.height), 0.0f, 1.0f
+    };
 
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
+    const auto scissor = vk::Rect2D(vk::Offset2D(0, 0), extent);
 
-    const vk::Buffer&    vertexBuffer = meshManager.getVertexBuffer();
-    const vk::Buffer&    indexBuffer  = meshManager.getIndexBuffer();
-    const vk::DeviceSize vertexOffset = mesh.getVertexOffset();
-    const vk::DeviceSize indexOffset  = mesh.getIndexOffset();
+    for (auto& pass : frameGraph.getPasses()) {
+        pass.renderingInfo = renderingInfo;
 
-    commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &vertexOffset);
-    commandBuffer.bindIndexBuffer(indexBuffer, indexOffset, vk::IndexType::eUint16);
+        for (auto& draw : pass.drawCalls) {
+            draw.descriptorSets = { descriptor.getDescriptorSets()[currentFrame] };
+            draw.viewport       = viewport;
+            draw.scissor        = scissor;
+        }
 
-    const vk::PipelineLayout& pipelineLayout = graphicsPipeline.getLayout();
-    const vk::DescriptorSet&  descriptorSet  = graphicsPipeline.getDescriptorSets()[currentFrame];
-
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, descriptorSet, nullptr);
-
-    commandBuffer.setViewport(0, viewport);
-    commandBuffer.setScissor(0, scissor);
-
-    commandBuffer.drawIndexed(mesh.getIndices().size(), 1, 0, 0, 0);
-
-    commandBuffer.endRendering();
+        frameGraph.executePass(pass, commandBuffer);
+    }
 
     transitionImageLayout(
         commandBuffer,
@@ -341,8 +372,6 @@ void VulkanRenderer::updateUniformBuffer() {
     const auto  currentTime      = std::chrono::high_resolution_clock::now();
     const float frameTimeCounter = std::chrono::duration<float>(currentTime - startTime).count();
 
-    auto& uniformBuffers = graphicsPipeline.getUniformBuffers();
-
     const vk::Extent2D& extent      = context.getSwapchain().getExtent2D();
     const float         aspectRatio = static_cast<float>(extent.width) / static_cast<float>(extent.height);
 
@@ -353,5 +382,5 @@ void VulkanRenderer::updateUniformBuffer() {
 
     ubo.projection[1][1] *= -1;
 
-    memcpy(uniformBuffers[currentFrame].getMappedPointer(), &ubo, sizeof(ubo));
+    memcpy(uniformBuffers.getBuffers()[currentFrame].getMappedPointer(), &ubo, sizeof(ubo));
 }

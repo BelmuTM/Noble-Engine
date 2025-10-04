@@ -10,9 +10,11 @@
 #include "VulkanContext.h"
 #include "VulkanCommandManager.h"
 #include "VulkanSyncObjects.h"
+#include "graphics/vulkan/resources/VulkanDescriptor.h"
 #include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
-#include "graphics/vulkan/resources/VulkanMesh.h"
+#include "graphics/vulkan/resources/VulkanUniformBuffers.h"
 #include "graphics/vulkan/resources/VulkanMeshManager.h"
+#include "graphics/vulkan/pipeline/VulkanFrameGraph.h"
 
 class VulkanRenderer final : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {
 public:
@@ -29,9 +31,14 @@ private:
     VulkanContext          context;
     VulkanCommandManager   commandManager;
     VulkanSyncObjects      syncObjects;
-    VulkanGraphicsPipeline graphicsPipeline;
-    VulkanMesh             mesh;
-    VulkanMeshManager      meshManager;
+    VulkanDescriptor       descriptor;
+    VulkanGraphicsPipeline pipeline;
+
+    VulkanUniformBuffers<UniformBufferObject> uniformBuffers;
+
+    VulkanMeshManager meshManager;
+
+    VulkanFrameGraph frameGraph;
 
     unsigned int currentFrame = 0;
 
@@ -56,7 +63,7 @@ private:
     ) const;
 
     static bool beginCommandBuffer(vk::CommandBuffer commandBuffer, std::string& errorMessage) ;
-    void recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) const;
+    void recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
     bool recreateSwapchain(std::string& errorMessage);
 

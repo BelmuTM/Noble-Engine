@@ -1,7 +1,4 @@
 #include "VulkanSwapchain.h"
-
-#include <iostream>
-
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 #include "core/debug/Logger.h"
@@ -93,11 +90,17 @@ vk::Extent2D VulkanSwapchain::chooseSwapExtent2D(const vk::SurfaceCapabilitiesKH
 }
 
 bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string& errorMessage) {
-    if (!_window) return false;
+    errorMessage = "Failed to create Vulkan swapchain: ";
+
+    if (!_window) {
+        errorMessage += "window is null";
+        return false;
+    }
 
     int width, height;
     _window->getFramebufferSize(width, height);
     if (width == 0 || height == 0) {
+        errorMessage += "window size is null";
         return false;
     }
 
