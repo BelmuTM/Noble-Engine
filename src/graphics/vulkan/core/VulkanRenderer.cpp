@@ -11,8 +11,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-static constexpr vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
-
 VulkanRenderer::~VulkanRenderer() {
     shutdown();
 }
@@ -41,9 +39,9 @@ bool VulkanRenderer::init(Platform::Window& window) {
         ))
         return false;
 
-    if (!createVulkanEntity(&commandManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT))    return false;
-    if (!createVulkanEntity(&uniformBuffers, errorMessage, device, MAX_FRAMES_IN_FLIGHT))    return false;
-    if (!createVulkanEntity(&descriptor, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT)) return false;
+    if (!createVulkanEntity(&commandManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT))          return false;
+    if (!createVulkanEntity(&uniformBuffers, errorMessage, device, MAX_FRAMES_IN_FLIGHT))          return false;
+    if (!createVulkanEntity(&objectDescriptor, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT)) return false;
 
     vk::DescriptorSetLayoutBinding uboLayoutBinding{};
     uboLayoutBinding
@@ -52,20 +50,20 @@ bool VulkanRenderer::init(Platform::Window& window) {
         .setDescriptorCount(1)
         .setStageFlags(vk::ShaderStageFlagBits::eAllGraphics);
 
-    if (!descriptor.createSetLayout({uboLayoutBinding}, errorMessage)) return false;
+    if (!objectDescriptor.createSetLayout({uboLayoutBinding}, errorMessage)) return false;
 
     VulkanShaderProgram program(logicalDevice);
     if (!program.loadFromFiles({"meow.vert.spv", "meow.frag.spv"}, errorMessage)) {
         return false;
     }
 
-    if (!createVulkanEntity(&pipeline, errorMessage, logicalDevice, swapchain, descriptor.getLayout(), program))
+    if (!createVulkanEntity(&pipeline, errorMessage, logicalDevice, swapchain, objectDescriptor.getLayout(), program))
         return false;
 
-    if (!descriptor.createPool(vk::DescriptorType::eUniformBuffer, errorMessage)) return false;
-    if (!descriptor.allocateSets(errorMessage)) return false;
+    if (!objectDescriptor.createPool(vk::DescriptorType::eUniformBuffer, errorMessage)) return false;
+    if (!objectDescriptor.allocateSets(errorMessage)) return false;
 
-    uniformBuffers.bindToDescriptor(descriptor, uboLayoutBinding.binding);
+    uniformBuffers.bindToDescriptor(objectDescriptor, uboLayoutBinding.binding);
 
     VulkanMesh mesh{};
     const std::vector meshes = {mesh};
@@ -73,12 +71,29 @@ bool VulkanRenderer::init(Platform::Window& window) {
     if (!createVulkanEntity(&meshManager, errorMessage, device, commandManager, meshes)) return false;
 
     DrawCall verticesDraw;
-    verticesDraw.pipeline = &pipeline;
-    verticesDraw.mesh     = mesh;
+    verticesDraw.pipeline           = &pipeline;
+    verticesDraw.mesh               = mesh;
+    verticesDraw.descriptorResolver = [this](const FrameContext& frame) {
+        return std::vector{ this->objectDescriptor.getDescriptorSets()[frame.frameIndex] };
+    };
+
+    FrameResource swapchainOutput = {
+        {}, {}, {}, {}, vk::ImageLayout::eColorAttachmentOptimal,
+        [](const FrameContext& frame) {
+            return frame.swapchainImageView;
+        }
+    };
+
+    FramePassAttachment swapchainAttachment{};
+    swapchainAttachment.resource   = swapchainOutput;
+    swapchainAttachment.loadOp     = vk::AttachmentLoadOp::eClear;
+    swapchainAttachment.storeOp    = vk::AttachmentStoreOp::eStore;
+    swapchainAttachment.clearValue = clearColor;
 
     FramePass mainPass;
     mainPass.name      = "MainPass";
     mainPass.bindPoint = vk::PipelineBindPoint::eGraphics;
+    mainPass.colorAttachments = { swapchainAttachment };
     mainPass.drawCalls = { verticesDraw };
 
     frameGraph.addPass(mainPass);
@@ -194,40 +209,13 @@ void VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer, 
         vk::PipelineStageFlagBits2::eColorAttachmentOutput
     );
 
-    const VulkanSwapchain& swapchain = context.getSwapchain();
-    const vk::Extent2D&    extent    = swapchain.getExtent2D();
+    FrameContext frameContext{};
+    frameContext.frameIndex         = currentFrame;
+    frameContext.cmdBuffer          = commandBuffer;
+    frameContext.extent             = context.getSwapchain().getExtent2D();
+    frameContext.swapchainImageView = context.getSwapchain().getImageViews()[imageIndex];
 
-    vk::RenderingAttachmentInfo attachmentInfo{};
-    attachmentInfo
-        .setImageView(swapchain.getImageViews()[imageIndex])
-        .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eStore)
-        .setClearValue(clearColor);
-
-    vk::RenderingInfo renderingInfo{};
-    renderingInfo
-        .setRenderArea({{0, 0}, extent})
-        .setLayerCount(1)
-        .setColorAttachments(attachmentInfo);
-
-    const vk::Viewport& viewport = {
-        0.0f, 0.0f, static_cast<float>(extent.width), static_cast<float>(extent.height), 0.0f, 1.0f
-    };
-
-    const auto scissor = vk::Rect2D(vk::Offset2D(0, 0), extent);
-
-    for (auto& pass : frameGraph.getPasses()) {
-        pass.renderingInfo = renderingInfo;
-
-        for (auto& draw : pass.drawCalls) {
-            draw.descriptorSets = { descriptor.getDescriptorSets()[currentFrame] };
-            draw.viewport       = viewport;
-            draw.scissor        = scissor;
-        }
-
-        frameGraph.executePass(pass, commandBuffer);
-    }
+    frameGraph.execute(frameContext);
 
     transitionImageLayout(
         commandBuffer,

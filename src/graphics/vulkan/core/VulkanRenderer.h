@@ -31,7 +31,7 @@ private:
     VulkanContext          context;
     VulkanCommandManager   commandManager;
     VulkanSwapchainManager swapchainManager;
-    VulkanDescriptor       descriptor;
+    VulkanDescriptor       objectDescriptor;
     VulkanGraphicsPipeline pipeline;
 
     VulkanUniformBuffers<UniformBufferObject> uniformBuffers;
