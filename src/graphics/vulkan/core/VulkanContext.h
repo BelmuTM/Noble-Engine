@@ -23,10 +23,10 @@ public:
     VulkanSurface&   getSurface()   { return surface; }
     VulkanSwapchain& getSwapchain() { return swapchain; }
 
-    const VulkanInstance&  getInstance()  const { return instance; }
-    const VulkanDevice&    getDevice()    const { return device; }
-    const VulkanSurface&   getSurface()   const { return surface; }
-    const VulkanSwapchain& getSwapchain() const { return swapchain; }
+    [[nodiscard]] const VulkanInstance&  getInstance()  const { return instance; }
+    [[nodiscard]] const VulkanDevice&    getDevice()    const { return device; }
+    [[nodiscard]] const VulkanSurface&   getSurface()   const { return surface; }
+    [[nodiscard]] const VulkanSwapchain& getSwapchain() const { return swapchain; }
 
 private:
     VulkanInstance  instance;

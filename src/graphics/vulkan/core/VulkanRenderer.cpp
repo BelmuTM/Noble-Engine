@@ -26,7 +26,7 @@ bool VulkanRenderer::init(Platform::Window& window) {
     }};
 
     // Create Vulkan context
-    if (!context.create(window, errorMessage)) return false;
+    TRY(context.create(window, errorMessage));
 
     // Create entities
     const VulkanDevice&    device              = context.getDevice();
@@ -34,14 +34,12 @@ bool VulkanRenderer::init(Platform::Window& window) {
     const vk::Device&      logicalDevice       = device.getLogicalDevice();
     const uint32_t         swapchainImageCount = swapchain.getImages().size();
 
-    if (!createVulkanEntity(
-        &swapchainManager, errorMessage, context, window, MAX_FRAMES_IN_FLIGHT, swapchainImageCount
-        ))
-        return false;
+    TRY(createVulkanEntity(&swapchainManager, errorMessage, context, window, MAX_FRAMES_IN_FLIGHT,
+        swapchainImageCount));
 
-    if (!createVulkanEntity(&commandManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT))          return false;
-    if (!createVulkanEntity(&uniformBuffers, errorMessage, device, MAX_FRAMES_IN_FLIGHT))          return false;
-    if (!createVulkanEntity(&objectDescriptor, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT)) return false;
+    TRY(createVulkanEntity(&commandManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
+    TRY(createVulkanEntity(&uniformBuffers, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
+    TRY(createVulkanEntity(&objectDescriptor, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT));
 
     vk::DescriptorSetLayoutBinding uboLayoutBinding{};
     uboLayoutBinding
@@ -50,25 +48,22 @@ bool VulkanRenderer::init(Platform::Window& window) {
         .setDescriptorCount(1)
         .setStageFlags(vk::ShaderStageFlagBits::eAllGraphics);
 
-    if (!objectDescriptor.createSetLayout({uboLayoutBinding}, errorMessage)) return false;
+    TRY(objectDescriptor.createSetLayout({uboLayoutBinding}, errorMessage));
 
     VulkanShaderProgram program(logicalDevice);
-    if (!program.loadFromFiles({"meow.vert.spv", "meow.frag.spv"}, errorMessage)) {
-        return false;
-    }
+    TRY(program.loadFromFiles({"meow.vert.spv", "meow.frag.spv"}, errorMessage));
 
-    if (!createVulkanEntity(&pipeline, errorMessage, logicalDevice, swapchain, objectDescriptor.getLayout(), program))
-        return false;
+    TRY(createVulkanEntity(&pipeline, errorMessage, logicalDevice, swapchain, objectDescriptor.getLayout(), program));
 
-    if (!objectDescriptor.createPool(vk::DescriptorType::eUniformBuffer, errorMessage)) return false;
-    if (!objectDescriptor.allocateSets(errorMessage)) return false;
+    TRY(objectDescriptor.createPool(vk::DescriptorType::eUniformBuffer, errorMessage));
+    TRY(objectDescriptor.allocateSets(errorMessage));
 
     uniformBuffers.bindToDescriptor(objectDescriptor, uboLayoutBinding.binding);
 
     VulkanMesh mesh{};
     const std::vector meshes = {mesh};
 
-    if (!createVulkanEntity(&meshManager, errorMessage, device, commandManager, meshes)) return false;
+    TRY(createVulkanEntity(&meshManager, errorMessage, device, commandManager, meshes));
 
     DrawCall verticesDraw;
     verticesDraw.pipeline           = &pipeline;
@@ -98,7 +93,7 @@ bool VulkanRenderer::init(Platform::Window& window) {
 
     frameGraph.addPass(mainPass);
 
-    if (!createVulkanEntity(&frameGraph, errorMessage, meshManager)) return false;
+    TRY(createVulkanEntity(&frameGraph, errorMessage, meshManager));
 
     guard.release();
     return true;

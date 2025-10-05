@@ -1,6 +1,8 @@
 #include "VulkanSwapchainManager.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
+#include "core/debug/ErrorHandling.h"
+
 #include <thread>
 
 bool VulkanSwapchainManager::create(
@@ -14,8 +16,7 @@ bool VulkanSwapchainManager::create(
     _window         = &window;
     _framesInFlight = framesInFlight;
 
-    if (!_syncObjects.create(context.getDevice().getLogicalDevice(), framesInFlight, swapchainImageCount, errorMessage))
-        return false;
+    TRY(_syncObjects.create(context.getDevice().getLogicalDevice(), framesInFlight, swapchainImageCount, errorMessage));
     return true;
 }
 
@@ -31,7 +32,7 @@ bool VulkanSwapchainManager::handleFramebufferResize(std::string& errorMessage) 
 
     if (!_window->isFramebufferResized()) return true;
 
-    if (!recreateSwapchain(errorMessage)) return false;
+    TRY(recreateSwapchain(errorMessage));
 
     _window->setFramebufferResized(false);
     return true;
@@ -44,14 +45,14 @@ bool VulkanSwapchainManager::recreateSwapchain(std::string& errorMessage) {
     }
 
     VulkanSwapchain& swapchain = _context->getSwapchain();
-    if (!swapchain.recreate(_context->getSurface(), errorMessage)) return false;
+    TRY(swapchain.recreate(_context->getSurface(), errorMessage));
 
     _syncObjects.backup();
 
     const vk::Device& logicalDevice       = _context->getDevice().getLogicalDevice();
     const uint32_t    swapchainImageCount = swapchain.getImages().size();
 
-    if (!_syncObjects.create(logicalDevice, _framesInFlight, swapchainImageCount, errorMessage)) return false;
+    TRY(_syncObjects.create(logicalDevice, _framesInFlight, swapchainImageCount, errorMessage));
     return true;
 }
 
@@ -147,7 +148,7 @@ bool VulkanSwapchainManager::submitCommandBuffer(
 
     if (queuePresent == vk::Result::eErrorOutOfDateKHR || queuePresent == vk::Result::eSuboptimalKHR) {
         discardLogging = true;
-        if (!recreateSwapchain(errorMessage)) return false;
+        TRY(recreateSwapchain(errorMessage));
         _window->setFramebufferResized(false);
         return true;
     }

@@ -88,13 +88,13 @@ public:
 
     void destroy() noexcept;
 
+    void execute(const FrameContext& frame) const;
+
     void addPass(FramePass pass) { _passes.push_back(std::move(pass)); }
 
     void executePass(const FramePass& pass, const FrameContext& frame) const;
 
     [[nodiscard]] std::vector<FramePass> getPasses() const { return _passes; }
-
-    void execute(const FrameContext& frame) const;
 
 private:
     const VulkanMeshManager* _meshManager = nullptr;

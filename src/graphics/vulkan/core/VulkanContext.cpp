@@ -8,10 +8,10 @@ VulkanContext::~VulkanContext() {
 bool VulkanContext::create(const Platform::Window& window, std::string& errorMessage) {
     ScopeGuard guard{[this] { destroy(); }};
 
-    if (!createVulkanEntity(&instance, errorMessage))                           return false;
-    if (!createVulkanEntity(&surface, errorMessage, instance, window))          return false;
-    if (!createVulkanEntity(&device, errorMessage, instance, surface))          return false;
-    if (!createVulkanEntity(&swapchain, errorMessage, window, device, surface)) return false;
+    TRY(createVulkanEntity(&instance, errorMessage));
+    TRY(createVulkanEntity(&surface, errorMessage, instance, window));
+    TRY(createVulkanEntity(&device, errorMessage, instance, surface));
+    TRY(createVulkanEntity(&swapchain, errorMessage, window, device, surface));
 
     guard.release();
     return true;

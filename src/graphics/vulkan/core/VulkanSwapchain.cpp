@@ -2,6 +2,7 @@
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 #include "core/debug/Logger.h"
+#include "core/debug/ErrorHandling.h"
 
 bool VulkanSwapchain::create(
     const Platform::Window& window, const VulkanDevice& device, const vk::SurfaceKHR surface, std::string& errorMessage
@@ -9,8 +10,8 @@ bool VulkanSwapchain::create(
     _window = &window;
     _device = &device;
 
-    if (!createSwapchain(surface, errorMessage)) return false;
-    if (!createImageViews(errorMessage))         return false;
+    TRY(createSwapchain(surface, errorMessage));
+    TRY(createImageViews(errorMessage));
     return true;
 }
 
@@ -37,7 +38,7 @@ bool VulkanSwapchain::recreate(const vk::SurfaceKHR surface, std::string& errorM
 
     destroy();
 
-    if (!create(*_window, *_device, surface, errorMessage)) return false;
+    TRY(create(*_window, *_device, surface, errorMessage));
     return true;
 }
 

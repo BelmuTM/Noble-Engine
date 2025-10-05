@@ -3,6 +3,7 @@
 
 #include "core/Engine.h"
 #include "core/debug/Logger.h"
+#include "core/debug/ErrorHandling.h"
 
 #include <algorithm>
 #include <ranges>
@@ -23,7 +24,7 @@ bool VulkanDevice::create(
 ) noexcept {
     _instance = instance;
 
-    if (!pickPhysicalDevice(errorMessage)) return false;
+    TRY(pickPhysicalDevice(errorMessage));
 
     _queueFamilyIndices = findQueueFamilies(_physicalDevice, surface);
 
@@ -37,9 +38,8 @@ bool VulkanDevice::create(
         return false;
     }
 
-    if (!createLogicalDevice(_queueFamilyIndices, errorMessage)) return false;
-
-    if (!createAllocator(errorMessage)) return false;
+    TRY(createLogicalDevice(_queueFamilyIndices, errorMessage));
+    TRY(createAllocator(errorMessage));
     return true;
 }
 

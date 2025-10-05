@@ -41,8 +41,6 @@ public:
 
     void destroy() noexcept;
 
-    void load();
-
     [[nodiscard]] std::vector<Vertex> getVertices() const { return vertices; }
     [[nodiscard]] std::vector<uint16_t> getIndices() const { return indices; }
 

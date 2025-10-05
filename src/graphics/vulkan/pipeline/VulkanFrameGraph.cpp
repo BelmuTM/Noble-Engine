@@ -9,6 +9,12 @@ void VulkanFrameGraph::destroy() noexcept {
     _meshManager = nullptr;
 }
 
+void VulkanFrameGraph::execute(const FrameContext& frame) const {
+    for (auto& pass : _passes) {
+        executePass(pass, frame);
+    }
+}
+
 void VulkanFrameGraph::executePass(const FramePass& pass, const FrameContext& frame) const {
     const vk::Buffer& vertexBuffer = _meshManager->getVertexBuffer();
     const vk::Buffer& indexBuffer  = _meshManager->getIndexBuffer();
@@ -54,11 +60,5 @@ void VulkanFrameGraph::executePass(const FramePass& pass, const FrameContext& fr
         }
 
         frame.cmdBuffer.endRendering();
-    }
-}
-
-void VulkanFrameGraph::execute(const FrameContext& frame) const {
-    for (auto& pass : _passes) {
-        executePass(pass, frame);
     }
 }

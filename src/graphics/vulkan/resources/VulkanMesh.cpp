@@ -31,7 +31,3 @@ void VulkanMesh::destroy() noexcept {
     _vertexOffset = 0;
     _indexOffset  = 0;
 }
-
-void VulkanMesh::load() {
-    // TO-DO
-}

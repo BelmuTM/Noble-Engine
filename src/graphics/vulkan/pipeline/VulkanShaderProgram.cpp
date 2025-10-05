@@ -1,6 +1,8 @@
 #include "VulkanShaderProgram.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
+#include "core/debug/ErrorHandling.h"
+
 #include <fstream>
 #include <unordered_map>
 
@@ -24,6 +26,8 @@ void VulkanShaderProgram::clearShaderModules() {
 }
 
 bool VulkanShaderProgram::loadFromFiles(const std::vector<std::string>& shaderPaths, std::string& errorMessage) {
+    ScopeGuard guard{[this] { clearShaderModules(); }};
+
     for (const auto& path : shaderPaths) {
         errorMessage = "Failed to load shader stage \"" + path + "\": ";
 
@@ -33,7 +37,6 @@ bool VulkanShaderProgram::loadFromFiles(const std::vector<std::string>& shaderPa
 
         if (stageExtension.empty() || it == stageData.end()) {
             errorMessage += "incorrect file extension \"" + stageExtension + "\"";
-            clearShaderModules();
             return false;
         }
 
@@ -42,15 +45,11 @@ bool VulkanShaderProgram::loadFromFiles(const std::vector<std::string>& shaderPa
         const std::vector<char>& bytecode = readShaderFile(shaderFilesPath + path);
         if (bytecode.empty()) {
             errorMessage += "bytecode is empty (file does not exist or is zero bytes)";
-            clearShaderModules();
             return {};
         }
 
         const vk::ShaderModule& module = createShaderModule(bytecode, errorMessage);
-        if (!module) {
-            clearShaderModules();
-            return false;
-        }
+        if (!module) return false;
 
         shaderModules.push_back(module);
 
@@ -62,6 +61,8 @@ bool VulkanShaderProgram::loadFromFiles(const std::vector<std::string>& shaderPa
 
         shaderStages.push_back(stageInfo);
     }
+
+    guard.release();
     return true;
 }
 

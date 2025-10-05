@@ -1,15 +1,15 @@
 #include "VulkanCommandManager.h"
-
-#include "core/debug/Logger.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
+
+#include "core/debug/ErrorHandling.h"
 
 bool VulkanCommandManager::create(
     const VulkanDevice& device, const uint32_t commandBufferCount, std::string& errorMessage
 ) noexcept {
     _device = &device;
 
-    if (!createCommandPool(errorMessage)) return false;
-    if (!createCommandBuffers(_commandBuffers, commandBufferCount, errorMessage)) return false;
+    TRY(createCommandPool(errorMessage));
+    TRY(createCommandBuffers(_commandBuffers, commandBufferCount, errorMessage));
     return true;
 }
 

@@ -7,6 +7,8 @@
 #include "graphics/vulkan/core/memory/VulkanBuffer.h"
 #include "graphics/vulkan/resources/VulkanDescriptor.h"
 
+#include "core/debug/ErrorHandling.h"
+
 #include <glm/glm.hpp>
 
 struct UniformBufferObject {
@@ -34,8 +36,7 @@ public:
         _device         = &device;
         _framesInFlight = framesInFlight;
 
-        if (!createUniformBuffers(errorMessage)) return false;
-
+        TRY(createUniformBuffers(errorMessage));
         return true;
     }
 
@@ -81,17 +82,15 @@ private:
         for (size_t i = 0; i < _framesInFlight; i++) {
             VulkanBuffer uniformBuffer;
 
-            if (!uniformBuffer.create(
-                    size,
-                    vk::BufferUsageFlagBits::eUniformBuffer,
-                    VMA_MEMORY_USAGE_CPU_TO_GPU,
-                    _device,
-                    errorMessage
-                )) {
-                return false;
-            }
+            TRY(uniformBuffer.create(
+                size,
+                vk::BufferUsageFlagBits::eUniformBuffer,
+                VMA_MEMORY_USAGE_CPU_TO_GPU,
+                _device,
+                errorMessage
+            ));
 
-            if (!uniformBuffer.mapMemory(errorMessage)) return false;
+            TRY(uniformBuffer.mapMemory(errorMessage));
 
             uniformBuffers.emplace_back(std::move(uniformBuffer));
         }

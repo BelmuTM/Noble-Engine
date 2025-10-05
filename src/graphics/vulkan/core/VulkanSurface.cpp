@@ -11,7 +11,7 @@ bool VulkanSurface::create(
     _window   = &window;
     _instance = instance;
 
-    if (!createSurface(errorMessage)) { return false; }
+    if (!createSurface(errorMessage)) return false;
     return true;
 }
 

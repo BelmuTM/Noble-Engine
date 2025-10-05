@@ -1,6 +1,8 @@
 #include "VulkanBuffer.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
+#include "core/debug/ErrorHandling.h"
+
 VulkanBuffer::VulkanBuffer(VulkanBuffer&& other) noexcept {
     _device        = other._device;
     _buffer        = other._buffer;
@@ -43,7 +45,7 @@ bool VulkanBuffer::create(
 ) noexcept {
     _device = device;
 
-    if (!createBuffer(_buffer, _allocation, size, usage, memoryUsage, device, errorMessage)) return false;
+    TRY(createBuffer(_buffer, _allocation, size, usage, memoryUsage, device, errorMessage));
 
     _bufferSize = size;
     return true;
@@ -106,7 +108,7 @@ bool VulkanBuffer::copyBuffer(
     std::string&                errorMessage
 ) {
     vk::CommandBuffer copyCommandBuffer;
-    if (!commandManager->createCommandBuffer(copyCommandBuffer, errorMessage)) return false;
+    TRY(commandManager->createCommandBuffer(copyCommandBuffer, errorMessage));
 
     constexpr vk::CommandBufferBeginInfo beginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
     VK_TRY(copyCommandBuffer.begin(beginInfo), errorMessage);
@@ -136,9 +138,7 @@ bool VulkanBuffer::copyFrom(
     const vk::DeviceSize        dstOffset
 ) const {
     if (size == VK_WHOLE_SIZE) size = _bufferSize;
-
-    if (!copyBuffer(srcBuffer, _buffer, size, srcOffset, dstOffset, _device, commandManager, errorMessage))
-        return false;
+    TRY(copyBuffer(srcBuffer, _buffer, size, srcOffset, dstOffset, _device, commandManager, errorMessage));
     return true;
 }
 
