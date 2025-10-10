@@ -30,10 +30,14 @@ public:
 
     [[nodiscard]] bool createCommandBuffer(vk::CommandBuffer& commandBuffer, std::string& errorMessage) const;
 
+    [[nodiscard]] bool beginSingleTimeCommands(vk::CommandBuffer& commandBuffer, std::string& errorMessage) const;
+
+    [[nodiscard]] bool endSingleTimeCommands(vk::CommandBuffer& commandBuffer, std::string& errorMessage) const;
+
 private:
     const VulkanDevice* _device = nullptr;
 
-    vk::CommandPool                commandPool{};
+    vk::CommandPool                _commandPool{};
     std::vector<vk::CommandBuffer> _commandBuffers{};
 
     bool createCommandPool(std::string& errorMessage);

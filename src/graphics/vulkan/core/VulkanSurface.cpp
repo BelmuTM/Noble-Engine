@@ -12,6 +12,7 @@ bool VulkanSurface::create(
     _instance = instance;
 
     if (!createSurface(errorMessage)) return false;
+
     return true;
 }
 
@@ -37,6 +38,7 @@ bool VulkanSurface::createSurface(std::string& errorMessage) {
     surfaceInfo.hwnd      = static_cast<HWND>(_window->nativeHandle());
 
     VK_CREATE(_instance.createWin32SurfaceKHR(surfaceInfo), surface, errorMessage);
+
     return true;
 
 #elif defined(__linux__)

@@ -40,6 +40,7 @@ bool VulkanDevice::create(
 
     TRY(createLogicalDevice(_queueFamilyIndices, errorMessage));
     TRY(createAllocator(errorMessage));
+
     return true;
 }
 
@@ -98,6 +99,7 @@ bool VulkanDevice::pickPhysicalDevice(std::string& errorMessage) {
     _physicalDevice = *it;
 
     Logger::info("Using graphics device \"" + std::string(_physicalDevice.getProperties().deviceName) + "\"");
+
     return true;
 }
 
@@ -178,6 +180,7 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
 
     _graphicsQueue = _logicalDevice.getQueue(queueFamilyIndices.graphicsFamily, 0);
     _presentQueue  = _logicalDevice.getQueue(queueFamilyIndices.presentFamily , 0);
+
     return true;
 }
 
@@ -189,5 +192,6 @@ bool VulkanDevice::createAllocator(std::string& errorMessage) {
     allocatorInfo.instance         = _instance;
 
     VK_TRY(vmaCreateAllocator(&allocatorInfo, &_allocator), errorMessage);
+
     return true;
 }

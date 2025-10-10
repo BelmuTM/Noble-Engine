@@ -35,6 +35,7 @@ bool VulkanSwapchainManager::handleFramebufferResize(std::string& errorMessage) 
     TRY(recreateSwapchain(errorMessage));
 
     _window->setFramebufferResized(false);
+
     return true;
 }
 
@@ -53,6 +54,7 @@ bool VulkanSwapchainManager::recreateSwapchain(std::string& errorMessage) {
     const uint32_t    swapchainImageCount = swapchain.getImages().size();
 
     TRY(_syncObjects.create(logicalDevice, _framesInFlight, swapchainImageCount, errorMessage));
+
     return true;
 }
 
@@ -174,5 +176,6 @@ bool VulkanSwapchainManager::waitForImageFence(
     _syncObjects.imagesInFlight[imageIndex] = inFlightFence;
 
     VK_TRY(logicalDevice.resetFences(inFlightFence), errorMessage);
+
     return true;
 }

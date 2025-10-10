@@ -40,6 +40,7 @@ bool VulkanGraphicsPipeline::createPipelineLayout(
         .setPushConstantRangeCount(0);
 
     VK_CREATE(_device.createPipelineLayout(layoutInfo), pipelineLayout, errorMessage);
+
     return true;
 }
 
@@ -72,5 +73,6 @@ bool VulkanGraphicsPipeline::createPipeline(const VulkanShaderProgram& shaderPro
         .setRenderPass(nullptr);
 
     VK_CREATE(_device.createGraphicsPipeline(nullptr, pipelineInfo), pipeline, errorMessage);
+
     return true;
 }

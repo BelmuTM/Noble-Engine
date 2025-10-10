@@ -14,6 +14,7 @@ bool VulkanContext::create(const Platform::Window& window, std::string& errorMes
     TRY(createVulkanEntity(&swapchain, errorMessage, window, device, surface));
 
     guard.release();
+
     return true;
 }
 

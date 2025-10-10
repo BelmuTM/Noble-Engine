@@ -54,7 +54,7 @@ bool VulkanBuffer::create(
 void VulkanBuffer::destroy() noexcept {
     if (!_device) return;
 
-    const VmaAllocator allocator = _device->getAllocator();
+    VmaAllocator allocator = _device->getAllocator();
 
     if (allocator && _buffer) {
         unmapMemory();
@@ -76,7 +76,7 @@ bool VulkanBuffer::createBuffer(
     const VulkanDevice*        device,
     std::string&               errorMessage
 ) {
-    const VmaAllocator allocator = device->getAllocator();
+    VmaAllocator allocator = device->getAllocator();
 
     vk::BufferCreateInfo bufferInfo{};
     bufferInfo
@@ -88,12 +88,14 @@ bool VulkanBuffer::createBuffer(
     allocationInfo.usage = memoryUsage;
 
     VK_TRY(vmaCreateBuffer(allocator,
-               reinterpret_cast<const VkBufferCreateInfo*>(&bufferInfo),
-               &allocationInfo,
-               reinterpret_cast<VkBuffer*>(&buffer),
-               &allocation,
-               nullptr),
-        errorMessage);
+           reinterpret_cast<const VkBufferCreateInfo*>(&bufferInfo),
+           &allocationInfo,
+           reinterpret_cast<VkBuffer*>(&buffer),
+           &allocation,
+           nullptr),
+        errorMessage
+    );
+
     return true;
 }
 
@@ -107,25 +109,13 @@ bool VulkanBuffer::copyBuffer(
     const VulkanCommandManager* commandManager,
     std::string&                errorMessage
 ) {
-    vk::CommandBuffer copyCommandBuffer;
-    TRY(commandManager->createCommandBuffer(copyCommandBuffer, errorMessage));
-
-    constexpr vk::CommandBufferBeginInfo beginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
-    VK_TRY(copyCommandBuffer.begin(beginInfo), errorMessage);
+    vk::CommandBuffer copyCommandBuffer{};
+    TRY(commandManager->beginSingleTimeCommands(copyCommandBuffer, errorMessage));
 
     copyCommandBuffer.copyBuffer(srcBuffer, dstBuffer, vk::BufferCopy(srcOffset, dstOffset, size));
 
-    VK_TRY(copyCommandBuffer.end(), errorMessage);
+    TRY(commandManager->endSingleTimeCommands(copyCommandBuffer, errorMessage));
 
-    const vk::Queue& graphicsQueue = device->getGraphicsQueue();
-
-    vk::SubmitInfo submitInfo{};
-    submitInfo
-        .setCommandBufferCount(1)
-        .setCommandBuffers(copyCommandBuffer);
-
-    VK_TRY(graphicsQueue.submit(submitInfo), errorMessage);
-    VK_TRY(graphicsQueue.waitIdle(), errorMessage);
     return true;
 }
 
@@ -139,6 +129,7 @@ bool VulkanBuffer::copyFrom(
 ) const {
     if (size == VK_WHOLE_SIZE) size = _bufferSize;
     TRY(copyBuffer(srcBuffer, _buffer, size, srcOffset, dstOffset, _device, commandManager, errorMessage));
+
     return true;
 }
 
@@ -148,18 +139,19 @@ void* VulkanBuffer::mapMemory(std::string& errorMessage) {
         return nullptr;
     }
 
-    const VmaAllocator allocator = _device->getAllocator();
+    VmaAllocator allocator = _device->getAllocator();
 
     const auto memoryMap = VK_CALL(vmaMapMemory(allocator, _allocation, &_mappedPointer), errorMessage);
     if (memoryMap != VK_SUCCESS) {
         return nullptr;
     }
+
     return _mappedPointer;
 }
 
 void VulkanBuffer::unmapMemory() {
     if (_device && _allocation && _mappedPointer) {
-        const VmaAllocator allocator = _device->getAllocator();
+        VmaAllocator allocator = _device->getAllocator();
         vmaUnmapMemory(allocator, _allocation);
         _mappedPointer = nullptr;
     }

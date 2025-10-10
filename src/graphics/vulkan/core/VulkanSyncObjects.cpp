@@ -12,6 +12,7 @@ bool VulkanSyncObjects::create(
     if (!createSyncObjects(framesInFlight, swapchainImageCount, errorMessage)) return false;
 
     imagesInFlight.resize(swapchainImageCount, VK_NULL_HANDLE);
+
     return true;
 }
 
@@ -45,6 +46,7 @@ bool VulkanSyncObjects::createSyncObjects(
     for (auto& renderFinishedSemaphore : renderFinishedSemaphores) {
         VK_CREATE(_device.createSemaphore({}), renderFinishedSemaphore, errorMessage);
     }
+
     return true;
 }
 

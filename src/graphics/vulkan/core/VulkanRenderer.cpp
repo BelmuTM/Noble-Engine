@@ -96,6 +96,7 @@ bool VulkanRenderer::init(Platform::Window& window) {
     TRY(createVulkanEntity(&frameGraph, errorMessage, meshManager));
 
     guard.release();
+
     return true;
 }
 
@@ -182,6 +183,7 @@ bool VulkanRenderer::beginCommandBuffer(const vk::CommandBuffer commandBuffer, s
 
     constexpr vk::CommandBufferBeginInfo beginInfo{};
     VK_TRY_LOG(commandBuffer.begin(beginInfo), Logger::Level::ERROR);
+
     return true;
 }
 

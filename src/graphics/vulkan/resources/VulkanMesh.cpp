@@ -1,5 +1,9 @@
 #include "VulkanMesh.h"
 
+VulkanMesh::~VulkanMesh() {
+    destroy();
+}
+
 VulkanMesh::VulkanMesh(const VulkanMesh& other) noexcept {
     _device       = other._device;
     _vertexOffset = other._vertexOffset;

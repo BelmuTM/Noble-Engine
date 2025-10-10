@@ -6,7 +6,7 @@
 #include <fstream>
 #include <unordered_map>
 
-static const std::string shaderFilesPath = "../../shaders/spv/";
+static const std::string shaderFilesPath = "../../res/shaders/spv/";
 
 static const std::unordered_map<std::string, std::pair<vk::ShaderStageFlagBits, const char*>> stageData = {
     {"vert", {vk::ShaderStageFlagBits::eVertex,   "vertMain"}},
@@ -63,6 +63,7 @@ bool VulkanShaderProgram::loadFromFiles(const std::vector<std::string>& shaderPa
     }
 
     guard.release();
+
     return true;
 }
 
@@ -86,6 +87,7 @@ std::vector<char> VulkanShaderProgram::readShaderFile(const std::string& path) n
     file.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
 
     file.close();
+
     return buffer;
 }
 

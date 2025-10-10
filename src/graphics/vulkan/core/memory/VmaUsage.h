@@ -4,4 +4,4 @@
 
 #include <vma/vk_mem_alloc.h>
 
-#endif
+#endif // NOBLEENGINE_VMAUSAGE_H

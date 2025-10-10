@@ -31,10 +31,6 @@ if(ENABLE_VULKAN_DEBUG_UTILS)
     add_compile_definitions(VULKAN_DEBUG_UTILS)
 endif()
 
-# Vulkan Memory Allocator (https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
-add_library(vma INTERFACE)
-target_include_directories(vma INTERFACE ${CMAKE_SOURCE_DIR}/lib/vma/include)
-
 ##########################################################
 #                  SHADERS COMPILATION                   #
 ##########################################################
@@ -49,11 +45,13 @@ include_directories(${SLANG_INCLUDE_DIR})
 link_directories(${SLANG_LIB_DIR})
 
 # Slang compilation
+set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/res/shaders)
+
 function(add_slang_shader_target TARGET)
     cmake_parse_arguments(SHADERS "" "" "SOURCES;ENTRIES" ${ARGN})
 
-    set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders/spv)
-    file(MAKE_DIRECTORY ${SHADERS_DIR})
+    set(SHADERS_SPV_DIR ${SHADERS_DIR}/spv)
+    file(MAKE_DIRECTORY ${SHADERS_SPV_DIR})
 
     set(SPV_OUTPUTS "")
 
@@ -67,7 +65,7 @@ function(add_slang_shader_target TARGET)
 
             string(SUBSTRING "${STAGE_NAME}" 0 4 STAGE_NAME_SHORT)
 
-            set(SPV_FILE ${SHADERS_DIR}/${SOURCE_NAME}.${STAGE_NAME_SHORT}.spv)
+            set(SPV_FILE ${SHADERS_SPV_DIR}/${SOURCE_NAME}.${STAGE_NAME_SHORT}.spv)
             list(APPEND SPV_OUTPUTS ${SPV_FILE})
 
             # Run Slangc command
@@ -91,10 +89,24 @@ function(add_slang_shader_target TARGET)
     add_custom_target(${TARGET} DEPENDS ${SPV_OUTPUTS})
 endfunction()
 
-file(GLOB_RECURSE SHADERS_SOURCES "shaders/src/*.slang")
+file(GLOB_RECURSE SHADERS_SOURCES ${SHADERS_DIR}/src/*.slang)
 add_slang_shader_target(ShadersModule
     SOURCES ${SHADERS_SOURCES}
     ENTRIES "fragMain=fragment" "vertMain=vertex"
 )
 
 add_dependencies(NobleEngine ShadersModule)
+
+##########################################################
+#              STANDALONE UTILITY LIBRARIES              #
+##########################################################
+
+# Vulkan Memory Allocator (https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
+add_library(vma INTERFACE)
+target_include_directories(vma INTERFACE ${CMAKE_SOURCE_DIR}/lib/vma/include)
+
+# STB (https://github.com/nothings/stb)
+add_library(stb INTERFACE)
+target_include_directories(stb INTERFACE ${CMAKE_SOURCE_DIR}/lib/stb)
+
+target_link_libraries(NobleEngine PRIVATE vma stb)

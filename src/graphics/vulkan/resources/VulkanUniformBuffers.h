@@ -37,6 +37,7 @@ public:
         _framesInFlight = framesInFlight;
 
         TRY(createUniformBuffers(errorMessage));
+
         return true;
     }
 
@@ -94,6 +95,7 @@ private:
 
             uniformBuffers.emplace_back(std::move(uniformBuffer));
         }
+
         return true;
     }
 };

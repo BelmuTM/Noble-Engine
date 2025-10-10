@@ -24,6 +24,7 @@ bool VulkanDescriptor::createSetLayout(
     descriptorSetLayoutInfo.setBindings(bindings);
 
     VK_CREATE(_device.createDescriptorSetLayout(descriptorSetLayoutInfo), _descriptorSetLayout, errorMessage);
+
     return true;
 }
 
@@ -42,6 +43,7 @@ bool VulkanDescriptor::createPool(const vk::DescriptorType type, std::string& er
         .setPoolSizes(descriptorPoolSize);
 
     VK_CREATE(_device.createDescriptorPool(descriptorPoolInfo), _descriptorPool, errorMessage);
+
     return true;
 }
 
@@ -62,6 +64,7 @@ bool VulkanDescriptor::allocateSets(std::string& errorMessage) {
     _descriptorSets.reserve(_framesInFlight);
 
     VK_CREATE(_device.allocateDescriptorSets(descriptorSetInfo), _descriptorSets, errorMessage);
+
     return true;
 }
 

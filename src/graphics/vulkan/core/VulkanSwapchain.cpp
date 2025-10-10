@@ -59,7 +59,9 @@ vk::SurfaceFormatKHR VulkanSwapchain::chooseSurfaceFormat(const std::vector<vk::
             return availableFormat;
         }
     }
+
     Logger::warning("Failed to find a supported RGBA8 SRGB format: falling back to the first available format");
+
     return availableFormats.front();
 }
 
@@ -73,6 +75,7 @@ vk::PresentModeKHR VulkanSwapchain::choosePresentMode(const std::vector<vk::Pres
             return availableMode;
         }
     }
+
     return vk::PresentModeKHR::eImmediate;
 }
 
@@ -162,6 +165,7 @@ bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string&
     swapchainExtent      = swapExtent;
 
     VK_CREATE(logicalDevice.getSwapchainImagesKHR(swapchain), swapchainImages, errorMessage);
+
     return true;
 }
 
@@ -185,5 +189,6 @@ bool VulkanSwapchain::createImageViews(std::string& errorMessage) {
 
         swapchainImageViews.emplace_back(imageViewCreate.value);
     }
+
     return true;
 }

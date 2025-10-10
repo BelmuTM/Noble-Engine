@@ -6,6 +6,8 @@
 #include "graphics/vulkan/core/VulkanDevice.h"
 #include "graphics/vulkan/core/VulkanCommandManager.h"
 
+#include "graphics/vulkan/core/memory/VmaUsage.h"
+
 class VulkanBuffer {
 public:
     VulkanBuffer()  = default;
@@ -30,7 +32,7 @@ public:
 
     void destroy() noexcept;
 
-    static bool createBuffer(
+    [[nodiscard]] static bool createBuffer(
         vk::Buffer&          buffer,
         VmaAllocation&       allocation,
         vk::DeviceSize       size,
@@ -40,7 +42,7 @@ public:
         std::string&         errorMessage
     );
 
-    static bool copyBuffer(
+    [[nodiscard]] static bool copyBuffer(
         const vk::Buffer&           srcBuffer,
         const vk::Buffer&           dstBuffer,
         vk::DeviceSize              size,
@@ -51,7 +53,7 @@ public:
         std::string&                errorMessage
     );
 
-    bool copyFrom(
+    [[nodiscard]] bool copyFrom(
         const vk::Buffer&           srcBuffer,
         const VulkanCommandManager* commandManager,
         std::string&                errorMessage,
@@ -60,6 +62,7 @@ public:
         vk::DeviceSize              dstOffset = 0
     ) const;
 
+    // Mapping GPU allocated memory to CPU memory
     void* mapMemory(std::string& errorMessage);
     void unmapMemory();
 

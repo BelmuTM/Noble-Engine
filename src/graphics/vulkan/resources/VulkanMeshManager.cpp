@@ -21,6 +21,7 @@ bool VulkanMeshManager::create(
     TRY(createIndexBuffer(errorMessage));
 
     _stagingBuffer.destroy();
+
     return true;
 }
 
@@ -55,7 +56,7 @@ void VulkanMeshManager::copyMeshData(void* stagingData) {
         memcpy(static_cast<char*>(stagingData) + _currentIndexOffset, mesh.getIndices().data(), indicesSize);
 
         _currentVertexOffset += verticesSize;
-        _currentIndexOffset += indicesSize;
+        _currentIndexOffset  += indicesSize;
     }
 }
 
@@ -70,13 +71,13 @@ bool VulkanMeshManager::createStagingBuffer(std::string& errorMessage) {
         errorMessage
     ));
 
-    // Mapping GPU allocated memory to CPU memory
     void* stagingData = _stagingBuffer.mapMemory(errorMessage);
     if (!stagingData) return false;
 
     copyMeshData(stagingData);
 
     _stagingBuffer.unmapMemory();
+
     return true;
 }
 
@@ -90,6 +91,7 @@ bool VulkanMeshManager::createVertexBuffer(std::string& errorMessage) {
     ));
 
     TRY(_vertexBuffer.copyFrom(_stagingBuffer, _commandManager, errorMessage));
+
     return true;
 }
 
@@ -103,5 +105,6 @@ bool VulkanMeshManager::createIndexBuffer(std::string& errorMessage) {
     ));
 
     TRY(_indexBuffer.copyFrom(_stagingBuffer, _commandManager, errorMessage, _indexBufferSize, _vertexBufferSize, 0));
+
     return true;
 }

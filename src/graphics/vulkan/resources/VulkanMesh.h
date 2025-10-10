@@ -3,6 +3,7 @@
 #define NOBLEENGINE_VULKANMESH_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
+#include "graphics/vulkan/core/VulkanDevice.h"
 #include "graphics/vulkan/core/memory/VulkanBuffer.h"
 
 #include <glm/glm.hpp>
@@ -25,8 +26,8 @@ struct Vertex {
 
 class VulkanMesh {
 public:
-    VulkanMesh()  = default;
-    ~VulkanMesh() = default;
+    VulkanMesh() = default;
+    ~VulkanMesh();
 
     VulkanMesh(const VulkanMesh&) noexcept;
     VulkanMesh& operator=(const VulkanMesh&) noexcept;

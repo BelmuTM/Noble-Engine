@@ -17,6 +17,7 @@ static const std::vector validationLayers = {
 bool VulkanInstance::create(std::string& errorMessage) noexcept {
     if (!createInstance(errorMessage))      return false;
     if (!setupDebugMessenger(errorMessage)) return false;
+
     return true;
 }
 
@@ -101,6 +102,7 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
         .setPEnabledLayerNames(layers);
 
     VK_CREATE(vk::createInstance(instanceInfo, nullptr), instance, errorMessage);
+
     return true;
 }
 
@@ -125,6 +127,7 @@ vk::Bool32 VulkanInstance::debugCallback(
             break;
         default: break;
     }
+
     return vk::False;
 }
 

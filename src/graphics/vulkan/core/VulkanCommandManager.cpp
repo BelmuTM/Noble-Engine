@@ -10,15 +10,16 @@ bool VulkanCommandManager::create(
 
     TRY(createCommandPool(errorMessage));
     TRY(createCommandBuffers(_commandBuffers, commandBufferCount, errorMessage));
+
     return true;
 }
 
 void VulkanCommandManager::destroy() noexcept {
     if (!_device) return;
 
-    if (commandPool) {
-        _device->getLogicalDevice().destroyCommandPool(commandPool);
-        commandPool = VK_NULL_HANDLE;
+    if (_commandPool) {
+        _device->getLogicalDevice().destroyCommandPool(_commandPool);
+        _commandPool = VK_NULL_HANDLE;
     }
 
     _device = nullptr;
@@ -32,7 +33,8 @@ bool VulkanCommandManager::createCommandPool(std::string& errorMessage) {
 
     const vk::Device& logicalDevice = _device->getLogicalDevice();
 
-    VK_CREATE(logicalDevice.createCommandPool(commandPoolInfo), commandPool, errorMessage);
+    VK_CREATE(logicalDevice.createCommandPool(commandPoolInfo), _commandPool, errorMessage);
+
     return true;
 }
 
@@ -41,20 +43,45 @@ bool VulkanCommandManager::createCommandBuffers(
 ) const {
     vk::CommandBufferAllocateInfo allocateInfo{};
     allocateInfo
-        .setCommandPool(commandPool)
+        .setCommandPool(_commandPool)
         .setLevel(vk::CommandBufferLevel::ePrimary)
         .setCommandBufferCount(commandBufferCount);
 
     const vk::Device& logicalDevice = _device->getLogicalDevice();
 
-    // TO-DO: write memory allocator helper to prevent simultaneous allocations (mighth hit device allocation limit)
     VK_CREATE(logicalDevice.allocateCommandBuffers(allocateInfo), commandBuffers, errorMessage);
+
     return true;
 }
 
 bool VulkanCommandManager::createCommandBuffer(vk::CommandBuffer& commandBuffer, std::string& errorMessage) const {
     std::vector<vk::CommandBuffer> commandBuffers;
+
     if (!createCommandBuffers(commandBuffers, 1, errorMessage)) return false;
-    commandBuffer = commandBuffers.front();
+    commandBuffer = std::move(commandBuffers.front());
+
+    return true;
+}
+
+bool VulkanCommandManager::beginSingleTimeCommands(vk::CommandBuffer& commandBuffer, std::string& errorMessage) const {
+    TRY(createCommandBuffer(commandBuffer, errorMessage));
+
+    constexpr vk::CommandBufferBeginInfo beginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
+    VK_TRY(commandBuffer.begin(beginInfo), errorMessage);
+
+    return true;
+}
+
+bool VulkanCommandManager::endSingleTimeCommands(vk::CommandBuffer& commandBuffer, std::string& errorMessage) const {
+    VK_TRY(commandBuffer.end(), errorMessage);
+
+    vk::SubmitInfo submitInfo{};
+    submitInfo.setCommandBuffers(commandBuffer);
+
+    const vk::Queue& graphicsQueue = _device->getGraphicsQueue();
+
+    VK_TRY(graphicsQueue.submit(submitInfo), errorMessage);
+    VK_TRY(graphicsQueue.waitIdle(), errorMessage);
+
     return true;
 }
