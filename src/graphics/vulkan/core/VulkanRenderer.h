@@ -14,6 +14,7 @@
 #include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
 #include "graphics/vulkan/resources/VulkanUniformBuffers.h"
 #include "graphics/vulkan/resources/VulkanMeshManager.h"
+#include "graphics/vulkan/resources/VulkanImage.h"
 #include "graphics/vulkan/pipeline/VulkanFrameGraph.h"
 
 class VulkanRenderer final : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {
@@ -37,6 +38,8 @@ private:
     VulkanUniformBuffers<UniformBufferObject> uniformBuffers;
 
     VulkanMeshManager meshManager;
+
+    VulkanImage meshMesh;
 
     VulkanFrameGraph frameGraph;
 

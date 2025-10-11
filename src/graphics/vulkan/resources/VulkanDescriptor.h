@@ -20,7 +20,7 @@ public:
     [[nodiscard]] bool createSetLayout(
         const std::vector<vk::DescriptorSetLayoutBinding>& bindings, std::string& errorMessage
     );
-    [[nodiscard]] bool createPool(vk::DescriptorType type, std::string& errorMessage);
+    [[nodiscard]] bool createPool(const std::vector<vk::DescriptorPoolSize>& poolSizes, std::string& errorMessage);
     [[nodiscard]] bool allocateSets(std::string& errorMessage);
 
     void destroy() noexcept;
@@ -32,6 +32,13 @@ public:
         uint32_t                        binding,
         vk::DescriptorType              type,
         const vk::DescriptorBufferInfo& bufferInfo
+    ) const;
+
+    void updateSet(
+        uint32_t                       frameIndex,
+        uint32_t                       binding,
+        vk::DescriptorType             type,
+        const vk::DescriptorImageInfo& imageInfo
     ) const;
 
     [[nodiscard]] const std::vector<vk::DescriptorSet>& getDescriptorSets() const { return _descriptorSets; }

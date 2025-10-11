@@ -28,19 +28,17 @@ bool VulkanDescriptor::createSetLayout(
     return true;
 }
 
-bool VulkanDescriptor::createPool(const vk::DescriptorType type, std::string& errorMessage) {
+bool VulkanDescriptor::createPool(const std::vector<vk::DescriptorPoolSize>& poolSizes, std::string& errorMessage) {
     if (!_device) {
         errorMessage = "Failed to create Vulkan descriptor pool: device is null";
         return false;
     }
 
-    vk::DescriptorPoolSize descriptorPoolSize(type, _framesInFlight);
-
     vk::DescriptorPoolCreateInfo descriptorPoolInfo{};
     descriptorPoolInfo
         .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
         .setMaxSets(_framesInFlight)
-        .setPoolSizes(descriptorPoolSize);
+        .setPoolSizes(poolSizes);
 
     VK_CREATE(_device.createDescriptorPool(descriptorPoolInfo), _descriptorPool, errorMessage);
 
@@ -100,6 +98,28 @@ void VulkanDescriptor::updateSet(
         .setDescriptorCount(1)
         .setDescriptorType(type)
         .setBufferInfo(bufferInfo);
+
+    _device.updateDescriptorSets(descriptorSetWrite, {});
+}
+
+void VulkanDescriptor::updateSet(
+    const uint32_t                 frameIndex,
+    const uint32_t                 binding,
+    const vk::DescriptorType       type,
+    const vk::DescriptorImageInfo& imageInfo
+) const {
+    if (!_device) return;
+
+    assert(frameIndex < _descriptorSets.size());
+
+    vk::WriteDescriptorSet descriptorSetWrite{};
+    descriptorSetWrite
+        .setDstSet(_descriptorSets[frameIndex])
+        .setDstBinding(binding)
+        .setDstArrayElement(0)
+        .setDescriptorCount(1)
+        .setDescriptorType(type)
+        .setImageInfo(imageInfo);
 
     _device.updateDescriptorSets(descriptorSetWrite, {});
 }

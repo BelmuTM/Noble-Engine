@@ -1,6 +1,8 @@
 #include "VulkanImage.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
+#include "graphics/vulkan/resources/StbUsage.h"
+
 #include "core/debug/ErrorHandling.h"
 
 bool VulkanImage::create(
@@ -15,6 +17,27 @@ bool VulkanImage::create(
 }
 
 void VulkanImage::destroy() noexcept {
+    if (!_device) return;
+
+    const vk::Device& logicalDevice = _device->getLogicalDevice();
+    VmaAllocator      allocator     = _device->getAllocator();
+
+    if (_sampler) {
+        logicalDevice.destroySampler(_sampler);
+        _sampler = VK_NULL_HANDLE;
+    }
+
+    if (_imageView) {
+        logicalDevice.destroyImageView(_imageView);
+        _imageView = VK_NULL_HANDLE;
+    }
+
+    if (allocator && _image) {
+        vmaDestroyImage(allocator, _image, _allocation);
+        _image      = VK_NULL_HANDLE;
+        _allocation = VK_NULL_HANDLE;
+    }
+
     _device         = nullptr;
     _commandManager = nullptr;
 }
@@ -59,14 +82,37 @@ bool VulkanImage::createImage(
     return true;
 }
 
+bool VulkanImage::createImageView(
+    vk::ImageView&          imageView,
+    const vk::Image&        image,
+    const vk::ImageViewType type,
+    const vk::Format        format,
+    const VulkanDevice*     device,
+    std::string&            errorMessage
+) {
+    const vk::Device& logicalDevice = device->getLogicalDevice();
+
+    vk::ImageViewCreateInfo imageViewInfo{};
+    imageViewInfo
+        .setImage(image)
+        .setViewType(type)
+        .setFormat(format)
+        .setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
+
+    VK_CREATE(logicalDevice.createImageView(imageViewInfo), imageView, errorMessage);
+
+    return true;
+}
+
 bool VulkanImage::copyBufferToImage(
-    const vk::Buffer&  buffer,
-    vk::Image&         image,
-    const vk::Extent3D extent,
-    std::string&       errorMessage
-) const {
+    const vk::Buffer&           buffer,
+    const vk::Image&            image,
+    const vk::Extent3D          extent,
+    const VulkanCommandManager* commandManager,
+    std::string&                errorMessage
+) {
     vk::CommandBuffer copyCommandBuffer{};
-    TRY(_commandManager->beginSingleTimeCommands(copyCommandBuffer, errorMessage));
+    TRY(commandManager->beginSingleTimeCommands(copyCommandBuffer, errorMessage));
 
     vk::BufferImageCopy region{};
     region
@@ -79,19 +125,69 @@ bool VulkanImage::copyBufferToImage(
 
     copyCommandBuffer.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, {region});
 
-    TRY(_commandManager->endSingleTimeCommands(copyCommandBuffer, errorMessage));
+    TRY(commandManager->endSingleTimeCommands(copyCommandBuffer, errorMessage));
 
     return true;
 }
 
-bool VulkanImage::transitionImageLayout(
-    const vk::Image&      image,
-    const vk::ImageLayout oldLayout,
-    const vk::ImageLayout newLayout,
-    std::string&          errorMessage
+bool VulkanImage::createSampler(
+    vk::Sampler&                 sampler,
+    const vk::Filter             filter,
+    const vk::SamplerAddressMode addressMode,
+    const VulkanDevice*          device,
+    std::string&                 errorMessage
+) {
+    const vk::Device&         logicalDevice  = device->getLogicalDevice();
+    const vk::PhysicalDevice& physicalDevice = device->getPhysicalDevice();
+
+    vk::SamplerCreateInfo samplerInfo{};
+    samplerInfo
+        .setMagFilter(filter)
+        .setMinFilter(filter)
+        .setMipmapMode(vk::SamplerMipmapMode::eLinear)
+        .setAddressModeU(addressMode)
+        .setAddressModeV(addressMode)
+        .setAddressModeW(addressMode)
+        .setMipLodBias(0.0f)
+        .setAnisotropyEnable(vk::True)
+        .setMaxAnisotropy(physicalDevice.getProperties().limits.maxSamplerAnisotropy)
+        .setCompareEnable(vk::False)
+        .setCompareOp(vk::CompareOp::eAlways)
+        .setMinLod(0.0f)
+        .setMaxLod(0.0f)
+        .setBorderColor(vk::BorderColor::eIntOpaqueBlack)
+        .setUnnormalizedCoordinates(vk::False);
+
+    VK_CREATE(logicalDevice.createSampler(samplerInfo), sampler, errorMessage);
+
+    return true;
+}
+
+void VulkanImage::bindToDescriptor(
+    const VulkanDescriptor& descriptor,
+    const uint32_t          binding,
+    const uint32_t          framesInFlight
 ) const {
+    for (size_t i = 0; i < framesInFlight; i++) {
+        vk::DescriptorImageInfo descriptorImageInfo{};
+        descriptorImageInfo
+            .setSampler(_sampler)
+            .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+            .setImageView(_imageView);
+
+        descriptor.updateSet(i, binding, vk::DescriptorType::eCombinedImageSampler, descriptorImageInfo);
+    }
+}
+
+bool VulkanImage::transitionImageLayout(
+    const vk::Image&            image,
+    const vk::ImageLayout       oldLayout,
+    const vk::ImageLayout       newLayout,
+    const VulkanCommandManager* commandManager,
+    std::string&                errorMessage
+) {
     vk::CommandBuffer copyCommandBuffer{};
-    TRY(_commandManager->beginSingleTimeCommands(copyCommandBuffer, errorMessage));
+    TRY(commandManager->beginSingleTimeCommands(copyCommandBuffer, errorMessage));
 
     // Specify which part of the image to transition
     vk::ImageSubresourceRange subresourceRange{};
@@ -137,13 +233,13 @@ bool VulkanImage::transitionImageLayout(
 
     copyCommandBuffer.pipelineBarrier(sourceStage, destinationStage, {}, {}, nullptr, barrier);
 
-    TRY(_commandManager->endSingleTimeCommands(copyCommandBuffer, errorMessage));
+    TRY(commandManager->endSingleTimeCommands(copyCommandBuffer, errorMessage));
 
     return true;
 }
 
 bool VulkanImage::loadTextureFromFile(const char* path, std::string& errorMessage) {
-    int depth = 1;
+    constexpr int depth = 1;
 
     int width, height, channels;
     stbi_uc* pixels = stbi_load(path, &width, &height, &channels, STBI_rgb_alpha);
@@ -155,7 +251,7 @@ bool VulkanImage::loadTextureFromFile(const char* path, std::string& errorMessag
 
     _extent = vk::Extent3D{static_cast<uint32_t>(width), static_cast<uint32_t>(height), static_cast<uint32_t>(depth)};
 
-    const vk::DeviceSize textureSize = width * height * channels;
+    const vk::DeviceSize textureSize = width * height * STBI_rgb_alpha;
 
     VulkanBuffer stagingBuffer;
 
@@ -187,16 +283,29 @@ bool VulkanImage::loadTextureFromFile(const char* path, std::string& errorMessag
         errorMessage
     ));
 
-    TRY(transitionImageLayout(_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, errorMessage));
+    TRY(transitionImageLayout(
+        _image,
+        vk::ImageLayout::eUndefined,
+        vk::ImageLayout::eTransferDstOptimal,
+        _commandManager,
+        errorMessage
+    ));
 
-    TRY(copyBufferToImage(stagingBuffer, _image, _extent, errorMessage));
+    TRY(copyBufferToImage(stagingBuffer, _image, _extent, _commandManager, errorMessage));
 
     TRY(transitionImageLayout(
         _image,
         vk::ImageLayout::eTransferDstOptimal,
         vk::ImageLayout::eShaderReadOnlyOptimal,
+        _commandManager,
         errorMessage
     ));
+
+    TRY(createImageView(_imageView, _image, vk::ImageViewType::e2D, vk::Format::eR8G8B8A8Srgb, _device, errorMessage));
+
+    TRY(createSampler(_sampler, vk::Filter::eLinear, vk::SamplerAddressMode::eClampToEdge, _device, errorMessage));
+
+    stagingBuffer.destroy();
 
     return true;
 }

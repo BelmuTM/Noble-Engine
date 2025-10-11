@@ -41,24 +41,44 @@ bool VulkanRenderer::init(Platform::Window& window) {
     TRY(createVulkanEntity(&uniformBuffers, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
     TRY(createVulkanEntity(&objectDescriptor, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT));
 
-    vk::DescriptorSetLayoutBinding uboLayoutBinding{};
-    uboLayoutBinding
-        .setBinding(0)
-        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-        .setDescriptorCount(1)
-        .setStageFlags(vk::ShaderStageFlagBits::eAllGraphics);
+    const std::vector descriptorLayoutBindings = {
+        vk::DescriptorSetLayoutBinding(
+            0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eAllGraphics, nullptr
+        ),
+        vk::DescriptorSetLayoutBinding(
+            1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, nullptr
+        )
+    };
 
-    TRY(objectDescriptor.createSetLayout({uboLayoutBinding}, errorMessage));
+     const std::vector descriptorPoolSizes = {
+         vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT),
+         vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT)
+     };
+
+    TRY(objectDescriptor.createSetLayout(descriptorLayoutBindings, errorMessage));
 
     VulkanShaderProgram program(logicalDevice);
     TRY(program.loadFromFiles({"meow.vert.spv", "meow.frag.spv"}, errorMessage));
 
     TRY(createVulkanEntity(&pipeline, errorMessage, logicalDevice, swapchain, objectDescriptor.getLayout(), program));
 
-    TRY(objectDescriptor.createPool(vk::DescriptorType::eUniformBuffer, errorMessage));
+    TRY(objectDescriptor.createPool(descriptorPoolSizes, errorMessage));
     TRY(objectDescriptor.allocateSets(errorMessage));
 
-    uniformBuffers.bindToDescriptor(objectDescriptor, uboLayoutBinding.binding);
+    vk::DescriptorSetLayoutBinding uboBinding = {
+        0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eAllGraphics, nullptr
+    };
+
+    uniformBuffers.bindToDescriptor(objectDescriptor, uboBinding.binding);
+
+    TRY(createVulkanEntity(&meshMesh, errorMessage, device, commandManager));
+    TRY(meshMesh.loadTextureFromFile("../../res/textures/mesh_mesh.png", errorMessage));
+
+    vk::DescriptorSetLayoutBinding imageBinding = {
+        1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, nullptr
+    };
+
+    meshMesh.bindToDescriptor(objectDescriptor, imageBinding.binding, MAX_FRAMES_IN_FLIGHT);
 
     VulkanMesh mesh{};
     const std::vector meshes = {mesh};
@@ -86,10 +106,10 @@ bool VulkanRenderer::init(Platform::Window& window) {
     swapchainAttachment.clearValue = clearColor;
 
     FramePass mainPass;
-    mainPass.name      = "MainPass";
-    mainPass.bindPoint = vk::PipelineBindPoint::eGraphics;
+    mainPass.name             = "MainPass";
+    mainPass.bindPoint        = vk::PipelineBindPoint::eGraphics;
     mainPass.colorAttachments = { swapchainAttachment };
-    mainPass.drawCalls = { verticesDraw };
+    mainPass.drawCalls        = { verticesDraw };
 
     frameGraph.addPass(mainPass);
 

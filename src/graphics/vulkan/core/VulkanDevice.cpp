@@ -59,10 +59,14 @@ void VulkanDevice::destroy() noexcept {
 
 bool VulkanDevice::isPhysicalDeviceSuitable(const vk::PhysicalDevice device) {
     const vk::PhysicalDeviceProperties& properties = device.getProperties();
-    //const vk::PhysicalDeviceFeatures&   features   = device.getFeatures();
+    const vk::PhysicalDeviceFeatures&   features   = device.getFeatures();
 
     // Eliminate current candidate device if critical conditions aren't met
     if (properties.apiVersion < VK_API_VERSION_1_3) {
+        return false;
+    }
+
+    if (!features.samplerAnisotropy) {
         return false;
     }
 
@@ -160,6 +164,10 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
         .setQueueCount(1)
         .setQueuePriorities(queuePriority);
 
+    vk::PhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures
+        .setSamplerAnisotropy(vk::True);
+
     vk::PhysicalDeviceVulkan11Features deviceFeatures_1_1{};
     deviceFeatures_1_1
         .setShaderDrawParameters(vk::True);
@@ -174,7 +182,8 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
     deviceInfo
         .setPNext(&deviceFeatures_1_3)
         .setQueueCreateInfos(deviceQueueInfo)
-        .setPEnabledExtensionNames(deviceExtensions);
+        .setPEnabledExtensionNames(deviceExtensions)
+        .setPEnabledFeatures(&deviceFeatures);
 
     VK_CREATE(_physicalDevice.createDevice(deviceInfo), _logicalDevice, errorMessage);
 

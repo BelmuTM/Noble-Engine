@@ -37,8 +37,7 @@ public:
 
     [[nodiscard]] vk::PhysicalDevice getPhysicalDevice() const { return _physicalDevice; }
 
-    [[nodiscard]] vk::Device  getLogicalDevice() const { return _logicalDevice; }
-    [[nodiscard]] vk::Device& getLogicalDevice()       { return _logicalDevice; }
+    [[nodiscard]] const vk::Device& getLogicalDevice() const { return _logicalDevice; }
 
     [[nodiscard]] VmaAllocator getAllocator() const { return _allocator; }
 
