@@ -1,6 +1,6 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANUNIFORMBUFFERS_H
-#define NOBLEENGINE_VULKANUNIFORMBUFFERS_H
+#ifndef NOBLEENGINE_VULKANUNIFORMBUFFER_H
+#define NOBLEENGINE_VULKANUNIFORMBUFFER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 #include "graphics/vulkan/core/VulkanDevice.h"
@@ -9,24 +9,16 @@
 
 #include "core/debug/ErrorHandling.h"
 
-#include <glm/glm.hpp>
-
-struct UniformBufferObject {
-    glm::mat4 model;
-    glm::mat4 view;
-    glm::mat4 projection;
-};
-
 template<typename T>
-class VulkanUniformBuffers {
+class VulkanUniformBuffer {
 public:
-    VulkanUniformBuffers()  = default;
-    ~VulkanUniformBuffers() = default;
+    VulkanUniformBuffer() = default;
+    virtual ~VulkanUniformBuffer() = default;
 
-    VulkanUniformBuffers(const VulkanUniformBuffers&)            = delete;
-    VulkanUniformBuffers& operator=(const VulkanUniformBuffers&) = delete;
-    VulkanUniformBuffers(VulkanUniformBuffers&&)                 = delete;
-    VulkanUniformBuffers& operator=(VulkanUniformBuffers&&)      = delete;
+    VulkanUniformBuffer(const VulkanUniformBuffer&)            = delete;
+    VulkanUniformBuffer& operator=(const VulkanUniformBuffer&) = delete;
+    VulkanUniformBuffer(VulkanUniformBuffer&&)                 = delete;
+    VulkanUniformBuffer& operator=(VulkanUniformBuffer&&)      = delete;
 
     [[nodiscard]] bool create(
         const VulkanDevice& device,
@@ -62,7 +54,9 @@ public:
 
     [[nodiscard]] const std::vector<VulkanBuffer>& getBuffers() const { return uniformBuffers; }
 
-private:
+    virtual void update(uint32_t frameIndex) = 0;
+
+protected:
     static constexpr vk::DeviceSize size = sizeof(T);
 
     const VulkanDevice* _device = nullptr;
@@ -100,4 +94,4 @@ private:
     }
 };
 
-#endif //NOBLEENGINE_VULKANUNIFORMBUFFERS_H
+#endif //NOBLEENGINE_VULKANUNIFORMBUFFER_H

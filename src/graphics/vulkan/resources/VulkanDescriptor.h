@@ -34,8 +34,7 @@ public:
         const vk::DescriptorBufferInfo& bufferInfo
     ) const;
 
-    void updateSet(
-        uint32_t                       frameIndex,
+    void updateSets(
         uint32_t                       binding,
         vk::DescriptorType             type,
         const vk::DescriptorImageInfo& imageInfo

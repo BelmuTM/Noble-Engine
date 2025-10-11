@@ -163,20 +163,14 @@ bool VulkanImage::createSampler(
     return true;
 }
 
-void VulkanImage::bindToDescriptor(
-    const VulkanDescriptor& descriptor,
-    const uint32_t          binding,
-    const uint32_t          framesInFlight
-) const {
-    for (size_t i = 0; i < framesInFlight; i++) {
-        vk::DescriptorImageInfo descriptorImageInfo{};
-        descriptorImageInfo
-            .setSampler(_sampler)
-            .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-            .setImageView(_imageView);
+void VulkanImage::bindToDescriptor(const VulkanDescriptor& descriptor, const uint32_t binding) const {
+    vk::DescriptorImageInfo descriptorImageInfo{};
+    descriptorImageInfo
+        .setSampler(_sampler)
+        .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+        .setImageView(_imageView);
 
-        descriptor.updateSet(i, binding, vk::DescriptorType::eCombinedImageSampler, descriptorImageInfo);
-    }
+    descriptor.updateSets(binding, vk::DescriptorType::eCombinedImageSampler, descriptorImageInfo);
 }
 
 bool VulkanImage::transitionImageLayout(

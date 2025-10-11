@@ -102,24 +102,23 @@ void VulkanDescriptor::updateSet(
     _device.updateDescriptorSets(descriptorSetWrite, {});
 }
 
-void VulkanDescriptor::updateSet(
-    const uint32_t                 frameIndex,
+void VulkanDescriptor::updateSets(
     const uint32_t                 binding,
     const vk::DescriptorType       type,
     const vk::DescriptorImageInfo& imageInfo
 ) const {
     if (!_device) return;
 
-    assert(frameIndex < _descriptorSets.size());
+    for (size_t i = 0; i < _framesInFlight; i++) {
+        vk::WriteDescriptorSet descriptorSetWrite{};
+        descriptorSetWrite
+            .setDstSet(_descriptorSets[i])
+            .setDstBinding(binding)
+            .setDstArrayElement(0)
+            .setDescriptorCount(1)
+            .setDescriptorType(type)
+            .setImageInfo(imageInfo);
 
-    vk::WriteDescriptorSet descriptorSetWrite{};
-    descriptorSetWrite
-        .setDstSet(_descriptorSets[frameIndex])
-        .setDstBinding(binding)
-        .setDstArrayElement(0)
-        .setDescriptorCount(1)
-        .setDescriptorType(type)
-        .setImageInfo(imageInfo);
-
-    _device.updateDescriptorSets(descriptorSetWrite, {});
+        _device.updateDescriptorSets(descriptorSetWrite, {});
+    }
 }

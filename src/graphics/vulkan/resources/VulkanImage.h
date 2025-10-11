@@ -4,7 +4,6 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 #include "graphics/vulkan/core/VulkanDevice.h"
-#include "graphics/vulkan/core/memory/VulkanBuffer.h"
 #include "graphics/vulkan/resources/VulkanDescriptor.h"
 
 #include "graphics/vulkan/core/memory/VmaUsage.h"
@@ -56,11 +55,7 @@ public:
         std::string&           errorMessage
     );
 
-    void bindToDescriptor(
-        const VulkanDescriptor& descriptor,
-        uint32_t                binding,
-        uint32_t                framesInFlight
-    ) const;
+    void bindToDescriptor(const VulkanDescriptor& descriptor, uint32_t binding) const;
 
     [[nodiscard]] static bool copyBufferToImage(
         const vk::Buffer&           buffer,

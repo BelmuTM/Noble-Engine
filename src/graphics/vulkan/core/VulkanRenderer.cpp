@@ -6,11 +6,6 @@
 #include "core/debug/Logger.h"
 #include "core/debug/ErrorHandling.h"
 
-#include <chrono>
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
 VulkanRenderer::~VulkanRenderer() {
     shutdown();
 }
@@ -38,7 +33,7 @@ bool VulkanRenderer::init(Platform::Window& window) {
         swapchainImageCount));
 
     TRY(createVulkanEntity(&commandManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
-    TRY(createVulkanEntity(&uniformBuffers, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
+    TRY(createVulkanEntity(&uniformBuffer, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
     TRY(createVulkanEntity(&objectDescriptor, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT));
 
     const std::vector descriptorLayoutBindings = {
@@ -69,7 +64,8 @@ bool VulkanRenderer::init(Platform::Window& window) {
         0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eAllGraphics, nullptr
     };
 
-    uniformBuffers.bindToDescriptor(objectDescriptor, uboBinding.binding);
+    uniformBuffer.bindToDescriptor(objectDescriptor, uboBinding.binding);
+    uniformBuffer.setSwapchain(swapchain);
 
     TRY(createVulkanEntity(&meshMesh, errorMessage, device, commandManager));
     TRY(meshMesh.loadTextureFromFile("../../res/textures/mesh_mesh.png", errorMessage));
@@ -78,7 +74,7 @@ bool VulkanRenderer::init(Platform::Window& window) {
         1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, nullptr
     };
 
-    meshMesh.bindToDescriptor(objectDescriptor, imageBinding.binding, MAX_FRAMES_IN_FLIGHT);
+    meshMesh.bindToDescriptor(objectDescriptor, imageBinding.binding);
 
     VulkanMesh mesh{};
     const std::vector meshes = {mesh};
@@ -143,7 +139,8 @@ void VulkanRenderer::drawFrame() {
     const uint32_t imageIndex = *imageIndexOpt;
 
     recordCurrentCommandBuffer(imageIndex);
-    updateUniformBuffer();
+
+    uniformBuffer.update(currentFrame);
 
     if (!swapchainManager.submitCommandBuffer(commandManager, currentFrame, imageIndex, errorMessage, discardLogging))
         return;
@@ -253,24 +250,4 @@ void VulkanRenderer::recordCurrentCommandBuffer(const uint32_t imageIndex) {
     VK_CALL_LOG(currentBuffer.reset(), Logger::Level::ERROR);
 
     recordCommandBuffer(currentBuffer, imageIndex);
-}
-
-// TO-DO: move this to UBO manager helper
-void VulkanRenderer::updateUniformBuffer() {
-    static auto startTime = std::chrono::high_resolution_clock::now();
-
-    const auto  currentTime      = std::chrono::high_resolution_clock::now();
-    const float frameTimeCounter = std::chrono::duration<float>(currentTime - startTime).count();
-
-    const vk::Extent2D& extent      = context.getSwapchain().getExtent2D();
-    const float         aspectRatio = static_cast<float>(extent.width) / static_cast<float>(extent.height);
-
-    UniformBufferObject ubo{};
-    ubo.model      = glm::rotate(glm::mat4(1.0f), frameTimeCounter * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.view       = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 10.0f);
-
-    ubo.projection[1][1] *= -1;
-
-    memcpy(uniformBuffers.getBuffers()[currentFrame].getMappedPointer(), &ubo, sizeof(ubo));
 }

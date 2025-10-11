@@ -13,7 +13,6 @@ VulkanMesh::VulkanMesh(const VulkanMesh& other) noexcept {
 VulkanMesh& VulkanMesh::operator=(const VulkanMesh& other) noexcept {
     if (this != &other) {
         destroy();
-
         _device       = other._device;
         _vertexOffset = other._vertexOffset;
         _indexOffset  = other._indexOffset;

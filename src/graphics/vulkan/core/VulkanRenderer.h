@@ -10,11 +10,14 @@
 #include "VulkanContext.h"
 #include "VulkanCommandManager.h"
 #include "VulkanSwapchainManager.h"
-#include "graphics/vulkan/resources/VulkanDescriptor.h"
+
 #include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
-#include "graphics/vulkan/resources/VulkanUniformBuffers.h"
-#include "graphics/vulkan/resources/VulkanMeshManager.h"
+
+#include "graphics/vulkan/resources/VulkanDescriptor.h"
+#include "graphics/vulkan/resources/ubo/ObjectUniformBuffer.h"
 #include "graphics/vulkan/resources/VulkanImage.h"
+#include "graphics/vulkan/resources/VulkanMeshManager.h"
+
 #include "graphics/vulkan/pipeline/VulkanFrameGraph.h"
 
 class VulkanRenderer final : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {
@@ -35,7 +38,7 @@ private:
     VulkanDescriptor       objectDescriptor;
     VulkanGraphicsPipeline pipeline;
 
-    VulkanUniformBuffers<UniformBufferObject> uniformBuffers;
+    ObjectUniformBuffer uniformBuffer;
 
     VulkanMeshManager meshManager;
 
@@ -60,8 +63,6 @@ private:
 
     void recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
     void recordCurrentCommandBuffer(uint32_t imageIndex);
-
-    void updateUniformBuffer();
 };
 
 #endif //NOBLEENGINE_VULKANRENDERER_H
