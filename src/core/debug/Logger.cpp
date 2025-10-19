@@ -45,7 +45,7 @@ namespace {
     std::queue<Log> logQueue;
 
     constexpr std::array<const char*, static_cast<size_t>(Logger::Level::COUNT)> levelStrings = {
-        "DEBUG", "VERROBE", "INFO", "WARNING", "ERROR", "FATAL"
+        "DEBUG", "VERBOSE", "INFO", "WARNING", "ERROR", "FATAL"
     };
 
     template<typename Stream>
