@@ -36,7 +36,7 @@ void VulkanFrameGraph::executePass(const FramePass& pass, const FrameContext& fr
 
         vk::RenderingAttachmentInfo depthAttachmentInfo{};
         depthAttachmentInfo
-            .setImageView(pass.depthAttachment.resource.imageView)
+            .setImageView(pass.depthAttachment.resource.resolveImageView(frame))
             .setImageLayout(pass.depthAttachment.resource.layout)
             .setLoadOp(pass.depthAttachment.loadOp)
             .setStoreOp(pass.depthAttachment.storeOp)

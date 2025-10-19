@@ -28,7 +28,7 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] bool handleFramebufferResize(std::string& errorMessage);
+    [[nodiscard]] bool isOutOfDate() const { return _outOfDate; }
 
     [[nodiscard]] bool recreateSwapchain(std::string& errorMessage);
 
@@ -49,6 +49,8 @@ private:
     VulkanSyncObjects _syncObjects;
 
     uint32_t _framesInFlight = 0;
+
+    bool _outOfDate = false;
 
     [[nodiscard]] bool waitForImageFence(uint32_t frameIndex, uint32_t imageIndex, std::string& errorMessage);
 };

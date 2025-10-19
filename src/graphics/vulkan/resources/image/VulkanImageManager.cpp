@@ -58,8 +58,6 @@ bool VulkanImageManager::createDepthBuffer(
         errorMessage
     ));
 
-    addImage(depthBuffer);
-
     return true;
 }
 

@@ -27,18 +27,6 @@ void VulkanSwapchainManager::destroy() noexcept {
     _window  = nullptr;
 }
 
-bool VulkanSwapchainManager::handleFramebufferResize(std::string& errorMessage) {
-    if (!_window) return false;
-
-    if (!_window->isFramebufferResized()) return true;
-
-    TRY(recreateSwapchain(errorMessage));
-
-    _window->setFramebufferResized(false);
-
-    return true;
-}
-
 bool VulkanSwapchainManager::recreateSwapchain(std::string& errorMessage) {
     if (!_context) {
         errorMessage = "Failed to recreate Vulkan swapchain: context is null";
@@ -88,7 +76,8 @@ std::optional<uint32_t> VulkanSwapchainManager::acquireNextImage(
     if (nextImageAcquire.result == vk::Result::eErrorOutOfDateKHR ||
         nextImageAcquire.result == vk::Result::eSuboptimalKHR) {
         discardLogging = true;
-        if (!recreateSwapchain(errorMessage)) return std::nullopt;
+        _outOfDate     = true;
+        _window->setFramebufferResized(true);
         return std::nullopt;
     }
 
@@ -148,13 +137,16 @@ bool VulkanSwapchainManager::submitCommandBuffer(
     const vk::PresentInfoKHR presentInfo(renderFinishedSemaphore, swapchain, imageIndex);
     const auto queuePresent = VK_CALL(device.getPresentQueue().presentKHR(presentInfo), errorMessage);
 
-    if (queuePresent == vk::Result::eErrorOutOfDateKHR || queuePresent == vk::Result::eSuboptimalKHR) {
+    if (queuePresent == vk::Result::eErrorOutOfDateKHR ||
+        queuePresent == vk::Result::eSuboptimalKHR) {
         discardLogging = true;
-        TRY(recreateSwapchain(errorMessage));
-        _window->setFramebufferResized(false);
+        _outOfDate     = true;
+        _window->setFramebufferResized(true);
         return true;
     }
     if (queuePresent != vk::Result::eSuccess) return false;
+
+    _outOfDate = false;
 
     return true;
 }

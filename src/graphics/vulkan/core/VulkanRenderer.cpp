@@ -1,4 +1,7 @@
 #include "VulkanRenderer.h"
+
+#include <spanstream>
+
 #include "graphics/vulkan/common/VulkanDebugger.h"
 #include "graphics/vulkan/resources/mesh/VulkanMesh.h"
 
@@ -95,15 +98,14 @@ bool VulkanRenderer::init(Platform::Window& window) {
         .setStoreOp(vk::AttachmentStoreOp::eStore)
         .setClearValue(clearColor);
 
-    VulkanImage depth;
     TRY(imageManager.createDepthBuffer(depth, swapchain.getExtent2D(), errorMessage));
 
     FrameResource depthBuffer{};
     depthBuffer
         .setType(Buffer)
         .setImage(depth)
-        .setImageView(depth.getImageView())
-        .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+        .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
+        .setResolveImageView([this](const FrameContext& frame) { return depth.getImageView(); });;
 
     FramePassAttachment depthAttachment{};
     depthAttachment
@@ -137,14 +139,14 @@ void VulkanRenderer::shutdown() {
 }
 
 void VulkanRenderer::drawFrame() {
-    bool discardLogging = false;
+    bool discardLogging = swapchainManager.isOutOfDate();
     std::string errorMessage;
 
     ScopeGuard guard{[&discardLogging, &errorMessage] {
         if (!discardLogging) Logger::error(errorMessage);
     }};
 
-    if (!swapchainManager.handleFramebufferResize(errorMessage)) return;
+    if (!onFramebufferResize(errorMessage)) return;
 
     const auto imageIndexOpt = swapchainManager.acquireNextImage(currentFrame, errorMessage, discardLogging);
     if (!imageIndexOpt) return;
@@ -160,6 +162,23 @@ void VulkanRenderer::drawFrame() {
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     guard.release();
+}
+
+bool VulkanRenderer::onFramebufferResize(std::string& errorMessage) {
+    if (!_window) return false;
+    if (!_window->isFramebufferResized()) return true;
+
+    VK_CALL_LOG(context.getDevice().getLogicalDevice().waitIdle(), Logger::Level::ERROR);
+
+    depth.destroy(context.getDevice());
+
+    TRY(swapchainManager.recreateSwapchain(errorMessage));
+
+    TRY(imageManager.createDepthBuffer(depth, context.getSwapchain().getExtent2D(), errorMessage));
+
+    _window->setFramebufferResized(false);
+
+    return true;
 }
 
 void VulkanRenderer::transitionImageLayout(

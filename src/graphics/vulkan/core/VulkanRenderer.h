@@ -44,9 +44,13 @@ private:
 
     VulkanImageManager imageManager;
 
+    VulkanImage depth;
+
     VulkanFrameGraph frameGraph;
 
     unsigned int currentFrame = 0;
+
+    bool onFramebufferResize(std::string& errorMessage);
 
     void transitionImageLayout(
         vk::CommandBuffer       commandBuffer,
