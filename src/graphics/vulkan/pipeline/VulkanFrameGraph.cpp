@@ -1,5 +1,7 @@
 #include "VulkanFrameGraph.h"
 
+#include <iostream>
+
 bool VulkanFrameGraph::create(const VulkanMeshManager& meshManager, std::string& errorMessage) noexcept {
     _meshManager = &meshManager;
     return true;
@@ -22,21 +24,30 @@ void VulkanFrameGraph::executePass(const FramePass& pass, const FrameContext& fr
     if (pass.bindPoint == vk::PipelineBindPoint::eGraphics) {
         std::vector<vk::RenderingAttachmentInfo> colorAttachmentsInfo{};
 
-        for (const auto& attachment : pass.colorAttachments) {
+        for (const auto& [resource, loadOp, storeOp, clearValue] : pass.colorAttachments) {
             colorAttachmentsInfo.push_back(vk::RenderingAttachmentInfo{}
-                .setImageView(attachment.resource.resolveImageView(frame))
-                .setImageLayout(attachment.resource.layout)
-                .setLoadOp(attachment.loadOp)
-                .setStoreOp(attachment.storeOp)
-                .setClearValue(attachment.clearValue)
+                .setImageView(resource.resolveImageView(frame))
+                .setImageLayout(resource.layout)
+                .setLoadOp(loadOp)
+                .setStoreOp(storeOp)
+                .setClearValue(clearValue)
             );
         }
+
+        vk::RenderingAttachmentInfo depthAttachmentInfo{};
+        depthAttachmentInfo
+            .setImageView(pass.depthAttachment.resource.imageView)
+            .setImageLayout(pass.depthAttachment.resource.layout)
+            .setLoadOp(pass.depthAttachment.loadOp)
+            .setStoreOp(pass.depthAttachment.storeOp)
+            .setClearValue(pass.depthAttachment.clearValue);
 
         vk::RenderingInfo renderingInfo{};
         renderingInfo
             .setRenderArea({{0, 0}, frame.extent})
             .setLayerCount(1)
-            .setColorAttachments(colorAttachmentsInfo);
+            .setColorAttachments(colorAttachmentsInfo)
+            .setPDepthAttachment(&depthAttachmentInfo);
 
         frame.cmdBuffer.beginRendering(renderingInfo);
 

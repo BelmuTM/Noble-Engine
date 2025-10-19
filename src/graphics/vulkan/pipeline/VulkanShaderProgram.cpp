@@ -2,11 +2,11 @@
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 #include "core/debug/ErrorHandling.h"
+#include "core/ResourceManager.h"
 
 #include <fstream>
+#include <ranges>
 #include <unordered_map>
-
-static const std::string shaderFilesPath = "../../res/shaders/spv/";
 
 static const std::unordered_map<std::string, std::pair<vk::ShaderStageFlagBits, const char*>> stageData = {
     {"vert", {vk::ShaderStageFlagBits::eVertex,   "vertMain"}},
@@ -25,10 +25,15 @@ void VulkanShaderProgram::clearShaderModules() {
     shaderModules.clear();
 }
 
-bool VulkanShaderProgram::loadFromFiles(const std::vector<std::string>& shaderPaths, std::string& errorMessage) {
+bool VulkanShaderProgram::loadFromFiles(const std::vector<std::string>& paths, std::string& errorMessage) {
+    if (paths.empty()) {
+        errorMessage = "Failed to load shader program: no paths provided";
+        return false;
+    }
+
     ScopeGuard guard{[this] { clearShaderModules(); }};
 
-    for (const auto& path : shaderPaths) {
+    for (const auto& path : paths) {
         errorMessage = "Failed to load shader stage \"" + path + "\": ";
 
         std::string stageExtension = extractStageExtension(path);
@@ -65,6 +70,10 @@ bool VulkanShaderProgram::loadFromFiles(const std::vector<std::string>& shaderPa
     guard.release();
 
     return true;
+}
+
+bool VulkanShaderProgram::load(const std::string& name, std::string& errorMessage) {
+    return loadFromFiles(findShaderFilePaths(name), errorMessage);
 }
 
 std::string VulkanShaderProgram::extractStageExtension(const std::string& path) noexcept {
@@ -105,4 +114,18 @@ vk::ShaderModule VulkanShaderProgram::createShaderModule(
     }
 
     return shaderModuleCreate.value;
+}
+
+std::vector<std::string> VulkanShaderProgram::findShaderFilePaths(const std::string& name) {
+    std::vector<std::string> paths{};
+    for (const auto& stageExtension : stageData | std::views::keys) {
+        const std::string relativePath = name + "." + stageExtension + ".spv";
+        const std::string fullPath     = shaderFilesPath + relativePath;
+
+        if (FILE* file = fopen(fullPath.c_str(), "r")) {
+            fclose(file);
+            paths.push_back(relativePath);
+        }
+    }
+    return paths;
 }

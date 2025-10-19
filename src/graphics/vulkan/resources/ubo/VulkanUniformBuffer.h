@@ -5,15 +5,21 @@
 #include "graphics/vulkan/common/VulkanHeader.h"
 #include "graphics/vulkan/core/VulkanDevice.h"
 #include "graphics/vulkan/core/memory/VulkanBuffer.h"
-#include "graphics/vulkan/resources/VulkanDescriptor.h"
+#include "graphics/vulkan/resources/VulkanDescriptorManager.h"
 
 #include "core/debug/ErrorHandling.h"
 
+class VulkanUniformBufferBase {
+public:
+    virtual DescriptorInfo getDescriptorInfo(uint32_t binding, uint32_t frameIndex) const = 0;
+    virtual ~VulkanUniformBufferBase() = default;
+};
+
 template<typename T>
-class VulkanUniformBuffer {
+class VulkanUniformBuffer : public VulkanUniformBufferBase {
 public:
     VulkanUniformBuffer() = default;
-    virtual ~VulkanUniformBuffer() = default;
+    ~VulkanUniformBuffer() override = default;
 
     VulkanUniformBuffer(const VulkanUniformBuffer&)            = delete;
     VulkanUniformBuffer& operator=(const VulkanUniformBuffer&) = delete;
@@ -40,16 +46,12 @@ public:
         _device = nullptr;
     }
 
-    void bindToDescriptor(const VulkanDescriptor& descriptor, const uint32_t binding) const {
-        for (size_t i = 0; i < _framesInFlight; i++) {
-            vk::DescriptorBufferInfo descriptorBufferInfo{};
-            descriptorBufferInfo
-                .setBuffer(uniformBuffers[i])
-                .setOffset(0)
-                .setRange(size);
-
-            descriptor.updateSet(i, binding, vk::DescriptorType::eUniformBuffer, descriptorBufferInfo);
-        }
+    DescriptorInfo getDescriptorInfo(const uint32_t binding, const uint32_t frameIndex) const override {
+        return {
+            .type       = vk::DescriptorType::eUniformBuffer,
+            .bufferInfo = {uniformBuffers[frameIndex], 0, size},
+            .binding    = binding
+        };
     }
 
     [[nodiscard]] const std::vector<VulkanBuffer>& getBuffers() const { return uniformBuffers; }
@@ -74,7 +76,7 @@ protected:
         uniformBuffers.clear();
         uniformBuffers.reserve(_framesInFlight);
 
-        for (size_t i = 0; i < _framesInFlight; i++) {
+        for (uint32_t i = 0; i < _framesInFlight; i++) {
             VulkanBuffer uniformBuffer;
 
             TRY(uniformBuffer.create(

@@ -3,7 +3,6 @@
 #define NOBLEENGINE_VULKANMESH_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
-#include "graphics/vulkan/core/VulkanDevice.h"
 #include "graphics/vulkan/core/memory/VulkanBuffer.h"
 
 #include <glm/glm.hpp>
@@ -28,21 +27,14 @@ struct Vertex {
 
 class VulkanMesh {
 public:
-    VulkanMesh() = default;
-    ~VulkanMesh();
+    VulkanMesh()  = default;
+    ~VulkanMesh() = default;
 
     VulkanMesh(const VulkanMesh&) noexcept;
     VulkanMesh& operator=(const VulkanMesh&) noexcept;
 
     VulkanMesh(VulkanMesh&&)            = delete;
     VulkanMesh& operator=(VulkanMesh&&) = delete;
-
-    [[nodiscard]] bool create(
-        const VulkanDevice& device,
-        std::string&        errorMessage
-    ) noexcept;
-
-    void destroy() noexcept;
 
     [[nodiscard]] std::vector<Vertex> getVertices() const { return vertices; }
     [[nodiscard]] std::vector<uint16_t> getIndices() const { return indices; }
@@ -62,8 +54,6 @@ public:
     }
 
 private:
-    const VulkanDevice* _device = nullptr;
-
     size_t _vertexOffset = 0;
     size_t _indexOffset  = 0;
 

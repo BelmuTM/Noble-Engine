@@ -14,7 +14,7 @@ public:
     ~VulkanSurface() = default;
 
     // Implicit conversion operator
-    operator vk::SurfaceKHR() const { return surface; }
+    operator vk::SurfaceKHR() const { return _surface; }
 
     VulkanSurface(const VulkanSurface&)            = delete;
     VulkanSurface& operator=(const VulkanSurface&) = delete;
@@ -31,7 +31,7 @@ private:
     const Platform::Window* _window = nullptr;
 
     vk::Instance   _instance{};
-    vk::SurfaceKHR surface{};
+    vk::SurfaceKHR _surface{};
 
     bool createSurface(std::string& errorMessage);
 };

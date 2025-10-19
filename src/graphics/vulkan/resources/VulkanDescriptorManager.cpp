@@ -1,8 +1,9 @@
-#include "VulkanDescriptor.h"
-
+#include "VulkanDescriptorManager.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-bool VulkanDescriptor::create(
+#include "graphics/vulkan/resources/ubo/VulkanUniformBuffer.h"
+
+bool VulkanDescriptorManager::create(
     const vk::Device& device,
     const uint32_t    framesInFlight,
     std::string&      errorMessage
@@ -12,7 +13,7 @@ bool VulkanDescriptor::create(
     return true;
 }
 
-bool VulkanDescriptor::createSetLayout(
+bool VulkanDescriptorManager::createSetLayout(
     const std::vector<vk::DescriptorSetLayoutBinding>& bindings, std::string& errorMessage
 ) {
     if (!_device) {
@@ -28,7 +29,7 @@ bool VulkanDescriptor::createSetLayout(
     return true;
 }
 
-bool VulkanDescriptor::createPool(const std::vector<vk::DescriptorPoolSize>& poolSizes, std::string& errorMessage) {
+bool VulkanDescriptorManager::createPool(const std::vector<vk::DescriptorPoolSize>& poolSizes, std::string& errorMessage) {
     if (!_device) {
         errorMessage = "Failed to create Vulkan descriptor pool: device is null";
         return false;
@@ -45,7 +46,7 @@ bool VulkanDescriptor::createPool(const std::vector<vk::DescriptorPoolSize>& poo
     return true;
 }
 
-bool VulkanDescriptor::allocateSets(std::string& errorMessage) {
+bool VulkanDescriptorManager::allocateSets(std::string& errorMessage) {
     if (!_device) {
         errorMessage = "Failed to allocate Vulkan descriptor sets: device is null";
         return false;
@@ -66,7 +67,7 @@ bool VulkanDescriptor::allocateSets(std::string& errorMessage) {
     return true;
 }
 
-void VulkanDescriptor::destroy() noexcept {
+void VulkanDescriptorManager::destroy() noexcept {
     if (_descriptorPool && _device) {
         _device.destroyDescriptorPool(_descriptorPool);
         _descriptorPool = VK_NULL_HANDLE;
@@ -80,45 +81,37 @@ void VulkanDescriptor::destroy() noexcept {
     _device = nullptr;
 }
 
-void VulkanDescriptor::updateSet(
-    const uint32_t                  frameIndex,
-    const uint32_t                  binding,
-    const vk::DescriptorType        type,
-    const vk::DescriptorBufferInfo& bufferInfo
-) const {
+void VulkanDescriptorManager::bindResource(const DescriptorInfo& info, const uint32_t frameIndex) const {
     if (!_device) return;
-
-    assert(frameIndex < _descriptorSets.size());
 
     vk::WriteDescriptorSet descriptorSetWrite{};
     descriptorSetWrite
         .setDstSet(_descriptorSets[frameIndex])
-        .setDstBinding(binding)
+        .setDstBinding(info.binding)
         .setDstArrayElement(0)
         .setDescriptorCount(1)
-        .setDescriptorType(type)
-        .setBufferInfo(bufferInfo);
+        .setDescriptorType(info.type);
+
+    if (info.type == vk::DescriptorType::eUniformBuffer)
+        descriptorSetWrite.setBufferInfo(info.bufferInfo);
+    else if (info.type == vk::DescriptorType::eCombinedImageSampler)
+        descriptorSetWrite.setImageInfo(info.imageInfo);
 
     _device.updateDescriptorSets(descriptorSetWrite, {});
 }
 
-void VulkanDescriptor::updateSets(
-    const uint32_t                 binding,
-    const vk::DescriptorType       type,
-    const vk::DescriptorImageInfo& imageInfo
-) const {
+void VulkanDescriptorManager::bindPerFrameResource(const DescriptorInfo& info) const {
     if (!_device) return;
 
-    for (size_t i = 0; i < _framesInFlight; i++) {
-        vk::WriteDescriptorSet descriptorSetWrite{};
-        descriptorSetWrite
-            .setDstSet(_descriptorSets[i])
-            .setDstBinding(binding)
-            .setDstArrayElement(0)
-            .setDescriptorCount(1)
-            .setDescriptorType(type)
-            .setImageInfo(imageInfo);
+    for (uint32_t i = 0; i < _framesInFlight; i++) {
+        bindResource(info, i);
+    }
+}
 
-        _device.updateDescriptorSets(descriptorSetWrite, {});
+void VulkanDescriptorManager::bindPerFrameUBO(const VulkanUniformBufferBase& ubo, const uint32_t binding) const {
+    if (!_device) return;
+
+    for (uint32_t i = 0; i < _framesInFlight; i++) {
+        bindResource(ubo.getDescriptorInfo(binding, i), i);
     }
 }

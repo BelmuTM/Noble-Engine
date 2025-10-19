@@ -1,19 +1,28 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANDESCRIPTOR_H
-#define NOBLEENGINE_VULKANDESCRIPTOR_H
+#ifndef NOBLEENGINE_VULKANDESCRIPTORMANAGER_H
+#define NOBLEENGINE_VULKANDESCRIPTORMANAGER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 #include "graphics/vulkan/core/memory/VulkanBuffer.h"
 
-class VulkanDescriptor {
-public:
-    VulkanDescriptor()  = default;
-    ~VulkanDescriptor() = default;
+struct DescriptorInfo {
+    vk::DescriptorType       type;
+    vk::DescriptorImageInfo  imageInfo{};
+    vk::DescriptorBufferInfo bufferInfo{};
+    uint32_t                 binding;
+};
 
-    VulkanDescriptor(const VulkanDescriptor&)            = delete;
-    VulkanDescriptor& operator=(const VulkanDescriptor&) = delete;
-    VulkanDescriptor(VulkanDescriptor&&)                 = delete;
-    VulkanDescriptor& operator=(VulkanDescriptor&&)      = delete;
+class VulkanUniformBufferBase;
+
+class VulkanDescriptorManager {
+public:
+    VulkanDescriptorManager()  = default;
+    ~VulkanDescriptorManager() = default;
+
+    VulkanDescriptorManager(const VulkanDescriptorManager&)            = delete;
+    VulkanDescriptorManager& operator=(const VulkanDescriptorManager&) = delete;
+    VulkanDescriptorManager(VulkanDescriptorManager&&)                 = delete;
+    VulkanDescriptorManager& operator=(VulkanDescriptorManager&&)      = delete;
 
     [[nodiscard]] bool create(const vk::Device& device, uint32_t framesInFlight, std::string& errorMessage) noexcept;
 
@@ -27,20 +36,13 @@ public:
 
     [[nodiscard]] vk::DescriptorSetLayout getLayout() const { return _descriptorSetLayout; }
 
-    void updateSet(
-        uint32_t                        frameIndex,
-        uint32_t                        binding,
-        vk::DescriptorType              type,
-        const vk::DescriptorBufferInfo& bufferInfo
-    ) const;
-
-    void updateSets(
-        uint32_t                       binding,
-        vk::DescriptorType             type,
-        const vk::DescriptorImageInfo& imageInfo
-    ) const;
-
     [[nodiscard]] const std::vector<vk::DescriptorSet>& getDescriptorSets() const { return _descriptorSets; }
+
+    void bindResource(const DescriptorInfo& info, uint32_t frameIndex) const;
+
+    void bindPerFrameResource(const DescriptorInfo& info) const;
+
+    void bindPerFrameUBO(const VulkanUniformBufferBase& ubo, uint32_t binding) const;
 
 private:
     vk::Device _device{};
@@ -52,4 +54,4 @@ private:
     std::vector<vk::DescriptorSet> _descriptorSets{};
 };
 
-#endif //NOBLEENGINE_VULKANDESCRIPTOR_H
+#endif //NOBLEENGINE_VULKANDESCRIPTORMANAGER_H

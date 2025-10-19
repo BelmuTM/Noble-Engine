@@ -1,6 +1,6 @@
 #include "VulkanRenderer.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
-#include "graphics/vulkan/resources/VulkanMesh.h"
+#include "graphics/vulkan/resources/mesh/VulkanMesh.h"
 
 #include "core/Engine.h"
 #include "core/debug/Logger.h"
@@ -34,7 +34,7 @@ bool VulkanRenderer::init(Platform::Window& window) {
 
     TRY(createVulkanEntity(&commandManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
     TRY(createVulkanEntity(&uniformBuffer, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
-    TRY(createVulkanEntity(&objectDescriptor, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT));
+    TRY(createVulkanEntity(&descriptorManager, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT));
 
     const std::vector descriptorLayoutBindings = {
         vk::DescriptorSetLayoutBinding(
@@ -50,31 +50,25 @@ bool VulkanRenderer::init(Platform::Window& window) {
          vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT)
      };
 
-    TRY(objectDescriptor.createSetLayout(descriptorLayoutBindings, errorMessage));
+    TRY(descriptorManager.createSetLayout(descriptorLayoutBindings, errorMessage));
 
     VulkanShaderProgram program(logicalDevice);
-    TRY(program.loadFromFiles({"meow.vert.spv", "meow.frag.spv"}, errorMessage));
+    TRY(program.load("meow", errorMessage));
 
-    TRY(createVulkanEntity(&pipeline, errorMessage, logicalDevice, swapchain, objectDescriptor.getLayout(), program));
+    TRY(createVulkanEntity(&pipeline, errorMessage, logicalDevice, swapchain, descriptorManager.getLayout(), program));
 
-    TRY(objectDescriptor.createPool(descriptorPoolSizes, errorMessage));
-    TRY(objectDescriptor.allocateSets(errorMessage));
+    TRY(descriptorManager.createPool(descriptorPoolSizes, errorMessage));
+    TRY(descriptorManager.allocateSets(errorMessage));
 
-    vk::DescriptorSetLayoutBinding uboBinding = {
-        0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eAllGraphics, nullptr
-    };
-
-    uniformBuffer.bindToDescriptor(objectDescriptor, uboBinding.binding);
+    descriptorManager.bindPerFrameUBO(uniformBuffer, 0);
     uniformBuffer.setSwapchain(swapchain);
 
-    TRY(createVulkanEntity(&meshMesh, errorMessage, device, commandManager));
-    TRY(meshMesh.loadTextureFromFile("../../res/textures/mesh_mesh.png", errorMessage));
+    TRY(createVulkanEntity(&imageManager, errorMessage, device, commandManager));
 
-    vk::DescriptorSetLayoutBinding imageBinding = {
-        1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, nullptr
-    };
+    VulkanImage cat;
+    TRY(imageManager.loadTextureFromFile(cat, "mesh_mesh.png", errorMessage));
 
-    meshMesh.bindToDescriptor(objectDescriptor, imageBinding.binding);
+    descriptorManager.bindPerFrameResource(cat.getDescriptorInfo(1));
 
     VulkanMesh mesh{};
     const std::vector meshes = {mesh};
@@ -82,30 +76,49 @@ bool VulkanRenderer::init(Platform::Window& window) {
     TRY(createVulkanEntity(&meshManager, errorMessage, device, commandManager, meshes));
 
     DrawCall verticesDraw;
-    verticesDraw.pipeline           = &pipeline;
-    verticesDraw.mesh               = mesh;
-    verticesDraw.descriptorResolver = [this](const FrameContext& frame) {
-        return std::vector{ this->objectDescriptor.getDescriptorSets()[frame.frameIndex] };
-    };
+    verticesDraw
+        .setPipeline(&pipeline)
+        .setMesh(mesh)
+        .setDescriptorResolver([this](const FrameContext& frame) {
+            return std::vector{this->descriptorManager.getDescriptorSets()[frame.frameIndex]};
+        });
 
-    FrameResource swapchainOutput = {
-        {}, {}, {}, {}, vk::ImageLayout::eColorAttachmentOptimal,
-        [](const FrameContext& frame) {
-            return frame.swapchainImageView;
-        }
-    };
+    FrameResource swapchainOutput{};
+    swapchainOutput
+        .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        .setResolveImageView([](const FrameContext& frame) { return frame.swapchainImageView; });
 
     FramePassAttachment swapchainAttachment{};
-    swapchainAttachment.resource   = swapchainOutput;
-    swapchainAttachment.loadOp     = vk::AttachmentLoadOp::eClear;
-    swapchainAttachment.storeOp    = vk::AttachmentStoreOp::eStore;
-    swapchainAttachment.clearValue = clearColor;
+    swapchainAttachment
+        .setResource(swapchainOutput)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eStore)
+        .setClearValue(clearColor);
+
+    VulkanImage depth;
+    TRY(imageManager.createDepthBuffer(depth, swapchain.getExtent2D(), errorMessage));
+
+    FrameResource depthBuffer{};
+    depthBuffer
+        .setType(Buffer)
+        .setImage(depth)
+        .setImageView(depth.getImageView())
+        .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+    FramePassAttachment depthAttachment{};
+    depthAttachment
+        .setResource(depthBuffer)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eStore)
+        .setClearValue(vk::ClearDepthStencilValue{1.0f, 0});
 
     FramePass mainPass;
-    mainPass.name             = "MainPass";
-    mainPass.bindPoint        = vk::PipelineBindPoint::eGraphics;
-    mainPass.colorAttachments = { swapchainAttachment };
-    mainPass.drawCalls        = { verticesDraw };
+    mainPass
+        .setName("MainPass")
+        .setBindPoint(vk::PipelineBindPoint::eGraphics)
+        .addColorAttachment(swapchainAttachment)
+        .setDepthAttachment(depthAttachment)
+        .addDrawCall(verticesDraw);
 
     frameGraph.addPass(mainPass);
 
@@ -194,7 +207,7 @@ void VulkanRenderer::transitionImageLayout(
 
 bool VulkanRenderer::beginCommandBuffer(const vk::CommandBuffer commandBuffer, std::string& errorMessage) {
     if (commandBuffer == vk::CommandBuffer{}) {
-        errorMessage = "Failed to beging record for Vulkan command buffer: command buffer is null";
+        errorMessage = "Failed to begin record for Vulkan command buffer: command buffer is null";
         return false;
     }
 
@@ -224,10 +237,11 @@ void VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer, 
     );
 
     FrameContext frameContext{};
-    frameContext.frameIndex         = currentFrame;
-    frameContext.cmdBuffer          = commandBuffer;
-    frameContext.extent             = context.getSwapchain().getExtent2D();
-    frameContext.swapchainImageView = context.getSwapchain().getImageViews()[imageIndex];
+    frameContext
+        .setFrameIndex(currentFrame)
+        .setCommandBuffer(commandBuffer)
+        .setSwapchainImageView(context.getSwapchain().getImageViews()[imageIndex])
+        .setExtent(context.getSwapchain().getExtent2D());
 
     frameGraph.execute(frameContext);
 

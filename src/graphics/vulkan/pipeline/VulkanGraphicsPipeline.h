@@ -82,6 +82,17 @@ private:
         return info;
     }();
 
+    static constexpr vk::PipelineDepthStencilStateCreateInfo depthStencilInfo = []{
+        vk::PipelineDepthStencilStateCreateInfo info{};
+        info
+            .setDepthTestEnable(vk::True)
+            .setDepthWriteEnable(vk::True)
+            .setDepthCompareOp(vk::CompareOp::eLessOrEqual)
+            .setDepthBoundsTestEnable(vk::False)
+            .setStencilTestEnable(vk::False);
+        return info;
+    }();
+
     static constexpr vk::PipelineColorBlendAttachmentState colorBlendAttachment = []{
         vk::PipelineColorBlendAttachmentState info{};
         info

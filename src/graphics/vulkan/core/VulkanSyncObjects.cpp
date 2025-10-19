@@ -38,7 +38,7 @@ bool VulkanSyncObjects::createSyncObjects(
 
     constexpr vk::FenceCreateInfo fenceInfo{vk::FenceCreateFlagBits::eSignaled};
 
-    for (size_t i = 0; i < framesInFlight; i++) {
+    for (uint32_t i = 0; i < framesInFlight; i++) {
         VK_CREATE(_device.createSemaphore({}), imageAvailableSemaphores[i], errorMessage);
         VK_CREATE(_device.createFence(fenceInfo), inFlightFences[i], errorMessage);
     }

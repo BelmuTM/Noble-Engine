@@ -13,10 +13,10 @@
 
 #include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
 
-#include "graphics/vulkan/resources/VulkanDescriptor.h"
+#include "graphics/vulkan/resources/VulkanDescriptorManager.h"
 #include "graphics/vulkan/resources/ubo/ObjectUniformBuffer.h"
-#include "graphics/vulkan/resources/VulkanImage.h"
-#include "graphics/vulkan/resources/VulkanMeshManager.h"
+#include "graphics/vulkan/resources/mesh/VulkanMeshManager.h"
+#include "graphics/vulkan/resources/image/VulkanImageManager.h"
 
 #include "graphics/vulkan/pipeline/VulkanFrameGraph.h"
 
@@ -32,17 +32,17 @@ public:
 private:
     Platform::Window* _window = nullptr;
 
-    VulkanContext          context;
-    VulkanCommandManager   commandManager;
-    VulkanSwapchainManager swapchainManager;
-    VulkanDescriptor       objectDescriptor;
-    VulkanGraphicsPipeline pipeline;
+    VulkanContext           context;
+    VulkanCommandManager    commandManager;
+    VulkanSwapchainManager  swapchainManager;
+    VulkanDescriptorManager descriptorManager;
+    VulkanGraphicsPipeline  pipeline;
 
     ObjectUniformBuffer uniformBuffer;
 
     VulkanMeshManager meshManager;
 
-    VulkanImage meshMesh;
+    VulkanImageManager imageManager;
 
     VulkanFrameGraph frameGraph;
 

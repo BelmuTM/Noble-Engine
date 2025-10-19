@@ -1,6 +1,6 @@
 #include "VulkanGraphicsPipeline.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
-#include "graphics/vulkan/resources/VulkanMesh.h"
+#include "../resources/mesh/VulkanMesh.h"
 
 bool VulkanGraphicsPipeline::create(
     const vk::Device&             device,
@@ -48,7 +48,9 @@ bool VulkanGraphicsPipeline::createPipeline(const VulkanShaderProgram& shaderPro
     const vk::Format& colorFormat = _swapchain->getFormat();
 
     vk::PipelineRenderingCreateInfo renderingInfo{};
-    renderingInfo.setColorAttachmentFormats(colorFormat);
+    renderingInfo
+        .setColorAttachmentFormats(colorFormat)
+        .setDepthAttachmentFormat(vk::Format::eD32Sfloat);
 
     const auto& bindingDescription    = Vertex::getBindingDescription();
     const auto& attributeDescriptions = Vertex::getAttributeDescriptions();
@@ -67,6 +69,7 @@ bool VulkanGraphicsPipeline::createPipeline(const VulkanShaderProgram& shaderPro
         .setPViewportState(&viewportInfo)
         .setPRasterizationState(&rasterizationInfo)
         .setPMultisampleState(&multisamplingInfo)
+        .setPDepthStencilState(&depthStencilInfo)
         .setPColorBlendState(&colorBlendInfo)
         .setPDynamicState(&dynamicStateInfo)
         .setLayout(pipelineLayout)

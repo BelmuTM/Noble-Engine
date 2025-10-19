@@ -17,9 +17,9 @@ bool VulkanSurface::create(
 }
 
 void VulkanSurface::destroy() noexcept {
-    if (surface && _instance) {
-        _instance.destroySurfaceKHR(surface);
-        surface = VK_NULL_HANDLE;
+    if (_surface && _instance) {
+        _instance.destroySurfaceKHR(_surface);
+        _surface = VK_NULL_HANDLE;
     }
     _window   = nullptr;
     _instance = VK_NULL_HANDLE;
@@ -37,7 +37,7 @@ bool VulkanSurface::createSurface(std::string& errorMessage) {
     surfaceInfo.hinstance = _window->hInstance();
     surfaceInfo.hwnd      = static_cast<HWND>(_window->nativeHandle());
 
-    VK_CREATE(_instance.createWin32SurfaceKHR(surfaceInfo), surface, errorMessage);
+    VK_CREATE(_instance.createWin32SurfaceKHR(surfaceInfo), _surface, errorMessage);
 
     return true;
 

@@ -8,6 +8,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <csignal>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <mutex>
@@ -138,6 +139,8 @@ namespace {
 }
 
 namespace Logger {
+    static constexpr std::string logsDirectory = "logs";
+
     void init() {
 #ifdef LOG_FILE_WRITE
         const auto now  = std::chrono::system_clock::now();
@@ -146,8 +149,13 @@ namespace Logger {
         Engine::localtime(tm, &time);
 
         std::ostringstream oss;
-        oss << std::put_time(&tm, "%Y-%m-%d_%H-%M-%S") << ".log";
-        const std::string logFileName = oss.str();
+        oss << std::put_time(&tm, "%Y-%m-%d_%H-%M-%S");
+
+        const std::string logFileName = logsDirectory + "/" + oss.str() + ".log";
+
+        if (!std::filesystem::exists(logsDirectory)) {
+            std::filesystem::create_directory(logsDirectory);
+        }
 
         logFile.open(logFileName);
 

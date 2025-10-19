@@ -18,7 +18,9 @@ public:
     VulkanShaderProgram(VulkanShaderProgram&&)                 = delete;
     VulkanShaderProgram& operator=(VulkanShaderProgram&&)      = delete;
 
-    bool loadFromFiles(const std::vector<std::string>& shaderPaths, std::string& errorMessage);
+    [[nodiscard]] bool loadFromFiles(const std::vector<std::string>& paths, std::string& errorMessage);
+
+    [[nodiscard]] bool load(const std::string& name, std::string& errorMessage);
 
     [[nodiscard]] const std::vector<vk::PipelineShaderStageCreateInfo>& getStages() const { return shaderStages; }
 
@@ -34,6 +36,8 @@ private:
     static std::vector<char> readShaderFile(const std::string& path) noexcept;
 
     vk::ShaderModule createShaderModule(const std::vector<char>& code, std::string& errorMessage) const;
+
+    static std::vector<std::string> findShaderFilePaths(const std::string& name);
 };
 
 #endif //NOBLEENGINE_VULKANSHADERPROGRAM_H

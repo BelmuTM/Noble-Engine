@@ -2,6 +2,7 @@
 
 #include <chrono>
 
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/gtc/matrix_transform.hpp>
 
 void ObjectUniformBuffer::update(const uint32_t frameIndex) {
