@@ -164,4 +164,9 @@ namespace Platform {
         width  = static_cast<int>(std::lround(logicalWidth  * scale));
         height = static_cast<int>(std::lround(logicalHeight * scale));
     }
+
+    void Window::setTitle(const std::string& title) const {
+        const auto wTitle = std::wstring(title.begin(), title.end());
+        SetWindowText(static_cast<HWND>(handle->windowHandle), wTitle.c_str());
+    }
 }

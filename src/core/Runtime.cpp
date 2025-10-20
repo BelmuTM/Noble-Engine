@@ -47,7 +47,7 @@ int main() {
                 frameCount    = 0;
                 lastFpsUpdate = currentTime;
 
-                Logger::info(std::to_string(framerate) + " fps");
+                window.setTitle("Noble Engine | " + std::to_string(framerate) + " fps");
             }
 
             previousTime = currentTime;

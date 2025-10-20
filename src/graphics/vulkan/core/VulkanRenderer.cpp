@@ -39,6 +39,7 @@ bool VulkanRenderer::init(Platform::Window& window) {
     TRY(createVulkanEntity(&uniformBuffer, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
     TRY(createVulkanEntity(&descriptorManager, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT));
 
+    // TO-DO: Move this to separate helper class (RenderPass?)
     const std::vector descriptorLayoutBindings = {
         vk::DescriptorSetLayoutBinding(
             0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eAllGraphics, nullptr
@@ -48,10 +49,10 @@ bool VulkanRenderer::init(Platform::Window& window) {
         )
     };
 
-     const std::vector descriptorPoolSizes = {
+    const std::vector descriptorPoolSizes = {
          vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT),
          vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT)
-     };
+    };
 
     TRY(descriptorManager.createSetLayout(descriptorLayoutBindings, errorMessage));
 
@@ -105,7 +106,7 @@ bool VulkanRenderer::init(Platform::Window& window) {
         .setType(Buffer)
         .setImage(depth)
         .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
-        .setResolveImageView([this](const FrameContext& frame) { return depth.getImageView(); });;
+        .setResolveImageView([this](const FrameContext&) { return depth.getImageView(); });
 
     FramePassAttachment depthAttachment{};
     depthAttachment
@@ -134,6 +135,8 @@ bool VulkanRenderer::init(Platform::Window& window) {
 void VulkanRenderer::shutdown() {
     VK_CALL_LOG(context.getDevice().getLogicalDevice().waitIdle(), Logger::Level::ERROR);
     flushDeletionQueue();
+
+    depth.destroy(context.getDevice());
 
     context.destroy();
 }

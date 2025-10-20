@@ -35,6 +35,8 @@ namespace Platform {
         [[nodiscard]] bool isFramebufferResized() const { return framebufferResized; }
         void setFramebufferResized(const bool resized) { framebufferResized = resized; }
 
+        void setTitle(const std::string& title) const;
+
         [[nodiscard]] WindowHandle nativeHandle() const {
             return handle->windowHandle;
         }
