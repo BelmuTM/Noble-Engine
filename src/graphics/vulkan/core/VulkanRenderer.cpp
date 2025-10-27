@@ -1,7 +1,5 @@
 #include "VulkanRenderer.h"
 
-#include <spanstream>
-
 #include "graphics/vulkan/common/VulkanDebugger.h"
 #include "graphics/vulkan/resources/mesh/VulkanMesh.h"
 
@@ -70,19 +68,24 @@ bool VulkanRenderer::init(Platform::Window& window) {
     TRY(createVulkanEntity(&imageManager, errorMessage, device, commandManager));
 
     VulkanImage cat;
-    TRY(imageManager.loadTextureFromFile(cat, "mesh_mesh.png", errorMessage));
+    TRY(imageManager.loadTextureFromFile(cat, "viking_room.png", errorMessage));
 
     descriptorManager.bindPerFrameResource(cat.getDescriptorInfo(1));
 
-    VulkanMesh mesh{};
-    const std::vector meshes = {mesh};
+    const std::optional<VulkanMesh> modelptr =
+        VulkanMeshManager::loadModel("../../res/models/stanford_dragon.obj", errorMessage);
+    if (!modelptr) return false;
+
+    const VulkanMesh& model = *modelptr;
+
+    const std::vector meshes = {model};
 
     TRY(createVulkanEntity(&meshManager, errorMessage, device, commandManager, meshes));
 
     DrawCall verticesDraw;
     verticesDraw
         .setPipeline(&pipeline)
-        .setMesh(mesh)
+        .setMesh(model)
         .setDescriptorResolver([this](const FrameContext& frame) {
             return std::vector{this->descriptorManager.getDescriptorSets()[frame.frameIndex]};
         });

@@ -58,7 +58,7 @@ void VulkanFrameGraph::executePass(const FramePass& pass, const FrameContext& fr
             const vk::DeviceSize indexOffset  = draw.mesh.getIndexOffset();
 
             frame.cmdBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &vertexOffset);
-            frame.cmdBuffer.bindIndexBuffer(indexBuffer, indexOffset, vk::IndexType::eUint16);
+            frame.cmdBuffer.bindIndexBuffer(indexBuffer, indexOffset, vk::IndexType::eUint32);
 
             frame.cmdBuffer.bindDescriptorSets(
                 pass.bindPoint, draw.pipeline->getLayout(), 0, draw.descriptorResolver(frame), nullptr

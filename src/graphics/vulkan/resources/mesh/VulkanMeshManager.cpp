@@ -1,6 +1,9 @@
 #include "VulkanMeshManager.h"
 
 #include "core/debug/ErrorHandling.h"
+#include "core/debug/Logger.h"
+
+#include "graphics/vulkan/resources/mesh/TinyObjLoaderUsage.h"
 
 bool VulkanMeshManager::create(
     const VulkanDevice&            device,
@@ -107,4 +110,66 @@ bool VulkanMeshManager::createIndexBuffer(std::string& errorMessage) {
     TRY(_indexBuffer.copyFrom(_stagingBuffer, _commandManager, errorMessage, _indexBufferSize, _vertexBufferSize, 0));
 
     return true;
+}
+
+std::optional<VulkanMesh> VulkanMeshManager::loadModel(const std::string& path, std::string& errorMessage) {
+    VulkanMesh model;
+
+    std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+
+    std::vector<Vertex>   vertices{};
+    std::vector<uint32_t> indices{};
+
+    tinyobj::attrib_t attributes;
+
+    std::vector<tinyobj::shape_t>    shapes;
+    std::vector<tinyobj::material_t> materials;
+
+    if (!tinyobj::LoadObj(&attributes, &shapes, &materials, &errorMessage, path.c_str())) {
+        return std::nullopt;
+    }
+
+    Logger::info("vertices: " + std::to_string(attributes.vertices.size())
+           + ", normals: " + std::to_string(attributes.normals.size())
+           + ", texcoords: " + std::to_string(attributes.texcoords.size())
+           + ", shapes: " + std::to_string(shapes.size()));
+
+    for (const auto& [name, mesh] : shapes) {
+        for (const auto& [vertex_index, normal_index, texcoord_index] : mesh.indices) {
+            Vertex vertex{};
+
+            vertex.position = {
+                attributes.vertices[3 * vertex_index + 0],
+                attributes.vertices[3 * vertex_index + 1],
+                attributes.vertices[3 * vertex_index + 2]
+            };
+
+            if (!attributes.normals.empty() && normal_index >= 0) {
+                vertex.normal = {
+                    attributes.normals[3 * normal_index + 0],
+                    attributes.normals[3 * normal_index + 1],
+                    attributes.normals[3 * normal_index + 2]
+                };
+            }
+
+            if (!attributes.texcoords.empty() && texcoord_index >= 0) {
+                vertex.textureCoords = {
+                    attributes.texcoords[2 * texcoord_index + 0],
+                    1.0f - attributes.texcoords[2 * texcoord_index + 1]
+                };
+            }
+
+            vertex.color = {1.0f, 1.0f, 1.0f};
+
+            if (!uniqueVertices.contains(vertex)) {
+                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+                vertices.push_back(vertex);
+            }
+
+            indices.push_back(uniqueVertices[vertex]);
+        }
+    }
+
+    model.loadData(vertices, indices);
+    return std::make_optional<VulkanMesh>(model);
 }

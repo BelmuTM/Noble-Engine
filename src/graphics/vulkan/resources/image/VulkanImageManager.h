@@ -27,7 +27,7 @@ public:
         images.push_back(image);
     }
 
-    [[nodiscard]] bool createDepthBuffer(VulkanImage& depthBuffer, vk::Extent2D extent, std::string& errorMessage);
+    [[nodiscard]] bool createDepthBuffer(VulkanImage& depthBuffer, vk::Extent2D extent, std::string& errorMessage) const;
 
     [[nodiscard]] bool loadTextureFromFile(VulkanImage& texture, const char* path, std::string& errorMessage);
 

@@ -27,7 +27,7 @@ void VulkanImageManager::destroy() noexcept {
 
 bool VulkanImageManager::createDepthBuffer(
     VulkanImage& depthBuffer, const vk::Extent2D extent, std::string& errorMessage
-) {
+) const {
     constexpr auto depthFormat = vk::Format::eD32Sfloat;
     const     auto depthExtent = vk::Extent3D(extent.width, extent.height, 1);
 

@@ -72,7 +72,7 @@ public:
         vk::Extent3D                extent,
         const VulkanCommandManager* commandManager,
         std::string&                errorMessage
-    );
+    ) const;
 
     [[nodiscard]] static bool hasStencilComponent(const vk::Format format) {
         return format == vk::Format::eD32SfloatS8Uint
@@ -84,7 +84,7 @@ public:
         vk::ImageLayout             newLayout,
         const VulkanCommandManager* commandManager,
         std::string&                errorMessage
-    );
+    ) const;
 
 private:
     vk::Image     _image{};

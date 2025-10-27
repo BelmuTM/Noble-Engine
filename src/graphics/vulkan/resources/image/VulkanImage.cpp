@@ -120,7 +120,7 @@ bool VulkanImage::copyBufferToImage(
     const vk::Extent3D          extent,
     const VulkanCommandManager* commandManager,
     std::string&                errorMessage
-) {
+) const {
     vk::CommandBuffer copyCommandBuffer{};
     TRY(commandManager->beginSingleTimeCommands(copyCommandBuffer, errorMessage));
 
@@ -145,7 +145,7 @@ bool VulkanImage::transitionImageLayout(
     const vk::ImageLayout       newLayout,
     const VulkanCommandManager* commandManager,
     std::string&                errorMessage
-) {
+) const {
     vk::CommandBuffer copyCommandBuffer{};
     TRY(commandManager->beginSingleTimeCommands(copyCommandBuffer, errorMessage));
 

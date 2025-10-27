@@ -101,12 +101,16 @@ add_dependencies(NobleEngine ShadersModule)
 #              STANDALONE UTILITY LIBRARIES              #
 ##########################################################
 
-# Vulkan Memory Allocator (https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
-add_library(vma INTERFACE)
-target_include_directories(vma INTERFACE ${CMAKE_SOURCE_DIR}/lib/vma/include)
-
 # STB (https://github.com/nothings/stb)
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE ${CMAKE_SOURCE_DIR}/lib/stb)
 
-target_link_libraries(NobleEngine PRIVATE vma stb)
+# tinyobjloader (https://github.com/tinyobjloader/tinyobjloader)
+add_library(tinyobjloader INTERFACE)
+target_include_directories(tinyobjloader INTERFACE ${CMAKE_SOURCE_DIR}/lib/tinyobjloader)
+
+# Vulkan Memory Allocator (https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
+add_library(vma INTERFACE)
+target_include_directories(vma INTERFACE ${CMAKE_SOURCE_DIR}/lib/vma/include)
+
+target_link_libraries(NobleEngine PRIVATE stb tinyobjloader vma)

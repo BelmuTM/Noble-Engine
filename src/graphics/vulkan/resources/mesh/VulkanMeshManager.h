@@ -29,6 +29,8 @@ public:
     [[nodiscard]] const VulkanBuffer& getVertexBuffer() const { return _vertexBuffer; }
     [[nodiscard]] const VulkanBuffer& getIndexBuffer()  const { return _indexBuffer; }
 
+    [[nodiscard]] static std::optional<VulkanMesh> loadModel(const std::string& path, std::string& errorMessage);
+
 private:
     const VulkanDevice*         _device         = nullptr;
     const VulkanCommandManager* _commandManager = nullptr;
