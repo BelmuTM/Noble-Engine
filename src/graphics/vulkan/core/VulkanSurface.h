@@ -2,7 +2,7 @@
 #ifndef NOBLEENGINE_VULKANSURFACE_H
 #define NOBLEENGINE_VULKANSURFACE_H
 
-#include "core/platform/Platform.h"
+#include "core/Platform.h"
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 

@@ -2,7 +2,7 @@
 #ifndef NOBLEENGINE_VULKANSWAPCHAINMANAGER_H
 #define NOBLEENGINE_VULKANSWAPCHAINMANAGER_H
 
-#include "core/platform/Platform.h"
+#include "core/Platform.h"
 
 #include "VulkanContext.h"
 #include "VulkanCommandManager.h"

@@ -1,6 +1,6 @@
 #include "Engine.h"
 #include "debug/Logger.h"
-#include "platform/Platform.h"
+#include "Platform.h"
 
 #include <atomic>
 #include <chrono>

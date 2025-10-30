@@ -2,7 +2,7 @@
 #ifndef NOBLEENGINE_VULKANSWAPCHAIN_H
 #define NOBLEENGINE_VULKANSWAPCHAIN_H
 
-#include "core/platform/Platform.h"
+#include "core/Platform.h"
 
 #include "VulkanDevice.h"
 #include "graphics/vulkan/common/VulkanHeader.h"

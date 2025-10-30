@@ -5,7 +5,7 @@
 #include "graphics/GraphicsAPI.h"
 #include "graphics/vulkan/common/VulkanEntityOwner.h"
 
-#include "core/platform/Platform.h"
+#include "core/Platform.h"
 
 #include "VulkanContext.h"
 #include "VulkanCommandManager.h"

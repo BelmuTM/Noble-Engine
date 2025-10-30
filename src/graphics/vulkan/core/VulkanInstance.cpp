@@ -3,7 +3,7 @@
 
 #include "core/Engine.h"
 #include "core/debug/Logger.h"
-#include "core/platform/Platform.h"
+#include "core/Platform.h"
 
 #include <unordered_set>
 #include <vector>
