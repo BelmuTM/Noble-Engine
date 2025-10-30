@@ -17,9 +17,7 @@ public:
 
     void move(const glm::vec3& delta);
 
-    void setFOV(const float fov) {
-        _fov = fov;
-    }
+    void setFOV(const float fov) { _fov = fov; }
 
     [[nodiscard]] glm::mat4 getViewMatrix() const { return _viewMatrix; }
 
