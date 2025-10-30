@@ -3,6 +3,7 @@
 #define NOBLEENGINE_VULKANENTITYOWNER_H
 
 #include <functional>
+#include <string>
 #include <ranges>
 
 template<typename Derived>

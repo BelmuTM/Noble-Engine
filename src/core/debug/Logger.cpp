@@ -139,7 +139,7 @@ namespace {
 }
 
 namespace Logger {
-    static constexpr std::string logsDirectory = "logs";
+    static const std::string logsDirectory = "logs";
 
     void init() {
 #ifdef LOG_FILE_WRITE

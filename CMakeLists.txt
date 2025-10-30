@@ -36,7 +36,7 @@ endif()
 ##########################################################
 
 # Slang setup
-set(SLANG_ROOT ${CMAKE_SOURCE_DIR}/lib/slang)
+set(SLANG_ROOT ${CMAKE_SOURCE_DIR}/external/slang)
 set(SLANGC_EXECUTABLE "${SLANG_ROOT}/bin/slangc.exe")
 set(SLANG_INCLUDE_DIR "${SLANG_ROOT}/include")
 set(SLANG_LIB_DIR "${SLANG_ROOT}/lib")
@@ -45,7 +45,7 @@ include_directories(${SLANG_INCLUDE_DIR})
 link_directories(${SLANG_LIB_DIR})
 
 # Slang compilation
-set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/res/shaders)
+set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/resources/shaders)
 
 function(add_slang_shader_target TARGET)
     cmake_parse_arguments(SHADERS "" "" "SOURCES;ENTRIES" ${ARGN})
@@ -102,7 +102,6 @@ add_dependencies(NobleEngine ShadersModule)
 ##########################################################
 
 add_subdirectory(external/glfw)
-add_subdirectory(external/slang)
 
 # STB (https://github.com/nothings/stb)
 add_library(stb_noble INTERFACE)

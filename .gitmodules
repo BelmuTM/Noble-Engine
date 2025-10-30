@@ -2,7 +2,3 @@
 	path = external/glfw
 	url = https://github.com/glfw/glfw
 	branch = master
-[submodule "external/slang"]
-	path = external/slang
-	url = https://github.com/shader-slang/slang
-	branch = master

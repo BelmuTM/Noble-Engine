@@ -19,8 +19,8 @@ public:
     VulkanImage(const VulkanImage&)            noexcept = default;
     VulkanImage& operator=(const VulkanImage&) noexcept = default;
 
-    VulkanImage(VulkanImage&&)            = delete;
-    VulkanImage& operator=(VulkanImage&&) = delete;
+    VulkanImage(VulkanImage&&)            noexcept = default;
+    VulkanImage& operator=(VulkanImage&&) noexcept = default;
 
     void destroy(const VulkanDevice& device) noexcept;
 
