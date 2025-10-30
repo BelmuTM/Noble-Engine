@@ -2,6 +2,7 @@
 
 #include "core/debug/ErrorHandling.h"
 #include "core/debug/Logger.h"
+#include "core/ResourceManager.h"
 
 #include "graphics/vulkan/resources/mesh/TinyObjLoaderUsage.h"
 
@@ -125,7 +126,9 @@ std::optional<VulkanMesh> VulkanMeshManager::loadModel(const std::string& path, 
     std::vector<tinyobj::shape_t>    shapes;
     std::vector<tinyobj::material_t> materials;
 
-    if (!tinyobj::LoadObj(&attributes, &shapes, &materials, &errorMessage, path.c_str())) {
+    const std::string& fullPath = modelFilesPath + path;
+
+    if (!tinyobj::LoadObj(&attributes, &shapes, &materials, &errorMessage, fullPath.c_str())) {
         return std::nullopt;
     }
 

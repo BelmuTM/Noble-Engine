@@ -63,7 +63,6 @@ bool VulkanRenderer::init(Platform::Window& window) {
     TRY(descriptorManager.allocateSets(errorMessage));
 
     descriptorManager.bindPerFrameUBO(uniformBuffer, 0);
-    uniformBuffer.setSwapchain(swapchain);
 
     TRY(createVulkanEntity(&imageManager, errorMessage, device, commandManager));
 
@@ -73,7 +72,7 @@ bool VulkanRenderer::init(Platform::Window& window) {
     descriptorManager.bindPerFrameResource(cat.getDescriptorInfo(1));
 
     const std::optional<VulkanMesh> modelptr =
-        VulkanMeshManager::loadModel("../../res/models/stanford_dragon.obj", errorMessage);
+        VulkanMeshManager::loadModel("stanford_dragon.obj", errorMessage);
     if (!modelptr) return false;
 
     const VulkanMesh& model = *modelptr;
@@ -102,7 +101,7 @@ bool VulkanRenderer::init(Platform::Window& window) {
         .setStoreOp(vk::AttachmentStoreOp::eStore)
         .setClearValue(clearColor);
 
-    TRY(imageManager.createDepthBuffer(depth, swapchain.getExtent2D(), errorMessage));
+    TRY(imageManager.createDepthBuffer(depth, swapchain.getExtent(), errorMessage));
 
     FrameResource depthBuffer{};
     depthBuffer
@@ -144,7 +143,7 @@ void VulkanRenderer::shutdown() {
     context.destroy();
 }
 
-void VulkanRenderer::drawFrame() {
+void VulkanRenderer::drawFrame(const Camera& camera) {
     bool discardLogging = swapchainManager.isOutOfDate();
     std::string errorMessage;
 
@@ -161,7 +160,7 @@ void VulkanRenderer::drawFrame() {
 
     recordCurrentCommandBuffer(imageIndex);
 
-    uniformBuffer.update(currentFrame);
+    uniformBuffer.update(currentFrame, context.getSwapchain(), camera);
 
     if (!swapchainManager.submitCommandBuffer(commandManager, currentFrame, imageIndex, errorMessage, discardLogging))
         return;
@@ -180,7 +179,7 @@ bool VulkanRenderer::onFramebufferResize(std::string& errorMessage) {
 
     TRY(swapchainManager.recreateSwapchain(errorMessage));
 
-    TRY(imageManager.createDepthBuffer(depth, context.getSwapchain().getExtent2D(), errorMessage));
+    TRY(imageManager.createDepthBuffer(depth, context.getSwapchain().getExtent(), errorMessage));
 
     _window->setFramebufferResized(false);
 
@@ -266,7 +265,7 @@ void VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer, 
         .setFrameIndex(currentFrame)
         .setCommandBuffer(commandBuffer)
         .setSwapchainImageView(context.getSwapchain().getImageViews()[imageIndex])
-        .setExtent(context.getSwapchain().getExtent2D());
+        .setExtent(context.getSwapchain().getExtent());
 
     frameGraph.execute(frameContext);
 

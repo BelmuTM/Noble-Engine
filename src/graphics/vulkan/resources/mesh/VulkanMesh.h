@@ -47,8 +47,8 @@ public:
     VulkanMesh()  = default;
     ~VulkanMesh() = default;
 
-    VulkanMesh(const VulkanMesh&) noexcept;
-    VulkanMesh& operator=(const VulkanMesh&) noexcept;
+    VulkanMesh(const VulkanMesh&)            noexcept = default;
+    VulkanMesh& operator=(const VulkanMesh&) noexcept = default;
 
     VulkanMesh(VulkanMesh&&)            = delete;
     VulkanMesh& operator=(VulkanMesh&&) = delete;

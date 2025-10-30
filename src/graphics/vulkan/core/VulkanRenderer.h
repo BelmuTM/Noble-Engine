@@ -25,9 +25,11 @@ public:
     VulkanRenderer() = default;
     ~VulkanRenderer() override;
 
-    bool init(Platform::Window& window) override;
+    [[nodiscard]] bool init(Platform::Window& window) override;
+
     void shutdown() override;
-    void drawFrame() override;
+
+    void drawFrame(const Camera& camera) override;
 
 private:
     Platform::Window* _window = nullptr;

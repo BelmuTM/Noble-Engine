@@ -23,6 +23,8 @@ int main() {
         Engine::fatalExit("Failed to init Vulkan renderer");
     }
 
+    Camera camera;
+
     std::atomic running(true);
 
     std::thread engineThread([&] {
@@ -37,7 +39,7 @@ int main() {
         while (running) {
             auto currentTime = highResolutionClock::now();
 
-            renderer.drawFrame();
+            renderer.drawFrame(camera);
 
             ++frameCount;
 
@@ -56,7 +58,7 @@ int main() {
         }
     });
 
-    while (Platform::pollEvents()) {}
+    window.pollEvents();
 
     running.store(false);
     engineThread.join();

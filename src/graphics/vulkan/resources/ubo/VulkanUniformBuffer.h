@@ -56,8 +56,6 @@ public:
 
     [[nodiscard]] const std::vector<VulkanBuffer>& getBuffers() const { return uniformBuffers; }
 
-    virtual void update(uint32_t frameIndex) = 0;
-
 protected:
     static constexpr vk::DeviceSize size = sizeof(T);
 

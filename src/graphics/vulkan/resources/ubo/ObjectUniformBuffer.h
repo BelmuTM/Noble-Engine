@@ -4,6 +4,8 @@
 
 #include "VulkanUniformBuffer.h"
 
+#include "core/Camera.h"
+
 #include <glm/glm.hpp>
 
 struct UniformBufferObject {
@@ -14,14 +16,7 @@ struct UniformBufferObject {
 
 class ObjectUniformBuffer final : public VulkanUniformBuffer<UniformBufferObject> {
 public:
-    void setSwapchain(const VulkanSwapchain& swapchain) {
-        _swapchain = &swapchain;
-    }
-
-    void update(uint32_t frameIndex) override;
-
-private:
-    const VulkanSwapchain* _swapchain = nullptr;
+    void update(uint32_t frameIndex, const VulkanSwapchain& swapchain, const Camera& camera) const;
 };
 
 #endif //NOBLEENGINE_OBJECTUNIFORMBUFFER_H

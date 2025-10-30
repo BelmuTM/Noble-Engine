@@ -8,7 +8,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Collect source files and add Windows resource file
 file(GLOB_RECURSE CPP_SOURCES "src/*.cpp" "src/*.h")
-add_executable(NobleEngine ${CPP_SOURCES} "res/resource.rc")
+add_executable(NobleEngine ${CPP_SOURCES})
 
 # Include source headers
 target_include_directories(NobleEngine PRIVATE ${CMAKE_SOURCE_DIR}/src)
@@ -98,19 +98,22 @@ add_slang_shader_target(ShadersModule
 add_dependencies(NobleEngine ShadersModule)
 
 ##########################################################
-#              STANDALONE UTILITY LIBRARIES              #
+#             THIRD-PARTY UTILITY LIBRARIES              #
 ##########################################################
 
+add_subdirectory(external/glfw)
+add_subdirectory(external/slang)
+
 # STB (https://github.com/nothings/stb)
-add_library(stb INTERFACE)
-target_include_directories(stb INTERFACE ${CMAKE_SOURCE_DIR}/lib/stb)
+add_library(stb_noble INTERFACE)
+target_include_directories(stb_noble INTERFACE ${CMAKE_SOURCE_DIR}/external/stb)
 
 # tinyobjloader (https://github.com/tinyobjloader/tinyobjloader)
-add_library(tinyobjloader INTERFACE)
-target_include_directories(tinyobjloader INTERFACE ${CMAKE_SOURCE_DIR}/lib/tinyobjloader)
+add_library(tinyobjloader_noble INTERFACE)
+target_include_directories(tinyobjloader_noble INTERFACE ${CMAKE_SOURCE_DIR}/external/tinyobjloader)
 
 # Vulkan Memory Allocator (https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
-add_library(vma INTERFACE)
-target_include_directories(vma INTERFACE ${CMAKE_SOURCE_DIR}/lib/vma/include)
+add_library(vma_noble INTERFACE)
+target_include_directories(vma_noble INTERFACE ${CMAKE_SOURCE_DIR}/external/vma/include)
 
-target_link_libraries(NobleEngine PRIVATE stb tinyobjloader vma)
+target_link_libraries(NobleEngine PRIVATE glfw stb_noble tinyobjloader_noble vma_noble)

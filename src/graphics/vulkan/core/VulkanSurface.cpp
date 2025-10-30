@@ -1,10 +1,6 @@
 #include "VulkanSurface.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-#if defined(_WIN32) || defined(_WIN64)
-#include <Windows.h>
-#endif
-
 bool VulkanSurface::create(
     const vk::Instance& instance, const Platform::Window& window, std::string& errorMessage
 ) noexcept {
@@ -31,17 +27,14 @@ bool VulkanSurface::createSurface(std::string& errorMessage) {
         return false;
     }
 
-#if defined(_WIN32) || defined(_WIN64)
+    VkSurfaceKHR surface;
+    const VkResult create = glfwCreateWindowSurface(_instance, _window->handle(), nullptr, &surface);
 
-    vk::Win32SurfaceCreateInfoKHR surfaceInfo{};
-    surfaceInfo.hinstance = _window->hInstance();
-    surfaceInfo.hwnd      = static_cast<HWND>(_window->nativeHandle());
+    if (static_cast<vk::Result>(create) != vk::Result::eSuccess) {
+        errorMessage =
+            VulkanDebugger::formatVulkanErrorMessage("glfwCreateWindowSurface", static_cast<vk::Result>(create));
+    }
 
-    VK_CREATE(_instance.createWin32SurfaceKHR(surfaceInfo), _surface, errorMessage);
-
+    _surface = vk::SurfaceKHR(surface);
     return true;
-
-#elif defined(__linux__)
-    // TO-DO
-#endif
 }

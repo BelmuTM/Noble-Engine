@@ -18,18 +18,18 @@ bool VulkanSwapchain::create(
 void VulkanSwapchain::destroy() noexcept {
     if (!_device) return;
 
-    for (auto& imageView : swapchainImageViews) {
+    for (auto& imageView : _imageViews) {
         if (imageView) {
             _device->getLogicalDevice().destroyImageView(imageView);
             imageView = VK_NULL_HANDLE;
         }
     }
 
-    swapchainImageViews.clear();
+    _imageViews.clear();
 
-    if (swapchain) {
-        _device->getLogicalDevice().destroySwapchainKHR(swapchain);
-        swapchain = VK_NULL_HANDLE;
+    if (_swapchain) {
+        _device->getLogicalDevice().destroySwapchainKHR(_swapchain);
+        _swapchain = VK_NULL_HANDLE;
     }
 }
 
@@ -79,7 +79,7 @@ vk::PresentModeKHR VulkanSwapchain::choosePresentMode(const std::vector<vk::Pres
     return vk::PresentModeKHR::eImmediate;
 }
 
-vk::Extent2D VulkanSwapchain::chooseSwapExtent2D(const vk::SurfaceCapabilitiesKHR& capabilities) const {
+vk::Extent2D VulkanSwapchain::chooseExtent(const vk::SurfaceCapabilitiesKHR& capabilities) const {
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
         return capabilities.currentExtent;
     }
@@ -113,7 +113,7 @@ bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string&
 
     const vk::SurfaceFormatKHR& surfaceFormat = chooseSurfaceFormat(formats);
     const vk::PresentModeKHR&   presentMode   = choosePresentMode(presentModes);
-    const vk::Extent2D&         swapExtent    = chooseSwapExtent2D(capabilities);
+    const vk::Extent2D&         extent        = chooseExtent(capabilities);
 
     auto minImageCount = std::max(3u, capabilities.minImageCount);
          minImageCount = capabilities.maxImageCount > 0 && minImageCount > capabilities.maxImageCount
@@ -133,7 +133,7 @@ bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string&
         .setMinImageCount(minImageCount)
         .setImageFormat(surfaceFormat.format)
         .setImageColorSpace(surfaceFormat.colorSpace)
-        .setImageExtent(swapExtent)
+        .setImageExtent(extent)
         .setImageArrayLayers(1)
         .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
         .setImageSharingMode(vk::SharingMode::eExclusive)
@@ -159,12 +159,12 @@ bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string&
 
     const vk::Device& logicalDevice = _device->getLogicalDevice();
 
-    VK_CREATE(logicalDevice.createSwapchainKHR(swapchainInfo), swapchain, errorMessage);
+    VK_CREATE(logicalDevice.createSwapchainKHR(swapchainInfo), _swapchain, errorMessage);
 
-    swapchainImageFormat = surfaceFormat.format;
-    swapchainExtent      = swapExtent;
+    _format = surfaceFormat.format;
+    _extent = extent;
 
-    VK_CREATE(logicalDevice.getSwapchainImagesKHR(swapchain), swapchainImages, errorMessage);
+    VK_CREATE(logicalDevice.getSwapchainImagesKHR(_swapchain), _images, errorMessage);
 
     return true;
 }
@@ -172,22 +172,22 @@ bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string&
 bool VulkanSwapchain::createImageViews(std::string& errorMessage) {
     const vk::Device& logicalDevice = _device->getLogicalDevice();
 
-    swapchainImageViews.clear();
-    swapchainImageViews.reserve(swapchainImages.size());
+    _imageViews.clear();
+    _imageViews.reserve(_images.size());
 
     vk::ImageViewCreateInfo imageViewInfo{};
     imageViewInfo
         .setViewType(vk::ImageViewType::e2D)
-        .setFormat(swapchainImageFormat)
+        .setFormat(_format)
         .setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
 
-    for (const auto swapchainImage : swapchainImages) {
+    for (const auto swapchainImage : _images) {
         imageViewInfo.image = swapchainImage;
 
         const auto imageViewCreate = VK_CALL(logicalDevice.createImageView(imageViewInfo), errorMessage);
         if (imageViewCreate.result != vk::Result::eSuccess) return false;
 
-        swapchainImageViews.emplace_back(imageViewCreate.value);
+        _imageViews.emplace_back(imageViewCreate.value);
     }
 
     return true;

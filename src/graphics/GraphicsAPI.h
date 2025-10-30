@@ -3,6 +3,7 @@
 #define NOBLEENGINE_GRAPHICSAPI_H
 
 #include "core/platform/Platform.h"
+#include "core/Camera.h"
 
 class GraphicsAPI {
 public:
@@ -13,7 +14,7 @@ public:
 
     virtual void shutdown() = 0;
 
-    virtual void drawFrame() = 0;
+    virtual void drawFrame(const Camera& camera) = 0;
 };
 
 #endif //NOBLEENGINE_GRAPHICSAPI_H
