@@ -15,8 +15,10 @@
 #include <queue>
 #include <thread>
 
+#if defined(_WIN32) || defined(_WIN64)
 #include <Windows.h>
 #undef ERROR
+#endif
 
 namespace {
     constexpr size_t MAX_LOG_QUEUE_SIZE = 512;
@@ -117,6 +119,8 @@ namespace {
         std::signal(SIGTERM, signalHandler);
     }
 
+#if defined(_WIN32) || defined(_WIN64)
+
     BOOL WINAPI ConsoleHandler(const DWORD ctrlType) {
         switch (ctrlType) {
             case CTRL_C_EVENT:
@@ -136,6 +140,8 @@ namespace {
             Logger::error("Failed to set console control handler");
         }
     }
+
+#endif
 }
 
 namespace Logger {
@@ -170,7 +176,10 @@ namespace Logger {
 
         setupAtexitHandler();
         setupSignalHandlers();
+
+#if defined(_WIN32) || defined(_WIN64)
         setupConsoleHandler();
+#endif
     }
 
     void shutdown() {

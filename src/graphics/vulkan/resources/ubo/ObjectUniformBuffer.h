@@ -3,8 +3,9 @@
 #define NOBLEENGINE_OBJECTUNIFORMBUFFER_H
 
 #include "VulkanUniformBuffer.h"
+#include "graphics/vulkan/core/VulkanSwapchain.h"
 
-#include "core/Camera.h"
+#include "core/objects/Camera.h"
 
 #include <glm/glm.hpp>
 

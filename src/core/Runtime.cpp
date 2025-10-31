@@ -2,11 +2,11 @@
 #include "debug/Logger.h"
 #include "Platform.h"
 
+#include "graphics/vulkan/core/VulkanRenderer.h"
+
 #include <atomic>
 #include <chrono>
 #include <thread>
-
-#include "graphics/vulkan/core/VulkanRenderer.h"
 
 int main() {
     Logger::Manager loggerManager;
@@ -18,12 +18,16 @@ int main() {
     Platform::Window window(800, 600, "Noble Engine");
     window.show();
 
+    InputManager inputManager;
+    inputManager.init(window.handle());
+
     VulkanRenderer renderer;
     if (!renderer.init(window)) {
         Engine::fatalExit("Failed to init Vulkan renderer");
     }
 
     Camera camera;
+    camera.setController(std::make_unique<CameraController>(inputManager, camera));
 
     std::atomic running(true);
 
@@ -37,8 +41,13 @@ int main() {
         int framerate  = 0;
 
         while (running) {
-            auto currentTime = highResolutionClock::now();
+            auto         currentTime = highResolutionClock::now();
+            const double deltaTime   = std::chrono::duration<double>(currentTime - previousTime).count();
+            previousTime = currentTime;
 
+            inputManager.update();
+
+            camera.update(deltaTime);
             renderer.drawFrame(camera);
 
             ++frameCount;
@@ -51,8 +60,6 @@ int main() {
 
                 window.setTitle("Noble Engine | " + std::to_string(framerate) + " fps");
             }
-
-            previousTime = currentTime;
 
             std::this_thread::yield();
         }

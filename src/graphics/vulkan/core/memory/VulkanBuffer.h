@@ -19,7 +19,7 @@ public:
     VulkanBuffer(const VulkanBuffer&)            = delete;
     VulkanBuffer& operator=(const VulkanBuffer&) = delete;
 
-    VulkanBuffer(VulkanBuffer&&) noexcept;
+    VulkanBuffer(VulkanBuffer&&)            noexcept;
     VulkanBuffer& operator=(VulkanBuffer&&) noexcept;
 
     [[nodiscard]] bool create(

@@ -17,8 +17,9 @@ public:
 
     VulkanInstance(const VulkanInstance&)            = delete;
     VulkanInstance& operator=(const VulkanInstance&) = delete;
-    VulkanInstance(VulkanInstance&&)                 = delete;
-    VulkanInstance& operator=(VulkanInstance&&)      = delete;
+
+    VulkanInstance(VulkanInstance&&)            = delete;
+    VulkanInstance& operator=(VulkanInstance&&) = delete;
 
     [[nodiscard]] bool create(std::string& errorMessage) noexcept;
 

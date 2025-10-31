@@ -4,8 +4,8 @@
 
 #include "core/Platform.h"
 
-#include "VulkanDevice.h"
 #include "graphics/vulkan/common/VulkanHeader.h"
+#include "VulkanDevice.h"
 
 #include <string>
 #include <vector>

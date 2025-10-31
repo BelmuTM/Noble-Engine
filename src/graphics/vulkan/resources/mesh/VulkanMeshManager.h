@@ -14,8 +14,9 @@ public:
 
     VulkanMeshManager(const VulkanMeshManager&)            = delete;
     VulkanMeshManager& operator=(const VulkanMeshManager&) = delete;
-    VulkanMeshManager(VulkanMeshManager&&)                 = delete;
-    VulkanMeshManager& operator=(VulkanMeshManager&&)      = delete;
+
+    VulkanMeshManager(VulkanMeshManager&&)            = delete;
+    VulkanMeshManager& operator=(VulkanMeshManager&&) = delete;
 
     [[nodiscard]] bool create(
         const VulkanDevice&            device,

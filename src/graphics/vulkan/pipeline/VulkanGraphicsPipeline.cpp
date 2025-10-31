@@ -1,6 +1,7 @@
 #include "VulkanGraphicsPipeline.h"
+
 #include "graphics/vulkan/common/VulkanDebugger.h"
-#include "../resources/mesh/VulkanMesh.h"
+#include "graphics/vulkan/resources/mesh/VulkanMesh.h"
 
 bool VulkanGraphicsPipeline::create(
     const vk::Device&             device,

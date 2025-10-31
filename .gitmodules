@@ -1,4 +1,3 @@
 [submodule "external/glfw"]
 	path = external/glfw
-	url = https://github.com/glfw/glfw
-	branch = master
+	url = https://github.com/glfw/glfw.git

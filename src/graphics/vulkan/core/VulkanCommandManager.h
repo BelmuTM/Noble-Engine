@@ -2,8 +2,8 @@
 #ifndef NOBLEENGINE_VULKANCOMMANDMANAGER_H
 #define NOBLEENGINE_VULKANCOMMANDMANAGER_H
 
-#include "VulkanSwapchain.h"
 #include "graphics/vulkan/common/VulkanHeader.h"
+#include "VulkanDevice.h"
 
 class VulkanCommandManager {
 public:
@@ -12,8 +12,9 @@ public:
 
     VulkanCommandManager(const VulkanCommandManager&)            = delete;
     VulkanCommandManager& operator=(const VulkanCommandManager&) = delete;
-    VulkanCommandManager(VulkanCommandManager&&)                 = delete;
-    VulkanCommandManager& operator=(VulkanCommandManager&&)      = delete;
+
+    VulkanCommandManager(VulkanCommandManager&&)            = delete;
+    VulkanCommandManager& operator=(VulkanCommandManager&&) = delete;
 
     [[nodiscard]] bool create(
         const VulkanDevice& device, uint32_t commandBufferCount, std::string& errorMessage

@@ -1,4 +1,5 @@
 #include "VulkanSyncObjects.h"
+
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 bool VulkanSyncObjects::create(

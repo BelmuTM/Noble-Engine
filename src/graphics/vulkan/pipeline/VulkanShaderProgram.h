@@ -15,8 +15,9 @@ public:
 
     VulkanShaderProgram(const VulkanShaderProgram&)            = delete;
     VulkanShaderProgram& operator=(const VulkanShaderProgram&) = delete;
-    VulkanShaderProgram(VulkanShaderProgram&&)                 = delete;
-    VulkanShaderProgram& operator=(VulkanShaderProgram&&)      = delete;
+
+    VulkanShaderProgram(VulkanShaderProgram&&)            = delete;
+    VulkanShaderProgram& operator=(VulkanShaderProgram&&) = delete;
 
     [[nodiscard]] bool loadFromFiles(const std::vector<std::string>& paths, std::string& errorMessage);
 

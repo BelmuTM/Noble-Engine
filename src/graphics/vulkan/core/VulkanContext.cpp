@@ -1,4 +1,5 @@
 #include "VulkanContext.h"
+
 #include "core/debug/ErrorHandling.h"
 
 VulkanContext::~VulkanContext() {

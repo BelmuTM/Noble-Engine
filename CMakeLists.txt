@@ -36,13 +36,6 @@ endif()
 ##########################################################
 
 # Slang setup
-set(SLANG_ROOT ${CMAKE_SOURCE_DIR}/external/slang)
-set(SLANGC_EXECUTABLE "${SLANG_ROOT}/bin/slangc.exe")
-set(SLANG_INCLUDE_DIR "${SLANG_ROOT}/include")
-set(SLANG_LIB_DIR "${SLANG_ROOT}/lib")
-
-include_directories(${SLANG_INCLUDE_DIR})
-link_directories(${SLANG_LIB_DIR})
 
 # Slang compilation
 set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/resources/shaders)
@@ -71,7 +64,7 @@ function(add_slang_shader_target TARGET)
             # Run Slangc command
             add_custom_command(
                 OUTPUT ${SPV_FILE}
-                COMMAND ${SLANGC_EXECUTABLE} ${SOURCE}
+                COMMAND slangc ${SOURCE}
                     -target spirv
                     -entry ${ENTRY_POINT}
                     -stage ${STAGE_NAME}

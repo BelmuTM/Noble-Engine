@@ -18,8 +18,9 @@ public:
 
     VulkanSurface(const VulkanSurface&)            = delete;
     VulkanSurface& operator=(const VulkanSurface&) = delete;
-    VulkanSurface(VulkanSurface&&)                 = delete;
-    VulkanSurface& operator=(VulkanSurface&&)      = delete;
+
+    VulkanSurface(VulkanSurface&&)            = delete;
+    VulkanSurface& operator=(VulkanSurface&&) = delete;
 
     [[nodiscard]] bool create(
         const vk::Instance& instance, const Platform::Window& window, std::string& errorMessage

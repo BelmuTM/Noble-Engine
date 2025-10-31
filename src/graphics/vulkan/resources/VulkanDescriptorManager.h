@@ -3,7 +3,6 @@
 #define NOBLEENGINE_VULKANDESCRIPTORMANAGER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
-#include "graphics/vulkan/core/memory/VulkanBuffer.h"
 
 struct DescriptorInfo {
     vk::DescriptorType       type;
@@ -21,8 +20,9 @@ public:
 
     VulkanDescriptorManager(const VulkanDescriptorManager&)            = delete;
     VulkanDescriptorManager& operator=(const VulkanDescriptorManager&) = delete;
-    VulkanDescriptorManager(VulkanDescriptorManager&&)                 = delete;
-    VulkanDescriptorManager& operator=(VulkanDescriptorManager&&)      = delete;
+
+    VulkanDescriptorManager(VulkanDescriptorManager&&)            = delete;
+    VulkanDescriptorManager& operator=(VulkanDescriptorManager&&) = delete;
 
     [[nodiscard]] bool create(const vk::Device& device, uint32_t framesInFlight, std::string& errorMessage) noexcept;
 

@@ -147,8 +147,9 @@ public:
 
     VulkanFrameGraph(const VulkanFrameGraph&)            = delete;
     VulkanFrameGraph& operator=(const VulkanFrameGraph&) = delete;
-    VulkanFrameGraph(VulkanFrameGraph&&)                 = delete;
-    VulkanFrameGraph& operator=(VulkanFrameGraph&&)      = delete;
+
+    VulkanFrameGraph(VulkanFrameGraph&&)            = delete;
+    VulkanFrameGraph& operator=(VulkanFrameGraph&&) = delete;
 
     [[nodiscard]] bool create(const VulkanMeshManager& meshManager, std::string& errorMessage) noexcept;
 

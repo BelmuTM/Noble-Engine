@@ -1,4 +1,5 @@
 #include "VulkanShaderProgram.h"
+
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 #include "core/debug/ErrorHandling.h"

@@ -16,8 +16,9 @@ public:
 
     VulkanGraphicsPipeline(const VulkanGraphicsPipeline&)            = delete;
     VulkanGraphicsPipeline& operator=(const VulkanGraphicsPipeline&) = delete;
-    VulkanGraphicsPipeline(VulkanGraphicsPipeline&&)                 = delete;
-    VulkanGraphicsPipeline& operator=(VulkanGraphicsPipeline&&)      = delete;
+
+    VulkanGraphicsPipeline(VulkanGraphicsPipeline&&)            = delete;
+    VulkanGraphicsPipeline& operator=(VulkanGraphicsPipeline&&) = delete;
 
     [[nodiscard]] bool create(
         const vk::Device&          device,

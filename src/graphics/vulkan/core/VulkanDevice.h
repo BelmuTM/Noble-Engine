@@ -15,8 +15,9 @@ public:
 
     VulkanDevice(const VulkanDevice&)            = delete;
     VulkanDevice& operator=(const VulkanDevice&) = delete;
-    VulkanDevice(VulkanDevice&&)                 = delete;
-    VulkanDevice& operator=(VulkanDevice&&)      = delete;
+
+    VulkanDevice(VulkanDevice&&)            = delete;
+    VulkanDevice& operator=(VulkanDevice&&) = delete;
 
     [[nodiscard]] bool create(
         const vk::Instance&   instance,

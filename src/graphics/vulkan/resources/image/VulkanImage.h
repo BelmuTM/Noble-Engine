@@ -4,6 +4,7 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 #include "graphics/vulkan/core/VulkanDevice.h"
+#include "graphics/vulkan/core/VulkanCommandManager.h"
 #include "graphics/vulkan/resources/VulkanDescriptorManager.h"
 
 #include "graphics/vulkan/core/memory/VmaUsage.h"

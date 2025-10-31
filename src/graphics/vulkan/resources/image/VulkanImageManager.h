@@ -14,8 +14,9 @@ public:
 
     VulkanImageManager(const VulkanImageManager&)            = delete;
     VulkanImageManager& operator=(const VulkanImageManager&) = delete;
-    VulkanImageManager(VulkanImageManager&&)                 = delete;
-    VulkanImageManager& operator=(VulkanImageManager&&)      = delete;
+
+    VulkanImageManager(VulkanImageManager&&)            = delete;
+    VulkanImageManager& operator=(VulkanImageManager&&) = delete;
 
     [[nodiscard]] bool create(
         const VulkanDevice& device, const VulkanCommandManager& commandManager, std::string& errorMessage
