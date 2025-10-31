@@ -1,6 +1,7 @@
 #include "Engine.h"
-#include "debug/Logger.h"
 #include "Platform.h"
+#include "WindowContext.h"
+#include "debug/Logger.h"
 
 #include "graphics/vulkan/core/VulkanRenderer.h"
 
@@ -20,6 +21,9 @@ int main() {
 
     InputManager inputManager;
     inputManager.init(window.handle());
+
+    WindowContext ctx{&window, &inputManager};
+    glfwSetWindowUserPointer(window.handle(), &ctx);
 
     VulkanRenderer renderer;
     if (!renderer.init(window)) {

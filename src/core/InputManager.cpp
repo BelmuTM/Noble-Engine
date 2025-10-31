@@ -1,16 +1,16 @@
 #include "InputManager.h"
 
-void InputManager::init(GLFWwindow* window) {
-    glfwSetWindowUserPointer(window, this);
+#include "WindowContext.h"
 
+void InputManager::init(GLFWwindow* window) {
     glfwSetKeyCallback(window, [](GLFWwindow* _window, const int _key, int, const int _action, int) {
-        auto* self = static_cast<InputManager*>(glfwGetWindowUserPointer(_window));
-        if (self) self->onKeyEvent(_key, _action);
+        auto* self = static_cast<WindowContext*>(glfwGetWindowUserPointer(_window));
+        if (self) self->inputManager->onKeyEvent(_key, _action);
     });
 
     glfwSetCursorPosCallback(window, [](GLFWwindow* _window, const double _xpos, const double _ypos) {
-        auto* self = static_cast<InputManager*>(glfwGetWindowUserPointer(_window));
-        if (self) self->onMouseMove(_xpos, _ypos);
+        auto* self = static_cast<WindowContext*>(glfwGetWindowUserPointer(_window));
+        if (self) self->inputManager->onMouseMove(_xpos, _ypos);
     });
 
     initKeyBindings();

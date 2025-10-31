@@ -1,7 +1,8 @@
 #include "Platform.h"
 
-#include "core/Engine.h"
-#include "core/ResourceManager.h"
+#include "Engine.h"
+#include "ResourceManager.h"
+#include "WindowContext.h"
 
 #include "graphics/vulkan/resources/StbUsage.h"
 
@@ -22,6 +23,11 @@ namespace Platform {
         }
     }
 
+    void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
+        auto context = static_cast<WindowContext*>(glfwGetWindowUserPointer(window));
+        if (context->window) context->window->setFramebufferResized(true);
+    }
+
     Window::Window(const int width, const int height, const std::string& title) {
         _width  = width;
         _height = height;
@@ -32,8 +38,9 @@ namespace Platform {
         images[0].pixels = stbi_load(iconPath.c_str(), &images[0].width, &images[0].height, nullptr, STBI_rgb_alpha);
 
         glfwSetWindowIcon(_window, 1, images);
-
         stbi_image_free(images[0].pixels);
+
+        glfwSetFramebufferSizeCallback(_window, framebufferSizeCallback);
     }
 
     Window::~Window() {
