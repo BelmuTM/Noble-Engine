@@ -31,7 +31,7 @@ int main() {
     }
 
     Camera camera;
-    camera.setController(std::make_unique<CameraController>(inputManager, camera));
+    camera.setController(std::make_unique<CameraController>(window.handle(), inputManager, camera));
 
     std::atomic running(true);
 

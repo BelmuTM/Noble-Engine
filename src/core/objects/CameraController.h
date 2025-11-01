@@ -5,7 +5,6 @@
 #include "core/InputManager.h"
 
 #include <unordered_map>
-#include <unordered_set>
 
 #include <glm/vec3.hpp>
 
@@ -15,18 +14,22 @@ class Camera;
 
 class CameraController final : public IInputListener {
 public:
-    explicit CameraController(InputManager& inputManager, Camera& camera);
+    explicit CameraController(GLFWwindow* window, InputManager& inputManager, Camera& camera);
 
     void update();
 
     void onKeyEvent(int key, int action) override;
+    void onMouseClick(int button, int action) override;
     void onMouseMove(double x, double y) override;
+    void onMouseScroll(double offsetX, double offsetY) override;
 
 private:
-    Camera& _camera;
+    Camera&     _camera;
+    GLFWwindow* _window;
 
-    std::unordered_set<InputAction>            _pressedActions;
-    std::unordered_map<InputAction, glm::vec3> _actionMap;
+    std::unordered_map<InputAction, glm::vec3> _actionMovementMap;
+
+    bool _dragging = false;
 };
 
 #endif // NOBLEENGINE_CAMERACONTROLLER_H

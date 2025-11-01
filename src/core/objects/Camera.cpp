@@ -1,32 +1,31 @@
 #include "Camera.h"
 
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/gtc/matrix_transform.hpp>
+void Camera::updateRotation() {
+    _forward.x = cos(glm::radians(_yaw)) * cos(glm::radians(_pitch));
+    _forward.y = sin(glm::radians(_yaw)) * cos(glm::radians(_pitch));
+    _forward.z = sin(glm::radians(_pitch));
+    _forward   = glm::normalize(_forward);
+    updateViewMatrix();
+}
 
 void Camera::update(const double deltaTime) {
     if (_controller) {
         _controller->update();
     }
 
-    glm::vec3 forward = glm::normalize(glm::vec3(_front.x, _front.y, 0.0f)); // ignore Z if you want horizontal movement
-    glm::vec3 right   = glm::normalize(glm::cross(forward, _up));
-
-    glm::vec3 worldVelocity = _velocity.x * forward + _velocity.y * right + _velocity.z * _up;
-
+    const glm::vec3 worldVelocity = toWorldSpace(_velocity);
     move(worldVelocity * _speed * static_cast<float>(deltaTime));
 
     updateViewMatrix();
 }
 
-glm::mat4 Camera::getProjectionMatrix(const float aspectRatio) const {
-    return glm::perspective(glm::radians(_fov), aspectRatio, _nearPlane, _farPlane);
+void Camera::updateViewMatrix() {
+    _viewMatrix = glm::lookAt(_position, _position + _forward, _up);
 }
 
-void Camera::updateViewMatrix() {
-    //_front.x = cos(glm::radians(_yaw)) * cos(glm::radians(_pitch));
-    //_front.y = sin(glm::radians(_yaw)) * cos(glm::radians(_pitch));
-    //_front.z = sin(glm::radians(_pitch));
-    //_front = glm::normalize(_front);
+glm::vec3 Camera::toWorldSpace(const glm::vec3 vector) const {
+    const glm::vec3 forward = glm::normalize(glm::vec3(_forward.x, _forward.y, 0.0f));
+    const glm::vec3 right   = glm::normalize(glm::cross(forward, _up));
 
-    _viewMatrix = glm::lookAt(_position, _position + _front, _up);
+    return vector.x * forward + vector.y * right + vector.z * _up;
 }
