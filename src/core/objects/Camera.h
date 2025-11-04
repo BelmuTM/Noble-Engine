@@ -85,7 +85,7 @@ private:
 
     float _rotationSensitivity = 0.2f;
 
-    glm::mat4 _viewMatrix = {1.0f};
+    glm::mat4 _viewMatrix{1.0f};
 
     void updateViewMatrix();
 

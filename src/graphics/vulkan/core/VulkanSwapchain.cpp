@@ -5,6 +5,8 @@
 #include "core/debug/Logger.h"
 #include "core/debug/ErrorHandling.h"
 
+#include <limits>
+
 bool VulkanSwapchain::create(
     const Platform::Window& window, const VulkanDevice& device, const vk::SurfaceKHR surface, std::string& errorMessage
 ) noexcept {
@@ -120,12 +122,6 @@ bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string&
          minImageCount = capabilities.maxImageCount > 0 && minImageCount > capabilities.maxImageCount
                              ? capabilities.maxImageCount
                              : minImageCount;
-
-    uint32_t imageCount = capabilities.minImageCount + 1;
-
-    if (capabilities.maxImageCount > 0) {
-        imageCount = std::min(imageCount, capabilities.maxImageCount);
-    }
 
     vk::SwapchainCreateInfoKHR swapchainInfo{};
     swapchainInfo
