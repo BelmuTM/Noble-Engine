@@ -7,6 +7,8 @@
 #include "graphics/vulkan/core/memory/VulkanBuffer.h"
 #include "VulkanMesh.h"
 
+#include <optional>
+
 class VulkanMeshManager {
 public:
     VulkanMeshManager()  = default;

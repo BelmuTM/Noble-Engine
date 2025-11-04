@@ -66,6 +66,7 @@ namespace Platform {
     std::vector<const char*> getVulkanExtensions() {
         uint32_t count;
         const char** extensions = glfwGetRequiredInstanceExtensions(&count);
+        if (!extensions || count == 0) return {};
         return {extensions, extensions + count};
     }
 }

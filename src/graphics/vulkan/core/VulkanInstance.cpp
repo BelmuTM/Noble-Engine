@@ -16,7 +16,10 @@ static const std::vector validationLayers = {
 #endif
 
 bool VulkanInstance::create(std::string& errorMessage) noexcept {
-    if (!createInstance(errorMessage))      return false;
+    if (!createInstance(errorMessage)) return false;
+
+    dldi = vk::detail::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
+
     if (!setupDebugMessenger(errorMessage)) return false;
 
     return true;
@@ -24,7 +27,6 @@ bool VulkanInstance::create(std::string& errorMessage) noexcept {
 
 void VulkanInstance::destroy() noexcept {
     if (debugMessenger) {
-        const vk::detail::DispatchLoaderDynamic dldi(instance, vkGetInstanceProcAddr);
         instance.destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, dldi);
         debugMessenger = VK_NULL_HANDLE;
     }
@@ -53,7 +55,12 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
     applicationInfo.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
     applicationInfo.apiVersion         = VULKAN_VERSION;
 
-    const auto& extensions = getRequiredExtensions();
+    const auto extensions = getRequiredExtensions();
+
+    if (extensions.empty()) {
+        errorMessage = "Failed to fetch required Vulkan extensions: Vulkan not supported on device.";
+        return false;
+    }
 
     auto availableExtensions = VK_CALL(vk::enumerateInstanceExtensionProperties(), errorMessage);
     if (availableExtensions.result != vk::Result::eSuccess) return false;
@@ -147,9 +154,8 @@ bool VulkanInstance::setupDebugMessenger(std::string& errorMessage) {
     debugUtilsMessengerInfo
         .setMessageSeverity(severityFlags)
         .setMessageType(messageTypeFlags)
-        .setPfnUserCallback(&debugCallback);
-
-    const vk::detail::DispatchLoaderDynamic dldi(instance, vkGetInstanceProcAddr);
+        .setPfnUserCallback(&debugCallback)
+        .setPUserData(this);
 
     VK_CREATE(instance.createDebugUtilsMessengerEXT(debugUtilsMessengerInfo, nullptr, dldi), debugMessenger,
               errorMessage);

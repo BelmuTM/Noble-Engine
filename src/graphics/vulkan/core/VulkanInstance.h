@@ -32,6 +32,8 @@ private:
     vk::Instance               instance{};
     vk::DebugUtilsMessengerEXT debugMessenger{};
 
+    vk::detail::DispatchLoaderDynamic dldi;
+
     static std::vector<const char*> getRequiredExtensions();
 
     bool createInstance(std::string& errorMessage);
