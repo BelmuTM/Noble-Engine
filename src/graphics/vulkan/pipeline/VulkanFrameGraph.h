@@ -4,7 +4,9 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 #include "VulkanGraphicsPipeline.h"
+
 #include "graphics/vulkan/resources/mesh/VulkanMeshManager.h"
+#include "graphics/vulkan/resources/ubo/FrameUniformBuffer.h"
 
 #include <functional>
 #include <optional>
@@ -16,6 +18,8 @@ struct FrameContext {
     vk::CommandBuffer cmdBuffer{};
     vk::ImageView     swapchainImageView{};
     vk::Extent2D      extent{};
+
+    std::vector<vk::DescriptorSet> frameDescriptors;
 
     FrameContext& setFrameIndex(const uint32_t _frameIndex) { frameIndex = _frameIndex; return *this; }
 
@@ -73,27 +77,24 @@ struct FramePassAttachment {
 };
 
 struct DrawCall {
-    const VulkanGraphicsPipeline* pipeline;
-    VulkanMesh                    mesh;
+    VulkanMesh mesh;
 
     std::function<std::vector<vk::DescriptorSet>(const FrameContext& frame)> descriptorResolver;
 
     std::optional<vk::Viewport> viewport;
     std::optional<vk::Rect2D>   scissor;
 
-    vk::Viewport resolveViewport(const FrameContext& frame) const {
+    [[nodiscard]] vk::Viewport resolveViewport(const FrameContext& frame) const {
         if (viewport) return *viewport;
         return vk::Viewport{
             0.0f, 0.0f, static_cast<float>(frame.extent.width), static_cast<float>(frame.extent.height), 0.0f, 1.0f
         };
     }
 
-    vk::Rect2D resolveScissor(const FrameContext& frame) const {
+    [[nodiscard]] vk::Rect2D resolveScissor(const FrameContext& frame) const {
         if (scissor) return *scissor;
-        return vk::Rect2D(vk::Offset2D(0, 0), frame.extent);
+        return {vk::Offset2D(0, 0), frame.extent};
     }
-
-    DrawCall& setPipeline(const VulkanGraphicsPipeline* _pipeline) { pipeline = _pipeline; return *this; }
 
     DrawCall& setMesh(const VulkanMesh& _mesh) { mesh = _mesh; return *this; }
 
@@ -111,7 +112,8 @@ struct DrawCall {
 struct FramePass {
     std::string name = "UndefinedPass";
 
-    vk::PipelineBindPoint bindPoint = vk::PipelineBindPoint::eGraphics;
+    const VulkanGraphicsPipeline* pipeline  = nullptr;
+    vk::PipelineBindPoint         bindPoint = vk::PipelineBindPoint::eGraphics;
 
     std::vector<FramePassAttachment> colorAttachments{};
     FramePassAttachment              depthAttachment{};
@@ -122,6 +124,8 @@ struct FramePass {
     std::vector<DrawCall> drawCalls{};
 
     FramePass& setName(const std::string& _name) { name = _name; return *this; }
+
+    FramePass& setPipeline(const VulkanGraphicsPipeline* _pipeline) { pipeline = _pipeline; return *this; }
 
     FramePass& setBindPoint(const vk::PipelineBindPoint _bindPoint) { bindPoint = _bindPoint; return *this; }
 

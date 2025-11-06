@@ -5,8 +5,6 @@
 #define VULKAN_HPP_NO_EXCEPTIONS
 #include <vulkan/vulkan.hpp>
 
-#define NOMINMAX
-
 #if defined(_WIN32) || defined(_WIN64)
 #include <Windows.h>
 

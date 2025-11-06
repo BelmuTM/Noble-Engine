@@ -7,17 +7,18 @@
 
 #include "core/Platform.h"
 
-#include "VulkanContext.h"
 #include "VulkanCommandManager.h"
+#include "VulkanContext.h"
 #include "VulkanSwapchainManager.h"
 
-#include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
-
-#include "graphics/vulkan/resources/VulkanDescriptorManager.h"
-#include "graphics/vulkan/resources/ubo/ObjectUniformBuffer.h"
-#include "graphics/vulkan/resources/mesh/VulkanMeshManager.h"
+#include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
 #include "graphics/vulkan/resources/image/VulkanImageManager.h"
+#include "graphics/vulkan/resources/mesh/VulkanMeshManager.h"
+#include "graphics/vulkan/resources/ubo/VulkanUniformBufferManager.h"
+#include "graphics/vulkan/resources/ubo/FrameUniformBuffer.h"
+#include "graphics/vulkan/resources/VulkanRenderObject.h"
 
+#include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
 #include "graphics/vulkan/pipeline/VulkanFrameGraph.h"
 
 class VulkanRenderer final : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {
@@ -25,7 +26,7 @@ public:
     VulkanRenderer() = default;
     ~VulkanRenderer() override;
 
-    [[nodiscard]] bool init(Platform::Window& window) override;
+    [[nodiscard]] bool init(Platform::Window& window, const std::vector<Object>& objects) override;
 
     void shutdown() override;
 
@@ -34,21 +35,25 @@ public:
 private:
     Platform::Window* _window = nullptr;
 
-    VulkanContext           context;
-    VulkanCommandManager    commandManager;
-    VulkanSwapchainManager  swapchainManager;
-    VulkanDescriptorManager descriptorManager;
-    VulkanGraphicsPipeline  pipeline;
+    VulkanContext          context;
+    VulkanCommandManager   commandManager;
+    VulkanSwapchainManager swapchainManager;
 
-    ObjectUniformBuffer uniformBuffer;
+    VulkanGraphicsPipeline pipeline;
+    VulkanFrameGraph       frameGraph;
 
-    VulkanMeshManager meshManager;
+    VulkanDescriptorManager    descriptorManager;
+    VulkanDescriptorManager    descriptorManager2;
+    VulkanMeshManager          meshManager;
+    VulkanImageManager         imageManager;
+    VulkanUniformBufferManager uniformBufferManager;
 
-    VulkanImageManager imageManager;
+    std::vector<VulkanRenderObject> renderObjects{};
+
+    FrameUniformBuffer frameUBO;
+    std::unique_ptr<VulkanDescriptorSets> frameUBODescriptorSets;
 
     VulkanImage depth;
-
-    VulkanFrameGraph frameGraph;
 
     unsigned int currentFrame = 0;
 

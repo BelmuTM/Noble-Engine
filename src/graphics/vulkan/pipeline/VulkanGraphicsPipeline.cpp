@@ -4,17 +4,17 @@
 #include "graphics/vulkan/resources/mesh/VulkanMesh.h"
 
 bool VulkanGraphicsPipeline::create(
-    const vk::Device&             device,
-    const VulkanSwapchain&        swapchain,
-    const vk::DescriptorSetLayout descriptorSetLayout,
-    const VulkanShaderProgram&    shaderProgram,
-    std::string&                  errorMessage
+    const vk::Device&                           device,
+    const VulkanSwapchain&                      swapchain,
+    const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
+    const VulkanShaderProgram&                  shaderProgram,
+    std::string&                                errorMessage
 ) noexcept {
     _device    = device;
     _swapchain = &swapchain;
 
-    if (!createPipelineLayout(descriptorSetLayout, errorMessage)) return false;
-    if (!createPipeline(shaderProgram, errorMessage))             return false;
+    if (!createPipelineLayout(descriptorSetLayouts, errorMessage)) return false;
+    if (!createPipeline(shaderProgram, errorMessage))              return false;
 
     return true;
 }
@@ -34,10 +34,10 @@ void VulkanGraphicsPipeline::destroy() noexcept {
 }
 
 bool VulkanGraphicsPipeline::createPipelineLayout(
-    vk::DescriptorSetLayout descriptorSetLayout, std::string& errorMessage) {
+    const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, std::string& errorMessage) {
     vk::PipelineLayoutCreateInfo layoutInfo{};
     layoutInfo
-        .setSetLayouts(descriptorSetLayout)
+        .setSetLayouts(descriptorSetLayouts)
         .setPushConstantRangeCount(0);
 
     VK_CREATE(_device.createPipelineLayout(layoutInfo), pipelineLayout, errorMessage);

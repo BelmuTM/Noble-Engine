@@ -50,8 +50,8 @@ public:
     VulkanMesh(const VulkanMesh&)            noexcept = default;
     VulkanMesh& operator=(const VulkanMesh&) noexcept = default;
 
-    VulkanMesh(VulkanMesh&&)            = delete;
-    VulkanMesh& operator=(VulkanMesh&&) = delete;
+    VulkanMesh(VulkanMesh&&)            noexcept = default;
+    VulkanMesh& operator=(VulkanMesh&&) noexcept = default;
 
     [[nodiscard]] std::vector<Vertex> getVertices() const { return _vertices; }
     [[nodiscard]] std::vector<uint32_t> getIndices() const { return _indices; }

@@ -35,14 +35,13 @@ endif()
 #                  SHADERS COMPILATION                   #
 ##########################################################
 
-# Slang setup
-
-# Slang compilation
-set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/resources/shaders)
+set(SHADERS_DIR_RELATIVE resources/shaders)
+set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/${SHADERS_DIR_RELATIVE})
 
 function(add_slang_shader_target TARGET)
     cmake_parse_arguments(SHADERS "" "" "SOURCES;ENTRIES" ${ARGN})
 
+    set(SHADERS_SPV_DIR_RELATIVE ${SHADERS_DIR_RELATIVE}/spv)
     set(SHADERS_SPV_DIR ${SHADERS_DIR}/spv)
     file(MAKE_DIRECTORY ${SHADERS_SPV_DIR})
 
@@ -58,7 +57,8 @@ function(add_slang_shader_target TARGET)
 
             string(SUBSTRING "${STAGE_NAME}" 0 4 STAGE_NAME_SHORT)
 
-            set(SPV_FILE ${SHADERS_SPV_DIR}/${SOURCE_NAME}.${STAGE_NAME_SHORT}.spv)
+            set(SPV_FILE_NAME ${SOURCE_NAME}.${STAGE_NAME_SHORT}.spv)
+            set(SPV_FILE ${SHADERS_SPV_DIR}/${SPV_FILE_NAME})
             list(APPEND SPV_OUTPUTS ${SPV_FILE})
 
             # Run Slangc command
@@ -73,7 +73,7 @@ function(add_slang_shader_target TARGET)
                     -fvk-use-entrypoint-name
                     -o ${SPV_FILE}
                 DEPENDS ${SOURCE}
-                COMMENT "Building SPIR-V ${SPV_FILE}"
+                COMMENT "Building SPIR-V object ${SHADERS_SPV_DIR_RELATIVE}/${SPV_FILE_NAME}"
                 VERBATIM
             )
         endforeach()

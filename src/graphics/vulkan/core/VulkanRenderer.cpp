@@ -11,7 +11,7 @@ VulkanRenderer::~VulkanRenderer() {
     shutdown();
 }
 
-bool VulkanRenderer::init(Platform::Window& window) {
+bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& objects) {
     _window = &window;
 
     std::string errorMessage = "Failed to create Vulkan renderer context: no error message provided";
@@ -34,7 +34,6 @@ bool VulkanRenderer::init(Platform::Window& window) {
         swapchainImageCount));
 
     TRY(createVulkanEntity(&commandManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
-    TRY(createVulkanEntity(&uniformBuffer, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
     TRY(createVulkanEntity(&descriptorManager, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT));
 
     // TO-DO: Move this to separate helper class (RenderPass?)
@@ -48,8 +47,8 @@ bool VulkanRenderer::init(Platform::Window& window) {
     };
 
     const std::vector descriptorPoolSizes = {
-         vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT),
-         vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT)
+        vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS),
+        vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS)
     };
 
     TRY(descriptorManager.createSetLayout(descriptorLayoutBindings, errorMessage));
@@ -57,37 +56,49 @@ bool VulkanRenderer::init(Platform::Window& window) {
     VulkanShaderProgram program(logicalDevice);
     TRY(program.load("meow", errorMessage));
 
-    TRY(createVulkanEntity(&pipeline, errorMessage, logicalDevice, swapchain, descriptorManager.getLayout(), program));
+    const std::vector descriptorLayoutBindings2 = {
+        vk::DescriptorSetLayoutBinding(
+            0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eAllGraphics, nullptr
+        )
+    };
+
+    const std::vector descriptorPoolSizes2 = {
+        vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
+    };
+
+    TRY(createVulkanEntity(&descriptorManager2, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT));
+    TRY(descriptorManager2.createSetLayout(descriptorLayoutBindings2, errorMessage));
+
+    std::vector<vk::DescriptorSetLayout> foo = {descriptorManager.getLayout(), descriptorManager2.getLayout()};
+
+    TRY(createVulkanEntity(&pipeline, errorMessage, logicalDevice, swapchain, foo, program));
 
     TRY(descriptorManager.createPool(descriptorPoolSizes, errorMessage));
-    TRY(descriptorManager.allocateSets(errorMessage));
-
-    descriptorManager.bindPerFrameUBO(uniformBuffer, 0);
+    TRY(descriptorManager2.createPool(descriptorPoolSizes2, errorMessage));
 
     TRY(createVulkanEntity(&imageManager, errorMessage, device, commandManager));
+    TRY(createVulkanEntity(&uniformBufferManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
 
-    VulkanImage cat;
-    TRY(imageManager.loadTextureFromFile(cat, "viking_room.png", errorMessage));
+    std::vector<VulkanMesh> meshes{};
 
-    descriptorManager.bindPerFrameResource(cat.getDescriptorInfo(1));
+    for (const auto& object : objects) {
+        VulkanRenderObject renderObject;
 
-    const std::optional<VulkanMesh> modelptr =
-        VulkanMeshManager::loadModel("stanford_dragon.obj", errorMessage);
-    if (!modelptr) return false;
+        TRY(renderObject.create(
+            object, descriptorManager, imageManager, meshManager, uniformBufferManager, errorMessage
+        ));
 
-    const VulkanMesh& model = *modelptr;
-
-    const std::vector meshes = {model};
+        meshes.push_back(*renderObject.mesh);
+        renderObjects.push_back(std::move(renderObject));
+    }
 
     TRY(createVulkanEntity(&meshManager, errorMessage, device, commandManager, meshes));
 
-    DrawCall verticesDraw;
-    verticesDraw
-        .setPipeline(&pipeline)
-        .setMesh(model)
-        .setDescriptorResolver([this](const FrameContext& frame) {
-            return std::vector{this->descriptorManager.getDescriptorSets()[frame.frameIndex]};
-        });
+    TRY(uniformBufferManager.createBuffer(frameUBO, errorMessage));
+
+    frameUBODescriptorSets = std::make_unique<VulkanDescriptorSets>(descriptorManager2);
+    TRY(frameUBODescriptorSets->allocate(errorMessage));
+    frameUBODescriptorSets->bindPerFrameUBO(frameUBO, 0);
 
     FrameResource swapchainOutput{};
     swapchainOutput
@@ -120,10 +131,22 @@ bool VulkanRenderer::init(Platform::Window& window) {
     FramePass mainPass;
     mainPass
         .setName("MainPass")
+        .setPipeline(&pipeline)
         .setBindPoint(vk::PipelineBindPoint::eGraphics)
         .addColorAttachment(swapchainAttachment)
-        .setDepthAttachment(depthAttachment)
-        .addDrawCall(verticesDraw);
+        .setDepthAttachment(depthAttachment);
+
+    for (const auto& renderObject : renderObjects) {
+        DrawCall verticesDraw;
+        verticesDraw
+            .setMesh(*renderObject.mesh)
+            .setDescriptorResolver(
+            [&renderObject](const FrameContext& frame) {
+                return std::vector{renderObject.descriptorSets->getSets().at(frame.frameIndex)};
+            });
+
+        mainPass.addDrawCall(verticesDraw);
+    }
 
     frameGraph.addPass(mainPass);
 
@@ -160,7 +183,10 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
 
     recordCurrentCommandBuffer(imageIndex);
 
-    uniformBuffer.update(currentFrame, context.getSwapchain(), camera);
+    frameUBO.update(currentFrame, context.getSwapchain(), camera);
+
+    for (const auto& renderObject : renderObjects) {
+    }
 
     if (!swapchainManager.submitCommandBuffer(commandManager, currentFrame, imageIndex, errorMessage, discardLogging))
         return;
@@ -266,6 +292,8 @@ void VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer, 
         .setCommandBuffer(commandBuffer)
         .setSwapchainImageView(context.getSwapchain().getImageViews()[imageIndex])
         .setExtent(context.getSwapchain().getExtent());
+
+    frameContext.frameDescriptors = frameUBODescriptorSets->getSets();
 
     frameGraph.execute(frameContext);
 

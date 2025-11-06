@@ -3,21 +3,17 @@
 #define NOBLEENGINE_OBJECTUNIFORMBUFFER_H
 
 #include "VulkanUniformBuffer.h"
-#include "graphics/vulkan/core/VulkanSwapchain.h"
-
-#include "core/objects/Camera.h"
 
 #include <glm/glm.hpp>
 
-struct UniformBufferObject {
+struct ObjectUBO {
     glm::mat4 model;
-    glm::mat4 view;
-    glm::mat4 projection;
+    glm::mat4 normal;
 };
 
-class ObjectUniformBuffer final : public VulkanUniformBuffer<UniformBufferObject> {
+class ObjectUniformBuffer final : public VulkanUniformBuffer<ObjectUBO> {
 public:
-    void update(uint32_t frameIndex, const VulkanSwapchain& swapchain, const Camera& camera) const;
+    void update(uint32_t frameIndex, const glm::mat4& modelMatrix) const;
 };
 
 #endif //NOBLEENGINE_OBJECTUNIFORMBUFFER_H

@@ -3,9 +3,9 @@
 #define NOBLEENGINE_VULKANIMAGE_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
-#include "graphics/vulkan/core/VulkanDevice.h"
 #include "graphics/vulkan/core/VulkanCommandManager.h"
-#include "graphics/vulkan/resources/VulkanDescriptorManager.h"
+#include "graphics/vulkan/core/VulkanDevice.h"
+#include "graphics/vulkan/resources/descriptors/VulkanDescriptorInfo.h"
 
 #include "graphics/vulkan/core/memory/VmaUsage.h"
 
@@ -60,7 +60,7 @@ public:
         std::string&           errorMessage
     );
 
-    DescriptorInfo getDescriptorInfo(const uint32_t binding) const {
+    [[nodiscard]] DescriptorInfo getDescriptorInfo(const uint32_t binding) const {
         return {
             .type      = vk::DescriptorType::eCombinedImageSampler,
             .imageInfo = {_sampler, _imageView, vk::ImageLayout::eShaderReadOnlyOptimal},

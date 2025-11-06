@@ -113,9 +113,7 @@ bool VulkanMeshManager::createIndexBuffer(std::string& errorMessage) {
     return true;
 }
 
-std::optional<VulkanMesh> VulkanMeshManager::loadModel(const std::string& path, std::string& errorMessage) {
-    VulkanMesh model;
-
+bool VulkanMeshManager::loadModel(VulkanMesh& model, const std::string& path, std::string& errorMessage) {
     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
     std::vector<Vertex>   vertices{};
@@ -129,7 +127,7 @@ std::optional<VulkanMesh> VulkanMeshManager::loadModel(const std::string& path, 
     const std::string& fullPath = modelFilesPath + path;
 
     if (!tinyobj::LoadObj(&attributes, &shapes, &materials, &errorMessage, fullPath.c_str())) {
-        return std::nullopt;
+        return false;
     }
 
     Logger::info("vertices: " + std::to_string(attributes.vertices.size())
@@ -174,5 +172,6 @@ std::optional<VulkanMesh> VulkanMeshManager::loadModel(const std::string& path, 
     }
 
     model.loadData(vertices, indices);
-    return std::make_optional<VulkanMesh>(model);
+
+    return true;
 }

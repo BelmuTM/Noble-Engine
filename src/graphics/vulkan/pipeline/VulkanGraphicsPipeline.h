@@ -21,11 +21,11 @@ public:
     VulkanGraphicsPipeline& operator=(VulkanGraphicsPipeline&&) = delete;
 
     [[nodiscard]] bool create(
-        const vk::Device&          device,
-        const VulkanSwapchain&     swapchain,
-        vk::DescriptorSetLayout    descriptorSetLayout,
-        const VulkanShaderProgram& shaderProgram,
-        std::string&               errorMessage
+        const vk::Device&                           device,
+        const VulkanSwapchain&                      swapchain,
+        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
+        const VulkanShaderProgram&                  shaderProgram,
+        std::string&                                errorMessage
     ) noexcept;
 
     void destroy() noexcept;
@@ -132,7 +132,10 @@ private:
         return info;
     }();
 
-    bool createPipelineLayout(vk::DescriptorSetLayout descriptorSetLayout, std::string& errorMessage);
+    bool createPipelineLayout(
+        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, std::string& errorMessage
+    );
+
     bool createPipeline(const VulkanShaderProgram& shaderProgram, std::string& errorMessage);
 };
 

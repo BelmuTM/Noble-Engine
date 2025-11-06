@@ -30,7 +30,7 @@ public:
 
     [[nodiscard]] bool createDepthBuffer(VulkanImage& depthBuffer, vk::Extent2D extent, std::string& errorMessage) const;
 
-    [[nodiscard]] bool loadTextureFromFile(VulkanImage& texture, const char* path, std::string& errorMessage);
+    [[nodiscard]] bool loadTextureFromFile(VulkanImage& texture, const std::string& path, std::string& errorMessage);
 
 private:
     const VulkanDevice*         _device         = nullptr;

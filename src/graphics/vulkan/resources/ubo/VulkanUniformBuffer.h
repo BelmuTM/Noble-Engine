@@ -7,12 +7,21 @@
 #include "graphics/vulkan/common/VulkanHeader.h"
 #include "graphics/vulkan/core/VulkanDevice.h"
 #include "graphics/vulkan/core/memory/VulkanBuffer.h"
-#include "graphics/vulkan/resources/VulkanDescriptorManager.h"
+#include "graphics/vulkan/resources/descriptors/VulkanDescriptorInfo.h"
 
 class VulkanUniformBufferBase {
 public:
-    virtual DescriptorInfo getDescriptorInfo(uint32_t binding, uint32_t frameIndex) const = 0;
     virtual ~VulkanUniformBufferBase() = default;
+
+    [[nodiscard]] virtual bool create(
+        const VulkanDevice& device,
+        uint32_t            framesInFlight,
+        std::string&        errorMessage
+    ) noexcept = 0;
+
+    virtual void destroy() noexcept = 0;
+
+    virtual DescriptorInfo getDescriptorInfo(uint32_t binding, uint32_t frameIndex) const = 0;
 };
 
 template<typename T>
@@ -31,7 +40,7 @@ public:
         const VulkanDevice& device,
         const uint32_t      framesInFlight,
         std::string&        errorMessage
-    ) noexcept {
+    ) noexcept override {
         _device         = &device;
         _framesInFlight = framesInFlight;
 
@@ -40,7 +49,7 @@ public:
         return true;
     }
 
-    void destroy() noexcept {
+    void destroy() noexcept override {
         for (auto& uniformBuffer : uniformBuffers) {
             uniformBuffer.destroy();
         }
@@ -92,6 +101,11 @@ protected:
         }
 
         return true;
+    }
+
+    template <typename TypeUBO>
+    void updateMemory(const uint32_t frameIndex, TypeUBO ubo) const {
+        memcpy(uniformBuffers[frameIndex].getMappedPointer(), &ubo, sizeof(ubo));
     }
 };
 

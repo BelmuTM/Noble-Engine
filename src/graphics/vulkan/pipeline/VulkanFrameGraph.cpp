@@ -1,7 +1,5 @@
 #include "VulkanFrameGraph.h"
 
-#include <iostream>
-
 bool VulkanFrameGraph::create(const VulkanMeshManager& meshManager, std::string& errorMessage) noexcept {
     _meshManager = &meshManager;
     return true;
@@ -51,17 +49,24 @@ void VulkanFrameGraph::executePass(const FramePass& pass, const FrameContext& fr
 
         frame.cmdBuffer.beginRendering(renderingInfo);
 
-        for (auto& draw : pass.drawCalls) {
-            frame.cmdBuffer.bindPipeline(pass.bindPoint, *draw.pipeline);
+        frame.cmdBuffer.bindPipeline(pass.bindPoint, *pass.pipeline);
 
+        for (auto& draw : pass.drawCalls) {
             const vk::DeviceSize vertexOffset = draw.mesh.getVertexOffset();
             const vk::DeviceSize indexOffset  = draw.mesh.getIndexOffset();
 
             frame.cmdBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &vertexOffset);
             frame.cmdBuffer.bindIndexBuffer(indexBuffer, indexOffset, vk::IndexType::eUint32);
 
+            auto objectSets = draw.descriptorResolver(frame);
+
+            const vk::DescriptorSet objectSet = objectSets.at(0);
+            const vk::DescriptorSet frameSet  = frame.frameDescriptors.at(frame.frameIndex);
+
+            std::array<vk::DescriptorSet, 2> setsToBind = { objectSet, frameSet };
+
             frame.cmdBuffer.bindDescriptorSets(
-                pass.bindPoint, draw.pipeline->getLayout(), 0, draw.descriptorResolver(frame), nullptr
+                pass.bindPoint, pass.pipeline->getLayout(), 0, setsToBind, nullptr
             );
 
             frame.cmdBuffer.setViewport(0, draw.resolveViewport(frame));

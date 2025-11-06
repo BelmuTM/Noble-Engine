@@ -25,8 +25,19 @@ int main() {
     WindowContext ctx{&window, &inputManager};
     glfwSetWindowUserPointer(window.handle(), &ctx);
 
+    Object dragon;
+    dragon.create("stanford_dragon.obj", "viking_room.png", {0.0f, 0.0f, 0.0f}, {0.0f, 180.0f, 0.0f}, {1.0f, 1.0f, 1.0f});
+
+    Object dragon2;
+    dragon2.create("stanford_dragon.obj", "viking_room.png", {2.0f, 2.0f, -0.4f}, {0.0f, 180.0f, 40.0f}, {0.6f, 0.6f, 0.6f});
+
+    Object dragon3;
+    dragon3.create("stanford_dragon.obj", "viking_room.png", {2.0f, -2.0f, -0.6f}, {0.0f, 180.0f, -25.0f}, {0.4f, 0.4f, 0.4f});
+
+    std::vector<Object> objects{dragon, dragon2, dragon3};
+
     VulkanRenderer renderer;
-    if (!renderer.init(window)) {
+    if (!renderer.init(window, objects)) {
         Engine::fatalExit("Failed to init Vulkan renderer");
     }
 

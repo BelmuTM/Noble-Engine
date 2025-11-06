@@ -61,7 +61,7 @@ bool VulkanImageManager::createDepthBuffer(
     return true;
 }
 
-bool VulkanImageManager::loadTextureFromFile(VulkanImage& texture, const char* path, std::string& errorMessage) {
+bool VulkanImageManager::loadTextureFromFile(VulkanImage& texture, const std::string& path, std::string& errorMessage) {
     constexpr int depth = 1;
 
     const std::string fullPath = textureFilesPath + path;

@@ -4,13 +4,6 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-struct DescriptorInfo {
-    vk::DescriptorType       type;
-    vk::DescriptorImageInfo  imageInfo{};
-    vk::DescriptorBufferInfo bufferInfo{};
-    uint32_t                 binding;
-};
-
 class VulkanUniformBufferBase;
 
 class VulkanDescriptorManager {
@@ -26,32 +19,35 @@ public:
 
     [[nodiscard]] bool create(const vk::Device& device, uint32_t framesInFlight, std::string& errorMessage) noexcept;
 
+    void destroy() noexcept;
+
     [[nodiscard]] bool createSetLayout(
         const std::vector<vk::DescriptorSetLayoutBinding>& bindings, std::string& errorMessage
     );
-    [[nodiscard]] bool createPool(const std::vector<vk::DescriptorPoolSize>& poolSizes, std::string& errorMessage);
-    [[nodiscard]] bool allocateSets(std::string& errorMessage);
 
-    void destroy() noexcept;
+    [[nodiscard]] bool createPool(const std::vector<vk::DescriptorPoolSize>& poolSizes, std::string& errorMessage);
+
+    [[nodiscard]] bool allocateSets(
+        std::vector<vk::DescriptorSet>&      descriptorSets,
+        const vk::DescriptorSetAllocateInfo& descriptorSetInfo,
+        std::string&                         errorMessage
+    ) const;
+
+    void updateSets(const vk::WriteDescriptorSet& descriptorSetWrite) const;
+
+    [[nodiscard]] uint32_t getFramesInFlight() const { return _framesInFlight; }
 
     [[nodiscard]] vk::DescriptorSetLayout getLayout() const { return _descriptorSetLayout; }
 
-    [[nodiscard]] const std::vector<vk::DescriptorSet>& getDescriptorSets() const { return _descriptorSets; }
-
-    void bindResource(const DescriptorInfo& info, uint32_t frameIndex) const;
-
-    void bindPerFrameResource(const DescriptorInfo& info) const;
-
-    void bindPerFrameUBO(const VulkanUniformBufferBase& ubo, uint32_t binding) const;
+    [[nodiscard]] vk::DescriptorPool getPool() const { return _descriptorPool; }
 
 private:
     vk::Device _device{};
 
     uint32_t _framesInFlight = 0;
 
-    vk::DescriptorSetLayout        _descriptorSetLayout{};
-    vk::DescriptorPool             _descriptorPool{};
-    std::vector<vk::DescriptorSet> _descriptorSets{};
+    vk::DescriptorSetLayout _descriptorSetLayout{};
+    vk::DescriptorPool      _descriptorPool{};
 };
 
 #endif //NOBLEENGINE_VULKANDESCRIPTORMANAGER_H

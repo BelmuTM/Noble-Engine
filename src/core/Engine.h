@@ -14,6 +14,7 @@
 constexpr uint32_t VULKAN_VERSION = VK_API_VERSION_1_4;
 
 static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+static constexpr int MAX_OBJECTS = 32;
 
 namespace Engine {
     void localtime(std::tm& tm, const std::time_t* time);
