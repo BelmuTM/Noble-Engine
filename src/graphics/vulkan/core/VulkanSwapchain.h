@@ -28,15 +28,15 @@ public:
 
     [[nodiscard]] bool recreate(vk::SurfaceKHR surface, std::string& errorMessage);
 
-    [[nodiscard]] const vk::SwapchainKHR& handle() const { return _swapchain; }
+    [[nodiscard]] const vk::SwapchainKHR& handle() const noexcept { return _swapchain; }
 
-    [[nodiscard]] std::vector<vk::Image> getImages() const { return _images; }
-    [[nodiscard]] std::vector<vk::ImageView> getImageViews() const { return _imageViews; }
+    [[nodiscard]] std::vector<vk::Image> getImages() const noexcept { return _images; }
+    [[nodiscard]] std::vector<vk::ImageView> getImageViews() const noexcept { return _imageViews; }
 
-    [[nodiscard]] vk::Format getFormat() const { return _format; }
-    [[nodiscard]] vk::Extent2D getExtent() const { return _extent; }
+    [[nodiscard]] vk::Format getFormat() const noexcept { return _format; }
+    [[nodiscard]] vk::Extent2D getExtent() const noexcept { return _extent; }
 
-    [[nodiscard]] float getAspectRatio() const {
+    [[nodiscard]] float getAspectRatio() const noexcept {
         return static_cast<float>(_extent.width) / static_cast<float>(_extent.height);
     }
 

@@ -56,7 +56,7 @@ public:
         _device = nullptr;
     }
 
-    DescriptorInfo getDescriptorInfo(const uint32_t binding, const uint32_t frameIndex) const override {
+    DescriptorInfo getDescriptorInfo(const uint32_t binding, const uint32_t frameIndex) const noexcept override {
         return {
             .type       = vk::DescriptorType::eUniformBuffer,
             .bufferInfo = {uniformBuffers[frameIndex], 0, size},
@@ -64,7 +64,7 @@ public:
         };
     }
 
-    [[nodiscard]] const std::vector<VulkanBuffer>& getBuffers() const { return uniformBuffers; }
+    [[nodiscard]] const std::vector<VulkanBuffer>& getBuffers() const noexcept { return uniformBuffers; }
 
 protected:
     static constexpr vk::DeviceSize size = sizeof(T);

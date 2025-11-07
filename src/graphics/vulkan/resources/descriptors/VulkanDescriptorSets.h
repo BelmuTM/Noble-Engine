@@ -28,7 +28,7 @@ public:
 
     void bindPerFrameUBO(const VulkanUniformBufferBase& ubo, uint32_t binding) const;
 
-    [[nodiscard]] std::vector<vk::DescriptorSet> getSets() const { return _descriptorSets; }
+    [[nodiscard]] std::vector<vk::DescriptorSet> getSets() const noexcept { return _descriptorSets; }
 
 private:
     const VulkanDescriptorManager* _manager = nullptr;

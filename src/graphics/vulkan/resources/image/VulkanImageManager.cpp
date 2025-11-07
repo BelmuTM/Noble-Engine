@@ -1,5 +1,6 @@
 #include "VulkanImageManager.h"
 
+#include "graphics/vulkan/core/memory/VulkanBuffer.h"
 #include "graphics/vulkan/resources/StbUsage.h"
 
 #include "core/debug/ErrorHandling.h"
@@ -16,10 +17,10 @@ bool VulkanImageManager::create(
 }
 
 void VulkanImageManager::destroy() noexcept {
-    for (auto& image : images) {
+    for (auto& image : _images) {
         image.destroy(*_device);
     }
-    images.clear();
+    _images.clear();
 
     _device         = nullptr;
     _commandManager = nullptr;

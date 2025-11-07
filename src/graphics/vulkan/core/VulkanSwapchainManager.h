@@ -28,7 +28,7 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] bool isOutOfDate() const { return _outOfDate; }
+    [[nodiscard]] bool isOutOfDate() const noexcept { return _outOfDate; }
 
     [[nodiscard]] bool recreateSwapchain(std::string& errorMessage);
 

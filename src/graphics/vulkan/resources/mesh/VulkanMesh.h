@@ -53,29 +53,36 @@ public:
     VulkanMesh(VulkanMesh&&)            noexcept = default;
     VulkanMesh& operator=(VulkanMesh&&) noexcept = default;
 
-    [[nodiscard]] std::vector<Vertex> getVertices() const { return _vertices; }
-    [[nodiscard]] std::vector<uint32_t> getIndices() const { return _indices; }
+    [[nodiscard]] bool isBufferless() const noexcept { return _bufferless; }
+    void setBufferless(const bool bufferless) noexcept { _bufferless = bufferless; }
+
+    [[nodiscard]] std::vector<Vertex> getVertices() const noexcept { return _vertices; }
+    [[nodiscard]] std::vector<uint32_t> getIndices() const noexcept { return _indices; }
 
     [[nodiscard]] size_t getVerticesByteSize() const { return sizeof(Vertex) * _vertices.size(); }
     [[nodiscard]] size_t getIndicesByteSize() const { return sizeof(uint32_t) * _indices.size(); }
 
-    [[nodiscard]] size_t getVertexOffset() const { return _vertexOffset; }
-    [[nodiscard]] size_t getIndexOffset() const { return _indexOffset; }
+    [[nodiscard]] size_t getVertexOffset() const noexcept { return _vertexOffset; }
+    [[nodiscard]] size_t getIndexOffset() const noexcept { return _indexOffset; }
 
-    void setVertexOffset(const size_t offset) {
+    void setVertexOffset(const size_t offset) noexcept {
         _vertexOffset = offset;
     }
 
-    void setIndexOffset(const size_t offset) {
+    void setIndexOffset(const size_t offset) noexcept {
         _indexOffset = offset;
     }
 
-    void loadData(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) {
+    void loadData(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) noexcept {
         _vertices = vertices;
         _indices  = indices;
     }
 
+    static VulkanMesh makeFullscreenTriangle();
+
 private:
+    bool _bufferless = false;
+
     size_t _vertexOffset = 0;
     size_t _indexOffset  = 0;
 

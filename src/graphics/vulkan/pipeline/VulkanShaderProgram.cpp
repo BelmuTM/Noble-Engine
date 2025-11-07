@@ -20,17 +20,21 @@ VulkanShaderProgram::~VulkanShaderProgram() {
 }
 
 void VulkanShaderProgram::clearShaderModules() {
-    for (const auto& module : shaderModules) {
+    for (const auto& module : _shaderModules) {
         _device.destroyShaderModule(module);
     }
-    shaderModules.clear();
+    _shaderModules.clear();
 }
 
-bool VulkanShaderProgram::loadFromFiles(const std::vector<std::string>& paths, std::string& errorMessage) {
+bool VulkanShaderProgram::loadFromFiles(
+    const std::vector<std::string>& paths, const bool fullscreen, std::string& errorMessage
+) {
     if (paths.empty()) {
         errorMessage = "Failed to load shader program: no paths provided";
         return false;
     }
+
+    _isFullscreen = fullscreen;
 
     ScopeGuard guard{[this] { clearShaderModules(); }};
 
@@ -57,7 +61,7 @@ bool VulkanShaderProgram::loadFromFiles(const std::vector<std::string>& paths, s
         const vk::ShaderModule& module = createShaderModule(bytecode, errorMessage);
         if (!module) return false;
 
-        shaderModules.push_back(module);
+        _shaderModules.push_back(module);
 
         vk::PipelineShaderStageCreateInfo stageInfo{};
         stageInfo
@@ -65,7 +69,7 @@ bool VulkanShaderProgram::loadFromFiles(const std::vector<std::string>& paths, s
             .setModule(module)
             .setPName(entryPoint);
 
-        shaderStages.push_back(stageInfo);
+        _shaderStages.push_back(stageInfo);
     }
 
     guard.release();
@@ -73,8 +77,8 @@ bool VulkanShaderProgram::loadFromFiles(const std::vector<std::string>& paths, s
     return true;
 }
 
-bool VulkanShaderProgram::load(const std::string& name, std::string& errorMessage) {
-    return loadFromFiles(findShaderFilePaths(name), errorMessage);
+bool VulkanShaderProgram::load(const std::string& name, const bool fullscreen, std::string& errorMessage) {
+    return loadFromFiles(findShaderFilePaths(name), fullscreen, errorMessage);
 }
 
 std::string VulkanShaderProgram::extractStageExtension(const std::string& path) noexcept {

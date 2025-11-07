@@ -25,15 +25,15 @@ public:
 
     void destroy(const VulkanDevice& device) noexcept;
 
-    [[nodiscard]] vk::ImageView getImageView() const { return _imageView; }
+    [[nodiscard]] vk::ImageView getImageView() const noexcept { return _imageView; }
 
-    [[nodiscard]] vk::Sampler getSampler() const { return _sampler; }
+    [[nodiscard]] vk::Sampler getSampler() const noexcept { return _sampler; }
 
-    [[nodiscard]] vk::Format getFormat() const { return _format; }
-    void setFormat(const vk::Format format) { _format = format; }
+    [[nodiscard]] vk::Format getFormat() const noexcept { return _format; }
+    void setFormat(const vk::Format format) noexcept { _format = format; }
 
-    [[nodiscard]] vk::Extent3D getExtent() const { return _extent; }
-    void setExtent(const vk::Extent3D extent) { _extent = extent; }
+    [[nodiscard]] vk::Extent3D getExtent() const noexcept { return _extent; }
+    void setExtent(const vk::Extent3D extent) noexcept { _extent = extent; }
 
     [[nodiscard]] bool createImage(
         vk::Extent3D        extent,
@@ -60,7 +60,7 @@ public:
         std::string&           errorMessage
     );
 
-    [[nodiscard]] DescriptorInfo getDescriptorInfo(const uint32_t binding) const {
+    [[nodiscard]] DescriptorInfo getDescriptorInfo(const uint32_t binding) const noexcept {
         return {
             .type      = vk::DescriptorType::eCombinedImageSampler,
             .imageInfo = {_sampler, _imageView, vk::ImageLayout::eShaderReadOnlyOptimal},

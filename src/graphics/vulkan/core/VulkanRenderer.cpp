@@ -34,10 +34,23 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
         swapchainImageCount));
 
     TRY(createVulkanEntity(&commandManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
-    TRY(createVulkanEntity(&descriptorManager, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT));
 
     // TO-DO: Move this to separate helper class (RenderPass?)
-    const std::vector descriptorLayoutBindings = {
+    const std::vector descriptorLayoutBindingsFrame = {
+        vk::DescriptorSetLayoutBinding(
+            0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eAllGraphics, nullptr
+        )
+    };
+
+    const std::vector descriptorPoolSizesFrame = {
+        vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
+    };
+
+    TRY(createVulkanEntity(&descriptorManagerFrame, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT));
+    TRY(descriptorManagerFrame.createSetLayout(descriptorLayoutBindingsFrame, errorMessage));
+    TRY(descriptorManagerFrame.createPool(descriptorPoolSizesFrame, errorMessage));
+
+    const std::vector descriptorLayoutBindingsObject = {
         vk::DescriptorSetLayoutBinding(
             0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eAllGraphics, nullptr
         ),
@@ -46,35 +59,17 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
         )
     };
 
-    const std::vector descriptorPoolSizes = {
+    const std::vector descriptorPoolSizesObject = {
         vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS),
         vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS)
     };
 
-    TRY(descriptorManager.createSetLayout(descriptorLayoutBindings, errorMessage));
+    TRY(createVulkanEntity(&descriptorManagerObject, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT));
+    TRY(descriptorManagerObject.createSetLayout(descriptorLayoutBindingsObject, errorMessage));
+    TRY(descriptorManagerObject.createPool(descriptorPoolSizesObject, errorMessage));
 
-    VulkanShaderProgram program(logicalDevice);
-    TRY(program.load("meow", errorMessage));
-
-    const std::vector descriptorLayoutBindings2 = {
-        vk::DescriptorSetLayoutBinding(
-            0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eAllGraphics, nullptr
-        )
-    };
-
-    const std::vector descriptorPoolSizes2 = {
-        vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
-    };
-
-    TRY(createVulkanEntity(&descriptorManager2, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT));
-    TRY(descriptorManager2.createSetLayout(descriptorLayoutBindings2, errorMessage));
-
-    std::vector<vk::DescriptorSetLayout> foo = {descriptorManager.getLayout(), descriptorManager2.getLayout()};
-
-    TRY(createVulkanEntity(&pipeline, errorMessage, logicalDevice, swapchain, foo, program));
-
-    TRY(descriptorManager.createPool(descriptorPoolSizes, errorMessage));
-    TRY(descriptorManager2.createPool(descriptorPoolSizes2, errorMessage));
+    std::vector descriptorLayoutsMeshRender = {descriptorManagerFrame.getLayout(), descriptorManagerObject.getLayout()};
+    std::vector descriptorLayoutsComposite  = {descriptorManagerFrame.getLayout()};
 
     TRY(createVulkanEntity(&imageManager, errorMessage, device, commandManager));
     TRY(createVulkanEntity(&uniformBufferManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
@@ -85,7 +80,7 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
         VulkanRenderObject renderObject;
 
         TRY(renderObject.create(
-            object, descriptorManager, imageManager, meshManager, uniformBufferManager, errorMessage
+            object, descriptorManagerObject, imageManager, meshManager, uniformBufferManager, errorMessage
         ));
 
         meshes.push_back(*renderObject.mesh);
@@ -96,9 +91,24 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
 
     TRY(uniformBufferManager.createBuffer(frameUBO, errorMessage));
 
-    frameUBODescriptorSets = std::make_unique<VulkanDescriptorSets>(descriptorManager2);
+    frameUBODescriptorSets = std::make_unique<VulkanDescriptorSets>(descriptorManagerFrame);
     TRY(frameUBODescriptorSets->allocate(errorMessage));
     frameUBODescriptorSets->bindPerFrameUBO(frameUBO, 0);
+
+    // TO-DO: ShaderProgramManager and ShaderPipelineManager helpers to defer device and swapchain responsibilities
+    VulkanShaderProgram composite(logicalDevice);
+    TRY(composite.load("composite", true, errorMessage));
+
+    TRY(createVulkanEntity(
+        &pipelineComposite, errorMessage, logicalDevice, swapchain, descriptorLayoutsComposite, composite
+    ));
+
+    VulkanShaderProgram meshRender(logicalDevice);
+    TRY(meshRender.load("mesh_render", false, errorMessage));
+
+    TRY(createVulkanEntity(
+        &pipelineMeshRender, errorMessage, logicalDevice, swapchain, descriptorLayoutsMeshRender, meshRender
+    ));
 
     FrameResource swapchainOutput{};
     swapchainOutput
@@ -128,10 +138,24 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
         .setStoreOp(vk::AttachmentStoreOp::eStore)
         .setClearValue(vk::ClearDepthStencilValue{1.0f, 0});
 
-    FramePass mainPass;
-    mainPass
-        .setName("MainPass")
-        .setPipeline(&pipeline)
+    // TO-DO: Color attachment helper class
+    FramePass compositePass;
+    compositePass
+        .setName("Composite_Pass")
+        .setPipeline(&pipelineComposite)
+        .setBindPoint(vk::PipelineBindPoint::eGraphics)
+        .addColorAttachment(swapchainAttachment)
+        .setDepthAttachment(depthAttachment);
+
+    DrawCall fullscreenDraw;
+    fullscreenDraw.setMesh(VulkanMesh::makeFullscreenTriangle());
+
+    compositePass.addDrawCall(fullscreenDraw);
+
+    FramePass meshRenderPass;
+    meshRenderPass
+        .setName("MeshRender_Pass")
+        .setPipeline(&pipelineMeshRender)
         .setBindPoint(vk::PipelineBindPoint::eGraphics)
         .addColorAttachment(swapchainAttachment)
         .setDepthAttachment(depthAttachment);
@@ -145,10 +169,11 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
                 return std::vector{renderObject.descriptorSets->getSets().at(frame.frameIndex)};
             });
 
-        mainPass.addDrawCall(verticesDraw);
+        meshRenderPass.addDrawCall(verticesDraw);
     }
 
-    frameGraph.addPass(mainPass);
+    frameGraph.addPass(compositePass);
+    frameGraph.addPass(meshRenderPass);
 
     TRY(createVulkanEntity(&frameGraph, errorMessage, meshManager));
 
@@ -186,6 +211,7 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
     frameUBO.update(currentFrame, context.getSwapchain(), camera);
 
     for (const auto& renderObject : renderObjects) {
+        renderObject.ubo->update(currentFrame, renderObject.object->getModelMatrix());
     }
 
     if (!swapchainManager.submitCommandBuffer(commandManager, currentFrame, imageIndex, errorMessage, discardLogging))

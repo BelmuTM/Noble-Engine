@@ -74,6 +74,10 @@ struct FramePassAttachment {
     FramePassAttachment& setStoreOp(const vk::AttachmentStoreOp _storeOp) { storeOp = _storeOp; return *this; }
 
     FramePassAttachment& setClearValue(const vk::ClearValue _clearValue) { clearValue = _clearValue; return *this; }
+
+    explicit operator bool() const noexcept {
+        return static_cast<bool>(resource.resolveImageView);
+    }
 };
 
 struct DrawCall {

@@ -11,7 +11,12 @@
 
 struct FrameUBO {
     glm::mat4 view;
+    glm::mat4 viewInverse;
+
     glm::mat4 projection;
+    glm::mat4 projectionInverse;
+
+    glm::vec3 cameraPosition;
 
     float frameTimeCounter;
 };

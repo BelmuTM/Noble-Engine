@@ -13,7 +13,7 @@ public:
     ~VulkanInstance() = default;
 
     // Implicit conversion operator
-    operator vk::Instance() const { return instance; }
+    operator vk::Instance() const noexcept { return instance; }
 
     VulkanInstance(const VulkanInstance&)            = delete;
     VulkanInstance& operator=(const VulkanInstance&) = delete;

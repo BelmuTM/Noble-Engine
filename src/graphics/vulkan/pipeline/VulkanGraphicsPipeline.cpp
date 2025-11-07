@@ -53,13 +53,16 @@ bool VulkanGraphicsPipeline::createPipeline(const VulkanShaderProgram& shaderPro
         .setColorAttachmentFormats(colorFormat)
         .setDepthAttachmentFormat(vk::Format::eD32Sfloat);
 
-    const auto& bindingDescription    = Vertex::getBindingDescription();
-    const auto& attributeDescriptions = Vertex::getAttributeDescriptions();
-
     vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
-    vertexInputInfo
-        .setVertexBindingDescriptions(bindingDescription)
-        .setVertexAttributeDescriptions(attributeDescriptions);
+
+    if (!shaderProgram.isFullscreen()) {
+        const auto& bindingDescription    = Vertex::getBindingDescription();
+        const auto& attributeDescriptions = Vertex::getAttributeDescriptions();
+
+        vertexInputInfo
+            .setVertexBindingDescriptions(bindingDescription)
+            .setVertexAttributeDescriptions(attributeDescriptions);
+    }
 
     vk::GraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo

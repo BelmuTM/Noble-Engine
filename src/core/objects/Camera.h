@@ -26,31 +26,33 @@ public:
         _controller = std::move(controller);
     }
 
-    [[nodiscard]] float getSpeed() const { return _speed; }
-    [[nodiscard]] double getPitch() const { return _pitch; }
-    [[nodiscard]] double getYaw() const { return _yaw; }
-    [[nodiscard]] float getRotationSensitivity() const { return _rotationSensitivity; }
-    [[nodiscard]] glm::vec3 getVelocity() const { return _velocity; }
+    [[nodiscard]] float getSpeed() const noexcept { return _speed; }
+    [[nodiscard]] double getPitch() const noexcept { return _pitch; }
+    [[nodiscard]] double getYaw() const noexcept { return _yaw; }
+    [[nodiscard]] float getRotationSensitivity() const noexcept { return _rotationSensitivity; }
+    [[nodiscard]] glm::vec3 getVelocity() const noexcept { return _velocity; }
 
-    void setSpeed(const float speed) { _speed = speed; }
-    void setYaw(const double yaw) { _yaw = yaw; }
-    void setPitch(const double pitch) { _pitch = pitch; }
-    void setVelocity(const glm::vec3& velocity) { _velocity = velocity; }
+    void setSpeed(const float speed) noexcept { _speed = speed; }
+    void setYaw(const double yaw) noexcept { _yaw = yaw; }
+    void setPitch(const double pitch) noexcept { _pitch = pitch; }
+    void setVelocity(const glm::vec3& velocity) noexcept { _velocity = velocity; }
 
-    void addFOV(const float delta) {
+    void addFOV(const float delta) noexcept {
         _fov = std::clamp(_fov + delta, MIN_FOV, MAX_FOV);
     }
 
-    void addSpeed(const float delta) { _speed += delta; }
-    void addYaw(const float delta) { _yaw += delta; }
-    void addPitch(const float delta) {
+    void addSpeed(const float delta) noexcept { _speed += delta; }
+    void addYaw(const float delta) noexcept { _yaw += delta; }
+    void addPitch(const float delta) noexcept {
         _pitch = std::clamp(_pitch + delta, -89.999, 89.999);
     }
-    void addVelocity(const glm::vec3& delta) { _velocity += delta; }
+    void addVelocity(const glm::vec3& delta) noexcept { _velocity += delta; }
 
-    void move(const glm::vec3& delta) { _position += delta; }
+    void move(const glm::vec3& delta) noexcept { _position += delta; }
 
-    [[nodiscard]] glm::mat4 getViewMatrix() const { return _viewMatrix; }
+    [[nodiscard]] glm::vec3 getPosition() const noexcept { return _position; }
+
+    [[nodiscard]] glm::mat4 getViewMatrix() const noexcept { return _viewMatrix; }
 
     [[nodiscard]] glm::mat4 getProjectionMatrix(const float aspectRatio) const {
         return glm::perspective(glm::radians(_fov), aspectRatio, _nearPlane, _farPlane);

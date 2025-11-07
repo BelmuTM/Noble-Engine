@@ -7,7 +7,7 @@
 #include "graphics/vulkan/core/memory/VulkanBuffer.h"
 #include "VulkanMesh.h"
 
-#include <optional>
+#include <unordered_map>
 
 class VulkanMeshManager {
 public:
@@ -29,14 +29,16 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] const VulkanBuffer& getVertexBuffer() const { return _vertexBuffer; }
-    [[nodiscard]] const VulkanBuffer& getIndexBuffer()  const { return _indexBuffer; }
+    [[nodiscard]] const VulkanBuffer& getVertexBuffer() const noexcept { return _vertexBuffer; }
+    [[nodiscard]] const VulkanBuffer& getIndexBuffer()  const noexcept { return _indexBuffer; }
 
-    [[nodiscard]] static bool loadModel(VulkanMesh& model, const std::string& path, std::string& errorMessage);
+    [[nodiscard]] bool loadModel(VulkanMesh& model, const std::string& path, std::string& errorMessage);
 
 private:
     const VulkanDevice*         _device         = nullptr;
     const VulkanCommandManager* _commandManager = nullptr;
+
+    std::unordered_map<std::string, VulkanMesh> _cache{};
 
     VulkanBuffer _stagingBuffer;
     VulkanBuffer _vertexBuffer;

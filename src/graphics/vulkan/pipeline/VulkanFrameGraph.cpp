@@ -33,12 +33,15 @@ void VulkanFrameGraph::executePass(const FramePass& pass, const FrameContext& fr
         }
 
         vk::RenderingAttachmentInfo depthAttachmentInfo{};
-        depthAttachmentInfo
-            .setImageView(pass.depthAttachment.resource.resolveImageView(frame))
-            .setImageLayout(pass.depthAttachment.resource.layout)
-            .setLoadOp(pass.depthAttachment.loadOp)
-            .setStoreOp(pass.depthAttachment.storeOp)
-            .setClearValue(pass.depthAttachment.clearValue);
+
+        if (pass.depthAttachment) {
+            depthAttachmentInfo
+                .setImageView(pass.depthAttachment.resource.resolveImageView(frame))
+                .setImageLayout(pass.depthAttachment.resource.layout)
+                .setLoadOp(pass.depthAttachment.loadOp)
+                .setStoreOp(pass.depthAttachment.storeOp)
+                .setClearValue(pass.depthAttachment.clearValue);
+        }
 
         vk::RenderingInfo renderingInfo{};
         renderingInfo
@@ -52,27 +55,34 @@ void VulkanFrameGraph::executePass(const FramePass& pass, const FrameContext& fr
         frame.cmdBuffer.bindPipeline(pass.bindPoint, *pass.pipeline);
 
         for (auto& draw : pass.drawCalls) {
-            const vk::DeviceSize vertexOffset = draw.mesh.getVertexOffset();
-            const vk::DeviceSize indexOffset  = draw.mesh.getIndexOffset();
+            std::vector<vk::DescriptorSet> descriptorSets;
+            descriptorSets.push_back(frame.frameDescriptors.at(frame.frameIndex));
 
-            frame.cmdBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &vertexOffset);
-            frame.cmdBuffer.bindIndexBuffer(indexBuffer, indexOffset, vk::IndexType::eUint32);
+            if (draw.descriptorResolver) {
+                if (const auto objectSet = draw.descriptorResolver(frame); !objectSet.empty()) {
+                    descriptorSets.push_back(objectSet[0]);
+                }
+            }
 
-            auto objectSets = draw.descriptorResolver(frame);
-
-            const vk::DescriptorSet objectSet = objectSets.at(0);
-            const vk::DescriptorSet frameSet  = frame.frameDescriptors.at(frame.frameIndex);
-
-            std::array<vk::DescriptorSet, 2> setsToBind = { objectSet, frameSet };
-
-            frame.cmdBuffer.bindDescriptorSets(
-                pass.bindPoint, pass.pipeline->getLayout(), 0, setsToBind, nullptr
-            );
+            if (!descriptorSets.empty()) {
+                frame.cmdBuffer.bindDescriptorSets(
+                    pass.bindPoint, pass.pipeline->getLayout(), 0, descriptorSets, nullptr
+                );
+            }
 
             frame.cmdBuffer.setViewport(0, draw.resolveViewport(frame));
             frame.cmdBuffer.setScissor(0, draw.resolveScissor(frame));
 
-            frame.cmdBuffer.drawIndexed(draw.mesh.getIndices().size(), 1, 0, 0, 0);
+            const vk::DeviceSize vertexOffset = draw.mesh.getVertexOffset();
+            const vk::DeviceSize indexOffset  = draw.mesh.getIndexOffset();
+
+            if (!draw.mesh.isBufferless()) {
+                frame.cmdBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &vertexOffset);
+                frame.cmdBuffer.bindIndexBuffer(indexBuffer, indexOffset, vk::IndexType::eUint32);
+                frame.cmdBuffer.drawIndexed(draw.mesh.getIndices().size(), 1, 0, 0, 0);
+            } else {
+                frame.cmdBuffer.draw(draw.mesh.getVertices().size(), 1, 0, 0);
+            }
         }
 
         frame.cmdBuffer.endRendering();

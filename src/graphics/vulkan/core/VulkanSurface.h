@@ -14,7 +14,7 @@ public:
     ~VulkanSurface() = default;
 
     // Implicit conversion operator
-    operator vk::SurfaceKHR() const { return _surface; }
+    operator vk::SurfaceKHR() const noexcept { return _surface; }
 
     VulkanSurface(const VulkanSurface&)            = delete;
     VulkanSurface& operator=(const VulkanSurface&) = delete;

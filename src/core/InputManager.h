@@ -36,7 +36,7 @@ public:
         return _keyBindings.contains(key) ? _keyBindings.at(key) : InputAction::None;
     }
 
-    [[nodiscard]] std::unordered_set<InputAction> getPressedActions() const { return _pressedActions; }
+    [[nodiscard]] std::unordered_set<InputAction> getPressedActions() const noexcept { return _pressedActions; }
 
     void addListener(IInputListener* listener) { _listeners.push_back(listener); }
 
@@ -47,14 +47,14 @@ public:
 
     bool isKeyPressed(int key) const;
 
-    [[nodiscard]] bool isMouseLeftButtonPressed() const { return _mouseLeftButtonPressed; }
-    [[nodiscard]] bool isMouseRightButtonPressed() const { return _mouseRightButtonPressed; }
+    [[nodiscard]] bool isMouseLeftButtonPressed() const noexcept { return _mouseLeftButtonPressed; }
+    [[nodiscard]] bool isMouseRightButtonPressed() const noexcept { return _mouseRightButtonPressed; }
 
     void update();
 
-    [[nodiscard]] glm::vec2 getMousePosition() const { return _mousePosition; }
-    [[nodiscard]] glm::vec2 getLastMousePosition() const { return _lastMousePosition; }
-    [[nodiscard]] glm::vec2 getMouseDelta() const { return _mouseDelta; }
+    [[nodiscard]] glm::vec2 getMousePosition() const noexcept { return _mousePosition; }
+    [[nodiscard]] glm::vec2 getLastMousePosition() const noexcept { return _lastMousePosition; }
+    [[nodiscard]] glm::vec2 getMouseDelta() const noexcept { return _mouseDelta; }
 
     glm::vec2 _mousePosition{0.0f};
     glm::vec2 _lastMousePosition{0.0f};

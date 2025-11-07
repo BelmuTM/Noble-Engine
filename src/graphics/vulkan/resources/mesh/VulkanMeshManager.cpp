@@ -36,12 +36,14 @@ void VulkanMeshManager::destroy() noexcept {
 
 void VulkanMeshManager::queryVertexBufferSize() {
     for (const auto& mesh : _meshes) {
+        if (mesh.isBufferless()) continue;
         _vertexBufferSize += mesh.getVerticesByteSize();
     }
 }
 
 void VulkanMeshManager::queryIndexBufferSize() {
     for (const auto& mesh : _meshes) {
+        if (mesh.isBufferless()) continue;
         _indexBufferSize += mesh.getIndicesByteSize();
     }
 }
@@ -50,6 +52,8 @@ void VulkanMeshManager::copyMeshData(void* stagingData) {
     _currentIndexOffset = _vertexBufferSize;
 
     for (auto& mesh : _meshes) {
+        if (mesh.isBufferless()) continue;
+
         const size_t verticesSize = mesh.getVerticesByteSize();
         const size_t indicesSize  = mesh.getIndicesByteSize();
 
@@ -114,6 +118,11 @@ bool VulkanMeshManager::createIndexBuffer(std::string& errorMessage) {
 }
 
 bool VulkanMeshManager::loadModel(VulkanMesh& model, const std::string& path, std::string& errorMessage) {
+    if (_cache.contains(path)) {
+        model = _cache.at(path);
+        return true;
+    }
+
     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
     std::vector<Vertex>   vertices{};
@@ -172,6 +181,7 @@ bool VulkanMeshManager::loadModel(VulkanMesh& model, const std::string& path, st
     }
 
     model.loadData(vertices, indices);
+    _cache[path] = model;
 
     return true;
 }

@@ -34,7 +34,7 @@ int main() {
     Object dragon3;
     dragon3.create("stanford_dragon.obj", "viking_room.png", {2.0f, -2.0f, -0.6f}, {0.0f, 180.0f, -25.0f}, {0.4f, 0.4f, 0.4f});
 
-    std::vector<Object> objects{dragon, dragon2, dragon3};
+    std::vector objects{dragon, dragon2, dragon3};
 
     VulkanRenderer renderer;
     if (!renderer.init(window, objects)) {

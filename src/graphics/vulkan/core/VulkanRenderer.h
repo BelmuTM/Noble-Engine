@@ -39,11 +39,12 @@ private:
     VulkanCommandManager   commandManager;
     VulkanSwapchainManager swapchainManager;
 
-    VulkanGraphicsPipeline pipeline;
+    VulkanGraphicsPipeline pipelineComposite;
+    VulkanGraphicsPipeline pipelineMeshRender;
     VulkanFrameGraph       frameGraph;
 
-    VulkanDescriptorManager    descriptorManager;
-    VulkanDescriptorManager    descriptorManager2;
+    VulkanDescriptorManager    descriptorManagerFrame;
+    VulkanDescriptorManager    descriptorManagerObject;
     VulkanMeshManager          meshManager;
     VulkanImageManager         imageManager;
     VulkanUniformBufferManager uniformBufferManager;

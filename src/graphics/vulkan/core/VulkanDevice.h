@@ -31,20 +31,20 @@ public:
         uint32_t graphicsFamily = UINT32_MAX;
         uint32_t presentFamily  = UINT32_MAX;
 
-        [[nodiscard]] bool isComplete() const {
+        [[nodiscard]] bool isComplete() const noexcept {
             return graphicsFamily != UINT32_MAX && presentFamily != UINT32_MAX;
         }
     };
 
-    [[nodiscard]] vk::PhysicalDevice getPhysicalDevice() const { return _physicalDevice; }
-    [[nodiscard]] const vk::Device& getLogicalDevice() const { return _logicalDevice; }
+    [[nodiscard]] vk::PhysicalDevice getPhysicalDevice() const noexcept { return _physicalDevice; }
+    [[nodiscard]] const vk::Device& getLogicalDevice() const noexcept { return _logicalDevice; }
 
-    [[nodiscard]] VmaAllocator getAllocator() const { return _allocator; }
+    [[nodiscard]] VmaAllocator getAllocator() const noexcept { return _allocator; }
 
-    [[nodiscard]] const QueueFamilyIndices& getQueueFamilyIndices() const { return _queueFamilyIndices; }
+    [[nodiscard]] const QueueFamilyIndices& getQueueFamilyIndices() const noexcept { return _queueFamilyIndices; }
 
-    [[nodiscard]] vk::Queue getGraphicsQueue() const { return _graphicsQueue; }
-    [[nodiscard]] vk::Queue getPresentQueue() const { return _presentQueue; }
+    [[nodiscard]] vk::Queue getGraphicsQueue() const noexcept { return _graphicsQueue; }
+    [[nodiscard]] vk::Queue getPresentQueue() const noexcept { return _presentQueue; }
 
 private:
     vk::Instance _instance{};

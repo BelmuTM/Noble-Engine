@@ -22,15 +22,15 @@ namespace Platform {
         void show() const;
         void hide() const;
 
-        [[nodiscard]] GLFWwindow* handle() const { return _window; }
+        [[nodiscard]] GLFWwindow* handle() const noexcept { return _window; }
 
-        [[nodiscard]] int getWidth () const { return _width ; }
-        [[nodiscard]] int getHeight() const { return _height; }
+        [[nodiscard]] int getWidth () const noexcept { return _width ; }
+        [[nodiscard]] int getHeight() const noexcept { return _height; }
 
         void getFramebufferSize(int& width, int& height) const;
 
-        [[nodiscard]] bool isFramebufferResized() const { return _framebufferResized; }
-        void setFramebufferResized(const bool resized) { _framebufferResized = resized; }
+        [[nodiscard]] bool isFramebufferResized() const noexcept { return _framebufferResized; }
+        void setFramebufferResized(const bool resized) noexcept { _framebufferResized = resized; }
 
         void setTitle(const std::string& title) const;
 

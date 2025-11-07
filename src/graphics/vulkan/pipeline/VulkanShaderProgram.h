@@ -19,17 +19,23 @@ public:
     VulkanShaderProgram(VulkanShaderProgram&&)            = delete;
     VulkanShaderProgram& operator=(VulkanShaderProgram&&) = delete;
 
-    [[nodiscard]] bool loadFromFiles(const std::vector<std::string>& paths, std::string& errorMessage);
+    [[nodiscard]] bool loadFromFiles(const std::vector<std::string>& paths, bool fullscreen, std::string& errorMessage);
 
-    [[nodiscard]] bool load(const std::string& name, std::string& errorMessage);
+    [[nodiscard]] bool load(const std::string& name, bool fullscreen, std::string& errorMessage);
 
-    [[nodiscard]] const std::vector<vk::PipelineShaderStageCreateInfo>& getStages() const { return shaderStages; }
+    [[nodiscard]] const std::vector<vk::PipelineShaderStageCreateInfo>& getStages() const noexcept {
+        return _shaderStages;
+    }
+
+    [[nodiscard]] bool isFullscreen() const noexcept { return _isFullscreen; }
 
 private:
     const vk::Device _device{};
 
-    std::vector<vk::ShaderModule>                  shaderModules{};
-    std::vector<vk::PipelineShaderStageCreateInfo> shaderStages{};
+    std::vector<vk::ShaderModule>                  _shaderModules{};
+    std::vector<vk::PipelineShaderStageCreateInfo> _shaderStages{};
+
+    bool _isFullscreen = false;
 
     void clearShaderModules();
 

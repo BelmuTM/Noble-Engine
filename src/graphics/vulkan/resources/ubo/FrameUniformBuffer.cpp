@@ -11,10 +11,16 @@ void FrameUniformBuffer::update(
     const float frameTimeCounter = std::chrono::duration<float>(currentTime - startTime).count();
 
     FrameUBO ubo{};
-    ubo.view       = camera.getViewMatrix();
-    ubo.projection = camera.getProjectionMatrix(swapchain.getAspectRatio());
+
+    ubo.view        = camera.getViewMatrix();
+    ubo.viewInverse = glm::inverse(ubo.view);
+
+    ubo.projection        = camera.getProjectionMatrix(swapchain.getAspectRatio());
+    ubo.projectionInverse = glm::inverse(ubo.projection);
 
     ubo.projection[1][1] *= -1;
+
+    ubo.cameraPosition = camera.getPosition();
 
     ubo.frameTimeCounter = frameTimeCounter;
 

@@ -35,11 +35,11 @@ public:
 
     void updateSets(const vk::WriteDescriptorSet& descriptorSetWrite) const;
 
-    [[nodiscard]] uint32_t getFramesInFlight() const { return _framesInFlight; }
+    [[nodiscard]] uint32_t getFramesInFlight() const noexcept { return _framesInFlight; }
 
-    [[nodiscard]] vk::DescriptorSetLayout getLayout() const { return _descriptorSetLayout; }
+    [[nodiscard]] vk::DescriptorSetLayout getLayout() const noexcept { return _descriptorSetLayout; }
 
-    [[nodiscard]] vk::DescriptorPool getPool() const { return _descriptorPool; }
+    [[nodiscard]] vk::DescriptorPool getPool() const noexcept { return _descriptorPool; }
 
 private:
     vk::Device _device{};

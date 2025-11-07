@@ -66,7 +66,7 @@ public:
     void* mapMemory(std::string& errorMessage);
     void unmapMemory();
 
-    [[nodiscard]] void* getMappedPointer() const { return _mappedPointer; }
+    [[nodiscard]] void* getMappedPointer() const noexcept { return _mappedPointer; }
 
 private:
     const VulkanDevice* _device = nullptr;

@@ -27,9 +27,9 @@ public:
 
     [[nodiscard]] glm::mat4 getModelMatrix() const;
 
-    [[nodiscard]] std::string getModelPath() const { return _modelPath; }
+    [[nodiscard]] std::string getModelPath() const noexcept { return _modelPath; }
 
-    [[nodiscard]] std::string getTexturePath() const { return _texturePath; }
+    [[nodiscard]] std::string getTexturePath() const noexcept { return _texturePath; }
 
 private:
     glm::vec3 _position = {0.0f, 0.0f, 0.0f};
