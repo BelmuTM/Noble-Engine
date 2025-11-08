@@ -34,6 +34,7 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
         swapchainImageCount));
 
     TRY(createVulkanEntity(&commandManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
+    TRY(createVulkanEntity(&pipelineManager, errorMessage, logicalDevice, swapchain));
 
     // TO-DO: Move this to separate helper class (RenderPass?)
     const std::vector descriptorLayoutBindingsFrame = {
@@ -95,19 +96,16 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
     TRY(frameUBODescriptorSets->allocate(errorMessage));
     frameUBODescriptorSets->bindPerFrameUBO(frameUBO, 0);
 
-    // TO-DO: ShaderProgramManager and ShaderPipelineManager helpers to defer device and swapchain responsibilities
     VulkanShaderProgram composite(logicalDevice);
     TRY(composite.load("composite", true, errorMessage));
 
-    TRY(createVulkanEntity(
-        &pipelineComposite, errorMessage, logicalDevice, swapchain, descriptorLayoutsComposite, composite
-    ));
+    TRY(pipelineManager.createGraphicsPipeline(pipelineComposite, descriptorLayoutsComposite, composite, errorMessage));
 
     VulkanShaderProgram meshRender(logicalDevice);
     TRY(meshRender.load("mesh_render", false, errorMessage));
 
-    TRY(createVulkanEntity(
-        &pipelineMeshRender, errorMessage, logicalDevice, swapchain, descriptorLayoutsMeshRender, meshRender
+    TRY(pipelineManager.createGraphicsPipeline(
+        pipelineMeshRender, descriptorLayoutsMeshRender, meshRender, errorMessage
     ));
 
     FrameResource swapchainOutput{};
@@ -138,13 +136,34 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
         .setStoreOp(vk::AttachmentStoreOp::eStore)
         .setClearValue(vk::ClearDepthStencilValue{1.0f, 0});
 
+    TRY(imageManager.createColorBuffer(
+        compositeOutput,
+        swapchain.getExtent(),
+        vk::Format::eR8G8B8A8Unorm,
+        errorMessage
+    ));
+
+    FrameResource compositeBuffer{};
+    compositeBuffer
+        .setType(Buffer)
+        .setImage(compositeOutput)
+        .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        .setResolveImageView([this](const FrameContext&) { return compositeOutput.getImageView(); });
+
+    FramePassAttachment compositeAttachment{};
+    compositeAttachment
+        .setResource(compositeBuffer)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eStore)
+        .setClearValue(vk::ClearColorValue{0.0f, 0.0f, 0.0f, 1.0f});
+
     // TO-DO: Color attachment helper class
     FramePass compositePass;
     compositePass
         .setName("Composite_Pass")
         .setPipeline(&pipelineComposite)
         .setBindPoint(vk::PipelineBindPoint::eGraphics)
-        .addColorAttachment(swapchainAttachment)
+        .addColorAttachment(compositeAttachment)
         .setDepthAttachment(depthAttachment);
 
     DrawCall fullscreenDraw;
@@ -187,6 +206,7 @@ void VulkanRenderer::shutdown() {
     flushDeletionQueue();
 
     depth.destroy(context.getDevice());
+    compositeOutput.destroy(context.getDevice());
 
     context.destroy();
 }

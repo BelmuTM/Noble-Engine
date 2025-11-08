@@ -18,8 +18,8 @@
 #include "graphics/vulkan/resources/ubo/FrameUniformBuffer.h"
 #include "graphics/vulkan/resources/VulkanRenderObject.h"
 
-#include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
 #include "graphics/vulkan/pipeline/VulkanFrameGraph.h"
+#include "graphics/vulkan/pipeline/VulkanPipelineManager.h"
 
 class VulkanRenderer final : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {
 public:
@@ -36,8 +36,9 @@ private:
     Platform::Window* _window = nullptr;
 
     VulkanContext          context;
-    VulkanCommandManager   commandManager;
     VulkanSwapchainManager swapchainManager;
+    VulkanCommandManager   commandManager;
+    VulkanPipelineManager  pipelineManager;
 
     VulkanGraphicsPipeline pipelineComposite;
     VulkanGraphicsPipeline pipelineMeshRender;
@@ -55,6 +56,7 @@ private:
     std::unique_ptr<VulkanDescriptorSets> frameUBODescriptorSets;
 
     VulkanImage depth;
+    VulkanImage compositeOutput;
 
     unsigned int currentFrame = 0;
 

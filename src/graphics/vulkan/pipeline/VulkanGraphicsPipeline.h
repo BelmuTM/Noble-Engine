@@ -3,8 +3,8 @@
 #define NOBLEENGINE_VULKANGRAPHICSPIPELINE_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
-#include "VulkanShaderProgram.h"
 #include "graphics/vulkan/core/VulkanSwapchain.h"
+#include "VulkanShaderProgram.h"
 
 class VulkanGraphicsPipeline {
 public:
@@ -28,15 +28,11 @@ public:
         std::string&                                errorMessage
     ) noexcept;
 
-    void destroy() noexcept;
+    void destroy(const vk::Device& device) noexcept;
 
     [[nodiscard]] const vk::PipelineLayout& getLayout() const { return pipelineLayout; }
 
 private:
-    vk::Device _device{};
-
-    const VulkanSwapchain* _swapchain = nullptr;
-
     vk::Pipeline       pipeline{};
     vk::PipelineLayout pipelineLayout{};
 
@@ -133,10 +129,17 @@ private:
     }();
 
     bool createPipelineLayout(
-        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, std::string& errorMessage
+        const vk::Device&                           device,
+        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
+        std::string&                                errorMessage
     );
 
-    bool createPipeline(const VulkanShaderProgram& shaderProgram, std::string& errorMessage);
+    bool createPipeline(
+        const vk::Device&          device,
+        const VulkanSwapchain&     swapchain,
+        const VulkanShaderProgram& shaderProgram,
+        std::string&               errorMessage
+    );
 };
 
 #endif //NOBLEENGINE_VULKANGRAPHICSPIPELINE_H

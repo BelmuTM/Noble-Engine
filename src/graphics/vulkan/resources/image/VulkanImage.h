@@ -94,8 +94,8 @@ private:
 
     VmaAllocation _allocation{};
 
-    vk::Format   _format{};
     vk::Extent3D _extent{};
+    vk::Format   _format{};
 };
 
 #endif // NOBLEENGINE_VULKANIMAGE_H

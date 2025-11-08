@@ -32,6 +32,9 @@ bool VulkanMeshManager::create(
 void VulkanMeshManager::destroy() noexcept {
     _indexBuffer.destroy();
     _vertexBuffer.destroy();
+
+    _device         = nullptr;
+    _commandManager = nullptr;
 }
 
 void VulkanMeshManager::queryVertexBufferSize() {

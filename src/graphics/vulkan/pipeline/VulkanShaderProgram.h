@@ -8,8 +8,7 @@
 
 class VulkanShaderProgram {
 public:
-    explicit VulkanShaderProgram(const vk::Device& device) : _device(device) {
-    }
+    explicit VulkanShaderProgram(const vk::Device& device) : _device(device) {}
 
     ~VulkanShaderProgram();
 
@@ -23,26 +22,40 @@ public:
 
     [[nodiscard]] bool load(const std::string& name, bool fullscreen, std::string& errorMessage);
 
+    [[nodiscard]] bool isFullscreen() const noexcept { return _isFullscreen; }
+
     [[nodiscard]] const std::vector<vk::PipelineShaderStageCreateInfo>& getStages() const noexcept {
         return _shaderStages;
     }
 
-    [[nodiscard]] bool isFullscreen() const noexcept { return _isFullscreen; }
+    [[nodiscard]] std::vector<vk::DescriptorSetLayout> getDescriptorSetLayouts() const noexcept {
+        return _descriptorSetLayouts;
+    }
 
 private:
     const vk::Device _device{};
 
+    bool _isFullscreen = false;
+
     std::vector<vk::ShaderModule>                  _shaderModules{};
     std::vector<vk::PipelineShaderStageCreateInfo> _shaderStages{};
 
-    bool _isFullscreen = false;
+    //std::vector<DescriptorBindingInfo>   _bindings{};
+    std::vector<vk::DescriptorSetLayout> _descriptorSetLayouts{};
+
+    vk::ShaderModule createShaderModule(const std::vector<uint32_t>& bytecode, std::string& errorMessage) const;
 
     void clearShaderModules();
 
-    static std::string extractStageExtension(const std::string& path) noexcept;
-    static std::vector<char> readShaderFile(const std::string& path) noexcept;
+    /*
+    [[nodiscard]] bool reflectDescriptors(
+        const std::vector<uint32_t>& bytecode, vk::ShaderStageFlags stageFlag, std::string& errorMessage
+    );
+    */
 
-    vk::ShaderModule createShaderModule(const std::vector<char>& code, std::string& errorMessage) const;
+    static std::string extractStageExtension(const std::string& path) noexcept;
+
+    static std::vector<uint32_t> readShaderSPIRVBytecode(const std::string& path) noexcept;
 
     static std::vector<std::string> findShaderFilePaths(const std::string& name);
 };

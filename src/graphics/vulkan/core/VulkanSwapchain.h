@@ -54,8 +54,8 @@ private:
     std::vector<vk::Image>     _images{};
     std::vector<vk::ImageView> _imageViews{};
 
-    vk::Format   _format = vk::Format::eUndefined;
     vk::Extent2D _extent{};
+    vk::Format   _format = vk::Format::eUndefined;
 
     bool createSwapchain(vk::SurfaceKHR surface, std::string& errorMessage);
     bool createImageViews(std::string& errorMessage);

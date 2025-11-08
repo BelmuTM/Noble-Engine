@@ -24,7 +24,7 @@ void VulkanDescriptorManager::destroy() noexcept {
         _descriptorSetLayout = VK_NULL_HANDLE;
     }
 
-    _device = nullptr;
+    _device = VK_NULL_HANDLE;
 }
 
 bool VulkanDescriptorManager::createSetLayout(

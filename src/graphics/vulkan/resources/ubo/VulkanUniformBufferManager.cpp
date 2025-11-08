@@ -27,7 +27,7 @@ bool VulkanUniformBufferManager::createBuffer(
 ) {
     TRY(buffer.create(*_device, _framesInFlight, errorMessage));
 
-    _uniformBuffers.emplace_back(&buffer);
+    _uniformBuffers.push_back(&buffer);
 
     return true;
 }

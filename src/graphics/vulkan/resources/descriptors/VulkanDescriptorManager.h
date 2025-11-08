@@ -4,6 +4,14 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
+struct DescriptorBindingInfo {
+    uint32_t             set;
+    uint32_t             binding;
+    vk::DescriptorType   type;
+    uint32_t             count;
+    vk::ShaderStageFlags stageFlags;
+};
+
 class VulkanUniformBufferBase;
 
 class VulkanDescriptorManager {

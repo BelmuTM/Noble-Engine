@@ -10,43 +10,46 @@ bool VulkanGraphicsPipeline::create(
     const VulkanShaderProgram&                  shaderProgram,
     std::string&                                errorMessage
 ) noexcept {
-    _device    = device;
-    _swapchain = &swapchain;
-
-    if (!createPipelineLayout(descriptorSetLayouts, errorMessage)) return false;
-    if (!createPipeline(shaderProgram, errorMessage))              return false;
+    if (!createPipelineLayout(device, descriptorSetLayouts, errorMessage)) return false;
+    if (!createPipeline(device, swapchain, shaderProgram, errorMessage))   return false;
 
     return true;
 }
 
-void VulkanGraphicsPipeline::destroy() noexcept {
+void VulkanGraphicsPipeline::destroy(const vk::Device& device) noexcept {
     if (pipeline) {
-        _device.destroyPipeline(pipeline);
+        device.destroyPipeline(pipeline);
         pipeline = VK_NULL_HANDLE;
     }
 
     if (pipelineLayout) {
-        _device.destroyPipelineLayout(pipelineLayout);
+        device.destroyPipelineLayout(pipelineLayout);
         pipelineLayout = VK_NULL_HANDLE;
     }
-
-    _swapchain = nullptr;
 }
 
 bool VulkanGraphicsPipeline::createPipelineLayout(
-    const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, std::string& errorMessage) {
+    const vk::Device&                           device,
+    const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
+    std::string&                                errorMessage
+) {
     vk::PipelineLayoutCreateInfo layoutInfo{};
     layoutInfo
         .setSetLayouts(descriptorSetLayouts)
         .setPushConstantRangeCount(0);
 
-    VK_CREATE(_device.createPipelineLayout(layoutInfo), pipelineLayout, errorMessage);
+    VK_CREATE(device.createPipelineLayout(layoutInfo), pipelineLayout, errorMessage);
 
     return true;
 }
 
-bool VulkanGraphicsPipeline::createPipeline(const VulkanShaderProgram& shaderProgram, std::string& errorMessage) {
-    const vk::Format& colorFormat = _swapchain->getFormat();
+bool VulkanGraphicsPipeline::createPipeline(
+    const vk::Device&          device,
+    const VulkanSwapchain&     swapchain,
+    const VulkanShaderProgram& shaderProgram,
+    std::string&               errorMessage
+) {
+    const vk::Format& colorFormat = swapchain.getFormat();
 
     vk::PipelineRenderingCreateInfo renderingInfo{};
     renderingInfo
@@ -79,7 +82,7 @@ bool VulkanGraphicsPipeline::createPipeline(const VulkanShaderProgram& shaderPro
         .setLayout(pipelineLayout)
         .setRenderPass(nullptr);
 
-    VK_CREATE(_device.createGraphicsPipeline(nullptr, pipelineInfo), pipeline, errorMessage);
+    VK_CREATE(device.createGraphicsPipeline(nullptr, pipelineInfo), pipeline, errorMessage);
 
     return true;
 }

@@ -26,42 +26,6 @@ void VulkanImageManager::destroy() noexcept {
     _commandManager = nullptr;
 }
 
-bool VulkanImageManager::createDepthBuffer(
-    VulkanImage& depthBuffer, const vk::Extent2D extent, std::string& errorMessage
-) const {
-    constexpr auto depthFormat = vk::Format::eD32Sfloat;
-    const     auto depthExtent = vk::Extent3D(extent.width, extent.height, 1);
-
-    depthBuffer.setFormat(depthFormat);
-    depthBuffer.setExtent(depthExtent);
-
-    vk::ImageAspectFlags aspects = vk::ImageAspectFlagBits::eDepth;
-    if (VulkanImage::hasStencilComponent(depthBuffer.getFormat())) {
-        aspects |= vk::ImageAspectFlagBits::eStencil;
-    }
-
-    TRY(depthBuffer.createImage(
-        depthExtent,
-        vk::ImageType::e2D,
-        depthFormat,
-        vk::ImageUsageFlagBits::eDepthStencilAttachment,
-        VMA_MEMORY_USAGE_GPU_ONLY,
-        _device,
-        errorMessage
-    ));
-
-    TRY(depthBuffer.createImageView(vk::ImageViewType::e2D, depthFormat, aspects, _device, errorMessage));
-
-    TRY(depthBuffer.transitionImageLayout(
-        vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eDepthStencilAttachmentOptimal,
-        _commandManager,
-        errorMessage
-    ));
-
-    return true;
-}
-
 bool VulkanImageManager::loadTextureFromFile(VulkanImage& texture, const std::string& path, std::string& errorMessage) {
     constexpr int depth = 1;
 
@@ -140,6 +104,74 @@ bool VulkanImageManager::loadTextureFromFile(VulkanImage& texture, const std::st
     stagingBuffer.destroy();
 
     addImage(texture);
+
+    return true;
+}
+
+bool VulkanImageManager::createColorBuffer(
+    VulkanImage& colorBuffer, const vk::Extent2D extent, const vk::Format format, std::string& errorMessage
+) const {
+    const auto colorExtent = vk::Extent3D(extent.width, extent.height, 1);
+
+    colorBuffer.setFormat(format);
+    colorBuffer.setExtent(colorExtent);
+
+    TRY(colorBuffer.createImage(
+        colorExtent,
+        vk::ImageType::e2D,
+        format,
+        vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+        VMA_MEMORY_USAGE_GPU_ONLY,
+        _device,
+        errorMessage
+    ));
+
+    TRY(colorBuffer.createImageView(
+        vk::ImageViewType::e2D, format, vk::ImageAspectFlagBits::eColor, _device, errorMessage
+    ));
+
+    TRY(colorBuffer.transitionImageLayout(
+        vk::ImageLayout::eUndefined,
+        vk::ImageLayout::eColorAttachmentOptimal,
+        _commandManager,
+        errorMessage
+    ));
+
+    return true;
+}
+
+bool VulkanImageManager::createDepthBuffer(
+    VulkanImage& depthBuffer, const vk::Extent2D extent, std::string& errorMessage
+) const {
+    constexpr auto depthFormat = vk::Format::eD32Sfloat;
+    const     auto depthExtent = vk::Extent3D(extent.width, extent.height, 1);
+
+    depthBuffer.setFormat(depthFormat);
+    depthBuffer.setExtent(depthExtent);
+
+    vk::ImageAspectFlags aspects = vk::ImageAspectFlagBits::eDepth;
+    if (VulkanImage::hasStencilComponent(depthBuffer.getFormat())) {
+        aspects |= vk::ImageAspectFlagBits::eStencil;
+    }
+
+    TRY(depthBuffer.createImage(
+        depthExtent,
+        vk::ImageType::e2D,
+        depthFormat,
+        vk::ImageUsageFlagBits::eDepthStencilAttachment,
+        VMA_MEMORY_USAGE_GPU_ONLY,
+        _device,
+        errorMessage
+    ));
+
+    TRY(depthBuffer.createImageView(vk::ImageViewType::e2D, depthFormat, aspects, _device, errorMessage));
+
+    TRY(depthBuffer.transitionImageLayout(
+        vk::ImageLayout::eUndefined,
+        vk::ImageLayout::eDepthStencilAttachmentOptimal,
+        _commandManager,
+        errorMessage
+    ));
 
     return true;
 }
