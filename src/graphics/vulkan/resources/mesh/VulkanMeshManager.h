@@ -21,10 +21,10 @@ public:
     VulkanMeshManager& operator=(VulkanMeshManager&&) = delete;
 
     [[nodiscard]] bool create(
-        const VulkanDevice&            device,
-        const VulkanCommandManager&    commandManager,
-        const std::vector<VulkanMesh>& meshes,
-        std::string&                   errorMessage
+        const VulkanDevice&             device,
+        const VulkanCommandManager&     commandManager,
+        const std::vector<VulkanMesh*>& meshes,
+        std::string&                    errorMessage
     ) noexcept;
 
     void destroy() noexcept;
@@ -44,7 +44,7 @@ private:
     VulkanBuffer _vertexBuffer;
     VulkanBuffer _indexBuffer;
 
-    std::vector<VulkanMesh> _meshes{};
+    std::vector<VulkanMesh*> _meshes{};
 
     size_t _currentVertexOffset = 0;
     size_t _currentIndexOffset  = 0;

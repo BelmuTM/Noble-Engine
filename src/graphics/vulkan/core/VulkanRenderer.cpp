@@ -75,7 +75,7 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
     TRY(createVulkanEntity(&imageManager, errorMessage, device, commandManager));
     TRY(createVulkanEntity(&uniformBufferManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
 
-    std::vector<VulkanMesh> meshes{};
+    std::vector<VulkanMesh*> meshes{};
 
     for (const auto& object : objects) {
         VulkanRenderObject renderObject;
@@ -84,7 +84,7 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
             object, descriptorManagerObject, imageManager, meshManager, uniformBufferManager, errorMessage
         ));
 
-        meshes.push_back(*renderObject.mesh);
+        meshes.push_back(renderObject.mesh.get());
         renderObjects.push_back(std::move(renderObject));
     }
 
@@ -136,6 +136,7 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
         .setStoreOp(vk::AttachmentStoreOp::eStore)
         .setClearValue(vk::ClearDepthStencilValue{1.0f, 0});
 
+    /*
     TRY(imageManager.createColorBuffer(
         compositeOutput,
         swapchain.getExtent(),
@@ -156,6 +157,7 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
         .setLoadOp(vk::AttachmentLoadOp::eClear)
         .setStoreOp(vk::AttachmentStoreOp::eStore)
         .setClearValue(vk::ClearColorValue{0.0f, 0.0f, 0.0f, 1.0f});
+        */
 
     // TO-DO: Color attachment helper class
     FramePass compositePass;
@@ -163,7 +165,7 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
         .setName("Composite_Pass")
         .setPipeline(&pipelineComposite)
         .setBindPoint(vk::PipelineBindPoint::eGraphics)
-        .addColorAttachment(compositeAttachment)
+        //.addColorAttachment(compositeAttachment)
         .setDepthAttachment(depthAttachment);
 
     DrawCall fullscreenDraw;
@@ -191,7 +193,7 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
         meshRenderPass.addDrawCall(verticesDraw);
     }
 
-    frameGraph.addPass(compositePass);
+    //frameGraph.addPass(compositePass);
     frameGraph.addPass(meshRenderPass);
 
     TRY(createVulkanEntity(&frameGraph, errorMessage, meshManager));
@@ -206,7 +208,7 @@ void VulkanRenderer::shutdown() {
     flushDeletionQueue();
 
     depth.destroy(context.getDevice());
-    compositeOutput.destroy(context.getDevice());
+    //compositeOutput.destroy(context.getDevice());
 
     context.destroy();
 }

@@ -7,10 +7,10 @@
 #include "graphics/vulkan/resources/mesh/TinyObjLoaderUsage.h"
 
 bool VulkanMeshManager::create(
-    const VulkanDevice&            device,
-    const VulkanCommandManager&    commandManager,
-    const std::vector<VulkanMesh>& meshes,
-    std::string&                   errorMessage
+    const VulkanDevice&             device,
+    const VulkanCommandManager&     commandManager,
+    const std::vector<VulkanMesh*>& meshes,
+    std::string&                    errorMessage
 ) noexcept {
     _device         = &device;
     _commandManager = &commandManager;
@@ -39,32 +39,32 @@ void VulkanMeshManager::destroy() noexcept {
 
 void VulkanMeshManager::queryVertexBufferSize() {
     for (const auto& mesh : _meshes) {
-        if (mesh.isBufferless()) continue;
-        _vertexBufferSize += mesh.getVerticesByteSize();
+        if (!mesh || mesh->isBufferless()) continue;
+        _vertexBufferSize += mesh->getVerticesByteSize();
     }
 }
 
 void VulkanMeshManager::queryIndexBufferSize() {
     for (const auto& mesh : _meshes) {
-        if (mesh.isBufferless()) continue;
-        _indexBufferSize += mesh.getIndicesByteSize();
+        if (!mesh || mesh->isBufferless()) continue;
+        _indexBufferSize += mesh->getIndicesByteSize();
     }
 }
 
 void VulkanMeshManager::copyMeshData(void* stagingData) {
     _currentIndexOffset = _vertexBufferSize;
 
-    for (auto& mesh : _meshes) {
-        if (mesh.isBufferless()) continue;
+    for (const auto& mesh : _meshes) {
+        if (mesh->isBufferless()) continue;
 
-        const size_t verticesSize = mesh.getVerticesByteSize();
-        const size_t indicesSize  = mesh.getIndicesByteSize();
+        const size_t verticesSize = mesh->getVerticesByteSize();
+        const size_t indicesSize  = mesh->getIndicesByteSize();
 
-        mesh.setVertexOffset(_currentVertexOffset);
-        mesh.setIndexOffset(_currentIndexOffset);
+        mesh->setVertexOffset(_currentVertexOffset);
+        mesh->setIndexOffset(_currentIndexOffset - _vertexBufferSize);
 
-        memcpy(static_cast<char*>(stagingData) + _currentVertexOffset, mesh.getVertices().data(), verticesSize);
-        memcpy(static_cast<char*>(stagingData) + _currentIndexOffset, mesh.getIndices().data(), indicesSize);
+        memcpy(static_cast<char*>(stagingData) + _currentVertexOffset, mesh->getVertices().data(), verticesSize);
+        memcpy(static_cast<char*>(stagingData) + _currentIndexOffset, mesh->getIndices().data(), indicesSize);
 
         _currentVertexOffset += verticesSize;
         _currentIndexOffset  += indicesSize;
@@ -133,8 +133,8 @@ bool VulkanMeshManager::loadModel(VulkanMesh& model, const std::string& path, st
 
     tinyobj::attrib_t attributes;
 
-    std::vector<tinyobj::shape_t>    shapes;
-    std::vector<tinyobj::material_t> materials;
+    std::vector<tinyobj::shape_t>    shapes{};
+    std::vector<tinyobj::material_t> materials{};
 
     const std::string& fullPath = modelFilesPath + path;
 
