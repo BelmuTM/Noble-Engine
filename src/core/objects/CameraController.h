@@ -16,7 +16,7 @@ class CameraController final : public IInputListener {
 public:
     explicit CameraController(GLFWwindow* window, InputManager& inputManager, Camera& camera);
 
-    void update();
+    void update(float deltaTime);
 
     void onKeyEvent(int key, int action) override;
     void onMouseClick(int button, int action) override;

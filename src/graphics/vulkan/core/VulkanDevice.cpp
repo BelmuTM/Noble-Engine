@@ -2,7 +2,6 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include "core/Engine.h"
 #include "core/debug/Logger.h"
 #include "core/debug/ErrorHandling.h"
 
@@ -167,6 +166,7 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
 
     vk::PhysicalDeviceFeatures deviceFeatures{};
     deviceFeatures
+        .setFillModeNonSolid(vk::True)
         .setSamplerAnisotropy(vk::True);
 
     vk::PhysicalDeviceVulkan11Features deviceFeatures_1_1{};

@@ -27,10 +27,18 @@ public:
     }
 
     [[nodiscard]] float getSpeed() const noexcept { return _speed; }
+    [[nodiscard]] float getNearPlane() const noexcept { return _nearPlane; }
+    [[nodiscard]] float getFarPlane() const noexcept { return _farPlane; }
+    [[nodiscard]] glm::vec3 getVelocity() const noexcept { return _velocity; }
+    [[nodiscard]] glm::vec3 getPosition() const noexcept { return _position; }
     [[nodiscard]] double getPitch() const noexcept { return _pitch; }
     [[nodiscard]] double getYaw() const noexcept { return _yaw; }
     [[nodiscard]] float getRotationSensitivity() const noexcept { return _rotationSensitivity; }
-    [[nodiscard]] glm::vec3 getVelocity() const noexcept { return _velocity; }
+    [[nodiscard]] glm::mat4 getViewMatrix() const noexcept { return _viewMatrix; }
+
+    [[nodiscard]] glm::mat4 getProjectionMatrix(const float aspectRatio) const {
+        return glm::perspective(glm::radians(_fov), aspectRatio, _nearPlane, _farPlane);
+    }
 
     void setSpeed(const float speed) noexcept { _speed = speed; }
     void setYaw(const double yaw) noexcept { _yaw = yaw; }
@@ -50,14 +58,6 @@ public:
 
     void move(const glm::vec3& delta) noexcept { _position += delta; }
 
-    [[nodiscard]] glm::vec3 getPosition() const noexcept { return _position; }
-
-    [[nodiscard]] glm::mat4 getViewMatrix() const noexcept { return _viewMatrix; }
-
-    [[nodiscard]] glm::mat4 getProjectionMatrix(const float aspectRatio) const {
-        return glm::perspective(glm::radians(_fov), aspectRatio, _nearPlane, _farPlane);
-    }
-
     void updateRotation();
 
     void update(double deltaTime);
@@ -71,7 +71,7 @@ private:
 
     float _speed = 5.0f;
 
-    float _nearPlane = 0.1f;
+    float _nearPlane = 0.01f;
     float _farPlane  = 100.0f;
 
     glm::vec3 _velocity = {0.0f, 0.0f, 0.0f};

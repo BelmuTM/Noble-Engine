@@ -33,7 +33,9 @@ public:
         const std::vector<vk::DescriptorSetLayoutBinding>& bindings, std::string& errorMessage
     );
 
-    [[nodiscard]] bool createPool(const std::vector<vk::DescriptorPoolSize>& poolSizes, std::string& errorMessage);
+    [[nodiscard]] bool createPool(
+        const std::vector<vk::DescriptorPoolSize>& poolSizes, uint32_t maxSets, std::string& errorMessage
+    );
 
     [[nodiscard]] bool allocateSets(
         std::vector<vk::DescriptorSet>&      descriptorSets,

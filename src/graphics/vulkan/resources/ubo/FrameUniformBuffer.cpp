@@ -22,6 +22,9 @@ void FrameUniformBuffer::update(
 
     ubo.cameraPosition = camera.getPosition();
 
+    ubo.nearPlane = camera.getNearPlane();
+    ubo.farPlane  = camera.getFarPlane();
+
     ubo.frameTimeCounter = frameTimeCounter;
 
     updateMemory(frameIndex, ubo);

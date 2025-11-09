@@ -10,6 +10,7 @@
 #include <glm/glm.hpp>
 
 struct FrameUBO {
+
     glm::mat4 view;
     glm::mat4 viewInverse;
 
@@ -17,6 +18,9 @@ struct FrameUBO {
     glm::mat4 projectionInverse;
 
     glm::vec3 cameraPosition;
+
+    float nearPlane;
+    float farPlane;
 
     float frameTimeCounter;
 };

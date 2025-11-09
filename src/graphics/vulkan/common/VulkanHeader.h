@@ -14,4 +14,6 @@
 
 #undef ERROR
 
+constexpr uint32_t VULKAN_VERSION = VK_API_VERSION_1_4;
+
 #endif //NOBLEENGINE_VULKANHEADER_H

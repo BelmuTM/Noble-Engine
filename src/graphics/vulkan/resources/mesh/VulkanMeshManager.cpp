@@ -120,6 +120,27 @@ bool VulkanMeshManager::createIndexBuffer(std::string& errorMessage) {
     return true;
 }
 
+void VulkanMeshManager::computeSmoothNormals(std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) {
+    for (uint32_t i = 0; i < indices.size(); i += 3) {
+        const int i0 = indices[i + 0];
+        const int i1 = indices[i + 1];
+        const int i2 = indices[i + 2];
+
+        const glm::vec3 edge1 = vertices[i1].position - vertices[i0].position;
+        const glm::vec3 edge2 = vertices[i2].position - vertices[i0].position;
+
+        const glm::vec3 faceNormal = glm::normalize(glm::cross(edge1, edge2));
+
+        vertices[i0].normal += faceNormal;
+        vertices[i1].normal += faceNormal;
+        vertices[i2].normal += faceNormal;
+    }
+
+    for (auto& vertex : vertices) {
+        vertex.normal = glm::normalize(vertex.normal);
+    }
+}
+
 bool VulkanMeshManager::loadModel(VulkanMesh& model, const std::string& path, std::string& errorMessage) {
     if (_cache.contains(path)) {
         model = _cache.at(path);
@@ -142,10 +163,12 @@ bool VulkanMeshManager::loadModel(VulkanMesh& model, const std::string& path, st
         return false;
     }
 
-    Logger::info("vertices: " + std::to_string(attributes.vertices.size())
+    Logger::debug(path + " vertices: " + std::to_string(attributes.vertices.size())
            + ", normals: " + std::to_string(attributes.normals.size())
            + ", texcoords: " + std::to_string(attributes.texcoords.size())
            + ", shapes: " + std::to_string(shapes.size()));
+
+    bool hasNormals = !attributes.normals.empty();
 
     for (const auto& [name, mesh] : shapes) {
         for (const auto& [vertex_index, normal_index, texcoord_index] : mesh.indices) {
@@ -157,7 +180,7 @@ bool VulkanMeshManager::loadModel(VulkanMesh& model, const std::string& path, st
                 attributes.vertices[3 * vertex_index + 2]
             };
 
-            if (!attributes.normals.empty() && normal_index >= 0) {
+            if (hasNormals && normal_index >= 0) {
                 vertex.normal = {
                     attributes.normals[3 * normal_index + 0],
                     attributes.normals[3 * normal_index + 1],
@@ -167,7 +190,7 @@ bool VulkanMeshManager::loadModel(VulkanMesh& model, const std::string& path, st
 
             if (!attributes.texcoords.empty() && texcoord_index >= 0) {
                 vertex.textureCoords = {
-                    attributes.texcoords[2 * texcoord_index + 0],
+                           attributes.texcoords[2 * texcoord_index + 0],
                     1.0f - attributes.texcoords[2 * texcoord_index + 1]
                 };
             }
@@ -181,6 +204,10 @@ bool VulkanMeshManager::loadModel(VulkanMesh& model, const std::string& path, st
 
             indices.push_back(uniqueVertices[vertex]);
         }
+    }
+
+    if (!hasNormals) {
+        computeSmoothNormals(vertices, indices);
     }
 
     model.loadData(vertices, indices);

@@ -1,6 +1,7 @@
 #include "VulkanImage.h"
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
+#include "graphics/vulkan/core/memory/VulkanBuffer.h"
 
 #include "core/debug/ErrorHandling.h"
 
@@ -212,6 +213,78 @@ bool VulkanImage::transitionImageLayout(
     copyCommandBuffer.pipelineBarrier(sourceStage, destinationStage, {}, {}, nullptr, barrier);
 
     TRY(commandManager->endSingleTimeCommands(copyCommandBuffer, errorMessage));
+
+    return true;
+}
+
+bool VulkanImage::createFromData(
+    const void*                 pixels,
+    const uint8_t               channels,
+    const uint8_t               bytesPerChannel,
+    const vk::Extent3D          extent,
+    const vk::Format            format,
+    const VulkanDevice*         device,
+    const VulkanCommandManager* commandManager,
+    std::string&                errorMessage
+) {
+    _extent = extent;
+    _format = format;
+
+    const vk::DeviceSize imageSize = _extent.width * _extent.height * channels * bytesPerChannel;
+
+    VulkanBuffer stagingBuffer;
+
+    TRY(stagingBuffer.create(
+        imageSize,
+        vk::BufferUsageFlagBits::eTransferSrc,
+        VMA_MEMORY_USAGE_CPU_TO_GPU,
+        device,
+        errorMessage
+    ));
+
+    void* stagingData = stagingBuffer.mapMemory(errorMessage);
+    if (!stagingData) return false;
+
+    memcpy(stagingData, pixels, imageSize);
+    stagingBuffer.unmapMemory();
+
+    TRY(createImage(
+        _extent,
+        vk::ImageType::e2D,
+        format,
+        vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+        VMA_MEMORY_USAGE_GPU_ONLY,
+        device,
+        errorMessage
+    ));
+
+    TRY(transitionImageLayout(
+        vk::ImageLayout::eUndefined,
+        vk::ImageLayout::eTransferDstOptimal,
+        commandManager,
+        errorMessage
+    ));
+
+    TRY(copyBufferToImage(stagingBuffer, _extent, commandManager, errorMessage));
+
+    TRY(transitionImageLayout(
+        vk::ImageLayout::eTransferDstOptimal,
+        vk::ImageLayout::eShaderReadOnlyOptimal,
+        commandManager,
+        errorMessage
+    ));
+
+    TRY(createImageView(
+        vk::ImageViewType::e2D,
+        format,
+        vk::ImageAspectFlagBits::eColor,
+        device,
+        errorMessage
+    ));
+
+    TRY(createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eClampToEdge, device, errorMessage));
+
+    stagingBuffer.destroy();
 
     return true;
 }

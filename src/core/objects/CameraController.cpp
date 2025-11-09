@@ -16,7 +16,7 @@ CameraController::CameraController(GLFWwindow* window, InputManager& inputManage
     _actionMovementMap[InputAction::MoveDown]     = glm::vec3{ 0.0f, 0.0f,-1.0f};
 }
 
-void CameraController::update() {
+void CameraController::update(const float deltaTime) {
     glm::vec3 velocity{0.0f};
 
     // Movement
@@ -25,10 +25,16 @@ void CameraController::update() {
             velocity += _actionMovementMap[action];
     }
 
-    if (glm::length(velocity) > 0.0f)
+    if (glm::length(velocity) > 0.0f) {
         velocity = glm::normalize(velocity);
+    }
 
-    _camera.setVelocity(velocity);
+    static constexpr float cameraSmoothing = -8.0f;
+
+    const glm::vec3 currentVelocity  = _camera.getVelocity();
+    const glm::vec3 smoothedVelocity = glm::mix(currentVelocity, velocity, 1.0f - expf(cameraSmoothing * deltaTime));
+
+    _camera.setVelocity(smoothedVelocity);
 
     // Rotation
     if (_dragging) {
@@ -36,7 +42,7 @@ void CameraController::update() {
 
         const glm::vec2 delta = _inputManager.getMouseDelta();
 
-        _camera.addYaw(-delta.x * sensitivity);
+        _camera.addYaw  (-delta.x * sensitivity);
         _camera.addPitch(-delta.y * sensitivity);
         _camera.updateRotation();
     }
@@ -48,11 +54,9 @@ void CameraController::onKeyEvent(const int key, const int action) {
 void CameraController::onMouseClick(int button, int action) {
     _dragging = _inputManager.isMouseRightButtonPressed();
 
-    if (_dragging) {
-        glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    } else {
-        glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    }
+    const int cursorMode = _dragging ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL;
+
+    glfwSetInputMode(_window, GLFW_CURSOR, cursorMode);
 }
 
 void CameraController::onMouseMove(double x, double y) {

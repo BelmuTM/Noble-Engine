@@ -25,16 +25,19 @@ int main() {
     WindowContext ctx{&window, &inputManager};
     glfwSetWindowUserPointer(window.handle(), &ctx);
 
-    Object dragon;
-    dragon.create("stanford_dragon.obj", "viking_room.png", {0.0f, 0.0f, 0.0f}, {0.0f, 180.0f, 0.0f}, {1.0f, 1.0f, 1.0f});
+    Object object0;
+    object0.create("lucy.obj", "", {-1.5f, -1.5f, -1.1f}, {0.0f, 0.0f, 0.0f}, glm::vec3{0.0025f});
 
-    Object dragon2;
-    dragon2.create("stanford_dragon.obj", "viking_room.png", {2.0f, 2.0f, -0.4f}, {0.0f, 180.0f, 40.0f}, {0.6f, 0.6f, 0.6f});
+    Object object1;
+    object1.create("stanford_bunny.obj", "", {-2.3f, 1.7f, -2.4f}, {90.0f, 120.0f, 0.0f}, glm::vec3{9.0f});
 
-    Object dragon3;
-    dragon3.create("stanford_dragon.obj", "viking_room.png", {2.0f, -2.0f, -0.6f}, {0.0f, 180.0f, -25.0f}, {0.4f, 0.4f, 0.4f});
+    Object object2;
+    object2.create("stanford_dragon.obj", "", {1.9f, 0.7f, -2.35f}, {0.0f, 180.0f, 0.0f}, glm::vec3{0.6f});
 
-    std::vector objects{dragon, dragon2, dragon3};
+    Object object3;
+    object3.create("viking_room.obj", "viking_room.png", {-0.5f, -1.0f, -3.0f}, {0.0f, 0.0f, 40.0f}, glm::vec3{6.0f});
+
+    std::vector objects{object0, object1, object2, object3};
 
     VulkanRenderer renderer;
     if (!renderer.init(window, objects)) {

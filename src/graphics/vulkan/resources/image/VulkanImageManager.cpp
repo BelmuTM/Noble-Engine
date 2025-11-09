@@ -1,15 +1,13 @@
 #include "VulkanImageManager.h"
 
-#include "graphics/vulkan/core/memory/VulkanBuffer.h"
 #include "graphics/vulkan/resources/StbUsage.h"
 
 #include "core/debug/ErrorHandling.h"
 #include "core/ResourceManager.h"
 
 bool VulkanImageManager::create(
-    const VulkanDevice&         device,
-    const VulkanCommandManager& commandManager,
-    std::string&                errorMessage) noexcept {
+    const VulkanDevice& device, const VulkanCommandManager& commandManager, std::string& errorMessage
+) noexcept {
     _device         = &device;
     _commandManager = &commandManager;
 
@@ -20,10 +18,28 @@ void VulkanImageManager::destroy() noexcept {
     for (auto& image : _images) {
         image.destroy(*_device);
     }
+
     _images.clear();
 
     _device         = nullptr;
     _commandManager = nullptr;
+}
+
+bool VulkanImageManager::createDefaultTexture(VulkanImage& texture, std::string& errorMessage) {
+    constexpr auto    extent          = vk::Extent3D{1, 1, 1};
+    constexpr auto    format          = vk::Format::eR8G8B8A8Srgb;
+    constexpr uint8_t channels        = 4;
+    constexpr uint8_t bytesPerChannel = 1;
+
+    static constexpr uint32_t blackPixel = 0xFF000000;
+
+    TRY(texture.createFromData(
+        &blackPixel, channels, bytesPerChannel, extent, format, _device, _commandManager, errorMessage
+    ));
+
+    addImage(texture);
+
+    return true;
 }
 
 bool VulkanImageManager::loadTextureFromFile(VulkanImage& texture, const std::string& path, std::string& errorMessage) {
@@ -39,69 +55,18 @@ bool VulkanImageManager::loadTextureFromFile(VulkanImage& texture, const std::st
         return false;
     }
 
-    constexpr auto format = vk::Format::eR8G8B8A8Srgb;
-
     const auto extent = vk::Extent3D{
         static_cast<uint32_t>(width), static_cast<uint32_t>(height), static_cast<uint32_t>(depth)
     };
 
-    const vk::DeviceSize textureSize = width * height * STBI_rgb_alpha;
+    constexpr auto    format          = vk::Format::eR8G8B8A8Srgb;
+    constexpr uint8_t bytesPerChannel = 1;
 
-    VulkanBuffer stagingBuffer;
-
-    TRY(stagingBuffer.create(
-        textureSize,
-        vk::BufferUsageFlagBits::eTransferSrc,
-        VMA_MEMORY_USAGE_CPU_TO_GPU,
-        _device,
-        errorMessage
+    TRY(texture.createFromData(
+        pixels, STBI_rgb_alpha, bytesPerChannel, extent, format, _device, _commandManager, errorMessage
     ));
-
-    void* stagingData = stagingBuffer.mapMemory(errorMessage);
-    if (!stagingData) return false;
-
-    memcpy(stagingData, pixels, textureSize);
-    stagingBuffer.unmapMemory();
 
     stbi_image_free(pixels);
-
-    TRY(texture.createImage(
-        extent,
-        vk::ImageType::e2D,
-        format,
-        vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
-        VMA_MEMORY_USAGE_GPU_ONLY,
-        _device,
-        errorMessage
-    ));
-
-    TRY(texture.transitionImageLayout(
-        vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eTransferDstOptimal,
-        _commandManager,
-        errorMessage
-    ));
-
-    TRY(texture.copyBufferToImage(stagingBuffer, extent, _commandManager, errorMessage));
-
-    TRY(texture.transitionImageLayout(
-        vk::ImageLayout::eTransferDstOptimal,
-        vk::ImageLayout::eShaderReadOnlyOptimal,
-        _commandManager,
-        errorMessage
-    ));
-
-    TRY(texture.createImageView(
-        vk::ImageViewType::e2D,
-        format,
-        vk::ImageAspectFlagBits::eColor,
-        _device,
-        errorMessage
-    ));
-
-    TRY(texture.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eClampToEdge, _device, errorMessage));
-
-    stagingBuffer.destroy();
 
     addImage(texture);
 

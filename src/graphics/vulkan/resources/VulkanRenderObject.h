@@ -38,7 +38,11 @@ struct VulkanRenderObject {
         TRY(meshManager.loadModel(*mesh, _object.getModelPath(), errorMessage));
 
         texture = std::make_unique<VulkanImage>();
-        TRY(imageManager.loadTextureFromFile(*texture, _object.getTexturePath(), errorMessage));
+        if (!imageManager.loadTextureFromFile(*texture, _object.getTexturePath(), errorMessage)) {
+            VulkanImage defaultTexture;
+            TRY(imageManager.createDefaultTexture(defaultTexture, errorMessage));
+            texture = std::make_unique<VulkanImage>(defaultTexture);
+        }
 
         ubo = std::make_unique<ObjectUniformBuffer>();
         TRY(uboManager.createBuffer(*ubo, errorMessage));

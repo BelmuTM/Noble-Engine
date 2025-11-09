@@ -87,6 +87,17 @@ public:
         std::string&                errorMessage
     ) const;
 
+    [[nodiscard]] bool createFromData(
+        const void*                 pixels,
+        uint8_t                     channels,
+        uint8_t                     bytesPerChannel,
+        vk::Extent3D                extent,
+        vk::Format                  format,
+        const VulkanDevice*         device,
+        const VulkanCommandManager* commandManager,
+        std::string&                errorMessage
+    );
+
 private:
     vk::Image     _image{};
     vk::ImageView _imageView{};

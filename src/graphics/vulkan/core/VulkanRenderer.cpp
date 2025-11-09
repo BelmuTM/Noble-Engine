@@ -14,7 +14,7 @@ VulkanRenderer::~VulkanRenderer() {
 bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& objects) {
     _window = &window;
 
-    std::string errorMessage = "Failed to create Vulkan renderer context: no error message provided";
+    std::string errorMessage = "Failed to init Vulkan renderer: no error message provided";
 
     ScopeGuard guard{[this, &errorMessage] {
         shutdown();
@@ -36,7 +36,6 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
     TRY(createVulkanEntity(&commandManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
     TRY(createVulkanEntity(&pipelineManager, errorMessage, logicalDevice, swapchain));
 
-    // TO-DO: Move this to separate helper class (RenderPass?)
     const std::vector descriptorLayoutBindingsFrame = {
         vk::DescriptorSetLayoutBinding(
             0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eAllGraphics, nullptr
@@ -49,7 +48,7 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
 
     TRY(createVulkanEntity(&descriptorManagerFrame, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT));
     TRY(descriptorManagerFrame.createSetLayout(descriptorLayoutBindingsFrame, errorMessage));
-    TRY(descriptorManagerFrame.createPool(descriptorPoolSizesFrame, errorMessage));
+    TRY(descriptorManagerFrame.createPool(descriptorPoolSizesFrame, MAX_FRAMES_IN_FLIGHT, errorMessage));
 
     const std::vector descriptorLayoutBindingsObject = {
         vk::DescriptorSetLayoutBinding(
@@ -60,14 +59,16 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
         )
     };
 
+    static constexpr uint32_t maxObjectSets = MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS;
+
     const std::vector descriptorPoolSizesObject = {
-        vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS),
-        vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS)
+        vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer,        maxObjectSets),
+        vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, maxObjectSets)
     };
 
     TRY(createVulkanEntity(&descriptorManagerObject, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT));
     TRY(descriptorManagerObject.createSetLayout(descriptorLayoutBindingsObject, errorMessage));
-    TRY(descriptorManagerObject.createPool(descriptorPoolSizesObject, errorMessage));
+    TRY(descriptorManagerObject.createPool(descriptorPoolSizesObject, maxObjectSets, errorMessage));
 
     std::vector descriptorLayoutsMeshRender = {descriptorManagerFrame.getLayout(), descriptorManagerObject.getLayout()};
     std::vector descriptorLayoutsComposite  = {descriptorManagerFrame.getLayout()};

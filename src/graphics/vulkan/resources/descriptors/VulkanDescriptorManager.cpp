@@ -1,6 +1,5 @@
 #include "VulkanDescriptorManager.h"
 
-#include "core/Engine.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 bool VulkanDescriptorManager::create(
@@ -43,7 +42,9 @@ bool VulkanDescriptorManager::createSetLayout(
     return true;
 }
 
-bool VulkanDescriptorManager::createPool(const std::vector<vk::DescriptorPoolSize>& poolSizes, std::string& errorMessage) {
+bool VulkanDescriptorManager::createPool(
+    const std::vector<vk::DescriptorPoolSize>& poolSizes, const uint32_t maxSets, std::string& errorMessage
+) {
     if (!_device) {
         errorMessage = "Failed to create Vulkan descriptor pool: device is null";
         return false;
@@ -52,7 +53,7 @@ bool VulkanDescriptorManager::createPool(const std::vector<vk::DescriptorPoolSiz
     vk::DescriptorPoolCreateInfo descriptorPoolInfo{};
     descriptorPoolInfo
         .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
-        .setMaxSets(MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS)
+        .setMaxSets(maxSets)
         .setPoolSizes(poolSizes);
 
     VK_CREATE(_device.createDescriptorPool(descriptorPoolInfo), _descriptorPool, errorMessage);

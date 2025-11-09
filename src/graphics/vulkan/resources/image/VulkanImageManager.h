@@ -27,6 +27,8 @@ public:
         _images.push_back(image);
     }
 
+    [[nodiscard]] bool createDefaultTexture(VulkanImage& texture, std::string& errorMessage);
+
     [[nodiscard]] bool loadTextureFromFile(VulkanImage& texture, const std::string& path, std::string& errorMessage);
 
     [[nodiscard]] bool createColorBuffer(

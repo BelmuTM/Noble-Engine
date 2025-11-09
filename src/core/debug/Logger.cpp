@@ -1,5 +1,3 @@
-// TO-DO: move signal handling to Platform.h and write PlatformLinux.cpp
-
 #include "Logger.h"
 #include "core/Engine.h"
 

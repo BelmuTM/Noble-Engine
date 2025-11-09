@@ -2,7 +2,6 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include "core/Engine.h"
 #include "core/debug/Logger.h"
 #include "core/Platform.h"
 

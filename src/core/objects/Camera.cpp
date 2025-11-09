@@ -10,7 +10,7 @@ void Camera::updateRotation() {
 
 void Camera::update(const double deltaTime) {
     if (_controller) {
-        _controller->update();
+        _controller->update(deltaTime);
     }
 
     const glm::vec3 worldVelocity = toWorldSpace(_velocity);

@@ -1,6 +1,5 @@
 #include "Platform.h"
 
-#include "Engine.h"
 #include "ResourceManager.h"
 #include "WindowContext.h"
 
