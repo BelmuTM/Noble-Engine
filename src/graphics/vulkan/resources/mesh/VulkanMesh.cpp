@@ -9,7 +9,7 @@ VulkanMesh VulkanMesh::makeFullscreenTriangle() {
         {{-1.0f,  3.0f, 0.0f}, {}, {}, {0.0f, 2.0f}},
     };
 
-    static const std::vector<uint32_t> indices = {0, 1, 2};
+    static const std::vector<uint16_t> indices = {0, 1, 2};
 
     fullscreenTriangle.loadData(vertices, indices);
     fullscreenTriangle.setBufferless(false);

@@ -6,6 +6,13 @@
 
 #include <glm/glm.hpp>
 
+struct alignas(16) ObjectDataGPU {
+    glm::mat4 model;
+    glm::mat4 normal;
+};
+
+constexpr uint32_t objectDataGPUSize = sizeof(ObjectDataGPU);
+
 class Object {
 public:
     Object()  = default;

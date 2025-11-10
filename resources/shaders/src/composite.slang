@@ -8,9 +8,11 @@ struct FrameUBO {
     float4x4 projection;
     float4x4 projectionInverse;
     float3   cameraPosition;
+    float    nearPlane;
+    float    farPlane;
     float    frameTimeCounter;
 };
-ConstantBuffer<FrameUBO> frameUBO : register(b0, space0);
+[[vk::binding(0, 0)]] ConstantBuffer<FrameUBO> frameUBO;
 
 struct VSOutput {
     float4 position : SV_Position;

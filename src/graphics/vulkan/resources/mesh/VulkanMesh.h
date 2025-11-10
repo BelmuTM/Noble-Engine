@@ -57,10 +57,10 @@ public:
     void setBufferless(const bool bufferless) noexcept { _bufferless = bufferless; }
 
     [[nodiscard]] std::vector<Vertex> getVertices() const noexcept { return _vertices; }
-    [[nodiscard]] std::vector<uint32_t> getIndices() const noexcept { return _indices; }
+    [[nodiscard]] std::vector<uint16_t> getIndices() const noexcept { return _indices; }
 
     [[nodiscard]] size_t getVerticesByteSize() const { return sizeof(Vertex) * _vertices.size(); }
-    [[nodiscard]] size_t getIndicesByteSize() const { return sizeof(uint32_t) * _indices.size(); }
+    [[nodiscard]] size_t getIndicesByteSize() const { return sizeof(uint16_t) * _indices.size(); }
 
     [[nodiscard]] size_t getVertexOffset() const noexcept { return _vertexOffset; }
     [[nodiscard]] size_t getIndexOffset() const noexcept { return _indexOffset; }
@@ -73,7 +73,7 @@ public:
         _indexOffset = offset;
     }
 
-    void loadData(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) noexcept {
+    void loadData(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices) noexcept {
         _vertices = vertices;
         _indices  = indices;
     }
@@ -87,7 +87,7 @@ private:
     size_t _indexOffset  = 0;
 
     std::vector<Vertex>   _vertices{};
-    std::vector<uint32_t> _indices{};
+    std::vector<uint16_t> _indices{};
 };
 
 #endif // NOBLEENGINE_VULKANMESH_H

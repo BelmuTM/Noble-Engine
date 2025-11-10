@@ -88,6 +88,7 @@ bool VulkanShaderProgram::loadFromFiles(
             .setPName(entryPoint);
 
         _shaderStages.push_back(stageInfo);
+        _stageFlags |= stageFlag;
 
         //TRY(reflectDescriptors(bytecode, stageFlag, errorMessage));
     }

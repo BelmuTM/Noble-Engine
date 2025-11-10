@@ -3,7 +3,7 @@
 #include "ResourceManager.h"
 #include "WindowContext.h"
 
-#include "graphics/vulkan/resources/StbUsage.h"
+#include "common/StbUsage.h"
 
 namespace Platform {
     bool init() {

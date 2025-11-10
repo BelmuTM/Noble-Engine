@@ -12,7 +12,7 @@ public:
     ~VulkanGraphicsPipeline() = default;
 
     // Implicit conversion operator
-    operator vk::Pipeline() const { return pipeline; }
+    operator vk::Pipeline() const { return _pipeline; }
 
     VulkanGraphicsPipeline(const VulkanGraphicsPipeline&)            = delete;
     VulkanGraphicsPipeline& operator=(const VulkanGraphicsPipeline&) = delete;
@@ -24,17 +24,26 @@ public:
         const vk::Device&                           device,
         const VulkanSwapchain&                      swapchain,
         const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
+        const std::vector<vk::PushConstantRange>&   pushConstantRanges,
         const VulkanShaderProgram&                  shaderProgram,
         std::string&                                errorMessage
     ) noexcept;
 
     void destroy(const vk::Device& device) noexcept;
 
-    [[nodiscard]] const vk::PipelineLayout& getLayout() const { return pipelineLayout; }
+    [[nodiscard]] const VulkanShaderProgram* getShaderProgram() const noexcept { return _shaderProgram; }
+
+    [[nodiscard]] const vk::PipelineLayout& getLayout() const noexcept { return _pipelineLayout; }
+
+    [[nodiscard]] vk::ShaderStageFlags getStageFlags() const noexcept { return _stageFlags; }
 
 private:
-    vk::Pipeline       pipeline{};
-    vk::PipelineLayout pipelineLayout{};
+    const VulkanShaderProgram* _shaderProgram = nullptr;
+
+    vk::Pipeline       _pipeline{};
+    vk::PipelineLayout _pipelineLayout{};
+
+    vk::ShaderStageFlags _stageFlags;
 
     // -------------------------------
     //       Vulkan Info structs
@@ -128,17 +137,15 @@ private:
         return info;
     }();
 
-    bool createPipelineLayout(
+    [[nodiscard]] bool createPipelineLayout(
         const vk::Device&                           device,
         const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
+        const std::vector<vk::PushConstantRange>&   pushConstantRanges,
         std::string&                                errorMessage
     );
 
-    bool createPipeline(
-        const vk::Device&          device,
-        const VulkanSwapchain&     swapchain,
-        const VulkanShaderProgram& shaderProgram,
-        std::string&               errorMessage
+    [[nodiscard]] bool createPipeline(
+        const vk::Device& device, const VulkanSwapchain& swapchain, std::string& errorMessage
     );
 };
 

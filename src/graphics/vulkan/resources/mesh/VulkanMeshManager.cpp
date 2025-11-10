@@ -4,7 +4,7 @@
 #include "core/debug/Logger.h"
 #include "core/ResourceManager.h"
 
-#include "graphics/vulkan/resources/mesh/TinyObjLoaderUsage.h"
+#include "core/common/TinyObjLoaderUsage.h"
 
 bool VulkanMeshManager::create(
     const VulkanDevice&             device,
@@ -64,7 +64,7 @@ void VulkanMeshManager::copyMeshData(void* stagingData) {
         mesh->setIndexOffset(_currentIndexOffset - _vertexBufferSize);
 
         memcpy(static_cast<char*>(stagingData) + _currentVertexOffset, mesh->getVertices().data(), verticesSize);
-        memcpy(static_cast<char*>(stagingData) + _currentIndexOffset, mesh->getIndices().data(), indicesSize);
+        memcpy(static_cast<char*>(stagingData) + _currentIndexOffset , mesh->getIndices().data() , indicesSize);
 
         _currentVertexOffset += verticesSize;
         _currentIndexOffset  += indicesSize;
@@ -120,7 +120,7 @@ bool VulkanMeshManager::createIndexBuffer(std::string& errorMessage) {
     return true;
 }
 
-void VulkanMeshManager::computeSmoothNormals(std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) {
+void VulkanMeshManager::computeSmoothNormals(std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices) {
     for (uint32_t i = 0; i < indices.size(); i += 3) {
         const int i0 = indices[i + 0];
         const int i1 = indices[i + 1];
@@ -150,7 +150,7 @@ bool VulkanMeshManager::loadModel(VulkanMesh& model, const std::string& path, st
     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
     std::vector<Vertex>   vertices{};
-    std::vector<uint32_t> indices{};
+    std::vector<uint16_t> indices{};
 
     tinyobj::attrib_t attributes;
 

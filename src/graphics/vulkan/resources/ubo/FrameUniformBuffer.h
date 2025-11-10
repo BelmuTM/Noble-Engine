@@ -9,8 +9,7 @@
 
 #include <glm/glm.hpp>
 
-struct FrameUBO {
-
+struct alignas(16) FrameUBO {
     glm::mat4 view;
     glm::mat4 viewInverse;
 

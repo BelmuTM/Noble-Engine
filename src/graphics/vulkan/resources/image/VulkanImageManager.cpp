@@ -1,9 +1,9 @@
 #include "VulkanImageManager.h"
 
-#include "graphics/vulkan/resources/StbUsage.h"
-
-#include "core/debug/ErrorHandling.h"
 #include "core/ResourceManager.h"
+#include "core/debug/ErrorHandling.h"
+
+#include "core/common/StbUsage.h"
 
 bool VulkanImageManager::create(
     const VulkanDevice& device, const VulkanCommandManager& commandManager, std::string& errorMessage

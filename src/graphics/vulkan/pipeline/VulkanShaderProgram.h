@@ -28,6 +28,8 @@ public:
         return _shaderStages;
     }
 
+    [[nodiscard]] vk::ShaderStageFlags getStageFlags() const noexcept { return _stageFlags; }
+
     [[nodiscard]] std::vector<vk::DescriptorSetLayout> getDescriptorSetLayouts() const noexcept {
         return _descriptorSetLayouts;
     }
@@ -39,6 +41,7 @@ private:
 
     std::vector<vk::ShaderModule>                  _shaderModules{};
     std::vector<vk::PipelineShaderStageCreateInfo> _shaderStages{};
+    vk::ShaderStageFlags                           _stageFlags;
 
     //std::vector<DescriptorBindingInfo>   _bindings{};
     std::vector<vk::DescriptorSetLayout> _descriptorSetLayouts{};

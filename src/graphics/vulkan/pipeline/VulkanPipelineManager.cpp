@@ -27,7 +27,30 @@ bool VulkanPipelineManager::createGraphicsPipeline(
     const VulkanShaderProgram&                  shaderProgram,
     std::string&                                errorMessage
 ) {
-    TRY(graphicsPipeline.create(_device, *_swapchain, descriptorSetLayouts, shaderProgram, errorMessage));
+    TRY(graphicsPipeline.create(_device, *_swapchain, descriptorSetLayouts, {}, shaderProgram, errorMessage));
+
+    _graphicsPipelines.push_back(&graphicsPipeline);
+
+    return true;
+}
+
+bool VulkanPipelineManager::createGraphicsPipeline(
+    VulkanGraphicsPipeline&                     graphicsPipeline,
+    const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
+    const uint32_t                              pushConstantRangeSize,
+    const VulkanShaderProgram&                  shaderProgram,
+    std::string&                                errorMessage
+) {
+    // TO-DO: use shader reflection for push constant size
+    vk::PushConstantRange pushConstantRange{};
+    pushConstantRange
+        .setStageFlags(shaderProgram.getStageFlags())
+        .setOffset(0)
+        .setSize(pushConstantRangeSize);
+
+    TRY(graphicsPipeline.create(
+        _device, *_swapchain, descriptorSetLayouts, {pushConstantRange}, shaderProgram, errorMessage
+    ));
 
     _graphicsPipelines.push_back(&graphicsPipeline);
 

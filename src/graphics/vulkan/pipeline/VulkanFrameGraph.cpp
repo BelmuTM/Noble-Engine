@@ -54,8 +54,12 @@ void VulkanFrameGraph::executePass(const FramePass& pass, const FrameContext& fr
 
         frame.cmdBuffer.bindPipeline(pass.bindPoint, *pass.pipeline);
 
-        for (auto& draw : pass.drawCalls) {
-            std::vector<vk::DescriptorSet> descriptorSets;
+        for (const auto& drawCall : pass.drawCalls) {
+            const auto& draw = *drawCall;
+
+            const vk::PipelineLayout pipelineLayout = pass.pipeline->getLayout();
+
+            std::vector<vk::DescriptorSet> descriptorSets{};
             descriptorSets.push_back(frame.frameDescriptors.at(frame.frameIndex));
 
             if (draw.descriptorResolver) {
@@ -66,7 +70,13 @@ void VulkanFrameGraph::executePass(const FramePass& pass, const FrameContext& fr
 
             if (!descriptorSets.empty()) {
                 frame.cmdBuffer.bindDescriptorSets(
-                    pass.bindPoint, pass.pipeline->getLayout(), 0, descriptorSets, nullptr
+                    pass.bindPoint, pipelineLayout, 0, descriptorSets, nullptr
+                );
+            }
+
+            if (auto* drawPushConstant = dynamic_cast<const DrawCallPushConstantBase*>(&draw)) {
+                drawPushConstant->pushConstants(
+                    frame.cmdBuffer, pipelineLayout, pass.pipeline->getStageFlags(), frame
                 );
             }
 
@@ -78,7 +88,7 @@ void VulkanFrameGraph::executePass(const FramePass& pass, const FrameContext& fr
 
             if (!draw.mesh.isBufferless()) {
                 frame.cmdBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &vertexOffset);
-                frame.cmdBuffer.bindIndexBuffer(indexBuffer, indexOffset, vk::IndexType::eUint32);
+                frame.cmdBuffer.bindIndexBuffer(indexBuffer, indexOffset, vk::IndexType::eUint16);
                 frame.cmdBuffer.drawIndexed(draw.mesh.getIndices().size(), 1, 0, 0, 0);
             } else {
                 frame.cmdBuffer.draw(draw.mesh.getVertices().size(), 1, 0, 0);

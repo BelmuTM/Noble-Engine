@@ -52,7 +52,7 @@ private:
     vk::PhysicalDevice _physicalDevice{};
     vk::Device         _logicalDevice{};
 
-    VmaAllocator _allocator{};
+    VmaAllocator _allocator;
 
     QueueFamilyIndices _queueFamilyIndices{};
 

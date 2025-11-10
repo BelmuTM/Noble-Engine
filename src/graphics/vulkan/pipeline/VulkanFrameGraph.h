@@ -9,6 +9,7 @@
 #include "graphics/vulkan/resources/ubo/FrameUniformBuffer.h"
 
 #include <functional>
+#include <memory>
 #include <optional>
 
 static constexpr vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
@@ -81,9 +82,11 @@ struct FramePassAttachment {
 };
 
 struct DrawCall {
+    virtual ~DrawCall() = default;
+
     VulkanMesh mesh;
 
-    std::function<std::vector<vk::DescriptorSet>(const FrameContext& frame)> descriptorResolver;
+    std::function<std::vector<vk::DescriptorSet>(const FrameContext&)> descriptorResolver;
 
     std::optional<vk::Viewport> viewport;
     std::optional<vk::Rect2D>   scissor;
@@ -103,7 +106,7 @@ struct DrawCall {
     DrawCall& setMesh(const VulkanMesh& _mesh) { mesh = _mesh; return *this; }
 
     DrawCall& setDescriptorResolver(
-        const std::function<std::vector<vk::DescriptorSet>(const FrameContext& frame)>& _descriptorResolver
+        const std::function<std::vector<vk::DescriptorSet>(const FrameContext&)>& _descriptorResolver
     ) {
         descriptorResolver = _descriptorResolver; return *this;
     }
@@ -111,6 +114,39 @@ struct DrawCall {
     DrawCall& setViewport(const vk::Viewport& _viewport) { viewport = _viewport; return *this; }
 
     DrawCall& setScissor(const vk::Rect2D _scissor) { scissor = _scissor; return *this; }
+};
+
+struct DrawCallPushConstantBase {
+    virtual ~DrawCallPushConstantBase() = default;
+    virtual void pushConstants(
+        vk::CommandBuffer    cmdBuffer,
+        vk::PipelineLayout   layout,
+        vk::ShaderStageFlags stageFlags,
+        const FrameContext&  frame
+    ) const = 0;
+};
+
+template<typename PushConstantT>
+struct DrawCallPushConstant final : DrawCall, DrawCallPushConstantBase {
+    std::function<PushConstantT(const FrameContext&)> pushConstantResolver;
+
+    DrawCallPushConstant& setPushConstantResolver(
+        const std::function<PushConstantT(const FrameContext&)>& _pushConstantResolver
+    ) {
+        pushConstantResolver = _pushConstantResolver; return *this;
+    }
+
+    void pushConstants(
+        const vk::CommandBuffer    cmdBuffer,
+        const vk::PipelineLayout   layout,
+        const vk::ShaderStageFlags stageFlags,
+        const FrameContext&        frame
+    ) const override {
+        if (!pushConstantResolver) return;
+
+        PushConstantT data = pushConstantResolver(frame);
+        cmdBuffer.pushConstants(layout, stageFlags, 0, sizeof(PushConstantT), &data);
+    }
 };
 
 struct FramePass {
@@ -125,7 +161,15 @@ struct FramePass {
     std::vector<FrameResource*> reads{};
     std::vector<FrameResource*> writes{};
 
-    std::vector<DrawCall> drawCalls{};
+    std::vector<std::unique_ptr<DrawCall>> drawCalls{};
+
+    FramePass() = default;
+
+    FramePass(FramePass&&)           = default;
+    FramePass& operator=(FramePass&&) = default;
+
+    FramePass(const FramePass&)            = delete;
+    FramePass& operator=(const FramePass&) = delete;
 
     FramePass& setName(const std::string& _name) { name = _name; return *this; }
 
@@ -145,7 +189,10 @@ struct FramePass {
 
     FramePass& addWrite(FrameResource* write) { writes.push_back(write); return *this; }
 
-    FramePass& addDrawCall(const DrawCall& drawCall) { drawCalls.push_back(drawCall); return *this; }
+    FramePass& addDrawCall(std::unique_ptr<DrawCall> drawCall) {
+        drawCalls.push_back(std::move(drawCall));
+        return *this;
+    }
 };
 
 class VulkanFrameGraph {
@@ -169,7 +216,7 @@ public:
 
     void executePass(const FramePass& pass, const FrameContext& frame) const;
 
-    [[nodiscard]] std::vector<FramePass> getPasses() const { return _passes; }
+    [[nodiscard]] const std::vector<FramePass>& getPasses() const { return _passes; }
 
 private:
     const VulkanMeshManager* _meshManager = nullptr;

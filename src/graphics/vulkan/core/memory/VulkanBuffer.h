@@ -66,15 +66,19 @@ public:
     void* mapMemory(std::string& errorMessage);
     void unmapMemory();
 
+    [[nodiscard]] vk::DeviceAddress getDeviceAddress() const noexcept { return _deviceAddress; }
+
     [[nodiscard]] void* getMappedPointer() const noexcept { return _mappedPointer; }
 
 private:
     const VulkanDevice* _device = nullptr;
 
     vk::Buffer     _buffer{};
-    vk::DeviceSize _bufferSize{};
+    vk::DeviceSize _bufferSize;
 
-    VmaAllocation _allocation{};
+    vk::DeviceAddress _deviceAddress;
+
+    VmaAllocation _allocation;
 
     void* _mappedPointer = nullptr;
 };

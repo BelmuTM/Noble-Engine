@@ -52,17 +52,13 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
 
     const std::vector descriptorLayoutBindingsObject = {
         vk::DescriptorSetLayoutBinding(
-            0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eAllGraphics, nullptr
-        ),
-        vk::DescriptorSetLayoutBinding(
-            1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, nullptr
+            0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, nullptr
         )
     };
 
     static constexpr uint32_t maxObjectSets = MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS;
 
     const std::vector descriptorPoolSizesObject = {
-        vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer,        maxObjectSets),
         vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, maxObjectSets)
     };
 
@@ -76,20 +72,11 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
     TRY(createVulkanEntity(&imageManager, errorMessage, device, commandManager));
     TRY(createVulkanEntity(&uniformBufferManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
 
-    std::vector<VulkanMesh*> meshes{};
+    TRY(createVulkanEntity(
+        &renderObjectManager, errorMessage, objects, device, descriptorManagerObject, imageManager, meshManager
+    ));
 
-    for (const auto& object : objects) {
-        VulkanRenderObject renderObject;
-
-        TRY(renderObject.create(
-            object, descriptorManagerObject, imageManager, meshManager, uniformBufferManager, errorMessage
-        ));
-
-        meshes.push_back(renderObject.mesh.get());
-        renderObjects.push_back(std::move(renderObject));
-    }
-
-    TRY(createVulkanEntity(&meshManager, errorMessage, device, commandManager, meshes));
+    TRY(createVulkanEntity(&meshManager, errorMessage, device, commandManager, renderObjectManager.getMeshes()));
 
     TRY(uniformBufferManager.createBuffer(frameUBO, errorMessage));
 
@@ -106,7 +93,7 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
     TRY(meshRender.load("mesh_render", false, errorMessage));
 
     TRY(pipelineManager.createGraphicsPipeline(
-        pipelineMeshRender, descriptorLayoutsMeshRender, meshRender, errorMessage
+        pipelineMeshRender, descriptorLayoutsMeshRender, objectDataGPUSize, meshRender, errorMessage
     ));
 
     FrameResource swapchainOutput{};
@@ -158,7 +145,6 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
         .setLoadOp(vk::AttachmentLoadOp::eClear)
         .setStoreOp(vk::AttachmentStoreOp::eStore)
         .setClearValue(vk::ClearColorValue{0.0f, 0.0f, 0.0f, 1.0f});
-        */
 
     // TO-DO: Color attachment helper class
     FramePass compositePass;
@@ -173,6 +159,7 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
     fullscreenDraw.setMesh(VulkanMesh::makeFullscreenTriangle());
 
     compositePass.addDrawCall(fullscreenDraw);
+    */
 
     FramePass meshRenderPass;
     meshRenderPass
@@ -182,20 +169,23 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
         .addColorAttachment(swapchainAttachment)
         .setDepthAttachment(depthAttachment);
 
-    for (const auto& renderObject : renderObjects) {
-        DrawCall verticesDraw;
-        verticesDraw
-            .setMesh(*renderObject.mesh)
-            .setDescriptorResolver(
+    for (const auto& renderObject : renderObjectManager.getRenderObjects()) {
+        auto verticesDraw = std::make_unique<DrawCallPushConstant<ObjectDataGPU>>();
+        verticesDraw->setMesh(*renderObject.mesh);
+
+        verticesDraw->setDescriptorResolver(
             [&renderObject](const FrameContext& frame) {
                 return std::vector{renderObject.descriptorSets->getSets().at(frame.frameIndex)};
-            });
+            }
+        );
 
-        meshRenderPass.addDrawCall(verticesDraw);
+        verticesDraw->setPushConstantResolver([&renderObject](const FrameContext&) { return renderObject.data; });
+
+        meshRenderPass.addDrawCall(std::move(verticesDraw));
     }
 
     //frameGraph.addPass(compositePass);
-    frameGraph.addPass(meshRenderPass);
+    frameGraph.addPass(std::move(meshRenderPass));
 
     TRY(createVulkanEntity(&frameGraph, errorMessage, meshManager));
 
@@ -233,12 +223,11 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
 
     frameUBO.update(currentFrame, context.getSwapchain(), camera);
 
-    for (const auto& renderObject : renderObjects) {
-        renderObject.ubo->update(currentFrame, renderObject.object->getModelMatrix());
-    }
+    renderObjectManager.updateObjects();
 
-    if (!swapchainManager.submitCommandBuffer(commandManager, currentFrame, imageIndex, errorMessage, discardLogging))
+    if (!swapchainManager.submitCommandBuffer(commandManager, currentFrame, imageIndex, errorMessage, discardLogging)) {
         return;
+    }
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     guard.release();

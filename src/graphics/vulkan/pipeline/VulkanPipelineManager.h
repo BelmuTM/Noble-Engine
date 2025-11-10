@@ -30,6 +30,14 @@ public:
         std::string&                                errorMessage
     );
 
+    [[nodiscard]] bool createGraphicsPipeline(
+        VulkanGraphicsPipeline&                     graphicsPipeline,
+        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
+        uint32_t                                    pushConstantRangeSize,
+        const VulkanShaderProgram&                  shaderProgram,
+        std::string&                                errorMessage
+    );
+
 private:
     vk::Device _device{};
 

@@ -164,6 +164,8 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
         .setQueueCount(1)
         .setQueuePriorities(queuePriority);
 
+    // Device features
+
     vk::PhysicalDeviceFeatures deviceFeatures{};
     deviceFeatures
         .setFillModeNonSolid(vk::True)
@@ -179,9 +181,14 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
         .setDynamicRendering(vk::True)
         .setSynchronization2(vk::True);
 
+    vk::PhysicalDeviceBufferDeviceAddressFeatures deviceBufferAddressFeatures{};
+    deviceBufferAddressFeatures
+        .setPNext(&deviceFeatures_1_3)
+        .setBufferDeviceAddress(vk::True);
+
     vk::DeviceCreateInfo deviceInfo{};
     deviceInfo
-        .setPNext(&deviceFeatures_1_3)
+        .setPNext(&deviceBufferAddressFeatures)
         .setQueueCreateInfos(deviceQueueInfo)
         .setPEnabledExtensionNames(deviceExtensions)
         .setPEnabledFeatures(&deviceFeatures);
@@ -200,6 +207,8 @@ bool VulkanDevice::createAllocator(std::string& errorMessage) {
     allocatorInfo.physicalDevice   = _physicalDevice;
     allocatorInfo.device           = _logicalDevice;
     allocatorInfo.instance         = _instance;
+
+    allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 
     VK_TRY(vmaCreateAllocator(&allocatorInfo, &_allocator), errorMessage);
 

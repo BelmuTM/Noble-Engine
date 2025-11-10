@@ -15,13 +15,13 @@ struct FrameUBO {
     float    farPlane;
     float    frameTimeCounter;
 };
-ConstantBuffer<FrameUBO> frameUBO : register(b0, space0);
+[[vk::binding(0, 0)]] ConstantBuffer<FrameUBO> frameUBO;
 
-struct ObjectUBO {
+struct ObjectDataGPU {
     float4x4 model;
     float4x4 normalMatrix;
 };
-ConstantBuffer<ObjectUBO> objectUBO : register(b0, space1);
+[[vk::push_constant]] ObjectDataGPU object;
 
 struct VSOutput {
     float4 position : SV_Position;
@@ -34,15 +34,15 @@ struct VSOutput {
 [shader("vertex")]
 VSOutput vertMain(VSInput input) {
     VSOutput output;
-    output.worldPos  = mul(objectUBO.model, float4(input.inPosition, 1.0));
+    output.worldPos  = mul(object.model, float4(input.inPosition, 1.0));
     output.position  = mul(frameUBO.projection, mul(frameUBO.view, output.worldPos));
-    output.normal    = normalize(mul(float3x3(objectUBO.normalMatrix), input.inNormal));
+    output.normal    = normalize(mul(float3x3(object.normalMatrix), input.inNormal));
     output.color     = input.inColor;
     output.texCoords = input.inTexCoords;
     return output;
 }
 
-layout(set = 1, binding = 1) Sampler2D texture;
+layout(set = 1, binding = 0) Sampler2D texture;
 
 float bayer2(float2 a) {
     a = floor(a);
@@ -86,7 +86,7 @@ float4 fragMain(VSOutput vertIn) : SV_TARGET {
     }
 
     float3 albedo   = texture.Sample(vertIn.texCoords).rgb;
-    float3 lighting = albedo == float3(0.0) ? color0 * NdotL0 + color1 * NdotL1 : albedo;
+    float3 lighting = select(albedo == float3(0.0), color0 * NdotL0 + color1 * NdotL1,  albedo);
 
     return float4(lighting, 1.0);
 }

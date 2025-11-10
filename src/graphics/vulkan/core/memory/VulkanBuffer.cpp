@@ -8,12 +8,14 @@ VulkanBuffer::VulkanBuffer(VulkanBuffer&& other) noexcept {
     _device        = other._device;
     _buffer        = other._buffer;
     _bufferSize    = other._bufferSize;
+    _deviceAddress = other._deviceAddress;
     _allocation    = other._allocation;
     _mappedPointer = other._mappedPointer;
 
     other._device        = nullptr;
     other._buffer        = VK_NULL_HANDLE;
     other._bufferSize    = 0;
+    other._deviceAddress = 0;
     other._allocation    = VK_NULL_HANDLE;
     other._mappedPointer = VK_NULL_HANDLE;
 }
@@ -25,12 +27,14 @@ VulkanBuffer& VulkanBuffer::operator=(VulkanBuffer&& other) noexcept {
         _device        = other._device;
         _buffer        = other._buffer;
         _bufferSize    = other._bufferSize;
+        _deviceAddress = other._deviceAddress;
         _allocation    = other._allocation;
         _mappedPointer = other._mappedPointer;
 
         other._device        = nullptr;
         other._buffer        = VK_NULL_HANDLE;
         other._bufferSize    = 0;
+        other._deviceAddress = 0;
         other._allocation    = VK_NULL_HANDLE;
         other._mappedPointer = VK_NULL_HANDLE;
     }
@@ -49,6 +53,14 @@ bool VulkanBuffer::create(
     TRY(createBuffer(_buffer, _allocation, size, usage, memoryUsage, device, errorMessage));
 
     _bufferSize = size;
+
+    // Check if the buffer can be used to get its device address
+    if (usage & vk::BufferUsageFlagBits::eShaderDeviceAddress) {
+        vk::BufferDeviceAddressInfo deviceAddressInfo{};
+        deviceAddressInfo.setBuffer(_buffer);
+        _deviceAddress = _device->getLogicalDevice().getBufferAddress(deviceAddressInfo);
+    }
+
     return true;
 }
 
