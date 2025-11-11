@@ -26,7 +26,7 @@ public:
 
     void create(
         const std::string& modelPath,
-        const std::string& texturePath,
+        //const std::string& texturePath,
         glm::vec3          position = {0.0f, 0.0f, 0.0f},
         glm::vec3          rotation = {0.0f, 0.0f, 0.0f},
         glm::vec3          scale    = {1.0f, 1.0f, 1.0f}
@@ -36,7 +36,7 @@ public:
 
     [[nodiscard]] std::string getModelPath() const noexcept { return _modelPath; }
 
-    [[nodiscard]] std::string getTexturePath() const noexcept { return _texturePath; }
+    //[[nodiscard]] std::string getTexturePath() const noexcept { return _texturePath; }
 
 private:
     glm::vec3 _position = {0.0f, 0.0f, 0.0f};
@@ -44,7 +44,7 @@ private:
     glm::vec3 _scale    = {1.0f, 1.0f, 1.0f};
 
     std::string _modelPath;
-    std::string _texturePath;
+    //std::string _texturePath;
 };
 
 #endif //NOBLEENGINE_OBJECT_H

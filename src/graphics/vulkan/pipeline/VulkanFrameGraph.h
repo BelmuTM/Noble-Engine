@@ -126,12 +126,12 @@ struct DrawCallPushConstantBase {
     ) const = 0;
 };
 
-template<typename PushConstantT>
+template<typename PushConstantType>
 struct DrawCallPushConstant final : DrawCall, DrawCallPushConstantBase {
-    std::function<PushConstantT(const FrameContext&)> pushConstantResolver;
+    std::function<PushConstantType(const FrameContext&)> pushConstantResolver;
 
     DrawCallPushConstant& setPushConstantResolver(
-        const std::function<PushConstantT(const FrameContext&)>& _pushConstantResolver
+        const std::function<PushConstantType(const FrameContext&)>& _pushConstantResolver
     ) {
         pushConstantResolver = _pushConstantResolver; return *this;
     }
@@ -144,8 +144,8 @@ struct DrawCallPushConstant final : DrawCall, DrawCallPushConstantBase {
     ) const override {
         if (!pushConstantResolver) return;
 
-        PushConstantT data = pushConstantResolver(frame);
-        cmdBuffer.pushConstants(layout, stageFlags, 0, sizeof(PushConstantT), &data);
+        PushConstantType data = pushConstantResolver(frame);
+        cmdBuffer.pushConstants(layout, stageFlags, 0, sizeof(PushConstantType), &data);
     }
 };
 

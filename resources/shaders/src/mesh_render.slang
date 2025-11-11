@@ -76,8 +76,10 @@ float4 fragMain(VSOutput vertIn) : SV_TARGET {
     float3 color1 = float3(0.5, 0.9, 1.0);
     float  NdotL1 = max(0.0, dot(normalize(vertIn.normal), normalize(lightPosition1)));
 
+    float fadeStartDist = 0.25;
+
     float dist = distance(frameUBO.cameraPosition, vertIn.worldPos.xyz);
-    float fade = saturate((dist - frameUBO.nearPlane) / (1.0 - frameUBO.nearPlane));
+    float fade = saturate((dist - frameUBO.nearPlane) / (fadeStartDist - frameUBO.nearPlane));
 
     float threshold = bayer32(vertIn.position.xy * 0.5);
 

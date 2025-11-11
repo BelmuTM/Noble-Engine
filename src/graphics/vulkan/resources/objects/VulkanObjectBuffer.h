@@ -6,7 +6,7 @@
 #include "graphics/vulkan/core/VulkanDevice.h"
 #include "graphics/vulkan/core/memory/VulkanBuffer.h"
 
-#include "core/objects/Object.h"
+#include "core/objects/object/Object.h"
 
 #include <glm/glm.hpp>
 

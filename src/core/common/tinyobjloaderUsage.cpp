@@ -1,4 +1,4 @@
-#include "TinyObjLoaderUsage.h"
+#include "tinyobjloaderUsage.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>

@@ -1,7 +1,8 @@
 #include "VulkanGraphicsPipeline.h"
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
-#include "graphics/vulkan/resources/mesh/VulkanMesh.h"
+
+#include "graphics/vulkan/resources/mesh/VulkanVertex.h"
 
 bool VulkanGraphicsPipeline::create(
     const vk::Device&                           device,
@@ -65,8 +66,8 @@ bool VulkanGraphicsPipeline::createPipeline(
     vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
 
     if (!_shaderProgram->isFullscreen()) {
-        const auto& bindingDescription    = Vertex::getBindingDescription();
-        const auto& attributeDescriptions = Vertex::getAttributeDescriptions();
+        const auto& bindingDescription    = VulkanVertex::getBindingDescription();
+        const auto& attributeDescriptions = VulkanVertex::getAttributeDescriptions();
 
         vertexInputInfo
             .setVertexBindingDescriptions(bindingDescription)

@@ -25,11 +25,9 @@ target_include_directories(NobleEngine PRIVATE ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(NobleEngine PRIVATE ${Vulkan_LIBRARIES})
 
 #Vulkan debug utils
-option(ENABLE_VULKAN_DEBUG_UTILS "Enable Vulkan debug utils extension" ON)
-
-if(ENABLE_VULKAN_DEBUG_UTILS)
-    add_compile_definitions(VULKAN_DEBUG_UTILS)
-endif()
+target_compile_definitions(NobleEngine PRIVATE
+    $<$<CONFIG:Debug>:VULKAN_DEBUG_UTILS>
+)
 
 ##########################################################
 #                  SHADERS COMPILATION                   #
@@ -96,9 +94,17 @@ add_dependencies(NobleEngine ShadersModule)
 
 add_subdirectory(external/glfw)
 
+# json (https://github.com/nlohmann/json)
+add_library(json_noble INTERFACE)
+target_include_directories(json_noble INTERFACE ${CMAKE_SOURCE_DIR}/external/json)
+
 # STB (https://github.com/nothings/stb)
 add_library(stb_noble INTERFACE)
 target_include_directories(stb_noble INTERFACE ${CMAKE_SOURCE_DIR}/external/stb)
+
+# tinygltf (https://github.com/syoyo/tinygltf)
+add_library(tinygltf_noble INTERFACE)
+target_include_directories(tinygltf_noble INTERFACE ${CMAKE_SOURCE_DIR}/external/tinygltf)
 
 # tinyobjloader (https://github.com/tinyobjloader/tinyobjloader)
 add_library(tinyobjloader_noble INTERFACE)
@@ -108,4 +114,4 @@ target_include_directories(tinyobjloader_noble INTERFACE ${CMAKE_SOURCE_DIR}/ext
 add_library(vma_noble INTERFACE)
 target_include_directories(vma_noble INTERFACE ${CMAKE_SOURCE_DIR}/external/vma/include)
 
-target_link_libraries(NobleEngine PRIVATE glfw stb_noble tinyobjloader_noble vma_noble)
+target_link_libraries(NobleEngine PRIVATE glfw json_noble stb_noble tinygltf_noble tinyobjloader_noble vma_noble)

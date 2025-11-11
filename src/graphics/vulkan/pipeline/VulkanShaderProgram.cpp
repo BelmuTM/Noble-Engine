@@ -2,8 +2,8 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include "core/debug/ErrorHandling.h"
 #include "core/ResourceManager.h"
+#include "core/debug/ErrorHandling.h"
 
 #include <fstream>
 #include <ranges>

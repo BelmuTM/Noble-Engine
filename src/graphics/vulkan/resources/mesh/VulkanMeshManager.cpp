@@ -2,9 +2,6 @@
 
 #include "core/debug/ErrorHandling.h"
 #include "core/debug/Logger.h"
-#include "core/ResourceManager.h"
-
-#include "core/common/TinyObjLoaderUsage.h"
 
 bool VulkanMeshManager::create(
     const VulkanDevice&             device,
@@ -120,97 +117,14 @@ bool VulkanMeshManager::createIndexBuffer(std::string& errorMessage) {
     return true;
 }
 
-void VulkanMeshManager::computeSmoothNormals(std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices) {
-    for (uint32_t i = 0; i < indices.size(); i += 3) {
-        const int i0 = indices[i + 0];
-        const int i1 = indices[i + 1];
-        const int i2 = indices[i + 2];
-
-        const glm::vec3 edge1 = vertices[i1].position - vertices[i0].position;
-        const glm::vec3 edge2 = vertices[i2].position - vertices[i0].position;
-
-        const glm::vec3 faceNormal = glm::normalize(glm::cross(edge1, edge2));
-
-        vertices[i0].normal += faceNormal;
-        vertices[i1].normal += faceNormal;
-        vertices[i2].normal += faceNormal;
-    }
-
-    for (auto& vertex : vertices) {
-        vertex.normal = glm::normalize(vertex.normal);
-    }
-}
-
 bool VulkanMeshManager::loadModel(VulkanMesh& model, const std::string& path, std::string& errorMessage) {
     if (_cache.contains(path)) {
         model = _cache.at(path);
         return true;
     }
 
-    std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+    TRY(model.load(path, errorMessage));
 
-    std::vector<Vertex>   vertices{};
-    std::vector<uint16_t> indices{};
-
-    tinyobj::attrib_t attributes;
-
-    std::vector<tinyobj::shape_t>    shapes{};
-    std::vector<tinyobj::material_t> materials{};
-
-    const std::string& fullPath = modelFilesPath + path;
-
-    if (!tinyobj::LoadObj(&attributes, &shapes, &materials, &errorMessage, fullPath.c_str())) {
-        return false;
-    }
-
-    Logger::debug(path + " vertices: " + std::to_string(attributes.vertices.size())
-           + ", normals: " + std::to_string(attributes.normals.size())
-           + ", texcoords: " + std::to_string(attributes.texcoords.size())
-           + ", shapes: " + std::to_string(shapes.size()));
-
-    bool hasNormals = !attributes.normals.empty();
-
-    for (const auto& [name, mesh] : shapes) {
-        for (const auto& [vertex_index, normal_index, texcoord_index] : mesh.indices) {
-            Vertex vertex{};
-
-            vertex.position = {
-                attributes.vertices[3 * vertex_index + 0],
-                attributes.vertices[3 * vertex_index + 1],
-                attributes.vertices[3 * vertex_index + 2]
-            };
-
-            if (hasNormals && normal_index >= 0) {
-                vertex.normal = {
-                    attributes.normals[3 * normal_index + 0],
-                    attributes.normals[3 * normal_index + 1],
-                    attributes.normals[3 * normal_index + 2]
-                };
-            }
-
-            if (!attributes.texcoords.empty() && texcoord_index >= 0) {
-                vertex.textureCoords = {
-                           attributes.texcoords[2 * texcoord_index + 0],
-                    1.0f - attributes.texcoords[2 * texcoord_index + 1]
-                };
-            }
-
-            vertex.color = {1.0f, 1.0f, 1.0f};
-
-            if (!uniqueVertices.contains(vertex)) {
-                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-                vertices.push_back(vertex);
-            }
-
-            indices.push_back(uniqueVertices[vertex]);
-        }
-    }
-
-    if (!hasNormals) {
-        computeSmoothNormals(vertices, indices);
-    }
-
-    model.loadData(vertices, indices);
     _cache[path] = model;
 
     return true;

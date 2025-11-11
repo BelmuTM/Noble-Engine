@@ -88,7 +88,7 @@ void VulkanFrameGraph::executePass(const FramePass& pass, const FrameContext& fr
 
             if (!draw.mesh.isBufferless()) {
                 frame.cmdBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &vertexOffset);
-                frame.cmdBuffer.bindIndexBuffer(indexBuffer, indexOffset, vk::IndexType::eUint16);
+                frame.cmdBuffer.bindIndexBuffer(indexBuffer, indexOffset, vk::IndexType::eUint32);
                 frame.cmdBuffer.drawIndexed(draw.mesh.getIndices().size(), 1, 0, 0, 0);
             } else {
                 frame.cmdBuffer.draw(draw.mesh.getVertices().size(), 1, 0, 0);

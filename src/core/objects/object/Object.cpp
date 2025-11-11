@@ -4,13 +4,13 @@
 
 void Object::create(
     const std::string& modelPath,
-    const std::string& texturePath,
+    //const std::string& texturePath,
     const glm::vec3    position,
     const glm::vec3    rotation,
     const glm::vec3    scale
 ) {
     _modelPath   = modelPath;
-    _texturePath = texturePath;
+    //_texturePath = texturePath;
 
     _position = position;
     _rotation = rotation;

@@ -51,7 +51,7 @@ bool VulkanRenderObjectManager::createRenderObject(
 
     // Load texture
     renderObject.texture = std::make_unique<VulkanImage>();
-    if (!_imageManager->loadTextureFromFile(*renderObject.texture, object.getTexturePath(), errorMessage)) {
+    if (!_imageManager->loadTextureFromFile(*renderObject.texture, renderObject.mesh->getMaterial().albedoPath, errorMessage)) {
         // Default texture fallback
         VulkanImage defaultTexture;
         TRY(_imageManager->createDefaultTexture(defaultTexture, errorMessage));

@@ -3,7 +3,7 @@
 #include "core/ResourceManager.h"
 #include "core/debug/ErrorHandling.h"
 
-#include "core/common/StbUsage.h"
+#include "core/common/stbUsage.h"
 
 bool VulkanImageManager::create(
     const VulkanDevice& device, const VulkanCommandManager& commandManager, std::string& errorMessage

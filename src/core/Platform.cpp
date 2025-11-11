@@ -3,7 +3,7 @@
 #include "ResourceManager.h"
 #include "WindowContext.h"
 
-#include "common/StbUsage.h"
+#include "common/stbUsage.h"
 
 namespace Platform {
     bool init() {

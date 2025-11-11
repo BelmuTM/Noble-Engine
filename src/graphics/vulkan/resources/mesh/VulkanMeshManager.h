@@ -60,8 +60,6 @@ private:
     bool createStagingBuffer(std::string& errorMessage);
     bool createVertexBuffer(std::string& errorMessage);
     bool createIndexBuffer(std::string& errorMessage);
-
-    static void computeSmoothNormals(std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
 };
 
 #endif // NOBLEENGINE_VULKANMESHMANAGER_H

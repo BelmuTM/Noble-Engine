@@ -10,7 +10,7 @@
 #include "graphics/vulkan/resources/image/VulkanImageManager.h"
 #include "graphics/vulkan/resources/mesh/VulkanMeshManager.h"
 
-#include "core/objects/Object.h"
+#include "core/objects/object/Object.h"
 
 static constexpr int MAX_OBJECTS = 32;
 

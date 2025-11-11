@@ -2,9 +2,9 @@
 #ifndef NOBLEENGINE_GRAPHICSAPI_H
 #define NOBLEENGINE_GRAPHICSAPI_H
 
+#include "core/objects/object/Object.h"
 #include "core/Platform.h"
-#include "core/objects/Object.h"
-#include "core/objects/Camera.h"
+#include "core/objects/camera/Camera.h"
 
 class GraphicsAPI {
 public:

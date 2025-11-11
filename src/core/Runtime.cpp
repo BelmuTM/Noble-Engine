@@ -26,16 +26,16 @@ int main() {
     glfwSetWindowUserPointer(window.handle(), &ctx);
 
     Object object0;
-    object0.create("lucy.obj", "", {-1.5f, -1.5f, -1.1f}, {0.0f, 0.0f, 0.0f}, glm::vec3{0.0025f});
+    object0.create("lucy.obj", {-1.5f, -1.5f, -1.1f}, {0.0f, 0.0f, 0.0f}, glm::vec3{0.0025f});
 
     Object object1;
-    object1.create("stanford_bunny.obj", "", {-2.3f, 1.7f, -2.4f}, {90.0f, 120.0f, 0.0f}, glm::vec3{9.0f});
+    object1.create("hornet.gltf", {-2.3f, 1.7f, -2.4f}, {90.0f, 120.0f, 0.0f}, glm::vec3{9.0f});
 
     Object object2;
-    object2.create("stanford_dragon.obj", "", {1.9f, 0.7f, -2.35f}, {0.0f, 180.0f, 0.0f}, glm::vec3{0.6f});
+    object2.create("stanford_dragon.obj", {1.9f, 0.7f, -2.35f}, {0.0f, 180.0f, 0.0f}, glm::vec3{0.6f});
 
     Object object3;
-    object3.create("viking_room.obj", "viking_room.png", {-0.5f, -1.0f, -3.0f}, {0.0f, 0.0f, 40.0f}, glm::vec3{6.0f});
+    object3.create("viking_room.obj", {-0.5f, -1.0f, -3.0f}, {0.0f, 0.0f, 40.0f}, glm::vec3{6.0f});
 
     std::vector objects{object0, object1, object2, object3};
 

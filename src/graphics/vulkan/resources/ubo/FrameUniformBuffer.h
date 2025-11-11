@@ -5,7 +5,7 @@
 #include "VulkanUniformBuffer.h"
 #include "graphics/vulkan/core/VulkanSwapchain.h"
 
-#include "core/objects/Camera.h"
+#include "core/objects/camera/Camera.h"
 
 #include <glm/glm.hpp>
 

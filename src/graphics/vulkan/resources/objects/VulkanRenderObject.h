@@ -6,7 +6,7 @@
 #include "graphics/vulkan/resources/image/VulkanImage.h"
 #include "graphics/vulkan/resources/mesh/VulkanMesh.h"
 
-#include "core/objects/Object.h"
+#include "core/objects/object/Object.h"
 
 #include <memory>
 
