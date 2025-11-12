@@ -3,6 +3,7 @@
 #define NOBLEENGINE_VULKANINSTANCE_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
+#include "VulkanCapabilities.h"
 
 #include <string>
 #include <vector>
@@ -13,7 +14,7 @@ public:
     ~VulkanInstance() = default;
 
     // Implicit conversion operator
-    operator vk::Instance() const noexcept { return instance; }
+    operator vk::Instance() const noexcept { return _instance; }
 
     VulkanInstance(const VulkanInstance&)            = delete;
     VulkanInstance& operator=(const VulkanInstance&) = delete;
@@ -21,7 +22,7 @@ public:
     VulkanInstance(VulkanInstance&&)            = delete;
     VulkanInstance& operator=(VulkanInstance&&) = delete;
 
-    [[nodiscard]] bool create(std::string& errorMessage) noexcept;
+    [[nodiscard]] bool create(const VulkanCapabilities& capabilities, std::string& errorMessage) noexcept;
 
     void destroy() noexcept;
 
@@ -29,14 +30,19 @@ public:
     //[[nodiscard]] vk::Instance const& getVkInstance() const { return instance; }
 
 private:
-    vk::Instance               instance{};
-    vk::DebugUtilsMessengerEXT debugMessenger{};
+    const VulkanCapabilities* _capabilities = nullptr;
 
-    vk::detail::DispatchLoaderDynamic dldi;
+    vk::Instance               _instance{};
+    vk::DebugUtilsMessengerEXT _debugMessenger{};
+
+    vk::detail::DispatchLoaderDynamic _dldi{};
 
     static std::vector<const char*> getRequiredExtensions();
 
     bool createInstance(std::string& errorMessage);
+
+#ifdef VULKAN_DEBUG_UTILS
+
     bool setupDebugMessenger(std::string& errorMessage);
 
     static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(
@@ -45,6 +51,8 @@ private:
         const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData,
         void*
     );
+
+#endif
 };
 
 #endif //NOBLEENGINE_VULKANINSTANCE_H

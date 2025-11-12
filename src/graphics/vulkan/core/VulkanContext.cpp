@@ -1,6 +1,7 @@
 #include "VulkanContext.h"
 
 #include "core/debug/ErrorHandling.h"
+#include "core/debug/Logger.h"
 
 VulkanContext::~VulkanContext() {
     destroy();
@@ -9,9 +10,10 @@ VulkanContext::~VulkanContext() {
 bool VulkanContext::create(const Platform::Window& window, std::string& errorMessage) {
     ScopeGuard guard{[this] { destroy(); }};
 
-    TRY(createVulkanEntity(&instance, errorMessage));
+    TRY(createVulkanEntity(&capabilities, errorMessage));
+    TRY(createVulkanEntity(&instance, errorMessage, capabilities));
     TRY(createVulkanEntity(&surface, errorMessage, instance, window));
-    TRY(createVulkanEntity(&device, errorMessage, instance, surface));
+    TRY(createVulkanEntity(&device, errorMessage, capabilities, instance, surface));
     TRY(createVulkanEntity(&swapchain, errorMessage, window, device, surface));
 
     guard.release();

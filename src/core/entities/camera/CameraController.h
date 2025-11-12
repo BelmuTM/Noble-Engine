@@ -2,7 +2,7 @@
 #ifndef NOBLEENGINE_CAMERACONTROLLER_H
 #define NOBLEENGINE_CAMERACONTROLLER_H
 
-#include "core/InputManager.h"
+#include "core/input/InputManager.h"
 
 #include <unordered_map>
 

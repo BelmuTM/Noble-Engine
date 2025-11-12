@@ -4,7 +4,7 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "core/objects/object/Vertex.h"
+#include "core/resources/Vertex.h"
 
 namespace VulkanVertex {
     static vk::VertexInputBindingDescription getBindingDescription() {

@@ -1,6 +1,6 @@
 #include "InputManager.h"
 
-#include "WindowContext.h"
+#include "core/WindowContext.h"
 
 void keyCallback(GLFWwindow* _window, const int _key, const int _scancode, const int _action, const int _mods) {
     const auto* self = static_cast<WindowContext*>(glfwGetWindowUserPointer(_window));

@@ -65,15 +65,14 @@ float4 fragMain(VSOutput vertIn) : SV_TARGET {
     float3 lightPosition0 = float3(0.0, 5.0, 5.0);
     float3 lightPosition1 = float3(3.0, 2.0, 1.0);
 
+    float NdotL0 = max(0.0, dot(normalize(vertIn.normal), normalize(lightPosition0)));
+
     float3 rainbow;
     rainbow.r = sin(frameUBO.frameTimeCounter * TAU / 6.0 + 0.0) * 0.5 + 0.5;
     rainbow.g = sin(frameUBO.frameTimeCounter * TAU / 6.0 + 2.0) * 0.5 + 0.5;
     rainbow.b = sin(frameUBO.frameTimeCounter * TAU / 6.0 + 4.0) * 0.5 + 0.5;
 
-    float3 color0 = rainbow;
-    float  NdotL0 = max(0.0, dot(normalize(vertIn.normal), normalize(lightPosition0)));
-
-    float3 color1 = float3(0.5, 0.9, 1.0);
+    float3 color1 = rainbow;
     float  NdotL1 = max(0.0, dot(normalize(vertIn.normal), normalize(lightPosition1)));
 
     float fadeStartDist = 0.25;
@@ -88,7 +87,7 @@ float4 fragMain(VSOutput vertIn) : SV_TARGET {
     }
 
     float3 albedo   = texture.Sample(vertIn.texCoords).rgb;
-    float3 lighting = select(albedo == float3(0.0), color0 * NdotL0 + color1 * NdotL1,  albedo);
+    float3 lighting = albedo * NdotL0 + color1 * albedo * NdotL1;
 
     return float4(lighting, 1.0);
 }

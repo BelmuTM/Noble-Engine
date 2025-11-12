@@ -5,7 +5,8 @@
 #include "graphics/vulkan/common/VulkanHeader.h"
 #include "VulkanGraphicsPipeline.h"
 
-#include "graphics/vulkan/resources/mesh/VulkanMeshManager.h"
+#include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"
+#include "graphics/vulkan/resources/objects/VulkanRenderObject.h"
 #include "graphics/vulkan/resources/ubo/FrameUniformBuffer.h"
 
 #include <functional>
@@ -191,6 +192,26 @@ struct FramePass {
 
     FramePass& addDrawCall(std::unique_ptr<DrawCall> drawCall) {
         drawCalls.push_back(std::move(drawCall));
+        return *this;
+    }
+
+    FramePass& addObjectDrawCall(const VulkanRenderObject* renderObject) {
+        // Each submesh requires its own draw call
+        for (const auto& submesh : renderObject->submeshes) {
+            auto verticesDraw = std::make_unique<DrawCallPushConstant<ObjectDataGPU>>();
+            verticesDraw->setMesh(*submesh.mesh);
+
+            verticesDraw->setDescriptorResolver(
+                [&submesh](const FrameContext& frame) {
+                    return std::vector{submesh.descriptorSets->getSets().at(frame.frameIndex)};
+                }
+            );
+
+            verticesDraw->setPushConstantResolver([renderObject](const FrameContext&) { return renderObject->data; });
+
+            addDrawCall(std::move(verticesDraw));
+        }
+
         return *this;
     }
 };

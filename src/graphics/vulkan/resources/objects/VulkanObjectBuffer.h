@@ -3,14 +3,12 @@
 #define NOBLEENGINE_VULKANOBJECTBUFFER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
-#include "graphics/vulkan/core/VulkanDevice.h"
 #include "graphics/vulkan/core/memory/VulkanBuffer.h"
+#include "graphics/vulkan/core/VulkanDevice.h"
 
-#include "core/objects/object/Object.h"
+#include "core/entities/objects/Object.h"
 
-#include <glm/glm.hpp>
-
-class VulkanObjectBuffer {
+class VulkanObjectBuffer final : public VulkanBuffer {
 public:
     VulkanObjectBuffer()  = default;
     ~VulkanObjectBuffer() = default;
@@ -25,14 +23,11 @@ public:
 
     void destroy() noexcept;
 
-    void update(uint32_t objectIndex, const ObjectDataGPU& data) const;
-
-    [[nodiscard]] VulkanBuffer& getBuffer() noexcept { return _buffer; }
+    void update(uint32_t objectIndex, const ObjectDataGPU& dataToGPU) const;
+    void update(const std::vector<ObjectDataGPU>& dataToGPU) const;
 
 private:
     const VulkanDevice* _device = nullptr;
-
-    VulkanBuffer _buffer;
 
     uint32_t _maxObjects;
 };

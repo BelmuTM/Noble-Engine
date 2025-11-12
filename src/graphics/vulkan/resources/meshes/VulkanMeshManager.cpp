@@ -116,16 +116,3 @@ bool VulkanMeshManager::createIndexBuffer(std::string& errorMessage) {
 
     return true;
 }
-
-bool VulkanMeshManager::loadModel(VulkanMesh& model, const std::string& path, std::string& errorMessage) {
-    if (_cache.contains(path)) {
-        model = _cache.at(path);
-        return true;
-    }
-
-    TRY(model.load(path, errorMessage));
-
-    _cache[path] = model;
-
-    return true;
-}

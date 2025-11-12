@@ -3,6 +3,10 @@
 #include "WindowContext.h"
 #include "debug/Logger.h"
 
+#include "resources/images/ImageManager.h"
+#include "resources/models/ModelManager.h"
+#include "entities/objects/ObjectManager.h"
+
 #include "graphics/vulkan/core/VulkanRenderer.h"
 
 #include <atomic>
@@ -25,22 +29,17 @@ int main() {
     WindowContext ctx{&window, &inputManager};
     glfwSetWindowUserPointer(window.handle(), &ctx);
 
-    Object object0;
-    object0.create("lucy.obj", {-1.5f, -1.5f, -1.1f}, {0.0f, 0.0f, 0.0f}, glm::vec3{0.0025f});
+    ModelManager modelManager{};
+    ImageManager imageManager{};
+    ObjectManager objectManager{&modelManager, &imageManager};
 
-    Object object1;
-    object1.create("hornet.gltf", {-2.3f, 1.7f, -2.4f}, {90.0f, 120.0f, 0.0f}, glm::vec3{9.0f});
-
-    Object object2;
-    object2.create("stanford_dragon.obj", {1.9f, 0.7f, -2.35f}, {0.0f, 180.0f, 0.0f}, glm::vec3{0.6f});
-
-    Object object3;
-    object3.create("viking_room.obj", {-0.5f, -1.0f, -3.0f}, {0.0f, 0.0f, 40.0f}, glm::vec3{6.0f});
-
-    std::vector objects{object0, object1, object2, object3};
+    objectManager.createObject("lucy.obj", {-1.5f, -1.5f, -1.1f}, {0.0f, 0.0f, 0.0f}, glm::vec3{0.0025f});
+    objectManager.createObject("hornet.gltf", {-2.3f, 5.7f, -2.4f}, {90.0f, 120.0f, 0.0f}, glm::vec3{5.0f});
+    objectManager.createObject("stanford_dragon.obj", {1.9f, 0.7f, -2.35f}, {0.0f, 180.0f, 0.0f}, glm::vec3{0.6f});
+    objectManager.createObject("viking_room.obj", {-0.5f, -1.0f, -3.0f}, {0.0f, 0.0f, 40.0f}, glm::vec3{6.0f});
 
     VulkanRenderer renderer;
-    if (!renderer.init(window, objects)) {
+    if (!renderer.init(window, objectManager.getObjects())) {
         Engine::fatalExit("Failed to init Vulkan renderer");
     }
 

@@ -1,9 +1,6 @@
 #include "VulkanImageManager.h"
 
-#include "core/ResourceManager.h"
 #include "core/debug/ErrorHandling.h"
-
-#include "core/common/stbUsage.h"
 
 bool VulkanImageManager::create(
     const VulkanDevice& device, const VulkanCommandManager& commandManager, std::string& errorMessage
@@ -25,50 +22,48 @@ void VulkanImageManager::destroy() noexcept {
     _commandManager = nullptr;
 }
 
-bool VulkanImageManager::createDefaultTexture(VulkanImage& texture, std::string& errorMessage) {
+bool VulkanImageManager::loadImage(VulkanImage& image, const void* imageData, std::string& errorMessage) {
     constexpr auto    extent          = vk::Extent3D{1, 1, 1};
     constexpr auto    format          = vk::Format::eR8G8B8A8Srgb;
     constexpr uint8_t channels        = 4;
     constexpr uint8_t bytesPerChannel = 1;
 
-    static constexpr uint32_t blackPixel = 0xFF000000;
-
-    TRY(texture.createFromData(
-        &blackPixel, channels, bytesPerChannel, extent, format, _device, _commandManager, errorMessage
+    TRY(image.createFromData(
+        imageData, channels, bytesPerChannel, extent, format, _device, _commandManager, errorMessage
     ));
 
-    addImage(texture);
+    addImage(image);
 
     return true;
 }
 
-bool VulkanImageManager::loadTextureFromFile(VulkanImage& texture, const std::string& path, std::string& errorMessage) {
-    constexpr int depth = 1;
-
-    const std::string fullPath = textureFilesPath + path;
-
-    int width, height, channels;
-    stbi_uc* pixels = stbi_load(fullPath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-
-    if (!pixels) {
-        errorMessage = "Failed to load texture \"" + fullPath + "\"";
+bool VulkanImageManager::loadImage(VulkanImage& image, const Image* imageData, std::string& errorMessage) {
+    if (!imageData) {
+        errorMessage = "Failed to load Vulkan image: data is null";
         return false;
     }
 
+    constexpr int depth = 1;
+
     const auto extent = vk::Extent3D{
-        static_cast<uint32_t>(width), static_cast<uint32_t>(height), static_cast<uint32_t>(depth)
+        static_cast<uint32_t>(imageData->width), static_cast<uint32_t>(imageData->height), static_cast<uint32_t>(depth)
     };
 
     constexpr auto    format          = vk::Format::eR8G8B8A8Srgb;
     constexpr uint8_t bytesPerChannel = 1;
 
-    TRY(texture.createFromData(
-        pixels, STBI_rgb_alpha, bytesPerChannel, extent, format, _device, _commandManager, errorMessage
+    TRY(image.createFromData(
+        imageData->pixels.data(),
+        imageData->channels,
+        bytesPerChannel,
+        extent,
+        format,
+        _device,
+        _commandManager,
+        errorMessage
     ));
 
-    stbi_image_free(pixels);
-
-    addImage(texture);
+    addImage(image);
 
     return true;
 }

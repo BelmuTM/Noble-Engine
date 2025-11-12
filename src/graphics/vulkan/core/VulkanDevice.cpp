@@ -13,16 +13,17 @@
 static const std::vector deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     VK_KHR_SPIRV_1_4_EXTENSION_NAME,
-    VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
-    VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME
+    VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME
 };
 
 bool VulkanDevice::create(
-    const vk::Instance&   instance,
-    const vk::SurfaceKHR& surface,
-    std::string&          errorMessage
+    const VulkanCapabilities& capabilities,
+    const vk::Instance&       instance,
+    const vk::SurfaceKHR&     surface,
+    std::string&              errorMessage
 ) noexcept {
-    _instance = instance;
+    _capabilities = &capabilities;
+    _instance     = instance;
 
     TRY(pickPhysicalDevice(errorMessage));
 
@@ -58,18 +59,6 @@ void VulkanDevice::destroy() noexcept {
 }
 
 bool VulkanDevice::isPhysicalDeviceSuitable(const vk::PhysicalDevice device) {
-    const vk::PhysicalDeviceProperties& properties = device.getProperties();
-    const vk::PhysicalDeviceFeatures&   features   = device.getFeatures();
-
-    // Eliminate current candidate device if critical conditions aren't met
-    if (properties.apiVersion < VK_API_VERSION_1_3) {
-        return false;
-    }
-
-    if (!features.samplerAnisotropy) {
-        return false;
-    }
-
     const auto availableDeviceExtensions = device.enumerateDeviceExtensionProperties();
     if (availableDeviceExtensions.result != vk::Result::eSuccess) return false;
 
@@ -90,7 +79,12 @@ bool VulkanDevice::pickPhysicalDevice(std::string& errorMessage) {
 
     // Picking the best suitable candidate within available devices
     auto suitablePhysicalDevices = availableDevices.value | std::views::filter([&](const auto& device) {
-        return isPhysicalDeviceSuitable(device);
+        vk::Bool32 profileSupported = vk::False;
+
+        VK_TRY(vpGetPhysicalDeviceProfileSupport(*_capabilities, _instance, device, &vulkanProfile, &profileSupported),
+            errorMessage);
+
+        return static_cast<bool>(profileSupported) && isPhysicalDeviceSuitable(device);
     });
 
     const auto it = std::ranges::begin(suitablePhysicalDevices);
@@ -158,42 +152,31 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
     // Queue priority is constant and set to one because we are using a single queue
     static constexpr float queuePriority = 1.0f;
 
-    vk::DeviceQueueCreateInfo deviceQueueInfo{};
-    deviceQueueInfo
-        .setQueueFamilyIndex(queueFamilyIndices.graphicsFamily)
-        .setQueueCount(1)
-        .setQueuePriorities(queuePriority);
+    VkDeviceQueueCreateInfo deviceQueueInfo{};
+    deviceQueueInfo.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    deviceQueueInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
+    deviceQueueInfo.queueCount       = 1;
+    deviceQueueInfo.pQueuePriorities = &queuePriority;
 
-    // Device features
+    VkDeviceCreateInfo deviceInfo{};
+    deviceInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    deviceInfo.queueCreateInfoCount    = 1;
+    deviceInfo.pQueueCreateInfos       = &deviceQueueInfo;
+    deviceInfo.enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size());
+    deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    vk::PhysicalDeviceFeatures deviceFeatures{};
-    deviceFeatures
-        .setFillModeNonSolid(vk::True)
-        .setSamplerAnisotropy(vk::True);
+    VpDeviceCreateInfo vpCreateInfo{};
+    vpCreateInfo.pCreateInfo             = &deviceInfo;
+    vpCreateInfo.enabledFullProfileCount = 1;
+    vpCreateInfo.pEnabledFullProfiles    = &vulkanProfile;
 
-    vk::PhysicalDeviceVulkan11Features deviceFeatures_1_1{};
-    deviceFeatures_1_1
-        .setShaderDrawParameters(vk::True);
+    VkDevice rawDevice = VK_NULL_HANDLE;
+    VK_TRY(
+        vpCreateDevice(*_capabilities, _physicalDevice, &vpCreateInfo, nullptr, &rawDevice),
+        errorMessage
+    );
 
-    vk::PhysicalDeviceVulkan13Features deviceFeatures_1_3{};
-    deviceFeatures_1_3
-        .setPNext(&deviceFeatures_1_1)
-        .setDynamicRendering(vk::True)
-        .setSynchronization2(vk::True);
-
-    vk::PhysicalDeviceBufferDeviceAddressFeatures deviceBufferAddressFeatures{};
-    deviceBufferAddressFeatures
-        .setPNext(&deviceFeatures_1_3)
-        .setBufferDeviceAddress(vk::True);
-
-    vk::DeviceCreateInfo deviceInfo{};
-    deviceInfo
-        .setPNext(&deviceBufferAddressFeatures)
-        .setQueueCreateInfos(deviceQueueInfo)
-        .setPEnabledExtensionNames(deviceExtensions)
-        .setPEnabledFeatures(&deviceFeatures);
-
-    VK_CREATE(_physicalDevice.createDevice(deviceInfo), _logicalDevice, errorMessage);
+    _logicalDevice = vk::Device(rawDevice);
 
     _graphicsQueue = _logicalDevice.getQueue(queueFamilyIndices.graphicsFamily, 0);
     _presentQueue  = _logicalDevice.getQueue(queueFamilyIndices.presentFamily , 0);

@@ -6,6 +6,8 @@
 #include "VulkanImage.h"
 #include "graphics/vulkan/core/VulkanCommandManager.h"
 
+#include "core/resources/images/Image.h"
+
 class VulkanImageManager {
 public:
     VulkanImageManager()  = default;
@@ -27,9 +29,8 @@ public:
         _images.push_back(image);
     }
 
-    [[nodiscard]] bool createDefaultTexture(VulkanImage& texture, std::string& errorMessage);
-
-    [[nodiscard]] bool loadTextureFromFile(VulkanImage& texture, const std::string& path, std::string& errorMessage);
+    [[nodiscard]] bool loadImage(VulkanImage& image, const void* imageData, std::string& errorMessage);
+    [[nodiscard]] bool loadImage(VulkanImage& image, const Image* imageData, std::string& errorMessage);
 
     [[nodiscard]] bool createColorBuffer(
         VulkanImage& colorBuffer, vk::Extent2D extent, vk::Format format, std::string& errorMessage

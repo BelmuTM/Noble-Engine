@@ -1,17 +1,17 @@
 #include "VulkanRenderer.h"
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
-#include "graphics/vulkan/resources/mesh/VulkanMesh.h"
+#include "graphics/vulkan/resources/meshes/VulkanMesh.h"
 
 #include "core/Engine.h"
-#include "core/debug/Logger.h"
 #include "core/debug/ErrorHandling.h"
+#include "core/debug/Logger.h"
 
 VulkanRenderer::~VulkanRenderer() {
     shutdown();
 }
 
-bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& objects) {
+bool VulkanRenderer::init(Platform::Window& window, const objects_vector& objects) {
     _window = &window;
 
     std::string errorMessage = "Failed to init Vulkan renderer: no error message provided";
@@ -170,18 +170,7 @@ bool VulkanRenderer::init(Platform::Window& window, const std::vector<Object>& o
         .setDepthAttachment(depthAttachment);
 
     for (const auto& renderObject : renderObjectManager.getRenderObjects()) {
-        auto verticesDraw = std::make_unique<DrawCallPushConstant<ObjectDataGPU>>();
-        verticesDraw->setMesh(*renderObject.mesh);
-
-        verticesDraw->setDescriptorResolver(
-            [&renderObject](const FrameContext& frame) {
-                return std::vector{renderObject.descriptorSets->getSets().at(frame.frameIndex)};
-            }
-        );
-
-        verticesDraw->setPushConstantResolver([&renderObject](const FrameContext&) { return renderObject.data; });
-
-        meshRenderPass.addDrawCall(std::move(verticesDraw));
+        meshRenderPass.addObjectDrawCall(renderObject.get());
     }
 
     //frameGraph.addPass(compositePass);

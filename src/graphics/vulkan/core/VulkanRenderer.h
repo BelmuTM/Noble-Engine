@@ -12,11 +12,11 @@
 #include "VulkanSwapchainManager.h"
 
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
-#include "graphics/vulkan/resources/image/VulkanImageManager.h"
-#include "graphics/vulkan/resources/mesh/VulkanMeshManager.h"
+#include "graphics/vulkan/resources/images/VulkanImageManager.h"
+#include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"
+#include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 #include "graphics/vulkan/resources/ubo/FrameUniformBuffer.h"
 #include "graphics/vulkan/resources/ubo/VulkanUniformBufferManager.h"
-#include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 
 #include "graphics/vulkan/pipeline/VulkanFrameGraph.h"
 #include "graphics/vulkan/pipeline/VulkanPipelineManager.h"
@@ -26,7 +26,7 @@ public:
     VulkanRenderer() = default;
     ~VulkanRenderer() override;
 
-    [[nodiscard]] bool init(Platform::Window& window, const std::vector<Object>& objects) override;
+    [[nodiscard]] bool init(Platform::Window& window, const objects_vector& objects) override;
 
     void shutdown() override;
 

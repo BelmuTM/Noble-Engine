@@ -4,6 +4,7 @@
 
 #include "graphics/vulkan/common/VulkanEntityOwner.h"
 
+#include "VulkanCapabilities.h"
 #include "VulkanInstance.h"
 #include "VulkanDevice.h"
 #include "VulkanSurface.h"
@@ -29,10 +30,11 @@ public:
     [[nodiscard]] const VulkanSwapchain& getSwapchain() const { return swapchain; }
 
 private:
-    VulkanInstance  instance;
-    VulkanSurface   surface;
-    VulkanDevice    device;
-    VulkanSwapchain swapchain;
+    VulkanCapabilities capabilities;
+    VulkanInstance     instance;
+    VulkanSurface      surface;
+    VulkanDevice       device;
+    VulkanSwapchain    swapchain;
 };
 
 #endif //NOBLEENGINE_VULKANCONTEXT_H

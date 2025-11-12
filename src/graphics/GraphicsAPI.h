@@ -2,16 +2,16 @@
 #ifndef NOBLEENGINE_GRAPHICSAPI_H
 #define NOBLEENGINE_GRAPHICSAPI_H
 
-#include "core/objects/object/Object.h"
 #include "core/Platform.h"
-#include "core/objects/camera/Camera.h"
+#include "core/common/Types.h"
+#include "core/entities/camera/Camera.h"
 
 class GraphicsAPI {
 public:
     GraphicsAPI()          = default;
     virtual ~GraphicsAPI() = default;
 
-    [[nodiscard]] virtual bool init(Platform::Window& window, const std::vector<Object>& objects) = 0;
+    [[nodiscard]] virtual bool init(Platform::Window& window, const objects_vector& objects) = 0;
 
     virtual void shutdown() = 0;
 

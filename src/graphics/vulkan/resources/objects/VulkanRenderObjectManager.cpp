@@ -1,14 +1,15 @@
 #include "VulkanRenderObjectManager.h"
 
 #include "core/debug/ErrorHandling.h"
+#include "core/debug/Logger.h"
 
 bool VulkanRenderObjectManager::create(
-    const std::vector<Object>& objects,
-    const VulkanDevice&        device,
-    VulkanDescriptorManager&   descriptorManager,
-    VulkanImageManager&        imageManager,
-    VulkanMeshManager&         meshManager,
-    std::string&               errorMessage
+    const objects_vector&    objects,
+    const VulkanDevice&      device,
+    VulkanDescriptorManager& descriptorManager,
+    VulkanImageManager&      imageManager,
+    VulkanMeshManager&       meshManager,
+    std::string&             errorMessage
 ) noexcept {
     _descriptorManager = &descriptorManager;
     _imageManager      = &imageManager;
@@ -18,11 +19,14 @@ bool VulkanRenderObjectManager::create(
     _meshes.reserve(objects.size());
 
     for (uint32_t i = 0; i < objects.size(); i++) {
-        VulkanRenderObject renderObject;
+        auto renderObject = std::make_unique<VulkanRenderObject>();
 
-        TRY(createRenderObject(renderObject, i, objects[i], errorMessage));
+        TRY(createRenderObject(*renderObject, i, objects[i].get(), errorMessage));
 
-        _meshes.push_back(renderObject.mesh.get());
+        for (auto& submesh : renderObject->submeshes) {
+            _meshes.push_back(submesh.mesh.get());
+        }
+
         _renderObjects.push_back(std::move(renderObject));
     }
 
@@ -40,37 +44,53 @@ void VulkanRenderObjectManager::destroy() noexcept {
 }
 
 bool VulkanRenderObjectManager::createRenderObject(
-    VulkanRenderObject& renderObject, const uint32_t objectIndex, const Object& object, std::string& errorMessage
+    VulkanRenderObject& renderObject, const uint32_t objectIndex, Object* object, std::string& errorMessage
 ) const {
     renderObject.objectIndex = objectIndex;
-    renderObject.object      = &object;
+    renderObject.object      = object;
 
-    // Load mesh
-    renderObject.mesh = std::make_unique<VulkanMesh>();
-    TRY(_meshManager->loadModel(*renderObject.mesh, object.getModelPath(), errorMessage));
+    const auto& [name, meshes] = object->getModel();
+    renderObject.submeshes.reserve(meshes.size());
 
-    // Load texture
-    renderObject.texture = std::make_unique<VulkanImage>();
-    if (!_imageManager->loadTextureFromFile(*renderObject.texture, renderObject.mesh->getMaterial().albedoPath, errorMessage)) {
-        // Default texture fallback
-        VulkanImage defaultTexture;
-        TRY(_imageManager->createDefaultTexture(defaultTexture, errorMessage));
-        renderObject.texture = std::make_unique<VulkanImage>(defaultTexture);
+    for (const Mesh& mesh : meshes) {
+        VulkanRenderSubmesh submesh;
+
+        // Load mesh
+        submesh.mesh = std::make_unique<VulkanMesh>(mesh);
+
+        // Load texture
+        const Material& material = submesh.mesh->getMaterial();
+
+        submesh.texture = std::make_unique<VulkanImage>();
+
+        const Image* albedoTexture = object->getTexture(material.albedoPath);
+        if (albedoTexture) {
+            TRY(_imageManager->loadImage(*submesh.texture, albedoTexture, errorMessage));
+        } else {
+            std::vector<uint8_t> defaultColorBytes = Image::rgbColorToBytes(material.diffuse);
+            TRY(_imageManager->loadImage(*submesh.texture, defaultColorBytes.data(), errorMessage));
+        }
+
+        // Allocate and bind descriptor sets
+        submesh.descriptorSets = std::make_unique<VulkanDescriptorSets>(*_descriptorManager);
+        TRY(submesh.descriptorSets->allocate(errorMessage));
+        submesh.descriptorSets->bindPerFrameResource(submesh.texture->getDescriptorInfo(0));
+
+        renderObject.submeshes.push_back(std::move(submesh));
     }
-
-    // Bind texture descriptor
-    renderObject.descriptorSets = std::make_unique<VulkanDescriptorSets>(*_descriptorManager);
-    TRY(renderObject.descriptorSets->allocate(errorMessage));
-
-    renderObject.descriptorSets->bindPerFrameResource(renderObject.texture->getDescriptorInfo(0));
 
     return true;
 }
 
-void VulkanRenderObjectManager::updateObjects() {
-    for (auto& renderObject : _renderObjects) {
+void VulkanRenderObjectManager::updateObjects() const {
+    std::vector<ObjectDataGPU> dataToGPU(_renderObjects.size());
+
+    for (size_t i = 0; i < _renderObjects.size(); ++i) {
+        auto& renderObject = *_renderObjects[i];
         renderObject.update();
 
-        _objectBuffer.update(renderObject.objectIndex, renderObject.data);
+        dataToGPU[i] = renderObject.data;
     }
+
+    _objectBuffer.update(dataToGPU);
 }

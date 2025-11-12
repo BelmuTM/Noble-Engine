@@ -10,7 +10,7 @@ bool VulkanObjectBuffer::create(
 
     const vk::DeviceSize objectBufferSize = sizeof(ObjectDataGPU) * maxObjects;
 
-    TRY(_buffer.create(
+    TRY(VulkanBuffer::create(
         objectBufferSize,
         vk::BufferUsageFlagBits::eStorageBuffer |
         vk::BufferUsageFlagBits::eShaderDeviceAddress,
@@ -19,22 +19,26 @@ bool VulkanObjectBuffer::create(
         errorMessage
     ));
 
-    TRY(_buffer.mapMemory(errorMessage));
+    TRY(mapMemory(errorMessage));
 
     return true;
 }
 
 void VulkanObjectBuffer::destroy() noexcept {
-    _buffer.destroy();
+    VulkanBuffer::destroy();
 
     _device = nullptr;
 }
 
-void VulkanObjectBuffer::update(const uint32_t objectIndex, const ObjectDataGPU& data) const {
+void VulkanObjectBuffer::update(const uint32_t objectIndex, const ObjectDataGPU& dataToGPU) const {
 #if VULKAN_DEBUG_UTILS
     assert(objectIndex < _maxObjects);
 #endif
 
-    auto* bufferPointer = static_cast<ObjectDataGPU*>(_buffer.getMappedPointer());
-    bufferPointer[objectIndex] = data;
+    auto* bufferPointer = static_cast<ObjectDataGPU*>(getMappedPointer());
+    bufferPointer[objectIndex] = dataToGPU;
+}
+
+void VulkanObjectBuffer::update(const std::vector<ObjectDataGPU>& dataToGPU) const {
+    std::memcpy(getMappedPointer(), dataToGPU.data(), dataToGPU.size() * sizeof(ObjectDataGPU));
 }

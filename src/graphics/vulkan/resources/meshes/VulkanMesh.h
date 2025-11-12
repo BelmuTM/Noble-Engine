@@ -4,12 +4,18 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "core/objects/object/Mesh.h"
+#include "core/resources/models/Mesh.h"
 
 class VulkanMesh final : public Mesh {
 public:
     VulkanMesh()  = default;
     ~VulkanMesh() = default;
+
+    explicit VulkanMesh(const Mesh& baseMesh) {
+        this->_vertices = baseMesh.getVertices();
+        this->_indices  = baseMesh.getIndices();
+        this->_material = baseMesh.getMaterial();
+    }
 
     VulkanMesh(const VulkanMesh&)            noexcept = default;
     VulkanMesh& operator=(const VulkanMesh&) noexcept = default;

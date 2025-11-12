@@ -10,10 +10,11 @@
 #include <glm/glm.hpp>
 
 struct Material {
-    std::string name;
+    std::string name = "Undefined_Material";
 
-    glm::vec3 diffuse{0.0f};
+    glm::vec3 diffuse{1.0f};
     glm::vec3 specular{0.0f};
+    glm::vec3 emission{0.0f};
 
     std::string albedoPath;
     std::string normalPath;
@@ -21,9 +22,9 @@ struct Material {
     std::string roughnessPath;
     std::string metallicPath;
 
-    float ior;
-    float metallic;
-    float roughness;
+    float ior       = 1.0f;
+    float metallic  = 0.0f;
+    float roughness = 0.0f;
 };
 
 namespace TextureHelper {

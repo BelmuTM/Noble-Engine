@@ -9,30 +9,40 @@
 #include <vector>
 
 #ifdef VULKAN_DEBUG_UTILS
+
 static const std::vector validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
+
 #endif
 
-bool VulkanInstance::create(std::string& errorMessage) noexcept {
+bool VulkanInstance::create(const VulkanCapabilities& capabilities, std::string& errorMessage) noexcept {
+    _capabilities = &capabilities;
+
     if (!createInstance(errorMessage)) return false;
 
-    dldi = vk::detail::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
+    _dldi = vk::detail::DispatchLoaderDynamic(_instance, vkGetInstanceProcAddr);
 
-    if (!setupDebugMessenger(errorMessage)) return false;
+#ifdef VULKAN_DEBUG_UTILS
+    //if (!setupDebugMessenger(errorMessage)) return false;
+#endif
 
     return true;
 }
 
 void VulkanInstance::destroy() noexcept {
-    if (debugMessenger) {
-        instance.destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, dldi);
-        debugMessenger = VK_NULL_HANDLE;
+#ifdef VULKAN_DEBUG_UTILS
+
+    if (_debugMessenger) {
+        //_instance.destroyDebugUtilsMessengerEXT(_debugMessenger, nullptr, _dldi);
+        _debugMessenger = VK_NULL_HANDLE;
     }
 
-    if (instance) {
-        instance.destroy();
-        instance = VK_NULL_HANDLE;
+#endif
+
+    if (_instance) {
+        _instance.destroy();
+        _instance = VK_NULL_HANDLE;
     }
 }
 
@@ -47,13 +57,24 @@ std::vector<const char*> VulkanInstance::getRequiredExtensions() {
 }
 
 bool VulkanInstance::createInstance(std::string& errorMessage) {
-    vk::ApplicationInfo applicationInfo{};
+    VkApplicationInfo applicationInfo{};
+    applicationInfo.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     applicationInfo.pApplicationName   = "Noble";
     applicationInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     applicationInfo.pEngineName        = "NobleEngine";
     applicationInfo.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
     applicationInfo.apiVersion         = VULKAN_VERSION;
 
+    // Check if profile is supported
+    vk::Bool32 profileSupported = vk::False;
+    VK_TRY(vpGetInstanceProfileSupport(*_capabilities, nullptr, &vulkanProfile, &profileSupported), errorMessage);
+
+    if (!profileSupported) {
+        errorMessage = "Failed to create Vulkan instance: Vulkan profile not supported";
+        return false;
+    }
+
+    // Fetch required extensions and check if they are supported
     const auto extensions = getRequiredExtensions();
 
     if (extensions.empty()) {
@@ -102,13 +123,23 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
 #endif
 
     // Create the instance
-    vk::InstanceCreateInfo instanceInfo{};
-    instanceInfo
-        .setPApplicationInfo(&applicationInfo)
-        .setPEnabledExtensionNames(extensions)
-        .setPEnabledLayerNames(layers);
+    VkInstanceCreateInfo instanceInfo{};
+    instanceInfo.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    instanceInfo.pApplicationInfo        = &applicationInfo;
+    instanceInfo.enabledExtensionCount   = static_cast<uint32_t>(extensions.size());
+    instanceInfo.ppEnabledExtensionNames = extensions.data();
+    instanceInfo.enabledLayerCount       = static_cast<uint32_t>(layers.size());
+    instanceInfo.ppEnabledLayerNames     = layers.data();
 
-    VK_CREATE(vk::createInstance(instanceInfo, nullptr), instance, errorMessage);
+    VpInstanceCreateInfo vpCreateInfo{};
+    vpCreateInfo.pCreateInfo             = &instanceInfo;
+    vpCreateInfo.enabledFullProfileCount = 1;
+    vpCreateInfo.pEnabledFullProfiles    = &vulkanProfile;
+
+    VkInstance rawInstance{};
+    VK_TRY(vpCreateInstance(*_capabilities, &vpCreateInfo, nullptr, &rawInstance), errorMessage);
+
+    _instance = vk::Instance(rawInstance);
 
     return true;
 }
@@ -139,8 +170,6 @@ vk::Bool32 VulkanInstance::debugCallback(
 }
 
 bool VulkanInstance::setupDebugMessenger(std::string& errorMessage) {
-#ifdef VULKAN_DEBUG_UTILS
-
     constexpr vk::DebugUtilsMessageSeverityFlagsEXT severityFlags(
         vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
         vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError);
@@ -156,9 +185,8 @@ bool VulkanInstance::setupDebugMessenger(std::string& errorMessage) {
         .setPfnUserCallback(&debugCallback)
         .setPUserData(this);
 
-    VK_CREATE(instance.createDebugUtilsMessengerEXT(debugUtilsMessengerInfo, nullptr, dldi), debugMessenger,
+    VK_CREATE(_instance.createDebugUtilsMessengerEXT(debugUtilsMessengerInfo, nullptr, _dldi), _debugMessenger,
               errorMessage);
 
-#endif
     return true;
 }

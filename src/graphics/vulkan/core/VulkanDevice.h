@@ -8,6 +8,8 @@
 
 #include <string>
 
+#include "VulkanCapabilities.h"
+
 class VulkanDevice {
 public:
     VulkanDevice() = default;
@@ -20,9 +22,10 @@ public:
     VulkanDevice& operator=(VulkanDevice&&) = delete;
 
     [[nodiscard]] bool create(
-        const vk::Instance&   instance,
-        const vk::SurfaceKHR& surface,
-        std::string&          errorMessage
+        const VulkanCapabilities& capabilities,
+        const vk::Instance&       instance,
+        const vk::SurfaceKHR&     surface,
+        std::string&              errorMessage
     ) noexcept;
 
     void destroy() noexcept;
@@ -47,6 +50,8 @@ public:
     [[nodiscard]] vk::Queue getPresentQueue() const noexcept { return _presentQueue; }
 
 private:
+    const VulkanCapabilities* _capabilities = nullptr;
+
     vk::Instance _instance{};
 
     vk::PhysicalDevice _physicalDevice{};

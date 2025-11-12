@@ -2,7 +2,7 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include "graphics/vulkan/resources/mesh/VulkanVertex.h"
+#include "graphics/vulkan/resources/meshes/VulkanVertex.h"
 
 bool VulkanGraphicsPipeline::create(
     const vk::Device&                           device,
