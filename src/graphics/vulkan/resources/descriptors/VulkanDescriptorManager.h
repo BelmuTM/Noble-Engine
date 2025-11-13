@@ -5,17 +5,16 @@
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 struct DescriptorBindingInfo {
-    uint32_t             set;
-    uint32_t             binding;
+    // uint32_t             binding;
     vk::DescriptorType   type;
-    uint32_t             count;
     vk::ShaderStageFlags stageFlags;
+    uint32_t             count = 1;
 };
-
-class VulkanUniformBufferBase;
 
 class VulkanDescriptorManager {
 public:
+    using DescriptorScheme = std::vector<DescriptorBindingInfo>;
+
     VulkanDescriptorManager()  = default;
     ~VulkanDescriptorManager() = default;
 
@@ -25,17 +24,15 @@ public:
     VulkanDescriptorManager(VulkanDescriptorManager&&)            = delete;
     VulkanDescriptorManager& operator=(VulkanDescriptorManager&&) = delete;
 
-    [[nodiscard]] bool create(const vk::Device& device, uint32_t framesInFlight, std::string& errorMessage) noexcept;
+    [[nodiscard]] bool create(
+        const vk::Device&       device,
+        const DescriptorScheme& descriptorScheme,
+        uint32_t                framesInFlight,
+        uint32_t                maxSets,
+        std::string&            errorMessage
+    ) noexcept;
 
     void destroy() noexcept;
-
-    [[nodiscard]] bool createSetLayout(
-        const std::vector<vk::DescriptorSetLayoutBinding>& bindings, std::string& errorMessage
-    );
-
-    [[nodiscard]] bool createPool(
-        const std::vector<vk::DescriptorPoolSize>& poolSizes, uint32_t maxSets, std::string& errorMessage
-    );
 
     [[nodiscard]] bool allocateSets(
         std::vector<vk::DescriptorSet>&      descriptorSets,
@@ -55,9 +52,18 @@ private:
     vk::Device _device{};
 
     uint32_t _framesInFlight = 0;
+    uint32_t _maxSets        = 0;
+
+    std::vector<vk::DescriptorSetLayoutBinding> _bindings{};
+    std::vector<vk::DescriptorPoolSize>         _poolSizes{};
 
     vk::DescriptorSetLayout _descriptorSetLayout{};
     vk::DescriptorPool      _descriptorPool{};
+
+    void buildDescriptorScheme(const DescriptorScheme& descriptorScheme);
+
+    [[nodiscard]] bool createSetLayout(std::string& errorMessage);
+    [[nodiscard]] bool createPool(std::string& errorMessage);
 };
 
 #endif //NOBLEENGINE_VULKANDESCRIPTORMANAGER_H

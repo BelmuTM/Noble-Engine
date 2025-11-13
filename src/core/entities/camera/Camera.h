@@ -63,7 +63,7 @@ public:
     void update(double deltaTime);
 
 private:
-    std::unique_ptr<CameraController> _controller;
+    std::unique_ptr<CameraController> _controller{};
 
     float _fov = 70.0f;
     static constexpr float MIN_FOV = 30.0f;

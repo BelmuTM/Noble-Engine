@@ -4,20 +4,39 @@
 #include "core/debug/Logger.h"
 
 bool VulkanRenderObjectManager::create(
-    const objects_vector&    objects,
-    const VulkanDevice&      device,
-    VulkanDescriptorManager& descriptorManager,
-    VulkanImageManager&      imageManager,
-    VulkanMeshManager&       meshManager,
-    std::string&             errorMessage
+    const ObjectsVector& objects,
+    const VulkanDevice&  device,
+    VulkanImageManager&  imageManager,
+    VulkanMeshManager&   meshManager,
+    const uint32_t       framesInFlight,
+    std::string&         errorMessage
 ) noexcept {
-    _descriptorManager = &descriptorManager;
-    _imageManager      = &imageManager;
-    _meshManager       = &meshManager;
+    _imageManager = &imageManager;
+    _meshManager  = &meshManager;
 
     _renderObjects.reserve(objects.size());
     _meshes.reserve(objects.size());
 
+    TRY(_descriptorManager.create(
+        device.getLogicalDevice(), objectDescriptorScheme, framesInFlight, MAX_RENDER_OBJECTS, errorMessage
+    ));
+
+    TRY(_objectBuffer.create(device, MAX_RENDER_OBJECTS, errorMessage));
+
+    TRY(createRenderObjects(objects, errorMessage));
+
+    return true;
+}
+
+void VulkanRenderObjectManager::destroy() noexcept {
+    _imageManager = nullptr;
+    _meshManager  = nullptr;
+
+    _descriptorManager.destroy();
+    _objectBuffer.destroy();
+}
+
+bool VulkanRenderObjectManager::createRenderObjects(const ObjectsVector& objects, std::string& errorMessage) {
     for (uint32_t i = 0; i < objects.size(); i++) {
         auto renderObject = std::make_unique<VulkanRenderObject>();
 
@@ -30,17 +49,7 @@ bool VulkanRenderObjectManager::create(
         _renderObjects.push_back(std::move(renderObject));
     }
 
-    TRY(_objectBuffer.create(device, MAX_OBJECTS, errorMessage));
-
     return true;
-}
-
-void VulkanRenderObjectManager::destroy() noexcept {
-    _descriptorManager = nullptr;
-    _imageManager      = nullptr;
-    _meshManager       = nullptr;
-
-    _objectBuffer.destroy();
 }
 
 bool VulkanRenderObjectManager::createRenderObject(
@@ -72,7 +81,7 @@ bool VulkanRenderObjectManager::createRenderObject(
         }
 
         // Allocate and bind descriptor sets
-        submesh.descriptorSets = std::make_unique<VulkanDescriptorSets>(*_descriptorManager);
+        submesh.descriptorSets = std::make_unique<VulkanDescriptorSets>(_descriptorManager);
         TRY(submesh.descriptorSets->allocate(errorMessage));
         submesh.descriptorSets->bindPerFrameResource(submesh.texture->getDescriptorInfo(0));
 

@@ -3,6 +3,7 @@
 #define NOBLEENGINE_VULKANPIPELINEMANAGER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
+
 #include "graphics/vulkan/core/VulkanSwapchain.h"
 #include "VulkanGraphicsPipeline.h"
 

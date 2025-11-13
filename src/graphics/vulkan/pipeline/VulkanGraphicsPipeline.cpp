@@ -4,6 +4,8 @@
 
 #include "graphics/vulkan/resources/meshes/VulkanVertex.h"
 
+#include "core/debug/ErrorHandling.h"
+
 bool VulkanGraphicsPipeline::create(
     const vk::Device&                           device,
     const VulkanSwapchain&                      swapchain,
@@ -12,28 +14,29 @@ bool VulkanGraphicsPipeline::create(
     const VulkanShaderProgram&                  shaderProgram,
     std::string&                                errorMessage
 ) noexcept {
+    _device        = device;
     _shaderProgram = &shaderProgram;
 
-    if (!createPipelineLayout(device, descriptorSetLayouts, pushConstantRanges, errorMessage)) return false;
-
-    if (!createPipeline(device, swapchain, errorMessage)) return false;
+    TRY(createPipelineLayout(device, descriptorSetLayouts, pushConstantRanges, errorMessage));
+    TRY(createPipeline(device, swapchain, errorMessage));
 
     _stageFlags = _shaderProgram->getStageFlags();
 
     return true;
 }
 
-void VulkanGraphicsPipeline::destroy(const vk::Device& device) noexcept {
+void VulkanGraphicsPipeline::destroy() noexcept {
     if (_pipeline) {
-        device.destroyPipeline(_pipeline);
+        _device.destroyPipeline(_pipeline);
         _pipeline = VK_NULL_HANDLE;
     }
 
     if (_pipelineLayout) {
-        device.destroyPipelineLayout(_pipelineLayout);
+        _device.destroyPipelineLayout(_pipelineLayout);
         _pipelineLayout = VK_NULL_HANDLE;
     }
 
+    _device        = VK_NULL_HANDLE;
     _shaderProgram = nullptr;
 }
 

@@ -15,18 +15,21 @@
 #include "graphics/vulkan/resources/images/VulkanImageManager.h"
 #include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
-#include "graphics/vulkan/resources/ubo/FrameUniformBuffer.h"
 #include "graphics/vulkan/resources/ubo/VulkanUniformBufferManager.h"
+#include "graphics/vulkan/resources/VulkanFrameResources.h"
 
-#include "graphics/vulkan/pipeline/VulkanFrameGraph.h"
+#include "graphics/vulkan/pipeline/framegraph/VulkanFrameGraph.h"
 #include "graphics/vulkan/pipeline/VulkanPipelineManager.h"
 
 class VulkanRenderer final : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {
 public:
-    VulkanRenderer() = default;
+    explicit VulkanRenderer(uint32_t framesInFlight = 2);
+
     ~VulkanRenderer() override;
 
-    [[nodiscard]] bool init(Platform::Window& window, const objects_vector& objects) override;
+    [[nodiscard]] bool init(
+        Platform::Window& window, const ObjectsVector& objects, std::string& errorMessage
+    ) override;
 
     void shutdown() override;
 
@@ -35,29 +38,25 @@ public:
 private:
     Platform::Window* _window = nullptr;
 
-    VulkanContext          context;
-    VulkanSwapchainManager swapchainManager;
-    VulkanCommandManager   commandManager;
-    VulkanPipelineManager  pipelineManager;
-
-    VulkanGraphicsPipeline pipelineComposite;
-    VulkanGraphicsPipeline pipelineMeshRender;
-    VulkanFrameGraph       frameGraph;
-
-    VulkanDescriptorManager    descriptorManagerFrame;
-    VulkanDescriptorManager    descriptorManagerObject;
-    VulkanMeshManager          meshManager;
-    VulkanImageManager         imageManager;
-    VulkanUniformBufferManager uniformBufferManager;
-    VulkanRenderObjectManager  renderObjectManager;
-
-    FrameUniformBuffer frameUBO;
-    std::unique_ptr<VulkanDescriptorSets> frameUBODescriptorSets;
-
-    VulkanImage depth;
-    VulkanImage compositeOutput;
+    uint32_t _framesInFlight;
 
     unsigned int currentFrame = 0;
+
+    VulkanContext context{};
+
+    VulkanSwapchainManager     swapchainManager{};
+    VulkanCommandManager       commandManager{};
+    VulkanPipelineManager      pipelineManager{};
+    VulkanMeshManager          meshManager{};
+    VulkanImageManager         imageManager{};
+    VulkanUniformBufferManager uniformBufferManager{};
+
+    VulkanFrameResources      frameResources{};
+    VulkanRenderObjectManager renderObjectManager{};
+
+    VulkanGraphicsPipeline pipelineComposite{};
+    VulkanGraphicsPipeline pipelineMeshRender{};
+    VulkanFrameGraph       frameGraph{};
 
     bool onFramebufferResize(std::string& errorMessage);
 

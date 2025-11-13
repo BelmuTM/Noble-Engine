@@ -142,6 +142,43 @@ bool VulkanImage::copyBufferToImage(
     return true;
 }
 
+struct LayoutTransition {
+    vk::AccessFlags srcAccessMask;
+    vk::AccessFlags dstAccessMask;
+    vk::PipelineStageFlags srcStage;
+    vk::PipelineStageFlags dstStage;
+};
+
+static std::optional<LayoutTransition> getLayoutTransition(
+    const vk::ImageLayout oldLayout, const vk::ImageLayout newLayout
+) {
+    using ImageLayout = vk::ImageLayout;
+
+    // Supported layout transitions
+    if (oldLayout == ImageLayout::eUndefined &&
+        newLayout == ImageLayout::eTransferDstOptimal)
+        return LayoutTransition{
+            {}, vk::AccessFlagBits::eTransferWrite,
+            vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer
+        };
+
+    if (oldLayout == ImageLayout::eTransferDstOptimal &&
+        newLayout == ImageLayout::eShaderReadOnlyOptimal)
+        return LayoutTransition{
+            vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eShaderRead,
+            vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader
+        };
+
+    if (oldLayout == ImageLayout::eUndefined &&
+        newLayout == ImageLayout::eDepthStencilAttachmentOptimal)
+        return LayoutTransition{
+            {}, vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+            vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eEarlyFragmentTests
+        };
+
+    return std::nullopt;
+}
+
 bool VulkanImage::transitionImageLayout(
     const vk::ImageLayout       oldLayout,
     const vk::ImageLayout       newLayout,
@@ -177,40 +214,18 @@ bool VulkanImage::transitionImageLayout(
         .setImage(_image)
         .setSubresourceRange(subresourceRange);
 
-    vk::PipelineStageFlags sourceStage;
-    vk::PipelineStageFlags destinationStage;
+    const auto transition = getLayoutTransition(oldLayout, newLayout);
 
-    if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eTransferDstOptimal) {
-
-        barrier.srcAccessMask = {};
-        barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
-
-        sourceStage      = vk::PipelineStageFlagBits::eTopOfPipe;
-        destinationStage = vk::PipelineStageFlagBits::eTransfer;
-
-    } else if (oldLayout == vk::ImageLayout::eTransferDstOptimal &&
-               newLayout == vk::ImageLayout::eShaderReadOnlyOptimal) {
-
-        barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-        barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-
-        sourceStage      = vk::PipelineStageFlagBits::eTransfer;
-        destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
-
-    } else if (oldLayout == vk::ImageLayout::eUndefined &&
-               newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
-        barrier.srcAccessMask = {};
-        barrier.dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentRead |
-                                vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-
-        sourceStage      = vk::PipelineStageFlagBits::eTopOfPipe;
-        destinationStage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
-    } else {
+    if (!transition) {
         errorMessage = "Failed to transition Vulkan image layout: unsupported transition";
         return false;
     }
 
-    copyCommandBuffer.pipelineBarrier(sourceStage, destinationStage, {}, {}, nullptr, barrier);
+    copyCommandBuffer.pipelineBarrier(
+        transition->srcStage,
+        transition->dstStage,
+        {}, {}, nullptr, barrier
+    );
 
     TRY(commandManager->endSingleTimeCommands(copyCommandBuffer, errorMessage));
 

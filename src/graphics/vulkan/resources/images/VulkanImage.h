@@ -3,6 +3,7 @@
 #define NOBLEENGINE_VULKANIMAGE_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
+
 #include "graphics/vulkan/core/VulkanCommandManager.h"
 #include "graphics/vulkan/core/VulkanDevice.h"
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorInfo.h"
@@ -103,10 +104,10 @@ private:
     vk::ImageView _imageView{};
     vk::Sampler   _sampler{};
 
-    VmaAllocation _allocation{};
+    VmaAllocation _allocation;
 
     vk::Extent3D _extent{};
-    vk::Format   _format{};
+    vk::Format   _format;
 };
 
 #endif // NOBLEENGINE_VULKANIMAGE_H

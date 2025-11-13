@@ -19,7 +19,7 @@ constexpr uint32_t objectDataGPUSize = sizeof(ObjectDataGPU);
 
 class Object {
 public:
-    using textures_map = std::unordered_map<std::string, const Image*>;
+    using TexturesMap = std::unordered_map<std::string, const Image*>;
 
     Object()  = default;
     ~Object() = default;
@@ -32,7 +32,7 @@ public:
 
     void create(
         const Model*        model,
-        const textures_map& textures,
+        const TexturesMap& textures,
         glm::vec3           position = {0.0f, 0.0f, 0.0f},
         glm::vec3           rotation = {0.0f, 0.0f, 0.0f},
         glm::vec3           scale    = {1.0f, 1.0f, 1.0f}
@@ -40,7 +40,7 @@ public:
 
     [[nodiscard]] const Model& getModel() const noexcept { return *_model; }
 
-    [[nodiscard]] textures_map& getTexturesMap() noexcept { return _textures; }
+    [[nodiscard]] TexturesMap& getTexturesMap() noexcept { return _textures; }
 
     [[nodiscard]] const Image* getTexture(const std::string& path) const {
         return _textures.contains(path) ? _textures.at(path) : nullptr;
@@ -54,7 +54,7 @@ public:
 private:
     const Model* _model =  nullptr;
 
-    textures_map _textures{};
+    TexturesMap _textures{};
 
     glm::vec3 _position = {0.0f, 0.0f, 0.0f};
     glm::vec3 _rotation = {0.0f, 0.0f, 0.0f};

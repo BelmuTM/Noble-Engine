@@ -3,6 +3,7 @@
 #define NOBLEENGINE_VULKANMESHMANAGER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
+
 #include "graphics/vulkan/core/VulkanCommandManager.h"
 #include "graphics/vulkan/core/memory/VulkanBuffer.h"
 #include "VulkanMesh.h"
@@ -36,9 +37,9 @@ private:
     const VulkanDevice*         _device         = nullptr;
     const VulkanCommandManager* _commandManager = nullptr;
 
-    VulkanBuffer _stagingBuffer;
-    VulkanBuffer _vertexBuffer;
-    VulkanBuffer _indexBuffer;
+    VulkanBuffer _stagingBuffer{};
+    VulkanBuffer _vertexBuffer{};
+    VulkanBuffer _indexBuffer{};
 
     std::vector<VulkanMesh*> _meshes{};
 

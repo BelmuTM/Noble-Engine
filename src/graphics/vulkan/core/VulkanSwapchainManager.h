@@ -19,11 +19,12 @@ public:
     VulkanSwapchainManager& operator=(VulkanSwapchainManager&&)      = delete;
 
     [[nodiscard]] bool create(
-        VulkanContext&     context,
-        Platform::Window&  window,
-        uint32_t           framesInFlight,
-        uint32_t           swapchainImageCount,
-        std::string&       errorMessage
+        Platform::Window&    window,
+        const VulkanSurface& surface,
+        const VulkanDevice&  device,
+        VulkanSwapchain&     swapchain,
+        uint32_t             framesInFlight,
+        std::string&         errorMessage
     ) noexcept;
 
     void destroy() noexcept;
@@ -43,10 +44,13 @@ public:
     );
 
 private:
-    VulkanContext*    _context = nullptr;
-    Platform::Window* _window  = nullptr;
+    Platform::Window* _window = nullptr;
 
-    VulkanSyncObjects _syncObjects;
+    const VulkanSurface* _surface   = nullptr;
+    const VulkanDevice*  _device    = nullptr;
+    VulkanSwapchain*     _swapchain = nullptr;
+
+    VulkanSyncObjects _syncObjects{};
 
     uint32_t _framesInFlight = 0;
 

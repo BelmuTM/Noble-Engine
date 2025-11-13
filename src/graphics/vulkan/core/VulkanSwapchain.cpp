@@ -15,6 +15,7 @@ bool VulkanSwapchain::create(
 
     TRY(createSwapchain(surface, errorMessage));
     TRY(createImageViews(errorMessage));
+
     return true;
 }
 
@@ -184,7 +185,7 @@ bool VulkanSwapchain::createImageViews(std::string& errorMessage) {
         const auto imageViewCreate = VK_CALL(logicalDevice.createImageView(imageViewInfo), errorMessage);
         if (imageViewCreate.result != vk::Result::eSuccess) return false;
 
-        _imageViews.emplace_back(imageViewCreate.value);
+        _imageViews.push_back(imageViewCreate.value);
     }
 
     return true;

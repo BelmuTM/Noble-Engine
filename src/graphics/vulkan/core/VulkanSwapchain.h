@@ -5,6 +5,7 @@
 #include "core/Platform.h"
 
 #include "graphics/vulkan/common/VulkanHeader.h"
+
 #include "VulkanDevice.h"
 
 #include <string>
@@ -31,6 +32,8 @@ public:
     [[nodiscard]] const vk::SwapchainKHR& handle() const noexcept { return _swapchain; }
 
     [[nodiscard]] std::vector<vk::Image> getImages() const noexcept { return _images; }
+    [[nodiscard]] uint32_t getImageCount() const noexcept { return _images.size(); }
+
     [[nodiscard]] std::vector<vk::ImageView> getImageViews() const noexcept { return _imageViews; }
 
     [[nodiscard]] vk::Format getFormat() const noexcept { return _format; }

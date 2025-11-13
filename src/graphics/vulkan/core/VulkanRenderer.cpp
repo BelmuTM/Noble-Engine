@@ -1,93 +1,53 @@
 #include "VulkanRenderer.h"
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
-#include "graphics/vulkan/resources/meshes/VulkanMesh.h"
 
-#include "core/Engine.h"
 #include "core/debug/ErrorHandling.h"
 #include "core/debug/Logger.h"
+
+VulkanRenderer::VulkanRenderer(const uint32_t framesInFlight) : _framesInFlight(framesInFlight) {}
 
 VulkanRenderer::~VulkanRenderer() {
     shutdown();
 }
 
-bool VulkanRenderer::init(Platform::Window& window, const objects_vector& objects) {
+bool VulkanRenderer::init(Platform::Window& window, const ObjectsVector& objects, std::string& errorMessage) {
     _window = &window;
 
-    std::string errorMessage = "Failed to init Vulkan renderer: no error message provided";
+    errorMessage = "Failed to init Vulkan renderer: no error message provided";
 
-    ScopeGuard guard{[this, &errorMessage] {
-        shutdown();
-        Engine::fatalExit(errorMessage);
-    }};
+    ScopeGuard guard{[this] { shutdown(); }};
 
     // Create Vulkan context
     TRY(context.create(window, errorMessage));
 
-    // Create entities
-    const VulkanDevice&    device              = context.getDevice();
-    const VulkanSwapchain& swapchain           = context.getSwapchain();
-    const vk::Device&      logicalDevice       = device.getLogicalDevice();
-    const uint32_t         swapchainImageCount = swapchain.getImages().size();
+    const VulkanSurface& surface       = context.getSurface();
+    const VulkanDevice&  device        = context.getDevice();
+    const vk::Device&    logicalDevice = device.getLogicalDevice();
 
-    TRY(createVulkanEntity(&swapchainManager, errorMessage, context, window, MAX_FRAMES_IN_FLIGHT,
-        swapchainImageCount));
+    VulkanSwapchain& swapchain = context.getSwapchain();
 
-    TRY(createVulkanEntity(&commandManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
+    // Create resource managers
+    TRY(createVulkanEntity(&swapchainManager, errorMessage, window, surface, device, swapchain, _framesInFlight));
+    TRY(createVulkanEntity(&commandManager, errorMessage, device, _framesInFlight));
     TRY(createVulkanEntity(&pipelineManager, errorMessage, logicalDevice, swapchain));
-
-    const std::vector descriptorLayoutBindingsFrame = {
-        vk::DescriptorSetLayoutBinding(
-            0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eAllGraphics, nullptr
-        )
-    };
-
-    const std::vector descriptorPoolSizesFrame = {
-        vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT)
-    };
-
-    TRY(createVulkanEntity(&descriptorManagerFrame, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT));
-    TRY(descriptorManagerFrame.createSetLayout(descriptorLayoutBindingsFrame, errorMessage));
-    TRY(descriptorManagerFrame.createPool(descriptorPoolSizesFrame, MAX_FRAMES_IN_FLIGHT, errorMessage));
-
-    const std::vector descriptorLayoutBindingsObject = {
-        vk::DescriptorSetLayoutBinding(
-            0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, nullptr
-        )
-    };
-
-    static constexpr uint32_t maxObjectSets = MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS;
-
-    const std::vector descriptorPoolSizesObject = {
-        vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, maxObjectSets)
-    };
-
-    TRY(createVulkanEntity(&descriptorManagerObject, errorMessage, logicalDevice, MAX_FRAMES_IN_FLIGHT));
-    TRY(descriptorManagerObject.createSetLayout(descriptorLayoutBindingsObject, errorMessage));
-    TRY(descriptorManagerObject.createPool(descriptorPoolSizesObject, maxObjectSets, errorMessage));
-
-    std::vector descriptorLayoutsMeshRender = {descriptorManagerFrame.getLayout(), descriptorManagerObject.getLayout()};
-    std::vector descriptorLayoutsComposite  = {descriptorManagerFrame.getLayout()};
-
     TRY(createVulkanEntity(&imageManager, errorMessage, device, commandManager));
-    TRY(createVulkanEntity(&uniformBufferManager, errorMessage, device, MAX_FRAMES_IN_FLIGHT));
+    TRY(createVulkanEntity(&uniformBufferManager, errorMessage, device, _framesInFlight));
 
     TRY(createVulkanEntity(
-        &renderObjectManager, errorMessage, objects, device, descriptorManagerObject, imageManager, meshManager
+        &frameResources, errorMessage, device, swapchain, imageManager, uniformBufferManager, _framesInFlight
+    ));
+
+    TRY(createVulkanEntity(
+        &renderObjectManager, errorMessage, objects, device, imageManager, meshManager, _framesInFlight
     ));
 
     TRY(createVulkanEntity(&meshManager, errorMessage, device, commandManager, renderObjectManager.getMeshes()));
 
-    TRY(uniformBufferManager.createBuffer(frameUBO, errorMessage));
-
-    frameUBODescriptorSets = std::make_unique<VulkanDescriptorSets>(descriptorManagerFrame);
-    TRY(frameUBODescriptorSets->allocate(errorMessage));
-    frameUBODescriptorSets->bindPerFrameUBO(frameUBO, 0);
-
-    VulkanShaderProgram composite(logicalDevice);
-    TRY(composite.load("composite", true, errorMessage));
-
-    TRY(pipelineManager.createGraphicsPipeline(pipelineComposite, descriptorLayoutsComposite, composite, errorMessage));
+    // Create rendering pipeline
+    const std::vector descriptorLayoutsMeshRender = {
+        frameResources.getDescriptorManager().getLayout(), renderObjectManager.getDescriptorManager().getLayout()
+    };
 
     VulkanShaderProgram meshRender(logicalDevice);
     TRY(meshRender.load("mesh_render", false, errorMessage));
@@ -98,6 +58,7 @@ bool VulkanRenderer::init(Platform::Window& window, const objects_vector& object
 
     FrameResource swapchainOutput{};
     swapchainOutput
+        .setType(SwapchainOutput)
         .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
         .setResolveImageView([](const FrameContext& frame) { return frame.swapchainImageView; });
 
@@ -106,16 +67,14 @@ bool VulkanRenderer::init(Platform::Window& window, const objects_vector& object
         .setResource(swapchainOutput)
         .setLoadOp(vk::AttachmentLoadOp::eClear)
         .setStoreOp(vk::AttachmentStoreOp::eStore)
-        .setClearValue(clearColor);
-
-    TRY(imageManager.createDepthBuffer(depth, swapchain.getExtent(), errorMessage));
+        .setClearValue(defaultClearColor);
 
     FrameResource depthBuffer{};
     depthBuffer
         .setType(Buffer)
-        .setImage(depth)
+        .setImage(frameResources.getDepthBuffer())
         .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
-        .setResolveImageView([this](const FrameContext&) { return depth.getImageView(); });
+        .setResolveImageView([this](const FrameContext&) { return frameResources.getDepthBuffer().getImageView(); });
 
     FramePassAttachment depthAttachment{};
     depthAttachment
@@ -125,6 +84,13 @@ bool VulkanRenderer::init(Platform::Window& window, const objects_vector& object
         .setClearValue(vk::ClearDepthStencilValue{1.0f, 0});
 
     /*
+    std::vector descriptorLayoutsComposite  = {frameResources.getDescriptorManager().getLayout()};
+
+    VulkanShaderProgram composite(logicalDevice);
+    TRY(composite.load("composite", true, errorMessage));
+
+    TRY(pipelineManager.createGraphicsPipeline(pipelineComposite, descriptorLayoutsComposite, composite, errorMessage));
+
     TRY(imageManager.createColorBuffer(
         compositeOutput,
         swapchain.getExtent(),
@@ -173,7 +139,6 @@ bool VulkanRenderer::init(Platform::Window& window, const objects_vector& object
         meshRenderPass.addObjectDrawCall(renderObject.get());
     }
 
-    //frameGraph.addPass(compositePass);
     frameGraph.addPass(std::move(meshRenderPass));
 
     TRY(createVulkanEntity(&frameGraph, errorMessage, meshManager));
@@ -186,9 +151,6 @@ bool VulkanRenderer::init(Platform::Window& window, const objects_vector& object
 void VulkanRenderer::shutdown() {
     VK_CALL_LOG(context.getDevice().getLogicalDevice().waitIdle(), Logger::Level::ERROR);
     flushDeletionQueue();
-
-    depth.destroy(context.getDevice());
-    //compositeOutput.destroy(context.getDevice());
 
     context.destroy();
 }
@@ -210,15 +172,14 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
 
     recordCurrentCommandBuffer(imageIndex);
 
-    frameUBO.update(currentFrame, context.getSwapchain(), camera);
-
+    frameResources.update(currentFrame, camera);
     renderObjectManager.updateObjects();
 
     if (!swapchainManager.submitCommandBuffer(commandManager, currentFrame, imageIndex, errorMessage, discardLogging)) {
         return;
     }
 
-    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    currentFrame = (currentFrame + 1) % _framesInFlight;
     guard.release();
 }
 
@@ -228,11 +189,8 @@ bool VulkanRenderer::onFramebufferResize(std::string& errorMessage) {
 
     VK_CALL_LOG(context.getDevice().getLogicalDevice().waitIdle(), Logger::Level::ERROR);
 
-    depth.destroy(context.getDevice());
-
     TRY(swapchainManager.recreateSwapchain(errorMessage));
-
-    TRY(imageManager.createDepthBuffer(depth, context.getSwapchain().getExtent(), errorMessage));
+    TRY(frameResources.recreate(errorMessage));
 
     _window->setFramebufferResized(false);
 
@@ -320,7 +278,7 @@ void VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer, 
         .setSwapchainImageView(context.getSwapchain().getImageViews()[imageIndex])
         .setExtent(context.getSwapchain().getExtent());
 
-    frameContext.frameDescriptors = frameUBODescriptorSets->getSets();
+    frameContext.frameDescriptors = frameResources.getUBODescriptors()->getSets();
 
     frameGraph.execute(frameContext);
 

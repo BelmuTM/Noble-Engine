@@ -3,6 +3,7 @@
 #define NOBLEENGINE_VULKANGRAPHICSPIPELINE_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
+
 #include "graphics/vulkan/core/VulkanSwapchain.h"
 #include "VulkanShaderProgram.h"
 
@@ -29,7 +30,7 @@ public:
         std::string&                                errorMessage
     ) noexcept;
 
-    void destroy(const vk::Device& device) noexcept;
+    void destroy() noexcept;
 
     [[nodiscard]] const VulkanShaderProgram* getShaderProgram() const noexcept { return _shaderProgram; }
 
@@ -38,12 +39,14 @@ public:
     [[nodiscard]] vk::ShaderStageFlags getStageFlags() const noexcept { return _stageFlags; }
 
 private:
+    vk::Device _device{};
+
     const VulkanShaderProgram* _shaderProgram = nullptr;
 
     vk::Pipeline       _pipeline{};
     vk::PipelineLayout _pipelineLayout{};
 
-    vk::ShaderStageFlags _stageFlags;
+    vk::ShaderStageFlags _stageFlags{};
 
     // -------------------------------
     //       Vulkan Info structs

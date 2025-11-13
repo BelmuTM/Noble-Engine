@@ -26,7 +26,7 @@ Object* ObjectManager::createObject(
     }
 
     // Load textures and map them to their respective path
-    Object::textures_map textures{};
+    Object::TexturesMap textures{};
 
     for (const auto& texturePath : texturePaths) {
         textures[texturePath] = _imageManager->load(texturePath, errorMessage);

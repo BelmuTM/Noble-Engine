@@ -5,7 +5,7 @@
 
 void Object::create(
     const Model*        model,
-    const textures_map& textures,
+    const TexturesMap& textures,
     const glm::vec3     position,
     const glm::vec3     rotation,
     const glm::vec3     scale

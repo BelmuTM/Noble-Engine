@@ -25,9 +25,9 @@ public:
 
 private:
     Camera&     _camera;
-    GLFWwindow* _window;
+    GLFWwindow* _window = nullptr;
 
-    std::unordered_map<InputAction, glm::vec3> _actionMovementMap;
+    std::unordered_map<InputAction, glm::vec3> _actionMovementMap{};
 
     bool _dragging = false;
 };

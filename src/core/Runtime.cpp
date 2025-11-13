@@ -14,16 +14,17 @@
 #include <thread>
 
 int main() {
+    std::string errorMessage;
     Logger::Manager loggerManager;
 
-    if (!Platform::init()) {
-        Engine::fatalExit("Failed to init platform");
+    if (!Platform::init(errorMessage)) {
+        Engine::fatalExit(errorMessage);
     }
 
     Platform::Window window(800, 600, "Noble Engine");
     window.show();
 
-    InputManager inputManager;
+    InputManager inputManager{};
     inputManager.init(window.handle());
 
     WindowContext ctx{&window, &inputManager};
@@ -38,12 +39,12 @@ int main() {
     objectManager.createObject("stanford_dragon.obj", {1.9f, 0.7f, -2.35f}, {0.0f, 180.0f, 0.0f}, glm::vec3{0.6f});
     objectManager.createObject("viking_room.obj", {-0.5f, -1.0f, -3.0f}, {0.0f, 0.0f, 40.0f}, glm::vec3{6.0f});
 
-    VulkanRenderer renderer;
-    if (!renderer.init(window, objectManager.getObjects())) {
-        Engine::fatalExit("Failed to init Vulkan renderer");
+    VulkanRenderer renderer(Engine::MAX_FRAMES_IN_FLIGHT);
+    if (!renderer.init(window, objectManager.getObjects(), errorMessage)) {
+        Engine::fatalExit(errorMessage);
     }
 
-    Camera camera;
+    Camera camera{};
     camera.setController(std::make_unique<CameraController>(window.handle(), inputManager, camera));
 
     std::atomic running(true);

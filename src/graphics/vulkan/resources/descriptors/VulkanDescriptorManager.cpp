@@ -2,13 +2,24 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
+#include "core/debug/ErrorHandling.h"
+
 bool VulkanDescriptorManager::create(
-    const vk::Device& device,
-    const uint32_t    framesInFlight,
-    std::string&      errorMessage
+    const vk::Device&       device,
+    const DescriptorScheme& descriptorScheme,
+    const uint32_t          framesInFlight,
+    const uint32_t          maxSets,
+    std::string&            errorMessage
 ) noexcept {
     _device         = device;
     _framesInFlight = framesInFlight;
+    _maxSets        = framesInFlight * maxSets; // 1 set per frame in flight
+
+    buildDescriptorScheme(descriptorScheme);
+
+    TRY(createSetLayout(errorMessage));
+    TRY(createPool(errorMessage));
+
     return true;
 }
 
@@ -26,25 +37,33 @@ void VulkanDescriptorManager::destroy() noexcept {
     _device = VK_NULL_HANDLE;
 }
 
-bool VulkanDescriptorManager::createSetLayout(
-    const std::vector<vk::DescriptorSetLayoutBinding>& bindings, std::string& errorMessage
-) {
+void VulkanDescriptorManager::buildDescriptorScheme(const DescriptorScheme& descriptorScheme) {
+    _bindings.reserve(descriptorScheme.size());
+    _poolSizes.reserve(descriptorScheme.size());
+
+    for (size_t i = 0; i < descriptorScheme.size(); i++) {
+        const auto& [type, stageFlags, count] = descriptorScheme[i];
+
+        _bindings.emplace_back(i, type, count, stageFlags, nullptr);
+        _poolSizes.emplace_back(type, count * _maxSets);
+    }
+}
+
+bool VulkanDescriptorManager::createSetLayout(std::string& errorMessage) {
     if (!_device) {
         errorMessage = "Failed to create Vulkan descriptor set layout: device is null";
         return false;
     }
 
     vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
-    descriptorSetLayoutInfo.setBindings(bindings);
+    descriptorSetLayoutInfo.setBindings(_bindings);
 
     VK_CREATE(_device.createDescriptorSetLayout(descriptorSetLayoutInfo), _descriptorSetLayout, errorMessage);
 
     return true;
 }
 
-bool VulkanDescriptorManager::createPool(
-    const std::vector<vk::DescriptorPoolSize>& poolSizes, const uint32_t maxSets, std::string& errorMessage
-) {
+bool VulkanDescriptorManager::createPool(std::string& errorMessage) {
     if (!_device) {
         errorMessage = "Failed to create Vulkan descriptor pool: device is null";
         return false;
@@ -53,8 +72,8 @@ bool VulkanDescriptorManager::createPool(
     vk::DescriptorPoolCreateInfo descriptorPoolInfo{};
     descriptorPoolInfo
         .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
-        .setMaxSets(maxSets)
-        .setPoolSizes(poolSizes);
+        .setMaxSets(_maxSets)
+        .setPoolSizes(_poolSizes);
 
     VK_CREATE(_device.createDescriptorPool(descriptorPoolInfo), _descriptorPool, errorMessage);
 

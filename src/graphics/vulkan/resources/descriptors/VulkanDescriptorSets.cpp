@@ -1,7 +1,5 @@
 #include "VulkanDescriptorSets.h"
 
-#include "graphics/vulkan/resources/ubo/VulkanUniformBuffer.h"
-
 bool VulkanDescriptorSets::allocate(std::string& errorMessage) {
     if (!_manager) {
         errorMessage = "Failed to allocate Vulkan descriptor sets: descriptor manager is null";

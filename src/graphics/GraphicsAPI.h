@@ -11,7 +11,9 @@ public:
     GraphicsAPI()          = default;
     virtual ~GraphicsAPI() = default;
 
-    [[nodiscard]] virtual bool init(Platform::Window& window, const objects_vector& objects) = 0;
+    [[nodiscard]] virtual bool init(
+        Platform::Window& window, const ObjectsVector& objects, std::string& errorMessage
+    ) = 0;
 
     virtual void shutdown() = 0;
 

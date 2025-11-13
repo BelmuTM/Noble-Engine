@@ -3,6 +3,7 @@
 #define NOBLEENGINE_VULKANOBJECTBUFFER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
+
 #include "graphics/vulkan/core/memory/VulkanBuffer.h"
 #include "graphics/vulkan/core/VulkanDevice.h"
 
@@ -29,7 +30,7 @@ public:
 private:
     const VulkanDevice* _device = nullptr;
 
-    uint32_t _maxObjects;
+    uint32_t _maxObjects = 0;
 };
 
 #endif // NOBLEENGINE_VULKANOBJECTBUFFER_H

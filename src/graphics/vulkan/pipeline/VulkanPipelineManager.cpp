@@ -12,7 +12,7 @@ bool VulkanPipelineManager::create(
 
 void VulkanPipelineManager::destroy() noexcept {
     for (const auto& graphicsPipeline : _graphicsPipelines) {
-        graphicsPipeline->destroy(_device);
+        graphicsPipeline->destroy();
     }
 
     _graphicsPipelines.clear();

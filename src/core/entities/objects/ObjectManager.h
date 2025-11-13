@@ -28,13 +28,13 @@ public:
         glm::vec3          scale
     );
 
-    [[nodiscard]] const objects_vector& getObjects() const noexcept { return _objects; }
+    [[nodiscard]] const ObjectsVector& getObjects() const noexcept { return _objects; }
 
 private:
     ModelManager* _modelManager = nullptr;
     ImageManager* _imageManager = nullptr;
 
-    objects_vector _objects{};
+    ObjectsVector _objects{};
 };
 
 #endif // NOBLEENGINE_OBJECTMANAGER_H

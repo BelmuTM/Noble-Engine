@@ -61,7 +61,7 @@ public:
     glm::vec2 _mouseDelta{0.0f};
 
 private:
-    std::vector<IInputListener*> _listeners;
+    std::vector<IInputListener*> _listeners{};
 
     std::unordered_map<int, InputAction> _keyBindings{};
     std::unordered_map<int, bool>        _currentKeys{};

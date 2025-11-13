@@ -7,40 +7,45 @@
 #include <thread>
 
 bool VulkanSwapchainManager::create(
-    VulkanContext&    context,
-    Platform::Window& window,
-    const uint32_t    framesInFlight,
-    const uint32_t    swapchainImageCount,
-    std::string&      errorMessage
+    Platform::Window&    window,
+    const VulkanSurface& surface,
+    const VulkanDevice&  device,
+    VulkanSwapchain&     swapchain,
+    const uint32_t       framesInFlight,
+    std::string&         errorMessage
 ) noexcept {
-    _context        = &context;
     _window         = &window;
+    _surface        = &surface;
+    _device         = &device;
+    _swapchain      = &swapchain;
     _framesInFlight = framesInFlight;
 
-    TRY(_syncObjects.create(context.getDevice().getLogicalDevice(), framesInFlight, swapchainImageCount, errorMessage));
+    TRY(_syncObjects.create(device.getLogicalDevice(), framesInFlight, swapchain.getImageCount(), errorMessage));
+
     return true;
 }
 
 void VulkanSwapchainManager::destroy() noexcept {
     _syncObjects.destroy();
 
-    _context = nullptr;
-    _window  = nullptr;
+    _window    = nullptr;
+    _surface   = nullptr;
+    _device    = nullptr;
+    _swapchain = nullptr;
 }
 
 bool VulkanSwapchainManager::recreateSwapchain(std::string& errorMessage) {
-    if (!_context) {
-        errorMessage = "Failed to recreate Vulkan swapchain: context is null";
+    if (!_swapchain) {
+        errorMessage = "Failed to recreate Vulkan swapchain: swapchain is null";
         return false;
     }
 
-    VulkanSwapchain& swapchain = _context->getSwapchain();
-    TRY(swapchain.recreate(_context->getSurface(), errorMessage));
+    TRY(_swapchain->recreate(*_surface, errorMessage));
 
     _syncObjects.backup();
 
-    const vk::Device& logicalDevice       = _context->getDevice().getLogicalDevice();
-    const uint32_t    swapchainImageCount = swapchain.getImages().size();
+    const vk::Device& logicalDevice       = _device->getLogicalDevice();
+    const uint32_t    swapchainImageCount = _swapchain->getImageCount();
 
     TRY(_syncObjects.create(logicalDevice, _framesInFlight, swapchainImageCount, errorMessage));
 
@@ -50,15 +55,19 @@ bool VulkanSwapchainManager::recreateSwapchain(std::string& errorMessage) {
 std::optional<uint32_t> VulkanSwapchainManager::acquireNextImage(
     const uint32_t frameIndex, std::string& errorMessage, bool& discardLogging
 ) {
-    if (!_context) {
-        errorMessage = "Failed to acquire Vulkan swapchain image: context is null";
+    if (!_device) {
+        errorMessage = "Failed to acquire Vulkan swapchain image: device is null";
         return false;
     }
 
-    const vk::Device&      logicalDevice = _context->getDevice().getLogicalDevice();
-    const VulkanSwapchain& swapchain     = _context->getSwapchain();
+    if (!_swapchain) {
+        errorMessage = "Failed to acquire Vulkan swapchain image: swapchain is null";
+        return false;
+    }
 
-    if (swapchain.handle() == VK_NULL_HANDLE) {
+    const vk::Device& logicalDevice = _device->getLogicalDevice();
+
+    if (_swapchain->handle() == VK_NULL_HANDLE) {
         discardLogging = true;
         return std::nullopt;
     }
@@ -71,7 +80,7 @@ std::optional<uint32_t> VulkanSwapchainManager::acquireNextImage(
     }
 
     const auto nextImageAcquire =
-        VK_CALL(logicalDevice.acquireNextImageKHR(swapchain.handle(), UINT64_MAX, imageAvailableSemaphore, nullptr),
+        VK_CALL(logicalDevice.acquireNextImageKHR(_swapchain->handle(), UINT64_MAX, imageAvailableSemaphore, nullptr),
             errorMessage);
 
     if (nextImageAcquire.result == vk::Result::eErrorOutOfDateKHR ||
@@ -88,7 +97,7 @@ std::optional<uint32_t> VulkanSwapchainManager::acquireNextImage(
 
     const uint32_t imageIndex = nextImageAcquire.value;
 
-    if (imageIndex >= swapchain.getImages().size()) {
+    if (imageIndex >= _swapchain->getImageCount()) {
         errorMessage =
             "Failed to record Vulkan command buffer: image index exceeds limit (" + std::to_string(imageIndex) + ")";
         return std::nullopt;
@@ -106,13 +115,17 @@ bool VulkanSwapchainManager::submitCommandBuffer(
     std::string&                errorMessage,
     bool&                       discardLogging
 ) {
-    if (!_context) {
-        errorMessage = "Failed to submit Vulkan command buffer: context is null";
+    if (!_device) {
+        errorMessage = "Failed to submit Vulkan command buffer: device is null";
         return false;
     }
 
-    const VulkanDevice&     device    = _context->getDevice();
-    const vk::SwapchainKHR& swapchain = _context->getSwapchain().handle();
+    if (!_swapchain) {
+        errorMessage = "Failed to submit Vulkan command buffer: swapchain is null";
+        return false;
+    }
+
+    const vk::SwapchainKHR& swapchain = _swapchain->handle();
 
     if (swapchain == VK_NULL_HANDLE) {
         discardLogging = true;
@@ -133,10 +146,10 @@ bool VulkanSwapchainManager::submitCommandBuffer(
         .setCommandBuffers(currentBuffer)
         .setSignalSemaphores(renderFinishedSemaphore);
 
-    VK_TRY(device.getGraphicsQueue().submit(submitInfo, inFlightFence), errorMessage);
+    VK_TRY(_device->getGraphicsQueue().submit(submitInfo, inFlightFence), errorMessage);
 
     const vk::PresentInfoKHR presentInfo(renderFinishedSemaphore, swapchain, imageIndex);
-    const auto queuePresent = VK_CALL(device.getPresentQueue().presentKHR(presentInfo), errorMessage);
+    const auto queuePresent = VK_CALL(_device->getPresentQueue().presentKHR(presentInfo), errorMessage);
 
     if (queuePresent == vk::Result::eErrorOutOfDateKHR ||
         queuePresent == vk::Result::eSuboptimalKHR) {
@@ -155,12 +168,12 @@ bool VulkanSwapchainManager::submitCommandBuffer(
 bool VulkanSwapchainManager::waitForImageFence(
     const uint32_t frameIndex, const uint32_t imageIndex, std::string& errorMessage
 ) {
-    if (!_context) {
-        errorMessage = "Failed to wait for Vulkan image fence: context is null";
+    if (!_device) {
+        errorMessage = "Failed to wait for Vulkan image fence: device is null";
         return false;
     }
 
-    const vk::Device& logicalDevice = _context->getDevice().getLogicalDevice();
+    const vk::Device& logicalDevice = _device->getLogicalDevice();
     const vk::Fence&  inFlightFence = _syncObjects.inFlightFences[frameIndex];
 
     if (const vk::Fence& imageInFlight = _syncObjects.imagesInFlight[imageIndex]) {

@@ -9,7 +9,7 @@
 #include <GLFW/glfw3.h>
 
 namespace Platform {
-    bool init();
+    bool init(std::string& errorMessage);
     void shutdown();
 
     class Window {
@@ -35,10 +35,10 @@ namespace Platform {
         void setTitle(const std::string& title) const;
 
     private:
-        GLFWwindow* _window;
+        GLFWwindow* _window = nullptr;
 
-        int _width;
-        int _height;
+        int _width  = 0;
+        int _height = 0;
 
         bool _framebufferResized = false;
     };

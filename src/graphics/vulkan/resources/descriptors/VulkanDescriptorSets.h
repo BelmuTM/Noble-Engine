@@ -3,6 +3,8 @@
 #define NOBLEENGINE_VULKANDESCRIPTORSETS_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
+
+#include "graphics/vulkan/resources/ubo/VulkanUniformBuffer.h"
 #include "VulkanDescriptorManager.h"
 #include "VulkanDescriptorInfo.h"
 

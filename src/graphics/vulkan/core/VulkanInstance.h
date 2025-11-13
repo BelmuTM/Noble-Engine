@@ -3,6 +3,7 @@
 #define NOBLEENGINE_VULKANINSTANCE_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
+
 #include "VulkanCapabilities.h"
 
 #include <string>

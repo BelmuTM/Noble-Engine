@@ -19,7 +19,7 @@ struct VulkanRenderSubmesh {
 struct VulkanRenderObject {
     Object* object = nullptr;
 
-    std::vector<VulkanRenderSubmesh> submeshes;
+    std::vector<VulkanRenderSubmesh> submeshes{};
 
     ObjectDataGPU data{};
     uint32_t objectIndex = 0;

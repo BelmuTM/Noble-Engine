@@ -3,6 +3,7 @@
 #define NOBLEENGINE_VULKANIMAGEMANAGER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
+
 #include "VulkanImage.h"
 #include "graphics/vulkan/core/VulkanCommandManager.h"
 

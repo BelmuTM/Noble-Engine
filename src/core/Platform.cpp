@@ -6,9 +6,14 @@
 #include "common/libraries/stbUsage.h"
 
 namespace Platform {
-    bool init() {
-        if (!glfwInit()) return false;
+    bool init(std::string& errorMessage) {
+        if (!glfwInit()) {
+            errorMessage = "Failed to init GLFW context";
+            return false;
+        }
+
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
         return true;
     }
 

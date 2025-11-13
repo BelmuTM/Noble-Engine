@@ -41,7 +41,7 @@ private:
 
     std::vector<vk::ShaderModule>                  _shaderModules{};
     std::vector<vk::PipelineShaderStageCreateInfo> _shaderStages{};
-    vk::ShaderStageFlags                           _stageFlags;
+    vk::ShaderStageFlags                           _stageFlags{};
 
     //std::vector<DescriptorBindingInfo>   _bindings{};
     std::vector<vk::DescriptorSetLayout> _descriptorSetLayouts{};

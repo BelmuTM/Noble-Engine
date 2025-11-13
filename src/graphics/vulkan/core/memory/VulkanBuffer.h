@@ -3,6 +3,7 @@
 #define NOBLEENGINE_VULKANBUFFER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
+
 #include "graphics/vulkan/core/VulkanDevice.h"
 #include "graphics/vulkan/core/VulkanCommandManager.h"
 

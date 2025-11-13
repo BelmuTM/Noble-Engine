@@ -4,8 +4,6 @@
 
 #include "VulkanUniformBuffer.h"
 
-#include <memory>
-
 class VulkanUniformBufferManager {
 public:
     VulkanUniformBufferManager()  = default;

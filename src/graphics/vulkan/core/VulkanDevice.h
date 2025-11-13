@@ -4,11 +4,11 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
+#include "VulkanCapabilities.h"
+
 #include "graphics/vulkan/core/memory/VmaUsage.h"
 
 #include <string>
-
-#include "VulkanCapabilities.h"
 
 class VulkanDevice {
 public:

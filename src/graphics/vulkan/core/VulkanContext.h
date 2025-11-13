@@ -30,11 +30,11 @@ public:
     [[nodiscard]] const VulkanSwapchain& getSwapchain() const { return swapchain; }
 
 private:
-    VulkanCapabilities capabilities;
-    VulkanInstance     instance;
-    VulkanSurface      surface;
-    VulkanDevice       device;
-    VulkanSwapchain    swapchain;
+    VulkanCapabilities capabilities{};
+    VulkanInstance     instance{};
+    VulkanSurface      surface{};
+    VulkanDevice       device{};
+    VulkanSwapchain    swapchain{};
 };
 
 #endif //NOBLEENGINE_VULKANCONTEXT_H
