@@ -27,9 +27,6 @@ public:
 
     void destroy() noexcept;
 
-    //[[nodiscard]] vk::Instance&       getVkInstance()       { return instance; }
-    //[[nodiscard]] vk::Instance const& getVkInstance() const { return instance; }
-
 private:
     const VulkanCapabilities* _capabilities = nullptr;
 

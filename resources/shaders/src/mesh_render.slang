@@ -62,18 +62,22 @@ float bayer2(float2 a) {
 
 [shader("fragment")]
 float4 fragMain(VSOutput vertIn) : SV_TARGET {
-    float3 lightPosition0 = float3(0.0, 5.0, 5.0);
-    float3 lightPosition1 = float3(3.0, 2.0, 1.0);
+    float3 lightPosition0 = float3(-1.5, 1.0, 5.0);
+    float3 lightPosition1 = float3(4.5, -1.0, 1.0);
 
-    float NdotL0 = max(0.0, dot(normalize(vertIn.normal), normalize(lightPosition0)));
+    float3 lightDirection0 = normalize(lightPosition0 - vertIn.worldPos.xyz);
+    float3 lightDirection1 = normalize(lightPosition1 - vertIn.worldPos.xyz);
+
+    float NdotL0 = max(0.0, dot(normalize(vertIn.normal), lightDirection0));
+    float NdotL1 = max(0.0, dot(normalize(vertIn.normal), lightDirection1));
 
     float3 rainbow;
     rainbow.r = sin(frameUBO.frameTimeCounter * TAU / 6.0 + 0.0) * 0.5 + 0.5;
     rainbow.g = sin(frameUBO.frameTimeCounter * TAU / 6.0 + 2.0) * 0.5 + 0.5;
     rainbow.b = sin(frameUBO.frameTimeCounter * TAU / 6.0 + 4.0) * 0.5 + 0.5;
 
-    float3 color1 = rainbow;
-    float  NdotL1 = max(0.0, dot(normalize(vertIn.normal), normalize(lightPosition1)));
+    float3 lightColor0 = float3(0.969, 0.549, 0.125);
+    float3 lightColor1 = rainbow;
 
     float fadeStartDist = 0.25;
 
@@ -86,8 +90,19 @@ float4 fragMain(VSOutput vertIn) : SV_TARGET {
         discard;
     }
 
-    float3 albedo   = texture.Sample(vertIn.texCoords).rgb;
-    float3 lighting = albedo * NdotL0 + color1 * albedo * NdotL1;
+    float4 albedo = texture.Sample(vertIn.texCoords);
+
+    if (albedo.a < 1.0) {
+        discard;
+    }
+
+    float dist0 = length(lightPosition0 - vertIn.worldPos.xyz);
+    float dist1 = length(lightPosition1 - vertIn.worldPos.xyz);
+
+    float attenuation0 = 1.0 / (dist0 * dist0 * 0.15);
+    float attenuation1 = 1.0 / (dist1 * dist1 * 0.35);
+
+    float3 lighting = albedo.rgb * (lightColor0 * NdotL0 * attenuation0 + lightColor1 * NdotL1 * attenuation1);
 
     return float4(lighting, 1.0);
 }

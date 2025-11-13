@@ -1,6 +1,7 @@
 #include "Engine.h"
 #include "Platform.h"
 #include "WindowContext.h"
+
 #include "debug/Logger.h"
 
 #include "resources/images/ImageManager.h"
@@ -34,10 +35,9 @@ int main() {
     ImageManager imageManager{};
     ObjectManager objectManager{&modelManager, &imageManager};
 
-    objectManager.createObject("lucy.obj", {-1.5f, -1.5f, -1.1f}, {0.0f, 0.0f, 0.0f}, glm::vec3{0.0025f});
-    objectManager.createObject("hornet.gltf", {-2.3f, 5.7f, -2.4f}, {90.0f, 120.0f, 0.0f}, glm::vec3{5.0f});
-    objectManager.createObject("stanford_dragon.obj", {1.9f, 0.7f, -2.35f}, {0.0f, 180.0f, 0.0f}, glm::vec3{0.6f});
-    objectManager.createObject("viking_room.obj", {-0.5f, -1.0f, -3.0f}, {0.0f, 0.0f, 40.0f}, glm::vec3{6.0f});
+    objectManager.createObject("lucy.obj", {-1.0f, 1.0f, 1.47f}, {0.0f, 0.0f, -30.0f}, glm::vec3{0.0025f});
+    objectManager.createObject("stanford_dragon.obj", {3.0f, 0.7f, 0.6f}, {0.0f, 180.0f, 60.0f}, glm::vec3{0.6f});
+    objectManager.createObject("sponza.gltf", {0.0f, 0.0f, 0.0f}, {90.0f, 0.0f, 0.0f}, glm::vec3{0.01f});
 
     VulkanRenderer renderer(Engine::MAX_FRAMES_IN_FLIGHT);
     if (!renderer.init(window, objectManager.getObjects(), errorMessage)) {

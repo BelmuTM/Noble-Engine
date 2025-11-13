@@ -18,7 +18,7 @@ static const VulkanDescriptorManager::DescriptorScheme objectDescriptorScheme = 
 
 class VulkanRenderObjectManager {
 public:
-    static constexpr int MAX_RENDER_OBJECTS = 32;
+    static constexpr uint32_t MAX_RENDER_OBJECTS = 512;
 
     using RenderObjectsVector = std::vector<std::unique_ptr<VulkanRenderObject>>;
     using MeshesVector         = std::vector<VulkanMesh*>;
@@ -64,7 +64,11 @@ private:
     [[nodiscard]] bool createRenderObjects(const ObjectsVector& objects, std::string& errorMessage);
 
     [[nodiscard]] bool createRenderObject(
-        VulkanRenderObject& renderObject, uint32_t objectIndex, Object* object, std::string& errorMessage
+        VulkanRenderObject& renderObject,
+        uint32_t            objectIndex,
+        Object*             object,
+        uint32_t&           meshCount,
+        std::string&        errorMessage
     ) const;
 };
 

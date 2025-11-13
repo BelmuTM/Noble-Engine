@@ -245,7 +245,7 @@ bool VulkanImage::createFromData(
     _extent = extent;
     _format = format;
 
-    const vk::DeviceSize imageSize = _extent.width * _extent.height * channels * bytesPerChannel;
+    const vk::DeviceSize imageSize = extent.width * extent.height * channels * bytesPerChannel;
 
     VulkanBuffer stagingBuffer;
 
@@ -264,7 +264,7 @@ bool VulkanImage::createFromData(
     stagingBuffer.unmapMemory();
 
     TRY(createImage(
-        _extent,
+        extent,
         vk::ImageType::e2D,
         format,
         vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
@@ -280,7 +280,7 @@ bool VulkanImage::createFromData(
         errorMessage
     ));
 
-    TRY(copyBufferToImage(stagingBuffer, _extent, commandManager, errorMessage));
+    TRY(copyBufferToImage(stagingBuffer, extent, commandManager, errorMessage));
 
     TRY(transitionImageLayout(
         vk::ImageLayout::eTransferDstOptimal,
@@ -297,7 +297,7 @@ bool VulkanImage::createFromData(
         errorMessage
     ));
 
-    TRY(createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eClampToEdge, device, errorMessage));
+    TRY(createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, device, errorMessage));
 
     stagingBuffer.destroy();
 

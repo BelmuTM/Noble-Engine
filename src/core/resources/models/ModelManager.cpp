@@ -200,19 +200,17 @@ bool ModelManager::load_glTF(Model& model, const std::string& path, std::string&
     const bool modelLoaded = glTFloader.LoadASCIIFromFile(&glTFModel, &errorMessage, &warningMessage, fullPath);
 
     if (!warningMessage.empty()) {
-        Logger::warning(warningMessage);
+        //Logger::warning(warningMessage);
     }
 
     if (!modelLoaded) return false;
 
     // For each mesh that forms the model
     for (const auto& glTFMesh : glTFModel.meshes) {
-        Mesh mesh{};
 
         // For each primitive that forms the mesh
         for (const auto& primitive : glTFMesh.primitives) {
-            size_t vertexStart = mesh.getVertices().size();
-            size_t indexStart  = mesh.getIndices().size();
+            Mesh mesh{};
 
             std::map<std::string, int> attributes = primitive.attributes;
 
@@ -302,11 +300,8 @@ bool ModelManager::load_glTF(Model& model, const std::string& path, std::string&
                 mesh.addIndex(mesh.getVertices().size() - 1);
             }
 
-            size_t vertexEnd = mesh.getVertices().size();
-            size_t indexEnd  = mesh.getIndices().size();
-
             if (!hasNormals) {
-                mesh.generateSmoothNormals(vertexStart, vertexEnd, indexStart, indexEnd);
+                mesh.generateSmoothNormals();
             }
 
             const int materialIndex = primitive.material;
@@ -317,9 +312,9 @@ bool ModelManager::load_glTF(Model& model, const std::string& path, std::string&
 
                 loadMaterial_glTF(mesh, model.name, material, glTFModel.textures, glTFModel.images);
             }
-        }
 
-        model.addMesh(mesh);
+            model.addMesh(mesh);
+        }
     }
 
     return true;

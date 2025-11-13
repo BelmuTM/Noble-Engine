@@ -15,7 +15,7 @@ bool VulkanRenderObjectManager::create(
     _meshManager  = &meshManager;
 
     _renderObjects.reserve(objects.size());
-    _meshes.reserve(objects.size());
+    _meshes.reserve(MAX_RENDER_OBJECTS);
 
     TRY(_descriptorManager.create(
         device.getLogicalDevice(), objectDescriptorScheme, framesInFlight, MAX_RENDER_OBJECTS, errorMessage
@@ -37,10 +37,20 @@ void VulkanRenderObjectManager::destroy() noexcept {
 }
 
 bool VulkanRenderObjectManager::createRenderObjects(const ObjectsVector& objects, std::string& errorMessage) {
+    uint32_t meshCount = 0;
+
     for (uint32_t i = 0; i < objects.size(); i++) {
+        if (i >= MAX_RENDER_OBJECTS) {
+            Logger::warning(
+                "Reached render objects capacity (" + std::to_string(MAX_RENDER_OBJECTS) +
+                "), remaining objects will be skipped"
+            );
+            break;
+        }
+
         auto renderObject = std::make_unique<VulkanRenderObject>();
 
-        TRY(createRenderObject(*renderObject, i, objects[i].get(), errorMessage));
+        TRY(createRenderObject(*renderObject, i, objects[i].get(), meshCount, errorMessage));
 
         for (auto& submesh : renderObject->submeshes) {
             _meshes.push_back(submesh.mesh.get());
@@ -53,7 +63,11 @@ bool VulkanRenderObjectManager::createRenderObjects(const ObjectsVector& objects
 }
 
 bool VulkanRenderObjectManager::createRenderObject(
-    VulkanRenderObject& renderObject, const uint32_t objectIndex, Object* object, std::string& errorMessage
+    VulkanRenderObject& renderObject,
+    const uint32_t      objectIndex,
+    Object*             object,
+    uint32_t&           meshCount,
+    std::string&        errorMessage
 ) const {
     renderObject.objectIndex = objectIndex;
     renderObject.object      = object;
@@ -62,6 +76,14 @@ bool VulkanRenderObjectManager::createRenderObject(
     renderObject.submeshes.reserve(meshes.size());
 
     for (const Mesh& mesh : meshes) {
+        if (meshCount >= MAX_RENDER_OBJECTS) {
+            Logger::warning(
+                "Reached descriptor pool capacity (" + std::to_string(MAX_RENDER_OBJECTS) +
+                "), remaining submeshes for object \"" + name + "\" will be skipped"
+            );
+            break;
+        }
+
         VulkanRenderSubmesh submesh;
 
         // Load mesh
@@ -86,6 +108,7 @@ bool VulkanRenderObjectManager::createRenderObject(
         submesh.descriptorSets->bindPerFrameResource(submesh.texture->getDescriptorInfo(0));
 
         renderObject.submeshes.push_back(std::move(submesh));
+        ++meshCount;
     }
 
     return true;

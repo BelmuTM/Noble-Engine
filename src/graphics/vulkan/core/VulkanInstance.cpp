@@ -24,7 +24,7 @@ bool VulkanInstance::create(const VulkanCapabilities& capabilities, std::string&
     _dldi = vk::detail::DispatchLoaderDynamic(_instance, vkGetInstanceProcAddr);
 
 #ifdef VULKAN_DEBUG_UTILS
-    //if (!setupDebugMessenger(errorMessage)) return false;
+    if (!setupDebugMessenger(errorMessage)) return false;
 #endif
 
     return true;
@@ -34,7 +34,7 @@ void VulkanInstance::destroy() noexcept {
 #ifdef VULKAN_DEBUG_UTILS
 
     if (_debugMessenger) {
-        //_instance.destroyDebugUtilsMessengerEXT(_debugMessenger, nullptr, _dldi);
+        _instance.destroyDebugUtilsMessengerEXT(_debugMessenger, nullptr, _dldi);
         _debugMessenger = VK_NULL_HANDLE;
     }
 
