@@ -36,11 +36,11 @@ public:
     std::optional<uint32_t> acquireNextImage(uint32_t frameIndex, std::string& errorMessage, bool& discardLogging);
 
     [[nodiscard]] bool submitCommandBuffer(
-        const VulkanCommandManager& commandManager,
-        uint32_t                    frameIndex,
-        uint32_t                    imageIndex,
-        std::string&                errorMessage,
-        bool&                       discardLogging
+        vk::CommandBuffer commandBuffer,
+        uint32_t          frameIndex,
+        uint32_t          imageIndex,
+        std::string&      errorMessage,
+        bool&             discardLogging
     );
 
 private:

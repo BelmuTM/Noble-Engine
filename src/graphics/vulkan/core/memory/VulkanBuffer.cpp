@@ -125,7 +125,15 @@ bool VulkanBuffer::copyBuffer(
     vk::CommandBuffer copyCommandBuffer{};
     TRY(commandManager->beginSingleTimeCommands(copyCommandBuffer, errorMessage));
 
-    copyCommandBuffer.copyBuffer(srcBuffer, dstBuffer, vk::BufferCopy(srcOffset, dstOffset, size));
+    vk::BufferCopy2 copyRegion{srcOffset, dstOffset, size};
+
+    vk::CopyBufferInfo2 copyBufferInfo{};
+    copyBufferInfo
+        .setSrcBuffer(srcBuffer)
+        .setDstBuffer(dstBuffer)
+        .setRegions({copyRegion});
+
+    copyCommandBuffer.copyBuffer2(copyBufferInfo);
 
     TRY(commandManager->endSingleTimeCommands(copyCommandBuffer, errorMessage));
 

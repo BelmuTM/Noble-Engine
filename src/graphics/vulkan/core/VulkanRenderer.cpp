@@ -176,11 +176,10 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
     frameResources.update(currentFrame, camera);
     renderObjectManager.updateObjects();
 
-    if (!swapchainManager.submitCommandBuffer(commandManager, currentFrame, imageIndex, errorMessage, discardLogging)) {
-        return;
-    }
+    if (!submitCurrentCommandBuffer(currentFrame, imageIndex, errorMessage, discardLogging)) return;
 
     currentFrame = (currentFrame + 1) % _framesInFlight;
+
     guard.release();
 }
 
@@ -258,6 +257,16 @@ bool VulkanRenderer::recordCurrentCommandBuffer(const uint32_t imageIndex, std::
     VK_CALL_LOG(currentBuffer.reset(), Logger::Level::ERROR);
 
     TRY(recordCommandBuffer(currentBuffer, imageIndex, errorMessage));
+
+    return true;
+}
+
+bool VulkanRenderer::submitCurrentCommandBuffer(
+    const uint32_t frameIndex, const uint32_t imageIndex, std::string& errorMessage, bool& discardLogging
+) {
+    const vk::CommandBuffer& currentBuffer = commandManager.getCommandBuffers()[currentFrame];
+
+    TRY(swapchainManager.submitCommandBuffer(currentBuffer, frameIndex, imageIndex, errorMessage, discardLogging));
 
     return true;
 }

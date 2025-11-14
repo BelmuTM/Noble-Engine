@@ -162,8 +162,8 @@ bool VulkanImage::copyBufferToImage(
     vk::CommandBuffer copyCommandBuffer{};
     TRY(commandManager->beginSingleTimeCommands(copyCommandBuffer, errorMessage));
 
-    vk::BufferImageCopy region{};
-    region
+    vk::BufferImageCopy2 copyRegion{};
+    copyRegion
         .setBufferOffset(0)
         .setBufferRowLength(0)
         .setBufferImageHeight(0)
@@ -171,7 +171,14 @@ bool VulkanImage::copyBufferToImage(
         .setImageOffset({0, 0, 0})
         .setImageExtent(extent);
 
-    copyCommandBuffer.copyBufferToImage(buffer, _image, vk::ImageLayout::eTransferDstOptimal, {region});
+    vk::CopyBufferToImageInfo2 copyBufferToImageInfo{};
+    copyBufferToImageInfo
+        .setSrcBuffer(buffer)
+        .setDstImage(_image)
+        .setDstImageLayout(vk::ImageLayout::eTransferDstOptimal)
+        .setRegions({copyRegion});
+
+    copyCommandBuffer.copyBufferToImage2(copyBufferToImageInfo);
 
     TRY(commandManager->endSingleTimeCommands(copyCommandBuffer, errorMessage));
 

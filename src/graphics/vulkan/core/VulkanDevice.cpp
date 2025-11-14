@@ -11,9 +11,9 @@
 #include <vector>
 
 static const std::vector deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     VK_KHR_SPIRV_1_4_EXTENSION_NAME,
-    VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME
+    VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
 bool VulkanDevice::create(
@@ -105,11 +105,11 @@ VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
     const vk::PhysicalDevice device, const vk::SurfaceKHR surface
 ) {
     QueueFamilyIndices indices;
-    const auto& queueFamilyProperties = device.getQueueFamilyProperties();
+    const auto& properties = device.getQueueFamilyProperties2();
 
     // Find a queue family with graphics capabilities
-    for (int i = 0; i < queueFamilyProperties.size(); i++) {
-        if (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics) {
+    for (int i = 0; i < properties.size(); i++) {
+        if (properties[i].queueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics) {
             indices.graphicsFamily = i;
             break;
         }
@@ -121,10 +121,10 @@ VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
     // If not found, find a queue family that supports present
     if (!presentSupport) {
         // Find another queue family that support both graphics and present
-        for (size_t i = 0; i < queueFamilyProperties.size(); i++) {
+        for (size_t i = 0; i < properties.size(); i++) {
             presentSupport = device.getSurfaceSupportKHR(i, surface).value;
 
-            if (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics && presentSupport) {
+            if (properties[i].queueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics && presentSupport) {
                 indices.graphicsFamily = i;
                 indices.presentFamily  = i;
                 break;
@@ -132,7 +132,7 @@ VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
         }
         // If not found, find a queue family that only supports present
         if (indices.presentFamily == UINT32_MAX) {
-            for (size_t i = 0; i < queueFamilyProperties.size(); i++) {
+            for (size_t i = 0; i < properties.size(); i++) {
                 presentSupport = device.getSurfaceSupportKHR(i, surface).value;
 
                 if (presentSupport) {

@@ -2,8 +2,6 @@
 #ifndef NOBLEENGINE_VULKANMESH_H
 #define NOBLEENGINE_VULKANMESH_H
 
-#include "graphics/vulkan/common/VulkanHeader.h"
-
 #include "core/resources/models/Mesh.h"
 
 class VulkanMesh final : public Mesh {

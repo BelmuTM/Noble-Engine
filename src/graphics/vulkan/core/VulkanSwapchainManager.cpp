@@ -79,9 +79,15 @@ std::optional<uint32_t> VulkanSwapchainManager::acquireNextImage(
         std::this_thread::yield();
     }
 
-    const auto nextImageAcquire =
-        VK_CALL(logicalDevice.acquireNextImageKHR(_swapchain->handle(), UINT64_MAX, imageAvailableSemaphore, nullptr),
-            errorMessage);
+    vk::AcquireNextImageInfoKHR acquireNextImageInfo{};
+    acquireNextImageInfo
+        .setSwapchain(_swapchain->handle())
+        .setTimeout(UINT64_MAX)
+        .setSemaphore(imageAvailableSemaphore)
+        .setFence(nullptr)
+        .setDeviceMask(1);
+
+    const auto nextImageAcquire = VK_CALL(logicalDevice.acquireNextImage2KHR(acquireNextImageInfo), errorMessage);
 
     if (nextImageAcquire.result == vk::Result::eErrorOutOfDateKHR ||
         nextImageAcquire.result == vk::Result::eSuboptimalKHR) {
@@ -109,11 +115,11 @@ std::optional<uint32_t> VulkanSwapchainManager::acquireNextImage(
 }
 
 bool VulkanSwapchainManager::submitCommandBuffer(
-    const VulkanCommandManager& commandManager,
-    const uint32_t              frameIndex,
-    const uint32_t              imageIndex,
-    std::string&                errorMessage,
-    bool&                       discardLogging
+    const vk::CommandBuffer commandBuffer,
+    const uint32_t          frameIndex,
+    const uint32_t          imageIndex,
+    std::string&            errorMessage,
+    bool&                   discardLogging
 ) {
     if (!_device) {
         errorMessage = "Failed to submit Vulkan command buffer: device is null";
@@ -132,21 +138,32 @@ bool VulkanSwapchainManager::submitCommandBuffer(
         return false;
     }
 
-    const vk::CommandBuffer& currentBuffer = commandManager.getCommandBuffers()[frameIndex];
-
     const vk::Semaphore& imageAvailableSemaphore = _syncObjects.imageAvailableSemaphores[frameIndex];
     const vk::Fence&     inFlightFence           = _syncObjects.inFlightFences[frameIndex];
     const vk::Semaphore& renderFinishedSemaphore = _syncObjects.renderFinishedSemaphores[imageIndex];
 
-    constexpr vk::PipelineStageFlags waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
-    vk::SubmitInfo submitInfo{};
-    submitInfo
-        .setWaitSemaphores(imageAvailableSemaphore)
-        .setPWaitDstStageMask(&waitDestinationStageMask)
-        .setCommandBuffers(currentBuffer)
-        .setSignalSemaphores(renderFinishedSemaphore);
+    constexpr vk::PipelineStageFlags2 waitDestinationStageMask(vk::PipelineStageFlagBits2::eColorAttachmentOutput);
 
-    VK_TRY(_device->getGraphicsQueue().submit(submitInfo, inFlightFence), errorMessage);
+    vk::SemaphoreSubmitInfo imageAvailableSemaphoreInfo{};
+    imageAvailableSemaphoreInfo
+        .setSemaphore(imageAvailableSemaphore)
+        .setStageMask(waitDestinationStageMask);
+
+    vk::SemaphoreSubmitInfo renderFinishedSemaphoreInfo{};
+    renderFinishedSemaphoreInfo
+        .setSemaphore(renderFinishedSemaphore)
+        .setStageMask(waitDestinationStageMask);
+
+    vk::CommandBufferSubmitInfo commandBufferInfo{};
+    commandBufferInfo.setCommandBuffer(commandBuffer);
+
+    vk::SubmitInfo2 submitInfo{};
+    submitInfo
+        .setWaitSemaphoreInfos(imageAvailableSemaphoreInfo)
+        .setCommandBufferInfos(commandBufferInfo)
+        .setSignalSemaphoreInfos(renderFinishedSemaphoreInfo);
+
+    VK_TRY(_device->getGraphicsQueue().submit2(submitInfo, inFlightFence), errorMessage);
 
     const vk::PresentInfoKHR presentInfo(renderFinishedSemaphore, swapchain, imageIndex);
     const auto queuePresent = VK_CALL(_device->getPresentQueue().presentKHR(presentInfo), errorMessage);

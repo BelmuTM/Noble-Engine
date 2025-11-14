@@ -8,6 +8,8 @@
 #include <unordered_set>
 #include <vector>
 
+static const std::vector<const char*> instanceExtensions = {};
+
 #ifdef VULKAN_DEBUG_UTILS
 
 static const std::vector validationLayers = {
@@ -52,6 +54,10 @@ std::vector<const char*> VulkanInstance::getRequiredExtensions() {
 #ifdef VULKAN_DEBUG_UTILS
     extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
+
+    for (const auto& instanceExtension : instanceExtensions) {
+        extensions.push_back(instanceExtension);
+    }
 
     return extensions;
 }

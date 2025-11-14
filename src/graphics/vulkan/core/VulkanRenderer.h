@@ -57,13 +57,17 @@ private:
     VulkanGraphicsPipeline pipelineMeshRender{};
     VulkanFrameGraph       frameGraph{};
 
-    bool onFramebufferResize(std::string& errorMessage);
+    [[nodiscard]] bool onFramebufferResize(std::string& errorMessage);
 
     [[nodiscard]] bool recordCommandBuffer(
         vk::CommandBuffer commandBuffer, uint32_t imageIndex, std::string& errorMessage
     );
 
     [[nodiscard]] bool recordCurrentCommandBuffer(uint32_t imageIndex, std::string& errorMessage);
+
+    [[nodiscard]] bool submitCurrentCommandBuffer(
+        uint32_t frameIndex, uint32_t imageIndex, std::string& errorMessage, bool& discardLogging
+    );
 };
 
 #endif //NOBLEENGINE_VULKANRENDERER_H
