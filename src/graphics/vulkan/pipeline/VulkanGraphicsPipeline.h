@@ -32,16 +32,12 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] const VulkanShaderProgram* getShaderProgram() const noexcept { return _shaderProgram; }
-
     [[nodiscard]] const vk::PipelineLayout& getLayout() const noexcept { return _pipelineLayout; }
 
     [[nodiscard]] vk::ShaderStageFlags getStageFlags() const noexcept { return _stageFlags; }
 
 private:
     vk::Device _device{};
-
-    const VulkanShaderProgram* _shaderProgram = nullptr;
 
     vk::Pipeline       _pipeline{};
     vk::PipelineLayout _pipelineLayout{};
@@ -148,7 +144,10 @@ private:
     );
 
     [[nodiscard]] bool createPipeline(
-        const vk::Device& device, const VulkanSwapchain& swapchain, std::string& errorMessage
+        const vk::Device&          device,
+        const VulkanSwapchain&     swapchain,
+        const VulkanShaderProgram& shaderProgram,
+        std::string&               errorMessage
     );
 };
 

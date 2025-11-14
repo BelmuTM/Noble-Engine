@@ -192,7 +192,7 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
         vk::QueryResultFlagBits::e64
     );
 
-    Logger::debug("Drew " + std::to_string(primitiveCount) + " triangles");
+    //Logger::debug("Drew " + std::to_string(primitiveCount) + " triangles");
 
     guard.release();
 }

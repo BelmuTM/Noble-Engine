@@ -14,13 +14,12 @@ bool VulkanGraphicsPipeline::create(
     const VulkanShaderProgram&                  shaderProgram,
     std::string&                                errorMessage
 ) noexcept {
-    _device        = device;
-    _shaderProgram = &shaderProgram;
+    _device = device;
 
     TRY(createPipelineLayout(device, descriptorSetLayouts, pushConstantRanges, errorMessage));
-    TRY(createPipeline(device, swapchain, errorMessage));
+    TRY(createPipeline(device, swapchain, shaderProgram, errorMessage));
 
-    _stageFlags = _shaderProgram->getStageFlags();
+    _stageFlags = shaderProgram.getStageFlags();
 
     return true;
 }
@@ -36,8 +35,7 @@ void VulkanGraphicsPipeline::destroy() noexcept {
         _pipelineLayout = VK_NULL_HANDLE;
     }
 
-    _device        = VK_NULL_HANDLE;
-    _shaderProgram = nullptr;
+    _device = VK_NULL_HANDLE;
 }
 
 bool VulkanGraphicsPipeline::createPipelineLayout(
@@ -57,7 +55,10 @@ bool VulkanGraphicsPipeline::createPipelineLayout(
 }
 
 bool VulkanGraphicsPipeline::createPipeline(
-    const vk::Device& device, const VulkanSwapchain& swapchain, std::string& errorMessage
+    const vk::Device&          device,
+    const VulkanSwapchain&     swapchain,
+    const VulkanShaderProgram& shaderProgram,
+    std::string&               errorMessage
 ) {
     const vk::Format& colorFormat = swapchain.getFormat();
 
@@ -68,10 +69,10 @@ bool VulkanGraphicsPipeline::createPipeline(
 
     vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
 
-    if (!_shaderProgram->isFullscreen()) {
-        const auto& bindingDescription    = VulkanVertex::getBindingDescription();
-        const auto& attributeDescriptions = VulkanVertex::getAttributeDescriptions();
+    const auto& bindingDescription    = VulkanVertex::getBindingDescription();
+    const auto& attributeDescriptions = VulkanVertex::getAttributeDescriptions();
 
+    if (!shaderProgram.isFullscreen()) {
         vertexInputInfo
             .setVertexBindingDescriptions(bindingDescription)
             .setVertexAttributeDescriptions(attributeDescriptions);
@@ -80,7 +81,7 @@ bool VulkanGraphicsPipeline::createPipeline(
     vk::GraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo
         .setPNext(&renderingInfo)
-        .setStages(_shaderProgram->getStages())
+        .setStages(shaderProgram.getStages())
         .setPVertexInputState(&vertexInputInfo)
         .setPInputAssemblyState(&inputAssemblyInfo)
         .setPViewportState(&viewportInfo)

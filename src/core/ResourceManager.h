@@ -4,10 +4,12 @@
 
 #include <string>
 
-static const std::string iconPath  = "../../resources/icon.png";
+static const auto resourcesFile = std::string(RESOURCES_DIR);
 
-static const std::string shaderFilesPath  = "../../resources/shaders/spv/";
-static const std::string textureFilesPath = "../../resources/textures/";
-static const std::string modelFilesPath   = "../../resources/models/";
+static const std::string iconPath  = resourcesFile + "icon.png";
+
+static const std::string shaderFilesPath  = resourcesFile + "shaders/spv/";
+static const std::string textureFilesPath = resourcesFile + "textures/";
+static const std::string modelFilesPath   = resourcesFile + "models/";
 
 #endif //NOBLEENGINE_RESOURCEMANAGER_H

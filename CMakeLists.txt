@@ -14,6 +14,8 @@ add_executable(NobleEngine ${CPP_SOURCES})
 target_include_directories(NobleEngine PRIVATE ${CMAKE_SOURCE_DIR}/src)
 # Ensure C++ 23 features
 target_compile_features(NobleEngine PRIVATE cxx_std_23)
+# Add macro that points to resources folder
+target_compile_definitions(NobleEngine PRIVATE RESOURCES_DIR="${CMAKE_SOURCE_DIR}/resources/")
 
 ##########################################################
 #                       VULKAN SDK                       #
