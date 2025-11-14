@@ -41,11 +41,17 @@ bool VulkanDevice::create(
 
     TRY(createLogicalDevice(_queueFamilyIndices, errorMessage));
     TRY(createAllocator(errorMessage));
+    TRY(createQueryPool(errorMessage));
 
     return true;
 }
 
 void VulkanDevice::destroy() noexcept {
+    if (_queryPool) {
+        _logicalDevice.destroyQueryPool(_queryPool);
+        _queryPool = VK_NULL_HANDLE;
+    }
+
     if (_allocator) {
         vmaDestroyAllocator(_allocator);
         _allocator = VK_NULL_HANDLE;
@@ -152,23 +158,45 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
     // Queue priority is constant and set to one because we are using a single queue
     static constexpr float queuePriority = 1.0f;
 
-    VkDeviceQueueCreateInfo deviceQueueInfo{};
-    deviceQueueInfo.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    deviceQueueInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
-    deviceQueueInfo.queueCount       = 1;
-    deviceQueueInfo.pQueuePriorities = &queuePriority;
+    const VkDeviceQueueCreateInfo deviceQueueInfo{
+        .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        .queueFamilyIndex = queueFamilyIndices.graphicsFamily,
+        .queueCount       = 1,
+        .pQueuePriorities = &queuePriority
+    };
 
-    VkDeviceCreateInfo deviceInfo{};
-    deviceInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    deviceInfo.queueCreateInfoCount    = 1;
-    deviceInfo.pQueueCreateInfos       = &deviceQueueInfo;
-    deviceInfo.enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size());
-    deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
+    VkPhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.fillModeNonSolid        = vk::True;
+    deviceFeatures.samplerAnisotropy       = vk::True;
+    deviceFeatures.pipelineStatisticsQuery = vk::True;
 
-    VpDeviceCreateInfo vpCreateInfo{};
-    vpCreateInfo.pCreateInfo             = &deviceInfo;
-    vpCreateInfo.enabledFullProfileCount = 1;
-    vpCreateInfo.pEnabledFullProfiles    = &vulkanProfile;
+    VkPhysicalDeviceVulkan11Features deviceFeatures_1_1{};
+    deviceFeatures_1_1.shaderDrawParameters = vk::True;
+
+    VkPhysicalDeviceVulkan13Features deviceFeatures_1_3{};
+    deviceFeatures_1_3.pNext            = &deviceFeatures_1_1;
+    deviceFeatures_1_3.dynamicRendering = vk::True;
+    deviceFeatures_1_3.synchronization2 = vk::True;
+
+    VkPhysicalDeviceBufferDeviceAddressFeatures deviceBufferAddressFeatures{};
+    deviceBufferAddressFeatures.pNext               = &deviceFeatures_1_3;
+    deviceBufferAddressFeatures.bufferDeviceAddress = vk::True;
+
+    VkDeviceCreateInfo deviceInfo{
+        .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        .pNext                   = &deviceBufferAddressFeatures,
+        .queueCreateInfoCount    = 1,
+        .pQueueCreateInfos       = &deviceQueueInfo,
+        .enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size()),
+        .ppEnabledExtensionNames = deviceExtensions.data(),
+        .pEnabledFeatures        = &deviceFeatures
+    };
+
+    const VpDeviceCreateInfo vpCreateInfo{
+        .pCreateInfo             = &deviceInfo,
+        .enabledFullProfileCount = 1,
+        .pEnabledFullProfiles    = &vulkanProfile
+    };
 
     VkDevice rawDevice = VK_NULL_HANDLE;
     VK_TRY(
@@ -185,15 +213,27 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
 }
 
 bool VulkanDevice::createAllocator(std::string& errorMessage) {
-    VmaAllocatorCreateInfo allocatorInfo{};
-    allocatorInfo.vulkanApiVersion = VULKAN_VERSION;
-    allocatorInfo.physicalDevice   = _physicalDevice;
-    allocatorInfo.device           = _logicalDevice;
-    allocatorInfo.instance         = _instance;
-
-    allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+    const VmaAllocatorCreateInfo allocatorInfo{
+        .flags            = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
+        .physicalDevice   = _physicalDevice,
+        .device           = _logicalDevice,
+        .instance         = _instance,
+        .vulkanApiVersion = VULKAN_VERSION,
+    };
 
     VK_TRY(vmaCreateAllocator(&allocatorInfo, &_allocator), errorMessage);
+
+    return true;
+}
+
+bool VulkanDevice::createQueryPool(std::string& errorMessage) {
+    vk::QueryPoolCreateInfo queryPoolInfo{};
+    queryPoolInfo
+        .setQueryType(vk::QueryType::ePipelineStatistics)
+        .setQueryCount(1)
+        .setPipelineStatistics(vk::QueryPipelineStatisticFlagBits::eInputAssemblyPrimitives);
+
+    VK_CREATE(_logicalDevice.createQueryPool(queryPoolInfo), _queryPool, errorMessage);
 
     return true;
 }

@@ -3,10 +3,11 @@
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 bool VulkanCapabilities::create(std::string& errorMessage) {
-    VpCapabilitiesCreateInfo createInfo{};
-    createInfo.apiVersion       = VULKAN_VERSION;
-    createInfo.flags            = VP_PROFILE_CREATE_STATIC_BIT;
-    createInfo.pVulkanFunctions = nullptr;
+    constexpr VpCapabilitiesCreateInfo createInfo{
+        .flags            = VP_PROFILE_CREATE_STATIC_BIT,
+        .apiVersion       = VULKAN_VERSION,
+        .pVulkanFunctions = nullptr
+    };
 
     VK_TRY(vpCreateCapabilities(&createInfo, nullptr, &_capabilities), errorMessage);
 

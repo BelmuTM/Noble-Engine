@@ -1,7 +1,10 @@
 #include "VulkanFrameGraph.h"
 
-bool VulkanFrameGraph::create(const VulkanMeshManager& meshManager, std::string& errorMessage) noexcept {
+bool VulkanFrameGraph::create(
+    const VulkanMeshManager& meshManager, const vk::QueryPool queryPool, std::string& errorMessage
+) noexcept {
     _meshManager = &meshManager;
+    _queryPool   = queryPool;
     return true;
 }
 
@@ -50,7 +53,11 @@ void VulkanFrameGraph::executePass(const FramePass& pass, const FrameContext& fr
             .setColorAttachments(colorAttachmentsInfo)
             .setPDepthAttachment(&depthAttachmentInfo);
 
+        frame.cmdBuffer.resetQueryPool(_queryPool, 0, 1);
+
         frame.cmdBuffer.beginRendering(renderingInfo);
+
+        frame.cmdBuffer.beginQuery(_queryPool, 0, {});
 
         frame.cmdBuffer.bindPipeline(pass.bindPoint, *pass.pipeline);
 
@@ -94,6 +101,8 @@ void VulkanFrameGraph::executePass(const FramePass& pass, const FrameContext& fr
                 frame.cmdBuffer.draw(draw.mesh.getVertices().size(), 1, 0, 0);
             }
         }
+
+        frame.cmdBuffer.endQuery(_queryPool, 0);
 
         frame.cmdBuffer.endRendering();
     }

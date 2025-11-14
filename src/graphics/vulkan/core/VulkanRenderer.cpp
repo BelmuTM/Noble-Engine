@@ -142,7 +142,7 @@ bool VulkanRenderer::init(Platform::Window& window, const ObjectsVector& objects
 
     frameGraph.addPass(std::move(meshRenderPass));
 
-    TRY(createVulkanEntity(&frameGraph, errorMessage, meshManager));
+    TRY(createVulkanEntity(&frameGraph, errorMessage, meshManager, device.getQueryPool()));
 
     guard.release();
 
@@ -179,6 +179,20 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
     if (!submitCurrentCommandBuffer(currentFrame, imageIndex, errorMessage, discardLogging)) return;
 
     currentFrame = (currentFrame + 1) % _framesInFlight;
+
+    uint64_t primitiveCount = 0;
+
+    vk::Result queryResults = context.getDevice().getLogicalDevice().getQueryPoolResults(
+        context.getDevice().getQueryPool(),
+        0, 1,
+        sizeof(uint64_t),
+        &primitiveCount,
+        sizeof(uint64_t),
+        vk::QueryResultFlagBits::eWait |
+        vk::QueryResultFlagBits::e64
+    );
+
+    Logger::debug("Drew " + std::to_string(primitiveCount) + " triangles");
 
     guard.release();
 }

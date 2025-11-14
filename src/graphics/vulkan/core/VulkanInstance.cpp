@@ -63,13 +63,14 @@ std::vector<const char*> VulkanInstance::getRequiredExtensions() {
 }
 
 bool VulkanInstance::createInstance(std::string& errorMessage) {
-    VkApplicationInfo applicationInfo{};
-    applicationInfo.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    applicationInfo.pApplicationName   = "Noble";
-    applicationInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.pEngineName        = "NobleEngine";
-    applicationInfo.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.apiVersion         = VULKAN_VERSION;
+    constexpr VkApplicationInfo applicationInfo{
+        .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+        .pApplicationName   = "Noble Engine",
+        .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+        .pEngineName        = "NobleEngine",
+        .engineVersion      = VK_MAKE_VERSION(1, 0, 0),
+        .apiVersion         = VULKAN_VERSION
+    };
 
     // Check if profile is supported
     vk::Bool32 profileSupported = vk::False;
@@ -129,18 +130,20 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
 #endif
 
     // Create the instance
-    VkInstanceCreateInfo instanceInfo{};
-    instanceInfo.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    instanceInfo.pApplicationInfo        = &applicationInfo;
-    instanceInfo.enabledExtensionCount   = static_cast<uint32_t>(extensions.size());
-    instanceInfo.ppEnabledExtensionNames = extensions.data();
-    instanceInfo.enabledLayerCount       = static_cast<uint32_t>(layers.size());
-    instanceInfo.ppEnabledLayerNames     = layers.data();
+    VkInstanceCreateInfo instanceInfo{
+        .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+        .pApplicationInfo        = &applicationInfo,
+        .enabledLayerCount       = static_cast<uint32_t>(layers.size()),
+        .ppEnabledLayerNames     = layers.data(),
+        .enabledExtensionCount   = static_cast<uint32_t>(extensions.size()),
+        .ppEnabledExtensionNames = extensions.data()
+    };
 
-    VpInstanceCreateInfo vpCreateInfo{};
-    vpCreateInfo.pCreateInfo             = &instanceInfo;
-    vpCreateInfo.enabledFullProfileCount = 1;
-    vpCreateInfo.pEnabledFullProfiles    = &vulkanProfile;
+    const VpInstanceCreateInfo vpCreateInfo{
+        .pCreateInfo             = &instanceInfo,
+        .enabledFullProfileCount = 1,
+        .pEnabledFullProfiles    = &vulkanProfile
+    };
 
     VkInstance rawInstance{};
     VK_TRY(vpCreateInstance(*_capabilities, &vpCreateInfo, nullptr, &rawInstance), errorMessage);

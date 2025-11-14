@@ -21,7 +21,9 @@ public:
     VulkanFrameGraph(VulkanFrameGraph&&)            = delete;
     VulkanFrameGraph& operator=(VulkanFrameGraph&&) = delete;
 
-    [[nodiscard]] bool create(const VulkanMeshManager& meshManager, std::string& errorMessage) noexcept;
+    [[nodiscard]] bool create(
+        const VulkanMeshManager& meshManager, vk::QueryPool queryPool, std::string& errorMessage
+    ) noexcept;
 
     void destroy() noexcept;
 
@@ -37,6 +39,8 @@ public:
 
 private:
     const VulkanMeshManager* _meshManager = nullptr;
+
+    vk::QueryPool _queryPool{};
 
     std::vector<FramePass>     _passes{};
     std::vector<FrameResource> _resources{};

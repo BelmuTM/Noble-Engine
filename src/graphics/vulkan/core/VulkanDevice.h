@@ -49,6 +49,8 @@ public:
     [[nodiscard]] vk::Queue getGraphicsQueue() const noexcept { return _graphicsQueue; }
     [[nodiscard]] vk::Queue getPresentQueue() const noexcept { return _presentQueue; }
 
+    [[nodiscard]] vk::QueryPool getQueryPool() const noexcept { return _queryPool; }
+
 private:
     const VulkanCapabilities* _capabilities = nullptr;
 
@@ -64,6 +66,8 @@ private:
     vk::Queue _graphicsQueue{};
     vk::Queue _presentQueue{};
 
+    vk::QueryPool _queryPool{};
+
     static bool isPhysicalDeviceSuitable(vk::PhysicalDevice device);
     bool pickPhysicalDevice(std::string& errorMessage);
 
@@ -71,6 +75,8 @@ private:
     bool createLogicalDevice(QueueFamilyIndices queueFamilyIndices, std::string& errorMessage);
 
     bool createAllocator(std::string& errorMessage);
+
+    bool createQueryPool(std::string& errorMessage);
 };
 
 #endif //NOBLEENGINE_VULKANDEVICE_H
