@@ -54,27 +54,16 @@ private:
     VulkanFrameResources      frameResources{};
     VulkanRenderObjectManager renderObjectManager{};
 
-    VulkanGraphicsPipeline pipelineComposite{};
     VulkanGraphicsPipeline pipelineMeshRender{};
     VulkanFrameGraph       frameGraph{};
 
     bool onFramebufferResize(std::string& errorMessage);
 
-    void transitionImageLayout(
-        vk::CommandBuffer       commandBuffer,
-        uint32_t                imageIndex,
-        vk::ImageLayout         oldLayout,
-        vk::ImageLayout         newLayout,
-        vk::AccessFlags2        srcAccessMask,
-        vk::AccessFlags2        dstAccessMask,
-        vk::PipelineStageFlags2 srcStageMask,
-        vk::PipelineStageFlags2 dstStageMask
-    ) const;
+    [[nodiscard]] bool recordCommandBuffer(
+        vk::CommandBuffer commandBuffer, uint32_t imageIndex, std::string& errorMessage
+    );
 
-    static bool beginCommandBuffer(vk::CommandBuffer commandBuffer, std::string& errorMessage);
-
-    void recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
-    void recordCurrentCommandBuffer(uint32_t imageIndex);
+    [[nodiscard]] bool recordCurrentCommandBuffer(uint32_t imageIndex, std::string& errorMessage);
 };
 
 #endif //NOBLEENGINE_VULKANRENDERER_H

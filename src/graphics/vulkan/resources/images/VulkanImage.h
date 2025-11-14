@@ -36,10 +36,32 @@ public:
     [[nodiscard]] vk::Extent3D getExtent() const noexcept { return _extent; }
     void setExtent(const vk::Extent3D extent) noexcept { _extent = extent; }
 
+    [[nodiscard]] static bool hasStencilComponent(const vk::Format format) {
+        return format == vk::Format::eD32SfloatS8Uint
+            || format == vk::Format::eD24UnormS8Uint;
+    }
+
+    [[nodiscard]] DescriptorInfo getDescriptorInfo(const uint32_t binding) const noexcept {
+        return {
+            .type      = vk::DescriptorType::eCombinedImageSampler,
+            .imageInfo = {_sampler, _imageView, vk::ImageLayout::eShaderReadOnlyOptimal},
+            .binding   = binding
+        };
+    }
+
+    [[nodiscard]] bool transitionLayout(
+        vk::ImageLayout             oldLayout,
+        vk::ImageLayout             newLayout,
+        uint32_t                    mipLevels,
+        const VulkanCommandManager* commandManager,
+        std::string&                errorMessage
+    ) const;
+
     [[nodiscard]] bool createImage(
-        vk::Extent3D        extent,
         vk::ImageType       type,
         vk::Format          format,
+        vk::Extent3D        extent,
+        uint32_t            mipLevels,
         vk::ImageUsageFlags usage,
         VmaMemoryUsage      memoryUsage,
         const VulkanDevice* device,
@@ -50,6 +72,7 @@ public:
         vk::ImageViewType    type,
         vk::Format           format,
         vk::ImageAspectFlags aspectFlags,
+        uint32_t             mipLevels,
         const VulkanDevice*  device,
         std::string&         errorMessage
     );
@@ -61,14 +84,6 @@ public:
         std::string&           errorMessage
     );
 
-    [[nodiscard]] DescriptorInfo getDescriptorInfo(const uint32_t binding) const noexcept {
-        return {
-            .type      = vk::DescriptorType::eCombinedImageSampler,
-            .imageInfo = {_sampler, _imageView, vk::ImageLayout::eShaderReadOnlyOptimal},
-            .binding   = binding
-        };
-    }
-
     [[nodiscard]] bool copyBufferToImage(
         const vk::Buffer&           buffer,
         vk::Extent3D                extent,
@@ -76,14 +91,9 @@ public:
         std::string&                errorMessage
     ) const;
 
-    [[nodiscard]] static bool hasStencilComponent(const vk::Format format) {
-        return format == vk::Format::eD32SfloatS8Uint
-            || format == vk::Format::eD24UnormS8Uint;
-    }
-
-    [[nodiscard]] bool transitionImageLayout(
-        vk::ImageLayout             oldLayout,
-        vk::ImageLayout             newLayout,
+    [[nodiscard]] bool generateMipmaps(
+        vk::Extent3D                extent,
+        uint32_t                    mipLevels,
         const VulkanCommandManager* commandManager,
         std::string&                errorMessage
     ) const;
@@ -92,8 +102,9 @@ public:
         const void*                 pixels,
         uint8_t                     channels,
         uint8_t                     bytesPerChannel,
-        vk::Extent3D                extent,
         vk::Format                  format,
+        vk::Extent3D                extent,
+        uint32_t                    mipLevels,
         const VulkanDevice*         device,
         const VulkanCommandManager* commandManager,
         std::string&                errorMessage
@@ -106,8 +117,8 @@ private:
 
     VmaAllocation _allocation;
 
-    vk::Extent3D _extent{};
     vk::Format   _format;
+    vk::Extent3D _extent{};
 };
 
 #endif // NOBLEENGINE_VULKANIMAGE_H

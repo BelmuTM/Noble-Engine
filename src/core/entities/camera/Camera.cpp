@@ -14,7 +14,7 @@ void Camera::update(const double deltaTime) {
     }
 
     const glm::vec3 worldVelocity = toWorldSpace(_velocity);
-    move(worldVelocity * _speed * static_cast<float>(deltaTime));
+    move(worldVelocity * static_cast<float>(deltaTime));
 
     updateViewMatrix();
 }

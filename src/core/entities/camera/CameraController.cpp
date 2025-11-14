@@ -5,6 +5,9 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/gtc/matrix_transform.hpp>
 
+static constexpr float speedMultiplier = 3.0f;
+static constexpr float cameraSmoothing = 6.0f;
+
 CameraController::CameraController(GLFWwindow* window, InputManager& inputManager, Camera& camera)
     : _window(window), IInputListener(inputManager), _camera(camera) {
 
@@ -29,10 +32,14 @@ void CameraController::update(const float deltaTime) {
         velocity = glm::normalize(velocity);
     }
 
-    static constexpr float cameraSmoothing = -8.0f;
+    float speed = _camera.getSpeed();
+    if (_inputManager.isActionPressed(InputAction::IncreaseSpeed)) {
+        speed *= speedMultiplier;
+    }
+    velocity *= speed;
 
     const glm::vec3 currentVelocity  = _camera.getVelocity();
-    const glm::vec3 smoothedVelocity = glm::mix(currentVelocity, velocity, 1.0f - expf(cameraSmoothing * deltaTime));
+    const glm::vec3 smoothedVelocity = glm::mix(currentVelocity, velocity, 1.0f - expf(-cameraSmoothing * deltaTime));
 
     _camera.setVelocity(smoothedVelocity);
 

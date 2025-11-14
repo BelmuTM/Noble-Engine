@@ -96,10 +96,10 @@ bool VulkanRenderObjectManager::createRenderObject(
 
         const Image* albedoTexture = object->getTexture(material.albedoPath);
         if (albedoTexture) {
-            TRY(_imageManager->loadImage(*submesh.texture, albedoTexture, errorMessage));
+            TRY(_imageManager->loadImage(*submesh.texture, albedoTexture, true, errorMessage));
         } else {
-            std::vector<uint8_t> defaultColorBytes = Image::rgbColorToBytes(material.diffuse);
-            TRY(_imageManager->loadImage(*submesh.texture, defaultColorBytes.data(), errorMessage));
+            const Image diffuseColorImage = Image::createSinglePixelImage(material.diffuse);
+            TRY(_imageManager->loadImage(*submesh.texture, &diffuseColorImage, false, errorMessage));
         }
 
         // Allocate and bind descriptor sets

@@ -27,6 +27,15 @@ struct Image {
 
         return bytes;
     }
+
+    static Image createSinglePixelImage(const glm::vec3& color) {
+        Image image{};
+        image.pixels   = rgbColorToBytes(color);
+        image.width    = 1;
+        image.height   = 1;
+        image.channels = 4;
+        return image;
+    }
 };
 
 #endif // NOBLEENGINE_IMAGE_H

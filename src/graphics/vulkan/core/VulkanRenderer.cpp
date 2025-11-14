@@ -1,6 +1,7 @@
 #include "VulkanRenderer.h"
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
+#include "graphics/vulkan/resources/images/VulkanImageLayoutTransitions.h"
 
 #include "core/debug/ErrorHandling.h"
 #include "core/debug/Logger.h"
@@ -170,7 +171,7 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
 
     const uint32_t imageIndex = *imageIndexOpt;
 
-    recordCurrentCommandBuffer(imageIndex);
+    if (!recordCurrentCommandBuffer(imageIndex, errorMessage)) return;
 
     frameResources.update(currentFrame, camera);
     renderObjectManager.updateObjects();
@@ -197,108 +198,66 @@ bool VulkanRenderer::onFramebufferResize(std::string& errorMessage) {
     return true;
 }
 
-void VulkanRenderer::transitionImageLayout(
-    const vk::CommandBuffer       commandBuffer,
-    const uint32_t                imageIndex,
-    const vk::ImageLayout         oldLayout,
-    const vk::ImageLayout         newLayout,
-    const vk::AccessFlags2        srcAccessMask,
-    const vk::AccessFlags2        dstAccessMask,
-    const vk::PipelineStageFlags2 srcStageMask,
-    const vk::PipelineStageFlags2 dstStageMask
-) const {
-    if (oldLayout == newLayout) return;
-
-    // Specify which part of the image to transition
-    vk::ImageSubresourceRange subresourceRange{};
-    subresourceRange
-        .setAspectMask(vk::ImageAspectFlagBits::eColor)
-        .setBaseMipLevel(0)
-        .setLevelCount(1)
-        .setBaseArrayLayer(0)
-        .setLayerCount(1);
-
-    // Define how the transition operates and what to change
-    vk::ImageMemoryBarrier2 barrier{};
-    barrier
-        .setSrcStageMask(srcStageMask)
-        .setSrcAccessMask(srcAccessMask)
-        .setDstStageMask(dstStageMask)
-        .setDstAccessMask(dstAccessMask)
-        .setOldLayout(oldLayout)
-        .setNewLayout(newLayout)
-        .setSrcQueueFamilyIndex(vk::QueueFamilyIgnored) // No ownership transfer to another queue family
-        .setDstQueueFamilyIndex(vk::QueueFamilyIgnored)
-        .setImage(context.getSwapchain().getImages()[imageIndex])
-        .setSubresourceRange(subresourceRange);
-
-    vk::DependencyInfo dependencyInfo{};
-    dependencyInfo
-        .setDependencyFlags({})
-        .setImageMemoryBarriers(barrier);
-
-    commandBuffer.pipelineBarrier2(dependencyInfo);
-}
-
-bool VulkanRenderer::beginCommandBuffer(const vk::CommandBuffer commandBuffer, std::string& errorMessage) {
+bool VulkanRenderer::recordCommandBuffer(
+    const vk::CommandBuffer commandBuffer, const uint32_t imageIndex, std::string& errorMessage
+) {
     if (commandBuffer == vk::CommandBuffer{}) {
-        errorMessage = "Failed to begin record for Vulkan command buffer: command buffer is null";
+        errorMessage = "Failed to record Vulkan command buffer: command buffer is null";
         return false;
     }
 
     constexpr vk::CommandBufferBeginInfo beginInfo{};
-    VK_TRY_LOG(commandBuffer.begin(beginInfo), Logger::Level::ERROR);
+    VK_TRY(commandBuffer.begin(beginInfo), errorMessage);
 
-    return true;
-}
+    const VulkanSwapchain& swapchain = context.getSwapchain();
 
-void VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer, const uint32_t imageIndex) {
-    std::string errorMessage;
+    const vk::Extent2D swapchainExtent = swapchain.getExtent();
+    const vk::Format   swapchainFormat = swapchain.getFormat();
 
-    if (!beginCommandBuffer(commandBuffer, errorMessage)) {
-        Logger::error(errorMessage);
-        return;
-    }
+    const vk::Image&     swapchainImage     = swapchain.getImages()[imageIndex];
+    const vk::ImageView& swapchainImageView = swapchain.getImageViews()[imageIndex];
 
-    transitionImageLayout(
+    TRY(VulkanImageLayoutTransitions::transitionImageLayout(
+        swapchainImage,
+        swapchainFormat,
         commandBuffer,
-        imageIndex,
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eColorAttachmentOptimal,
-        {},
-        vk::AccessFlagBits2::eColorAttachmentWrite,
-        vk::PipelineStageFlagBits2::eTopOfPipe,
-        vk::PipelineStageFlagBits2::eColorAttachmentOutput
-    );
+        1,
+        errorMessage
+    ));
 
     FrameContext frameContext{};
     frameContext
         .setFrameIndex(currentFrame)
         .setCommandBuffer(commandBuffer)
-        .setSwapchainImageView(context.getSwapchain().getImageViews()[imageIndex])
-        .setExtent(context.getSwapchain().getExtent());
+        .setSwapchainImageView(swapchainImageView)
+        .setExtent(swapchainExtent);
 
     frameContext.frameDescriptors = frameResources.getUBODescriptors()->getSets();
 
     frameGraph.execute(frameContext);
 
-    transitionImageLayout(
+    TRY(VulkanImageLayoutTransitions::transitionImageLayout(
+        swapchainImage,
+        swapchainFormat,
         commandBuffer,
-        imageIndex,
         vk::ImageLayout::eColorAttachmentOptimal,
         vk::ImageLayout::ePresentSrcKHR,
-        vk::AccessFlagBits2::eColorAttachmentWrite,
-        {},
-        vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-        vk::PipelineStageFlagBits2::eBottomOfPipe
-    );
+        1,
+        errorMessage
+    ));
 
-    VK_CALL_LOG(commandBuffer.end(), Logger::Level::ERROR);
+    VK_TRY(commandBuffer.end(), errorMessage);
+
+    return true;
 }
 
-void VulkanRenderer::recordCurrentCommandBuffer(const uint32_t imageIndex) {
+bool VulkanRenderer::recordCurrentCommandBuffer(const uint32_t imageIndex, std::string& errorMessage) {
     const vk::CommandBuffer& currentBuffer = commandManager.getCommandBuffers()[currentFrame];
     VK_CALL_LOG(currentBuffer.reset(), Logger::Level::ERROR);
 
-    recordCommandBuffer(currentBuffer, imageIndex);
+    TRY(recordCommandBuffer(currentBuffer, imageIndex, errorMessage));
+
+    return true;
 }

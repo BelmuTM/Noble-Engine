@@ -22,22 +22,9 @@ void VulkanImageManager::destroy() noexcept {
     _commandManager = nullptr;
 }
 
-bool VulkanImageManager::loadImage(VulkanImage& image, const void* imageData, std::string& errorMessage) {
-    constexpr auto    extent          = vk::Extent3D{1, 1, 1};
-    constexpr auto    format          = vk::Format::eR8G8B8A8Srgb;
-    constexpr uint8_t channels        = 4;
-    constexpr uint8_t bytesPerChannel = 1;
-
-    TRY(image.createFromData(
-        imageData, channels, bytesPerChannel, extent, format, _device, _commandManager, errorMessage
-    ));
-
-    addImage(image);
-
-    return true;
-}
-
-bool VulkanImageManager::loadImage(VulkanImage& image, const Image* imageData, std::string& errorMessage) {
+bool VulkanImageManager::loadImage(
+    VulkanImage& image, const Image* imageData, const bool useMipmaps, std::string& errorMessage
+) {
     if (!imageData) {
         errorMessage = "Failed to load Vulkan image: data is null";
         return false;
@@ -52,12 +39,15 @@ bool VulkanImageManager::loadImage(VulkanImage& image, const Image* imageData, s
     constexpr auto    format          = vk::Format::eR8G8B8A8Srgb;
     constexpr uint8_t bytesPerChannel = 1;
 
+    const uint32_t mipLevels = useMipmaps ? getMipLevels(extent) : 1;
+
     TRY(image.createFromData(
         imageData->pixels.data(),
         imageData->channels,
         bytesPerChannel,
-        extent,
         format,
+        extent,
+        mipLevels,
         _device,
         _commandManager,
         errorMessage
@@ -69,7 +59,10 @@ bool VulkanImageManager::loadImage(VulkanImage& image, const Image* imageData, s
 }
 
 bool VulkanImageManager::createColorBuffer(
-    VulkanImage& colorBuffer, const vk::Extent2D extent, const vk::Format format, std::string& errorMessage
+    VulkanImage&       colorBuffer,
+    const vk::Extent2D extent,
+    const vk::Format   format,
+    std::string&       errorMessage
 ) const {
     const auto colorExtent = vk::Extent3D(extent.width, extent.height, 1);
 
@@ -77,9 +70,10 @@ bool VulkanImageManager::createColorBuffer(
     colorBuffer.setExtent(colorExtent);
 
     TRY(colorBuffer.createImage(
-        colorExtent,
         vk::ImageType::e2D,
         format,
+        colorExtent,
+        1,
         vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
         VMA_MEMORY_USAGE_GPU_ONLY,
         _device,
@@ -87,15 +81,18 @@ bool VulkanImageManager::createColorBuffer(
     ));
 
     TRY(colorBuffer.createImageView(
-        vk::ImageViewType::e2D, format, vk::ImageAspectFlagBits::eColor, _device, errorMessage
+        vk::ImageViewType::e2D, format, vk::ImageAspectFlagBits::eColor, 1, _device, errorMessage
     ));
 
-    TRY(colorBuffer.transitionImageLayout(
+    TRY(colorBuffer.transitionLayout(
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eColorAttachmentOptimal,
+        1,
         _commandManager,
         errorMessage
     ));
+
+    TRY(colorBuffer.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, _device, errorMessage));
 
     return true;
 }
@@ -115,20 +112,22 @@ bool VulkanImageManager::createDepthBuffer(
     }
 
     TRY(depthBuffer.createImage(
-        depthExtent,
         vk::ImageType::e2D,
         depthFormat,
+        depthExtent,
+        1,
         vk::ImageUsageFlagBits::eDepthStencilAttachment,
         VMA_MEMORY_USAGE_GPU_ONLY,
         _device,
         errorMessage
     ));
 
-    TRY(depthBuffer.createImageView(vk::ImageViewType::e2D, depthFormat, aspects, _device, errorMessage));
+    TRY(depthBuffer.createImageView(vk::ImageViewType::e2D, depthFormat, aspects, 1, _device, errorMessage));
 
-    TRY(depthBuffer.transitionImageLayout(
+    TRY(depthBuffer.transitionLayout(
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eDepthStencilAttachmentOptimal,
+        1,
         _commandManager,
         errorMessage
     ));

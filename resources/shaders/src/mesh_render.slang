@@ -62,8 +62,8 @@ float bayer2(float2 a) {
 
 [shader("fragment")]
 float4 fragMain(VSOutput vertIn) : SV_TARGET {
-    float3 lightPosition0 = float3(-1.5, 1.0, 5.0);
-    float3 lightPosition1 = float3(4.5, -1.0, 1.0);
+    const float3 lightPosition0 = float3(-1.5, 1.0, 5.0);
+    const float3 lightPosition1 = float3(4.5, -1.0, 1.0);
 
     float3 lightDirection0 = normalize(lightPosition0 - vertIn.worldPos.xyz);
     float3 lightDirection1 = normalize(lightPosition1 - vertIn.worldPos.xyz);
@@ -76,14 +76,15 @@ float4 fragMain(VSOutput vertIn) : SV_TARGET {
     rainbow.g = sin(frameUBO.frameTimeCounter * TAU / 6.0 + 2.0) * 0.5 + 0.5;
     rainbow.b = sin(frameUBO.frameTimeCounter * TAU / 6.0 + 4.0) * 0.5 + 0.5;
 
-    float3 lightColor0 = float3(0.969, 0.549, 0.125);
+    const float3 lightColor0 = float3(0.969, 0.549, 0.125);
     float3 lightColor1 = rainbow;
 
-    float fadeStartDist = 0.25;
+    const float fadeStartDist = 0.25;
 
     float dist = distance(frameUBO.cameraPosition, vertIn.worldPos.xyz);
     float fade = saturate((dist - frameUBO.nearPlane) / (fadeStartDist - frameUBO.nearPlane));
 
+    const float ditherScale = 0.1;
     float threshold = bayer32(vertIn.position.xy * 0.5);
 
     if (threshold > fade) {

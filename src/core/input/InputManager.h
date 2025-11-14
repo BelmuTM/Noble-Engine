@@ -18,7 +18,8 @@ enum class InputAction {
     MoveLeft,
     MoveRight,
     MoveUp,
-    MoveDown
+    MoveDown,
+    IncreaseSpeed
 };
 
 class InputManager {
@@ -46,6 +47,7 @@ public:
     void onMouseScroll(double offsetX, double offsetY) const;
 
     bool isKeyPressed(int key) const;
+    bool isActionPressed(InputAction action) const;
 
     [[nodiscard]] bool isMouseLeftButtonPressed() const noexcept { return _mouseLeftButtonPressed; }
     [[nodiscard]] bool isMouseRightButtonPressed() const noexcept { return _mouseRightButtonPressed; }

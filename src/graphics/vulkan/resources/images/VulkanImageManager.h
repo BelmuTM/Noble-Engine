@@ -30,8 +30,9 @@ public:
         _images.push_back(image);
     }
 
-    [[nodiscard]] bool loadImage(VulkanImage& image, const void* imageData, std::string& errorMessage);
-    [[nodiscard]] bool loadImage(VulkanImage& image, const Image* imageData, std::string& errorMessage);
+    [[nodiscard]] bool loadImage(
+        VulkanImage& image, const Image* imageData, bool useMipmaps, std::string& errorMessage
+    );
 
     [[nodiscard]] bool createColorBuffer(
         VulkanImage& colorBuffer, vk::Extent2D extent, vk::Format format, std::string& errorMessage
@@ -46,6 +47,10 @@ private:
     const VulkanCommandManager* _commandManager = nullptr;
 
     std::vector<VulkanImage> _images{};
+
+    [[nodiscard]] static uint32_t getMipLevels(const vk::Extent3D extent) {
+        return static_cast<uint32_t>(std::floor(std::log2(std::max({extent.width, extent.height, extent.depth})))) + 1;
+    }
 };
 
 #endif //NOBLEENGINE_VULKANIMAGEMANAGER_H
