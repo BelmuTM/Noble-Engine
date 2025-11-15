@@ -26,7 +26,9 @@ bool VulkanInstance::create(const VulkanCapabilities& capabilities, std::string&
     _dldi = vk::detail::DispatchLoaderDynamic(_instance, vkGetInstanceProcAddr);
 
 #ifdef VULKAN_DEBUG_UTILS
+
     if (!setupDebugMessenger(errorMessage)) return false;
+
 #endif
 
     return true;
@@ -153,6 +155,8 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
     return true;
 }
 
+#ifdef VULKAN_DEBUG_UTILS
+
 vk::Bool32 VulkanInstance::debugCallback(
     const vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
     vk::DebugUtilsMessageTypeFlagsEXT              type,
@@ -199,3 +203,5 @@ bool VulkanInstance::setupDebugMessenger(std::string& errorMessage) {
 
     return true;
 }
+
+#endif

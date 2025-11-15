@@ -12,20 +12,39 @@ void VulkanFrameGraph::destroy() noexcept {
     _meshManager = nullptr;
 }
 
-void VulkanFrameGraph::execute(const FrameContext& frame) const {
-    for (auto& pass : _passes) {
-        executePass(pass, frame);
+void VulkanFrameGraph::attachSwapchainOutput() const {
+    VulkanFramePass* lastPass = _passes.back().get();
+
+    VulkanFramePassResource swapchainOutput{};
+    swapchainOutput
+        .setType(SwapchainOutput)
+        .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        .setResolveImageView([](const VulkanFrameContext& frame) { return frame.swapchainImageView; });
+
+    VulkanFramePassAttachment swapchainAttachment{};
+    swapchainAttachment
+        .setResource(swapchainOutput)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eStore)
+        .setClearValue(defaultClearColor);
+
+    lastPass->addColorAttachment(swapchainAttachment);
+}
+
+void VulkanFrameGraph::execute(const VulkanFrameContext& frame) const {
+    for (const auto& pass : _passes) {
+        executePass(pass.get(), frame);
     }
 }
 
-void VulkanFrameGraph::executePass(const FramePass& pass, const FrameContext& frame) const {
+void VulkanFrameGraph::executePass(const VulkanFramePass* pass, const VulkanFrameContext& frame) const {
     const vk::Buffer& vertexBuffer = _meshManager->getVertexBuffer();
     const vk::Buffer& indexBuffer  = _meshManager->getIndexBuffer();
 
-    if (pass.bindPoint == vk::PipelineBindPoint::eGraphics) {
+    if (pass->getBindPoint() == vk::PipelineBindPoint::eGraphics) {
         std::vector<vk::RenderingAttachmentInfo> colorAttachmentsInfo{};
 
-        for (const auto& [resource, loadOp, storeOp, clearValue] : pass.colorAttachments) {
+        for (const auto& [resource, loadOp, storeOp, clearValue] : pass->getColorAttachments()) {
             colorAttachmentsInfo.push_back(vk::RenderingAttachmentInfo{}
                 .setImageView(resource.resolveImageView(frame))
                 .setImageLayout(resource.layout)
@@ -35,15 +54,16 @@ void VulkanFrameGraph::executePass(const FramePass& pass, const FrameContext& fr
             );
         }
 
+        const VulkanFramePassAttachment& depthAttachment = pass->getDepthAttachment();
         vk::RenderingAttachmentInfo depthAttachmentInfo{};
 
-        if (pass.depthAttachment) {
+        if (depthAttachment) {
             depthAttachmentInfo
-                .setImageView(pass.depthAttachment.resource.resolveImageView(frame))
-                .setImageLayout(pass.depthAttachment.resource.layout)
-                .setLoadOp(pass.depthAttachment.loadOp)
-                .setStoreOp(pass.depthAttachment.storeOp)
-                .setClearValue(pass.depthAttachment.clearValue);
+                .setImageView(depthAttachment.resource.resolveImageView(frame))
+                .setImageLayout(depthAttachment.resource.layout)
+                .setLoadOp(depthAttachment.loadOp)
+                .setStoreOp(depthAttachment.storeOp)
+                .setClearValue(depthAttachment.clearValue);
         }
 
         vk::RenderingInfo renderingInfo{};
@@ -59,12 +79,12 @@ void VulkanFrameGraph::executePass(const FramePass& pass, const FrameContext& fr
 
         frame.cmdBuffer.beginQuery(_queryPool, 0, {});
 
-        frame.cmdBuffer.bindPipeline(pass.bindPoint, *pass.pipeline);
+        frame.cmdBuffer.bindPipeline(pass->getBindPoint(), *pass->getPipeline());
 
-        for (const auto& drawCall : pass.drawCalls) {
+        for (const auto& drawCall : pass->getDrawCalls()) {
             const auto& draw = *drawCall;
 
-            const vk::PipelineLayout pipelineLayout = pass.pipeline->getLayout();
+            const vk::PipelineLayout pipelineLayout = pass->getPipeline()->getLayout();
 
             std::vector<vk::DescriptorSet> descriptorSets{};
             descriptorSets.push_back(frame.frameDescriptors.at(frame.frameIndex));
@@ -77,13 +97,13 @@ void VulkanFrameGraph::executePass(const FramePass& pass, const FrameContext& fr
 
             if (!descriptorSets.empty()) {
                 frame.cmdBuffer.bindDescriptorSets(
-                    pass.bindPoint, pipelineLayout, 0, descriptorSets, nullptr
+                    pass->getBindPoint(), pipelineLayout, 0, descriptorSets, nullptr
                 );
             }
 
             if (auto* drawPushConstant = dynamic_cast<const DrawCallPushConstantBase*>(&draw)) {
                 drawPushConstant->pushConstants(
-                    frame.cmdBuffer, pipelineLayout, pass.pipeline->getStageFlags(), frame
+                    frame.cmdBuffer, pipelineLayout, pass->getPipeline()->getStageFlags(), frame
                 );
             }
 

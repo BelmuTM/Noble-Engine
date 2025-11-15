@@ -8,8 +8,10 @@
 #include "ubo/VulkanUniformBufferManager.h"
 #include "ubo/FrameUniformBuffer.h"
 
-static const VulkanDescriptorManager::DescriptorScheme frameDescriptorScheme = {
-    {vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eAllGraphics}
+#include "graphics/vulkan/pipeline/framegraph/nodes/VulkanFramePassAttachment.h"
+
+static const VulkanDescriptorScheme frameDescriptorScheme = {
+    {0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eAllGraphics}
 };
 
 class VulkanFrameResources {
@@ -36,15 +38,19 @@ public:
 
     void update(uint32_t frameIndex, const Camera& camera) const;
 
-    [[nodiscard]] bool recreate(std::string& errorMessage);
+    [[nodiscard]] bool recreate(std::string& errorMessage) const;
 
     [[nodiscard]] const VulkanDescriptorManager& getDescriptorManager() const noexcept { return _descriptorManager; }
 
-    [[nodiscard]] const std::unique_ptr<VulkanDescriptorSets>& getUBODescriptors() const noexcept {
-        return _frameUBODescriptors;
+    [[nodiscard]] const VulkanDescriptorSets* getUBODescriptors() const noexcept { return _frameUBODescriptors; }
+
+    [[nodiscard]] const VulkanFramePassAttachment& getDepthBufferAttachment() const noexcept {
+        return _depthBufferAttachment;
     }
 
-    [[nodiscard]] const VulkanImage& getDepthBuffer() const noexcept { return _depthBuffer; }
+    void addColorBuffer(std::unique_ptr<VulkanImage> colorBuffer) noexcept {
+        _colorBuffers.push_back(std::move(colorBuffer));
+    }
 
 private:
     const VulkanDevice*       _device       = nullptr;
@@ -55,10 +61,13 @@ private:
 
     VulkanDescriptorManager _descriptorManager{};
 
-    FrameUniformBuffer                    _frameUBO{};
-    std::unique_ptr<VulkanDescriptorSets> _frameUBODescriptors{};
+    FrameUniformBuffer    _frameUBO{};
+    VulkanDescriptorSets* _frameUBODescriptors{};
 
-    VulkanImage _depthBuffer{};
+    std::unique_ptr<VulkanImage> _depthBuffer{};
+    VulkanFramePassAttachment    _depthBufferAttachment{};
+
+    std::vector<std::unique_ptr<VulkanImage>> _colorBuffers{};
 };
 
 #endif // NOBLEENGINE_VULKANFRAMERESOURCES_H

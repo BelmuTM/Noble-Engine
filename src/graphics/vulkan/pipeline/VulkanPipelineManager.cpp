@@ -21,21 +21,26 @@ void VulkanPipelineManager::destroy() noexcept {
     _swapchain = nullptr;
 }
 
+VulkanGraphicsPipeline* VulkanPipelineManager::allocatePipeline() {
+    _graphicsPipelines.emplace_back(std::make_unique<VulkanGraphicsPipeline>());
+    return _graphicsPipelines.back().get();
+}
+
 bool VulkanPipelineManager::createGraphicsPipeline(
-    VulkanGraphicsPipeline&                     graphicsPipeline,
+    VulkanGraphicsPipeline*                     graphicsPipeline,
     const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
     const VulkanShaderProgram&                  shaderProgram,
     std::string&                                errorMessage
 ) {
-    TRY(graphicsPipeline.create(_device, *_swapchain, descriptorSetLayouts, {}, shaderProgram, errorMessage));
+    TRY(graphicsPipeline->create(_device, *_swapchain, descriptorSetLayouts, {}, shaderProgram, errorMessage));
 
-    _graphicsPipelines.push_back(&graphicsPipeline);
+    _graphicsPipelines.emplace_back(graphicsPipeline);
 
     return true;
 }
 
 bool VulkanPipelineManager::createGraphicsPipeline(
-    VulkanGraphicsPipeline&                     graphicsPipeline,
+    VulkanGraphicsPipeline*                     graphicsPipeline,
     const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
     const uint32_t                              pushConstantRangeSize,
     const VulkanShaderProgram&                  shaderProgram,
@@ -48,11 +53,11 @@ bool VulkanPipelineManager::createGraphicsPipeline(
         .setOffset(0)
         .setSize(pushConstantRangeSize);
 
-    TRY(graphicsPipeline.create(
+    TRY(graphicsPipeline->create(
         _device, *_swapchain, descriptorSetLayouts, {pushConstantRange}, shaderProgram, errorMessage
     ));
 
-    _graphicsPipelines.push_back(&graphicsPipeline);
+    _graphicsPipelines.emplace_back(graphicsPipeline);
 
     return true;
 }

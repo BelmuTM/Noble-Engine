@@ -12,7 +12,7 @@
 
 class VulkanDevice {
 public:
-    VulkanDevice() = default;
+    VulkanDevice()  = default;
     ~VulkanDevice() = default;
 
     VulkanDevice(const VulkanDevice&)            = delete;

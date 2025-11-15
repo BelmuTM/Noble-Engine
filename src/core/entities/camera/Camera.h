@@ -76,7 +76,7 @@ private:
 
     glm::vec3 _velocity = {0.0f, 0.0f, 0.0f};
 
-    glm::vec3 _position = {3.0f, 3.0f, 2.0f};
+    glm::vec3 _position = {3.0f, 0.0f, 3.0f};
     glm::vec3 _target   = {0.0f, 0.0f, 0.0f};
     glm::vec3 _up       = {0.0f, 0.0f, 1.0f};
 

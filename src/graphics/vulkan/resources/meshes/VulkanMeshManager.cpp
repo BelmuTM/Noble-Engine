@@ -4,15 +4,12 @@
 #include "core/debug/Logger.h"
 
 bool VulkanMeshManager::create(
-    const VulkanDevice&             device,
-    const VulkanCommandManager&     commandManager,
-    const std::vector<VulkanMesh*>& meshes,
-    std::string&                    errorMessage
+    const VulkanDevice&         device,
+    const VulkanCommandManager& commandManager,
+    std::string&                errorMessage
 ) noexcept {
     _device         = &device;
     _commandManager = &commandManager;
-
-    _meshes.assign(meshes.begin(), meshes.end());
 
     queryVertexBufferSize();
     queryIndexBufferSize();
@@ -32,6 +29,11 @@ void VulkanMeshManager::destroy() noexcept {
 
     _device         = nullptr;
     _commandManager = nullptr;
+}
+
+VulkanMesh* VulkanMeshManager::allocateMesh(const Mesh& meshData) {
+    _meshes.push_back(std::make_unique<VulkanMesh>(meshData));
+    return _meshes.back().get();
 }
 
 void VulkanMeshManager::queryVertexBufferSize() {

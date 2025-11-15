@@ -4,17 +4,12 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-struct DescriptorBindingInfo {
-    // uint32_t             binding;
-    vk::DescriptorType   type;
-    vk::ShaderStageFlags stageFlags;
-    uint32_t             count = 1;
-};
+#include "graphics/vulkan/resources/descriptors/VulkanDescriptorInfo.h"
+
+class VulkanDescriptorSets;
 
 class VulkanDescriptorManager {
 public:
-    using DescriptorScheme = std::vector<DescriptorBindingInfo>;
-
     VulkanDescriptorManager()  = default;
     ~VulkanDescriptorManager() = default;
 
@@ -25,14 +20,16 @@ public:
     VulkanDescriptorManager& operator=(VulkanDescriptorManager&&) = delete;
 
     [[nodiscard]] bool create(
-        const vk::Device&       device,
-        const DescriptorScheme& descriptorScheme,
-        uint32_t                framesInFlight,
-        uint32_t                maxSets,
-        std::string&            errorMessage
+        const vk::Device&             device,
+        const VulkanDescriptorScheme& descriptorScheme,
+        uint32_t                      framesInFlight,
+        uint32_t                      maxSets,
+        std::string&                  errorMessage
     ) noexcept;
 
     void destroy() noexcept;
+
+    [[nodiscard]] bool allocate(VulkanDescriptorSets*& descriptorSets, std::string& errorMessage);
 
     [[nodiscard]] bool allocateSets(
         std::vector<vk::DescriptorSet>&      descriptorSets,
@@ -60,7 +57,9 @@ private:
     vk::DescriptorSetLayout _descriptorSetLayout{};
     vk::DescriptorPool      _descriptorPool{};
 
-    void buildDescriptorScheme(const DescriptorScheme& descriptorScheme);
+    std::vector<std::unique_ptr<VulkanDescriptorSets>> _descriptorSets{};
+
+    void buildDescriptorScheme(const VulkanDescriptorScheme& descriptorScheme);
 
     [[nodiscard]] bool createSetLayout(std::string& errorMessage);
     [[nodiscard]] bool createPool(std::string& errorMessage);

@@ -11,9 +11,9 @@
 #include <memory>
 
 struct VulkanRenderSubmesh {
-    std::unique_ptr<VulkanMesh>           mesh;
-    std::unique_ptr<VulkanImage>          texture;
-    std::unique_ptr<VulkanDescriptorSets> descriptorSets;
+    VulkanMesh*           mesh;
+    VulkanImage*          texture;
+    VulkanDescriptorSets* descriptorSets;
 };
 
 struct VulkanRenderObject {

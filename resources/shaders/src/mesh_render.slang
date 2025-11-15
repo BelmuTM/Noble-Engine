@@ -84,8 +84,8 @@ float4 fragMain(VSOutput vertIn) : SV_TARGET {
     float dist = distance(frameUBO.cameraPosition, vertIn.worldPos.xyz);
     float fade = saturate((dist - frameUBO.nearPlane) / (fadeStartDist - frameUBO.nearPlane));
 
-    const float ditherScale = 0.1;
-    float threshold = bayer32(vertIn.position.xy * 0.5);
+    const float ditherScale = 0.5;
+    float threshold = bayer32(vertIn.position.xy * ditherScale);
 
     if (threshold > fade) {
         discard;

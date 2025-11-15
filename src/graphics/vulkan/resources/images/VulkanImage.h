@@ -41,7 +41,7 @@ public:
             || format == vk::Format::eD24UnormS8Uint;
     }
 
-    [[nodiscard]] DescriptorInfo getDescriptorInfo(const uint32_t binding) const noexcept {
+    [[nodiscard]] VulkanDescriptorInfo getDescriptorInfo(const uint32_t binding) const noexcept {
         return {
             .type      = vk::DescriptorType::eCombinedImageSampler,
             .imageInfo = {_sampler, _imageView, vk::ImageLayout::eShaderReadOnlyOptimal},

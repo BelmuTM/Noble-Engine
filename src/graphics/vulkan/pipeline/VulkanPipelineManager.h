@@ -7,6 +7,8 @@
 #include "graphics/vulkan/core/VulkanSwapchain.h"
 #include "VulkanGraphicsPipeline.h"
 
+#include <memory>
+
 class VulkanPipelineManager {
 public:
     VulkanPipelineManager()  = default;
@@ -24,15 +26,17 @@ public:
 
     void destroy() noexcept;
 
+    [[nodiscard]] VulkanGraphicsPipeline* allocatePipeline();
+
     [[nodiscard]] bool createGraphicsPipeline(
-        VulkanGraphicsPipeline&                     graphicsPipeline,
+        VulkanGraphicsPipeline*                     graphicsPipeline,
         const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
         const VulkanShaderProgram&                  shaderProgram,
         std::string&                                errorMessage
     );
 
     [[nodiscard]] bool createGraphicsPipeline(
-        VulkanGraphicsPipeline&                     graphicsPipeline,
+        VulkanGraphicsPipeline*                     graphicsPipeline,
         const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
         uint32_t                                    pushConstantRangeSize,
         const VulkanShaderProgram&                  shaderProgram,
@@ -44,7 +48,7 @@ private:
 
     const VulkanSwapchain* _swapchain = nullptr;
 
-    std::vector<VulkanGraphicsPipeline*> _graphicsPipelines{};
+    std::vector<std::unique_ptr<VulkanGraphicsPipeline>> _graphicsPipelines{};
 };
 
 #endif // NOBLEENGINE_VULKANPIPELINEMANAGER_H

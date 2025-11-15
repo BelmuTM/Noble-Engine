@@ -6,9 +6,9 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Collect source files and add Windows resource file
-file(GLOB_RECURSE CPP_SOURCES "src/*.cpp" "src/*.h")
-add_executable(NobleEngine ${CPP_SOURCES})
+# Collect source files
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+add_executable(NobleEngine ${SOURCES})
 
 # Include source headers
 target_include_directories(NobleEngine PRIVATE ${CMAKE_SOURCE_DIR}/src)
@@ -27,9 +27,7 @@ target_include_directories(NobleEngine PRIVATE ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(NobleEngine PRIVATE ${Vulkan_LIBRARIES})
 
 #Vulkan debug utils
-target_compile_definitions(NobleEngine PRIVATE
-    $<$<CONFIG:Debug>:VULKAN_DEBUG_UTILS>
-)
+target_compile_definitions(NobleEngine PRIVATE $<$<CONFIG:Debug>:VULKAN_DEBUG_UTILS>)
 
 ##########################################################
 #                  SHADERS COMPILATION                   #
@@ -71,6 +69,7 @@ function(add_slang_shader_target TARGET)
                     -profile spirv_1_4
                     -emit-spirv-directly
                     -fvk-use-entrypoint-name
+                    -fvk-use-c-layout
                     -o ${SPV_FILE}
                 DEPENDS ${SOURCE}
                 COMMENT "Building SPIR-V object ${SHADERS_SPV_DIR_RELATIVE}/${SPV_FILE_NAME}"
@@ -94,26 +93,35 @@ add_dependencies(NobleEngine ShadersModule)
 #             THIRD-PARTY UTILITY LIBRARIES              #
 ##########################################################
 
+# glfw (https://github.com/glfw/glfw)
 add_subdirectory(external/glfw)
 
 # json (https://github.com/nlohmann/json)
-add_library(json_noble INTERFACE)
-target_include_directories(json_noble INTERFACE ${CMAKE_SOURCE_DIR}/external/json)
+add_library(json INTERFACE)
+target_include_directories(json INTERFACE ${CMAKE_SOURCE_DIR}/external/json)
 
 # STB (https://github.com/nothings/stb)
-add_library(stb_noble INTERFACE)
-target_include_directories(stb_noble INTERFACE ${CMAKE_SOURCE_DIR}/external/stb)
+add_library(stb INTERFACE)
+target_include_directories(stb INTERFACE ${CMAKE_SOURCE_DIR}/external/stb)
 
 # tinygltf (https://github.com/syoyo/tinygltf)
-add_library(tinygltf_noble INTERFACE)
-target_include_directories(tinygltf_noble INTERFACE ${CMAKE_SOURCE_DIR}/external/tinygltf)
+add_library(tinygltf INTERFACE)
+target_include_directories(tinygltf INTERFACE ${CMAKE_SOURCE_DIR}/external/tinygltf)
 
 # tinyobjloader (https://github.com/tinyobjloader/tinyobjloader)
-add_library(tinyobjloader_noble INTERFACE)
-target_include_directories(tinyobjloader_noble INTERFACE ${CMAKE_SOURCE_DIR}/external/tinyobjloader)
+add_library(tinyobjloader INTERFACE)
+target_include_directories(tinyobjloader INTERFACE ${CMAKE_SOURCE_DIR}/external/tinyobjloader)
 
 # Vulkan Memory Allocator (https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
-add_library(vma_noble INTERFACE)
-target_include_directories(vma_noble INTERFACE ${CMAKE_SOURCE_DIR}/external/vma/include)
+add_library(vma INTERFACE)
+target_include_directories(vma INTERFACE ${CMAKE_SOURCE_DIR}/external/vma/include)
 
-target_link_libraries(NobleEngine PRIVATE glfw json_noble stb_noble tinygltf_noble tinyobjloader_noble vma_noble)
+# Link libraries to executable
+target_link_libraries(NobleEngine PRIVATE
+    glfw
+    json
+    stb
+    tinygltf
+    tinyobjloader
+    vma
+)

@@ -12,6 +12,8 @@
 
 class VulkanMeshManager {
 public:
+    using MeshesVector = std::vector<std::unique_ptr<VulkanMesh>>;
+
     VulkanMeshManager()  = default;
     ~VulkanMeshManager() = default;
 
@@ -22,16 +24,17 @@ public:
     VulkanMeshManager& operator=(VulkanMeshManager&&) = delete;
 
     [[nodiscard]] bool create(
-        const VulkanDevice&             device,
-        const VulkanCommandManager&     commandManager,
-        const std::vector<VulkanMesh*>& meshes,
-        std::string&                    errorMessage
+        const VulkanDevice&         device,
+        const VulkanCommandManager& commandManager,
+        std::string&                errorMessage
     ) noexcept;
 
     void destroy() noexcept;
 
     [[nodiscard]] const VulkanBuffer& getVertexBuffer() const noexcept { return _vertexBuffer; }
     [[nodiscard]] const VulkanBuffer& getIndexBuffer()  const noexcept { return _indexBuffer; }
+
+    [[nodiscard]] VulkanMesh* allocateMesh(const Mesh& meshData);
 
 private:
     const VulkanDevice*         _device         = nullptr;
@@ -41,7 +44,7 @@ private:
     VulkanBuffer _vertexBuffer{};
     VulkanBuffer _indexBuffer{};
 
-    std::vector<VulkanMesh*> _meshes{};
+    MeshesVector _meshes{};
 
     size_t _currentVertexOffset = 0;
     size_t _currentIndexOffset  = 0;

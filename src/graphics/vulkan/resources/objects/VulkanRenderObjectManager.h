@@ -5,15 +5,15 @@
 #include "VulkanObjectBuffer.h"
 #include "VulkanRenderObject.h"
 
-#include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
+#include "graphics/vulkan/resources/descriptors/VulkanDescriptorInfo.h"
 #include "graphics/vulkan/resources/images/VulkanImageManager.h"
 #include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"
 
 #include "core/common/Types.h"
 #include "core/entities/objects/Object.h"
 
-static const VulkanDescriptorManager::DescriptorScheme objectDescriptorScheme = {
-    {vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment}
+static const VulkanDescriptorScheme objectDescriptorScheme = {
+    {0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment}
 };
 
 class VulkanRenderObjectManager {
@@ -21,7 +21,6 @@ public:
     static constexpr uint32_t MAX_RENDER_OBJECTS = 512;
 
     using RenderObjectsVector = std::vector<std::unique_ptr<VulkanRenderObject>>;
-    using MeshesVector         = std::vector<VulkanMesh*>;
 
     VulkanRenderObjectManager()  = default;
     ~VulkanRenderObjectManager() = default;
@@ -49,8 +48,6 @@ public:
 
     [[nodiscard]] const RenderObjectsVector& getRenderObjects() noexcept { return _renderObjects; }
 
-    [[nodiscard]] const MeshesVector& getMeshes() const noexcept { return _meshes; }
-
 private:
     VulkanImageManager* _imageManager = nullptr;
     VulkanMeshManager*  _meshManager  = nullptr;
@@ -59,7 +56,6 @@ private:
     VulkanObjectBuffer      _objectBuffer{};
 
     RenderObjectsVector _renderObjects{};
-    MeshesVector        _meshes{};
 
     [[nodiscard]] bool createRenderObjects(const ObjectsVector& objects, std::string& errorMessage);
 
@@ -69,7 +65,7 @@ private:
         Object*             object,
         uint32_t&           meshCount,
         std::string&        errorMessage
-    ) const;
+    );
 };
 
 #endif // NOBLEENGINE_VULKANRENDEROBJECTMANAGER_H

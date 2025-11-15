@@ -9,8 +9,6 @@
 #include <ranges>
 #include <unordered_map>
 
-#include <spirv_cross/spirv_cross.hpp>
-
 static const std::unordered_map<std::string, std::pair<vk::ShaderStageFlagBits, const char*>> stageData = {
     {"vert", {vk::ShaderStageFlagBits::eVertex,   "vertMain"}},
     {"frag", {vk::ShaderStageFlagBits::eFragment, "fragMain"}},
@@ -26,6 +24,8 @@ void VulkanShaderProgram::clearShaderModules() {
         _device.destroyShaderModule(module);
     }
     _shaderModules.clear();
+
+    _device = VK_NULL_HANDLE;
 }
 
 vk::ShaderModule VulkanShaderProgram::createShaderModule(
@@ -45,13 +45,14 @@ vk::ShaderModule VulkanShaderProgram::createShaderModule(
 }
 
 bool VulkanShaderProgram::loadFromFiles(
-    const std::vector<std::string>& paths, const bool fullscreen, std::string& errorMessage
+    const std::vector<std::string>& paths, const bool fullscreen, const vk::Device& device, std::string& errorMessage
 ) {
     if (paths.empty()) {
         errorMessage = "Failed to load shader program: no paths provided";
         return false;
     }
 
+    _device       = device;
     _isFullscreen = fullscreen;
 
     ScopeGuard guard{[this] { clearShaderModules(); }};
@@ -68,7 +69,7 @@ bool VulkanShaderProgram::loadFromFiles(
             return false;
         }
 
-        const auto [stageFlag, entryPoint] = it->second;
+        const auto [stageFlags, entryPoint] = it->second;
 
         const std::vector<uint32_t>& bytecode = readShaderSPIRVBytecode(shaderFilesPath + path);
         if (bytecode.empty()) {
@@ -83,14 +84,14 @@ bool VulkanShaderProgram::loadFromFiles(
 
         vk::PipelineShaderStageCreateInfo stageInfo{};
         stageInfo
-            .setStage(stageFlag)
+            .setStage(stageFlags)
             .setModule(module)
             .setPName(entryPoint);
 
         _shaderStages.push_back(stageInfo);
-        _stageFlags |= stageFlag;
+        _stageFlags |= stageFlags;
 
-        //TRY(reflectDescriptors(bytecode, stageFlag, errorMessage));
+        //reflectShaderResources(bytecode, stageFlags);
     }
 
     guard.release();
@@ -98,52 +99,56 @@ bool VulkanShaderProgram::loadFromFiles(
     return true;
 }
 
-bool VulkanShaderProgram::load(const std::string& name, const bool fullscreen, std::string& errorMessage) {
-    return loadFromFiles(findShaderFilePaths(name), fullscreen, errorMessage);
+bool VulkanShaderProgram::load(
+    const std::string& path, const bool fullscreen, const vk::Device& device, std::string& errorMessage
+) {
+    return loadFromFiles(findShaderFilePaths(path), fullscreen, device, errorMessage);
 }
 
 /*
-bool VulkanShaderProgram::reflectDescriptors(
-    const std::vector<uint32_t>& bytecode, const vk::ShaderStageFlags stageFlag, std::string& errorMessage
+void VulkanShaderProgram::reflectShaderResources(
+    const std::vector<uint32_t>& bytecode, const vk::ShaderStageFlags stageFlags
 ) {
-    const spirv_cross::Compiler compiler(bytecode);
-
+    spirv_cross::Compiler compiler(std::move(bytecode));
     const spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 
-    for (const auto& uniformBuffer : resources.uniform_buffers) {
-        DescriptorBindingInfo info{};
-        info.set        = compiler.get_decoration(uniformBuffer.id, spv::DecorationDescriptorSet);
-        info.binding    = compiler.get_decoration(uniformBuffer.id, spv::DecorationBinding);
-        info.type       = vk::DescriptorType::eUniformBuffer;
-        info.count      = 1;
-        info.stageFlags = stageFlag;
-        _bindings.push_back(info);
+    // Stage outputs
+    for (const auto& stageOutput : resources.stage_outputs) {
+        const std::string& outputName = compiler.get_name(stageOutput.id);
+
+        const auto& outputType = compiler.get_type(stageOutput.type_id);
+        if (outputType.image.format == spv::ImageFormatUnknown) continue;
+
+        _stageOutputs.push_back(outputName);
     }
 
+    // Sampled images (texture2D,...)
     for (const auto& imageSampler : resources.sampled_images) {
-        DescriptorBindingInfo info{};
-        info.set        = compiler.get_decoration(imageSampler.id, spv::DecorationDescriptorSet);
-        info.binding    = compiler.get_decoration(imageSampler.id, spv::DecorationBinding);
-        info.type       = vk::DescriptorType::eCombinedImageSampler;
-        info.count      = 1;
-        info.stageFlags = stageFlag;
-        _bindings.push_back(info);
+        const uint32_t set     = compiler.get_decoration(imageSampler.id, spv::DecorationDescriptorSet);
+        const uint32_t binding = compiler.get_decoration(imageSampler.id, spv::DecorationBinding);
+
+        VulkanDescriptorBindingInfo info{
+            .binding    = binding,
+            .type       = vk::DescriptorType::eCombinedImageSampler,
+            .stageFlags = stageFlags
+        };
+
+        _descriptorSchemes[set].push_back(info);
     }
 
-    std::unordered_map<uint32_t, std::vector<vk::DescriptorSetLayoutBinding>> setBindings;
+    // Storage images (image2D,...)
+    for (const auto& storageImage : resources.storage_images) {
+        const uint32_t set     = compiler.get_decoration(storageImage.id, spv::DecorationDescriptorSet);
+        const uint32_t binding = compiler.get_decoration(storageImage.id, spv::DecorationBinding);
 
-    for (const auto& [set, binding, type, count, stageFlags] : _bindings) {
-        setBindings[set].emplace_back(binding, type, count, stageFlags, nullptr);
+        VulkanDescriptorBindingInfo info{
+            .binding    = binding,
+            .type       = vk::DescriptorType::eStorageImage,
+            .stageFlags = stageFlags
+        };
+
+        _descriptorSchemes[set].push_back(info);
     }
-
-    for (const auto& bindings : setBindings | std::views::values) {
-        vk::DescriptorSetLayout layout;
-        TRY(_descriptorManager->createSetLayout(bindings, errorMessage));
-
-        _descriptorSetLayouts.push_back(layout);
-    }
-
-    return true;
 }
 */
 
@@ -178,10 +183,10 @@ std::vector<uint32_t> VulkanShaderProgram::readShaderSPIRVBytecode(const std::st
     return buffer;
 }
 
-std::vector<std::string> VulkanShaderProgram::findShaderFilePaths(const std::string& name) {
+std::vector<std::string> VulkanShaderProgram::findShaderFilePaths(const std::string& path) {
     std::vector<std::string> paths{};
     for (const auto& stageExtension : stageData | std::views::keys) {
-        const std::string relativePath = name + "." + stageExtension + ".spv";
+        const std::string relativePath = path + "." + stageExtension + ".spv";
         const std::string fullPath     = shaderFilesPath + relativePath;
 
         if (FILE* file = fopen(fullPath.c_str(), "r")) {

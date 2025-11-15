@@ -18,8 +18,9 @@
 #include "graphics/vulkan/resources/ubo/VulkanUniformBufferManager.h"
 #include "graphics/vulkan/resources/VulkanFrameResources.h"
 
-#include "graphics/vulkan/pipeline/framegraph/VulkanFrameGraph.h"
 #include "graphics/vulkan/pipeline/VulkanPipelineManager.h"
+#include "graphics/vulkan/pipeline/VulkanShaderProgramManager.h"
+#include "graphics/vulkan/pipeline/framegraph/VulkanFrameGraph.h"
 
 class VulkanRenderer final : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {
 public:
@@ -46,7 +47,6 @@ private:
 
     VulkanSwapchainManager     swapchainManager{};
     VulkanCommandManager       commandManager{};
-    VulkanPipelineManager      pipelineManager{};
     VulkanMeshManager          meshManager{};
     VulkanImageManager         imageManager{};
     VulkanUniformBufferManager uniformBufferManager{};
@@ -54,8 +54,9 @@ private:
     VulkanFrameResources      frameResources{};
     VulkanRenderObjectManager renderObjectManager{};
 
-    VulkanGraphicsPipeline pipelineMeshRender{};
-    VulkanFrameGraph       frameGraph{};
+    VulkanShaderProgramManager shaderProgramManager{};
+    VulkanPipelineManager      pipelineManager{};
+    VulkanFrameGraph           frameGraph{};
 
     [[nodiscard]] bool onFramebufferResize(std::string& errorMessage);
 

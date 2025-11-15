@@ -22,7 +22,7 @@ public:
 
     virtual void destroy() noexcept = 0;
 
-    virtual DescriptorInfo getDescriptorInfo(uint32_t binding, uint32_t frameIndex) const = 0;
+    virtual VulkanDescriptorInfo getDescriptorInfo(uint32_t binding, uint32_t frameIndex) const = 0;
 };
 
 template<typename UniformBufferType>
@@ -57,7 +57,7 @@ public:
         _device = nullptr;
     }
 
-    DescriptorInfo getDescriptorInfo(const uint32_t binding, const uint32_t frameIndex) const noexcept override {
+    VulkanDescriptorInfo getDescriptorInfo(const uint32_t binding, const uint32_t frameIndex) const noexcept override {
         return {
             .type       = vk::DescriptorType::eUniformBuffer,
             .bufferInfo = {uniformBuffers[frameIndex], 0, size},

@@ -1,15 +1,16 @@
 #include "VulkanDescriptorManager.h"
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
+#include "VulkanDescriptorSets.h"
 
 #include "core/debug/ErrorHandling.h"
 
 bool VulkanDescriptorManager::create(
-    const vk::Device&       device,
-    const DescriptorScheme& descriptorScheme,
-    const uint32_t          framesInFlight,
-    const uint32_t          maxSets,
-    std::string&            errorMessage
+    const vk::Device&             device,
+    const VulkanDescriptorScheme& descriptorScheme,
+    const uint32_t                framesInFlight,
+    const uint32_t                maxSets,
+    std::string&                  errorMessage
 ) noexcept {
     _device         = device;
     _framesInFlight = framesInFlight;
@@ -37,14 +38,44 @@ void VulkanDescriptorManager::destroy() noexcept {
     _device = VK_NULL_HANDLE;
 }
 
-void VulkanDescriptorManager::buildDescriptorScheme(const DescriptorScheme& descriptorScheme) {
+bool VulkanDescriptorManager::allocate(VulkanDescriptorSets*& descriptorSets, std::string& errorMessage) {
+    auto descriptorSetsPtr = std::make_unique<VulkanDescriptorSets>(*this);
+
+    TRY(descriptorSetsPtr->allocate(errorMessage));
+
+    descriptorSets = descriptorSetsPtr.get();
+    _descriptorSets.push_back(std::move(descriptorSetsPtr));
+
+    return true;
+}
+
+bool VulkanDescriptorManager::allocateSets(
+    std::vector<vk::DescriptorSet>&      descriptorSets,
+    const vk::DescriptorSetAllocateInfo& descriptorSetInfo,
+    std::string&                         errorMessage
+) const {
+    if (!_device) {
+        errorMessage = "Failed to allocate Vulkan descriptor sets: device is null";
+        return false;
+    }
+
+    VK_CREATE(_device.allocateDescriptorSets(descriptorSetInfo), descriptorSets, errorMessage);
+
+    return true;
+}
+
+void VulkanDescriptorManager::updateSets(const vk::WriteDescriptorSet& descriptorSetWrite) const {
+    if (!_device) return;
+
+    _device.updateDescriptorSets(descriptorSetWrite, {});
+}
+
+void VulkanDescriptorManager::buildDescriptorScheme(const VulkanDescriptorScheme& descriptorScheme) {
     _bindings.reserve(descriptorScheme.size());
     _poolSizes.reserve(descriptorScheme.size());
 
-    for (size_t i = 0; i < descriptorScheme.size(); i++) {
-        const auto& [type, stageFlags, count] = descriptorScheme[i];
-
-        _bindings.emplace_back(i, type, count, stageFlags, nullptr);
+    for (const auto& [binding, type, stageFlags, count] : descriptorScheme) {
+        _bindings.emplace_back(binding, type, count, stageFlags, nullptr);
         _poolSizes.emplace_back(type, count * _maxSets);
     }
 }
@@ -78,25 +109,4 @@ bool VulkanDescriptorManager::createPool(std::string& errorMessage) {
     VK_CREATE(_device.createDescriptorPool(descriptorPoolInfo), _descriptorPool, errorMessage);
 
     return true;
-}
-
-bool VulkanDescriptorManager::allocateSets(
-    std::vector<vk::DescriptorSet>&      descriptorSets,
-    const vk::DescriptorSetAllocateInfo& descriptorSetInfo,
-    std::string&                         errorMessage
-) const {
-    if (!_device) {
-        errorMessage = "Failed to allocate Vulkan descriptor sets: device is null";
-        return false;
-    }
-
-    VK_CREATE(_device.allocateDescriptorSets(descriptorSetInfo), descriptorSets, errorMessage);
-
-    return true;
-}
-
-void VulkanDescriptorManager::updateSets(const vk::WriteDescriptorSet& descriptorSetWrite) const {
-    if (!_device) return;
-
-    _device.updateDescriptorSets(descriptorSetWrite, {});
 }

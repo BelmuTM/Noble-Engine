@@ -15,7 +15,6 @@ bool VulkanRenderObjectManager::create(
     _meshManager  = &meshManager;
 
     _renderObjects.reserve(objects.size());
-    _meshes.reserve(MAX_RENDER_OBJECTS);
 
     TRY(_descriptorManager.create(
         device.getLogicalDevice(), objectDescriptorScheme, framesInFlight, MAX_RENDER_OBJECTS, errorMessage
@@ -52,10 +51,6 @@ bool VulkanRenderObjectManager::createRenderObjects(const ObjectsVector& objects
 
         TRY(createRenderObject(*renderObject, i, objects[i].get(), meshCount, errorMessage));
 
-        for (auto& submesh : renderObject->submeshes) {
-            _meshes.push_back(submesh.mesh.get());
-        }
-
         _renderObjects.push_back(std::move(renderObject));
     }
 
@@ -68,7 +63,7 @@ bool VulkanRenderObjectManager::createRenderObject(
     Object*             object,
     uint32_t&           meshCount,
     std::string&        errorMessage
-) const {
+) {
     renderObject.objectIndex = objectIndex;
     renderObject.object      = object;
 
@@ -87,24 +82,21 @@ bool VulkanRenderObjectManager::createRenderObject(
         VulkanRenderSubmesh submesh;
 
         // Load mesh
-        submesh.mesh = std::make_unique<VulkanMesh>(mesh);
+        submesh.mesh = _meshManager->allocateMesh(mesh);
 
         // Load texture
-        const Material& material = submesh.mesh->getMaterial();
-
-        submesh.texture = std::make_unique<VulkanImage>();
+        const Material& material = mesh.getMaterial();
 
         const Image* albedoTexture = object->getTexture(material.albedoPath);
         if (albedoTexture) {
-            TRY(_imageManager->loadImage(*submesh.texture, albedoTexture, true, errorMessage));
+            TRY(_imageManager->loadImage(submesh.texture, albedoTexture, true, errorMessage));
         } else {
             const Image diffuseColorImage = Image::createSinglePixelImage(material.diffuse);
-            TRY(_imageManager->loadImage(*submesh.texture, &diffuseColorImage, false, errorMessage));
+            TRY(_imageManager->loadImage(submesh.texture, &diffuseColorImage, false, errorMessage));
         }
 
         // Allocate and bind descriptor sets
-        submesh.descriptorSets = std::make_unique<VulkanDescriptorSets>(_descriptorManager);
-        TRY(submesh.descriptorSets->allocate(errorMessage));
+        TRY(_descriptorManager.allocate(submesh.descriptorSets, errorMessage));
         submesh.descriptorSets->bindPerFrameResource(submesh.texture->getDescriptorInfo(0));
 
         renderObject.submeshes.push_back(std::move(submesh));

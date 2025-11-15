@@ -5,6 +5,7 @@
 
 #include "core/debug/ErrorHandling.h"
 #include "core/debug/Logger.h"
+#include "graphics/vulkan/pipeline/framegraph/passes/MeshRenderPass.h"
 
 VulkanRenderer::VulkanRenderer(const uint32_t framesInFlight) : _framesInFlight(framesInFlight) {}
 
@@ -28,10 +29,9 @@ bool VulkanRenderer::init(Platform::Window& window, const ObjectsVector& objects
 
     VulkanSwapchain& swapchain = context.getSwapchain();
 
-    // Create resource managers
+    // Resource managers creation
     TRY(createVulkanEntity(&swapchainManager, errorMessage, window, surface, device, swapchain, _framesInFlight));
     TRY(createVulkanEntity(&commandManager, errorMessage, device, _framesInFlight));
-    TRY(createVulkanEntity(&pipelineManager, errorMessage, logicalDevice, swapchain));
     TRY(createVulkanEntity(&imageManager, errorMessage, device, commandManager));
     TRY(createVulkanEntity(&uniformBufferManager, errorMessage, device, _framesInFlight));
 
@@ -43,106 +43,21 @@ bool VulkanRenderer::init(Platform::Window& window, const ObjectsVector& objects
         &renderObjectManager, errorMessage, objects, device, imageManager, meshManager, _framesInFlight
     ));
 
-    TRY(createVulkanEntity(&meshManager, errorMessage, device, commandManager, renderObjectManager.getMeshes()));
+    TRY(createVulkanEntity(&meshManager, errorMessage, device, commandManager));
 
-    // Create rendering pipeline
-    const std::vector descriptorLayoutsMeshRender = {
-        frameResources.getDescriptorManager().getLayout(), renderObjectManager.getDescriptorManager().getLayout()
-    };
+    // Pipeline managers creation
+    TRY(createVulkanEntity(&shaderProgramManager, errorMessage, logicalDevice));
+    TRY(createVulkanEntity(&pipelineManager, errorMessage, logicalDevice, swapchain));
+    TRY(createVulkanEntity(&frameGraph, errorMessage, meshManager, device.getQueryPool()));
 
-    VulkanShaderProgram meshRender(logicalDevice);
-    TRY(meshRender.load("mesh_render", false, errorMessage));
-
-    TRY(pipelineManager.createGraphicsPipeline(
-        pipelineMeshRender, descriptorLayoutsMeshRender, objectDataGPUSize, meshRender, errorMessage
+    auto meshRenderPass = std::make_unique<MeshRenderPass>();
+    TRY(meshRenderPass->create(
+        "mesh_render", shaderProgramManager, pipelineManager, frameResources, renderObjectManager, errorMessage
     ));
-
-    FrameResource swapchainOutput{};
-    swapchainOutput
-        .setType(SwapchainOutput)
-        .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
-        .setResolveImageView([](const FrameContext& frame) { return frame.swapchainImageView; });
-
-    FramePassAttachment swapchainAttachment{};
-    swapchainAttachment
-        .setResource(swapchainOutput)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eStore)
-        .setClearValue(defaultClearColor);
-
-    FrameResource depthBuffer{};
-    depthBuffer
-        .setType(Buffer)
-        .setImage(frameResources.getDepthBuffer())
-        .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
-        .setResolveImageView([this](const FrameContext&) { return frameResources.getDepthBuffer().getImageView(); });
-
-    FramePassAttachment depthAttachment{};
-    depthAttachment
-        .setResource(depthBuffer)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eStore)
-        .setClearValue(vk::ClearDepthStencilValue{1.0f, 0});
-
-    /*
-    std::vector descriptorLayoutsComposite  = {frameResources.getDescriptorManager().getLayout()};
-
-    VulkanShaderProgram composite(logicalDevice);
-    TRY(composite.load("composite", true, errorMessage));
-
-    TRY(pipelineManager.createGraphicsPipeline(pipelineComposite, descriptorLayoutsComposite, composite, errorMessage));
-
-    TRY(imageManager.createColorBuffer(
-        compositeOutput,
-        swapchain.getExtent(),
-        vk::Format::eR8G8B8A8Unorm,
-        errorMessage
-    ));
-
-    FrameResource compositeBuffer{};
-    compositeBuffer
-        .setType(Buffer)
-        .setImage(compositeOutput)
-        .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
-        .setResolveImageView([this](const FrameContext&) { return compositeOutput.getImageView(); });
-
-    FramePassAttachment compositeAttachment{};
-    compositeAttachment
-        .setResource(compositeBuffer)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eStore)
-        .setClearValue(vk::ClearColorValue{0.0f, 0.0f, 0.0f, 1.0f});
-
-    // TO-DO: Color attachment helper class
-    FramePass compositePass;
-    compositePass
-        .setName("Composite_Pass")
-        .setPipeline(&pipelineComposite)
-        .setBindPoint(vk::PipelineBindPoint::eGraphics)
-        //.addColorAttachment(compositeAttachment)
-        .setDepthAttachment(depthAttachment);
-
-    DrawCall fullscreenDraw;
-    fullscreenDraw.setMesh(VulkanMesh::makeFullscreenTriangle());
-
-    compositePass.addDrawCall(fullscreenDraw);
-    */
-
-    FramePass meshRenderPass;
-    meshRenderPass
-        .setName("MeshRender_Pass")
-        .setPipeline(&pipelineMeshRender)
-        .setBindPoint(vk::PipelineBindPoint::eGraphics)
-        .addColorAttachment(swapchainAttachment)
-        .setDepthAttachment(depthAttachment);
-
-    for (const auto& renderObject : renderObjectManager.getRenderObjects()) {
-        meshRenderPass.addObjectDrawCall(renderObject.get());
-    }
 
     frameGraph.addPass(std::move(meshRenderPass));
 
-    TRY(createVulkanEntity(&frameGraph, errorMessage, meshManager, device.getQueryPool()));
+    frameGraph.attachSwapchainOutput();
 
     guard.release();
 
@@ -240,7 +155,7 @@ bool VulkanRenderer::recordCommandBuffer(
         errorMessage
     ));
 
-    FrameContext frameContext{};
+    VulkanFrameContext frameContext{};
     frameContext
         .setFrameIndex(currentFrame)
         .setCommandBuffer(commandBuffer)
