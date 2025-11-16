@@ -108,7 +108,9 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     float attenuation0 = 1.0 / (dist0 * dist0 * 0.15);
     float attenuation1 = 1.0 / (dist1 * dist1 * 0.35);
 
-    float3 lighting = albedo.rgb * (lightColor0 * NdotL0 * attenuation0 + lightColor1 * NdotL1 * attenuation1);
+    const float3 ambient = float3(0.005);
+
+    float3 lighting = albedo.rgb * (ambient + lightColor0 * NdotL0 * attenuation0 + lightColor1 * NdotL1 * attenuation1);
 
     output = float4(lighting, 1.0);
 
