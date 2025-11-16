@@ -2,6 +2,6 @@
 #ifndef NOBLEENGINE_TINYGLTFUSAGE_H
 #define NOBLEENGINE_TINYGLTFUSAGE_H
 
-#include <tiny_gltf.h>
+#include <tinygltf/tiny_gltf.h>
 
 #endif // NOBLEENGINE_TINYGLTFUSAGE_H

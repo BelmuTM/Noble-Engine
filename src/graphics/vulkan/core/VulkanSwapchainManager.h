@@ -33,7 +33,9 @@ public:
 
     [[nodiscard]] bool recreateSwapchain(std::string& errorMessage);
 
-    std::optional<uint32_t> acquireNextImage(uint32_t frameIndex, std::string& errorMessage, bool& discardLogging);
+    std::optional<uint32_t> acquireNextImage(
+        uint32_t& imageIndex, uint32_t frameIndex, std::string& errorMessage, bool& discardLogging
+    );
 
     [[nodiscard]] bool submitCommandBuffer(
         vk::CommandBuffer commandBuffer,

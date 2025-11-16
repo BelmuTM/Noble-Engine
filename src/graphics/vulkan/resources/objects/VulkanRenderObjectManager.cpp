@@ -79,9 +79,8 @@ bool VulkanRenderObjectManager::createRenderObject(
             break;
         }
 
-        VulkanRenderSubmesh submesh;
-
         // Load mesh
+        VulkanRenderSubmesh submesh{};
         submesh.mesh = _meshManager->allocateMesh(mesh);
 
         // Load texture
@@ -99,7 +98,7 @@ bool VulkanRenderObjectManager::createRenderObject(
         TRY(_descriptorManager.allocate(submesh.descriptorSets, errorMessage));
         submesh.descriptorSets->bindPerFrameResource(submesh.texture->getDescriptorInfo(0));
 
-        renderObject.submeshes.push_back(std::move(submesh));
+        renderObject.submeshes.push_back(submesh);
         ++meshCount;
     }
 

@@ -6,6 +6,7 @@
 
 #include "graphics/vulkan/pipeline/VulkanShaderProgram.h"
 
+#include <memory>
 #include <unordered_map>
 
 class VulkanShaderProgramManager {
@@ -24,13 +25,13 @@ public:
     void destroy() noexcept;
 
     [[nodiscard]] bool load(
-        VulkanShaderProgram& program, const std::string& path, bool fullscreen, std::string& errorMessage
+        VulkanShaderProgram*& program, const std::string& path, bool fullscreen, std::string& errorMessage
     );
 
 private:
     vk::Device _device{};
 
-    std::unordered_map<std::string, VulkanShaderProgram> _cache{};
+    std::unordered_map<std::string, std::unique_ptr<VulkanShaderProgram>> _cache{};
 
     std::mutex _mutex{};
 };

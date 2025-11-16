@@ -7,19 +7,17 @@
 #include "core/debug/ErrorHandling.h"
 
 bool VulkanGraphicsPipeline::create(
-    const vk::Device&                           device,
-    const VulkanSwapchain&                      swapchain,
-    const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
-    const std::vector<vk::PushConstantRange>&   pushConstantRanges,
-    const VulkanShaderProgram&                  shaderProgram,
-    std::string&                                errorMessage
+    const vk::Device&                              device,
+    const VulkanPipelineDescriptor&                descriptor,
+    const std::vector<VulkanRenderPassAttachment>& colorAttachments,
+    std::string&                                   errorMessage
 ) noexcept {
     _device = device;
 
-    TRY(createPipelineLayout(device, descriptorSetLayouts, pushConstantRanges, errorMessage));
-    TRY(createPipeline(device, swapchain, shaderProgram, errorMessage));
+    TRY(createPipelineLayout(device, descriptor.descriptorLayouts, descriptor.pushConstants, errorMessage));
+    TRY(createPipeline(device, *descriptor.shaderProgram, colorAttachments, errorMessage));
 
-    _stageFlags = shaderProgram.getStageFlags();
+    _stageFlags = descriptor.shaderProgram->getStageFlags();
 
     return true;
 }
@@ -55,16 +53,22 @@ bool VulkanGraphicsPipeline::createPipelineLayout(
 }
 
 bool VulkanGraphicsPipeline::createPipeline(
-    const vk::Device&          device,
-    const VulkanSwapchain&     swapchain,
-    const VulkanShaderProgram& shaderProgram,
-    std::string&               errorMessage
+    const vk::Device&                              device,
+    const VulkanShaderProgram&                     shaderProgram,
+    const std::vector<VulkanRenderPassAttachment>& colorAttachments,
+    std::string&                                   errorMessage
 ) {
-    const vk::Format& colorFormat = swapchain.getFormat();
+    std::vector<vk::Format>                            colorAttachmentFormats{};
+    std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments{};
+
+    for (const auto& colorAttachment : colorAttachments) {
+        colorAttachmentFormats.push_back(colorAttachment.resource.format);
+        colorBlendAttachments.push_back(colorBlendAttachment);
+    }
 
     vk::PipelineRenderingCreateInfo renderingInfo{};
     renderingInfo
-        .setColorAttachmentFormats(colorFormat)
+        .setColorAttachmentFormats(colorAttachmentFormats)
         .setDepthAttachmentFormat(vk::Format::eD32Sfloat);
 
     vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -77,6 +81,13 @@ bool VulkanGraphicsPipeline::createPipeline(
             .setVertexBindingDescriptions(bindingDescription)
             .setVertexAttributeDescriptions(attributeDescriptions);
     }
+
+    vk::PipelineColorBlendStateCreateInfo colorBlendInfo{};
+    colorBlendInfo
+        .setLogicOpEnable(vk::False)
+        .setLogicOp(vk::LogicOp::eCopy)
+        .setAttachmentCount(shaderProgram.getStageOutputs().size() + 1)
+        .setPAttachments(colorBlendAttachments.data());
 
     vk::GraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo

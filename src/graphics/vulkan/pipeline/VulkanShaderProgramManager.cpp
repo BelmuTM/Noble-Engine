@@ -1,5 +1,7 @@
 #include "VulkanShaderProgramManager.h"
 
+#include <ranges>
+
 #include "core/debug/ErrorHandling.h"
 
 bool VulkanShaderProgramManager::create(const vk::Device& device, std::string& errorMessage) noexcept {
@@ -8,27 +10,36 @@ bool VulkanShaderProgramManager::create(const vk::Device& device, std::string& e
 }
 
 void VulkanShaderProgramManager::destroy() noexcept {
+    for (const auto& shaderProgram : _cache | std::views::values) {
+        shaderProgram->destroy();
+    }
+
     _device = VK_NULL_HANDLE;
 }
 
 bool VulkanShaderProgramManager::load(
-    VulkanShaderProgram& program, const std::string& path, const bool fullscreen, std::string& errorMessage
+    VulkanShaderProgram*& program, const std::string& path, const bool fullscreen, std::string& errorMessage
 ) {
     {
         // If shader program is already cached, return it
         std::lock_guard lock(_mutex);
 
         if (_cache.contains(path)) {
-            program = _cache.at(path);
+            program = _cache.at(path).get();
             return true;
         }
     }
 
-    TRY(program.load(path, fullscreen, _device, errorMessage));
+    VulkanShaderProgram tempProgram{};
+
+    TRY(tempProgram.load(path, fullscreen, _device, errorMessage));
 
     // Inserting shader program into cache
     std::lock_guard lock(_mutex);
-    _cache[path] = program;
+
+    auto [it, inserted] = _cache.try_emplace(path, std::make_unique<VulkanShaderProgram>(std::move(tempProgram)));
+
+    program = it->second.get();
 
     return true;
 }

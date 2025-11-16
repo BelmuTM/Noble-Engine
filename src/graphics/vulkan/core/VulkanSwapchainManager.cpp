@@ -53,7 +53,7 @@ bool VulkanSwapchainManager::recreateSwapchain(std::string& errorMessage) {
 }
 
 std::optional<uint32_t> VulkanSwapchainManager::acquireNextImage(
-    const uint32_t frameIndex, std::string& errorMessage, bool& discardLogging
+    uint32_t& imageIndex, const uint32_t frameIndex, std::string& errorMessage, bool& discardLogging
 ) {
     if (!_device) {
         errorMessage = "Failed to acquire Vulkan swapchain image: device is null";
@@ -69,7 +69,7 @@ std::optional<uint32_t> VulkanSwapchainManager::acquireNextImage(
 
     if (_swapchain->handle() == VK_NULL_HANDLE) {
         discardLogging = true;
-        return std::nullopt;
+        return false;
     }
 
     const vk::Semaphore& imageAvailableSemaphore = _syncObjects.imageAvailableSemaphores[frameIndex];
@@ -87,31 +87,31 @@ std::optional<uint32_t> VulkanSwapchainManager::acquireNextImage(
         .setFence(nullptr)
         .setDeviceMask(1);
 
-    const auto nextImageAcquire = VK_CALL(logicalDevice.acquireNextImage2KHR(acquireNextImageInfo), errorMessage);
+    const auto imageAcquire = VK_CALL(logicalDevice.acquireNextImage2KHR(acquireNextImageInfo), errorMessage);
 
-    if (nextImageAcquire.result == vk::Result::eErrorOutOfDateKHR ||
-        nextImageAcquire.result == vk::Result::eSuboptimalKHR) {
+    if (imageAcquire.result == vk::Result::eErrorOutOfDateKHR ||
+        imageAcquire.result == vk::Result::eSuboptimalKHR) {
         discardLogging = true;
         _outOfDate     = true;
         _window->setFramebufferResized(true);
-        return std::nullopt;
+        return false;
     }
 
-    if (nextImageAcquire.result != vk::Result::eSuccess) {
-        return std::nullopt;
+    if (imageAcquire.result != vk::Result::eSuccess) {
+        return false;
     }
 
-    const uint32_t imageIndex = nextImageAcquire.value;
+    imageIndex = imageAcquire.value;
 
     if (imageIndex >= _swapchain->getImageCount()) {
         errorMessage =
-            "Failed to record Vulkan command buffer: image index exceeds limit (" + std::to_string(imageIndex) + ")";
-        return std::nullopt;
+            "Failed to acquire Vulkan image: image index exceeds limit (" + std::to_string(imageIndex) + ")";
+        return false;
     }
 
-    if (!waitForImageFence(frameIndex, imageIndex, errorMessage)) return std::nullopt;
+    if (!waitForImageFence(frameIndex, imageIndex, errorMessage)) return false;
 
-    return imageIndex;
+    return true;
 }
 
 bool VulkanSwapchainManager::submitCommandBuffer(

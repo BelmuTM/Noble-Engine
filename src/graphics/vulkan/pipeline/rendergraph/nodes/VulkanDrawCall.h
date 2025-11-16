@@ -1,10 +1,10 @@
 #pragma once
-#ifndef NOBLEENGINE_DRAWCALL_H
-#define NOBLEENGINE_DRAWCALL_H
+#ifndef NOBLEENGINE_VULKANDRAWCALL_H
+#define NOBLEENGINE_VULKANDRAWCALL_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "graphics/vulkan/pipeline/framegraph/nodes/VulkanFrameContext.h"
+#include "graphics/vulkan/resources/VulkanFrameContext.h"
 #include "graphics/vulkan/resources/meshes/VulkanMesh.h"
 
 #include <functional>
@@ -77,4 +77,4 @@ struct DrawCallPushConstant final : VulkanDrawCall, DrawCallPushConstantBase {
     }
 };
 
-#endif // NOBLEENGINE_DRAWCALL_H
+#endif // NOBLEENGINE_VULKANDRAWCALL_H

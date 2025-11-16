@@ -20,7 +20,7 @@
 
 #include "graphics/vulkan/pipeline/VulkanPipelineManager.h"
 #include "graphics/vulkan/pipeline/VulkanShaderProgramManager.h"
-#include "graphics/vulkan/pipeline/framegraph/VulkanFrameGraph.h"
+#include "graphics/vulkan/pipeline/rendergraph/VulkanRenderGraph.h"
 
 class VulkanRenderer final : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {
 public:
@@ -56,7 +56,7 @@ private:
 
     VulkanShaderProgramManager shaderProgramManager{};
     VulkanPipelineManager      pipelineManager{};
-    VulkanFrameGraph           frameGraph{};
+    VulkanRenderGraph          renderGraph{};
 
     [[nodiscard]] bool onFramebufferResize(std::string& errorMessage);
 
@@ -66,9 +66,7 @@ private:
 
     [[nodiscard]] bool recordCurrentCommandBuffer(uint32_t imageIndex, std::string& errorMessage);
 
-    [[nodiscard]] bool submitCurrentCommandBuffer(
-        uint32_t frameIndex, uint32_t imageIndex, std::string& errorMessage, bool& discardLogging
-    );
+    [[nodiscard]] bool submitCurrentCommandBuffer(uint32_t imageIndex, std::string& errorMessage, bool& discardLogging);
 };
 
 #endif //NOBLEENGINE_VULKANRENDERER_H

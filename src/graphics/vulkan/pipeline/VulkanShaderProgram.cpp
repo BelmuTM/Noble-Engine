@@ -9,23 +9,28 @@
 #include <ranges>
 #include <unordered_map>
 
+#include <spirv-reflect/spirv_reflect.h>
+
+#include "core/debug/Logger.h"
+
 static const std::unordered_map<std::string, std::pair<vk::ShaderStageFlagBits, const char*>> stageData = {
     {"vert", {vk::ShaderStageFlagBits::eVertex,   "vertMain"}},
     {"frag", {vk::ShaderStageFlagBits::eFragment, "fragMain"}},
     {"comp", {vk::ShaderStageFlagBits::eCompute,  "compMain"}}
 };
 
-VulkanShaderProgram::~VulkanShaderProgram() {
+void VulkanShaderProgram::destroy() noexcept {
     clearShaderModules();
+
+    _device = VK_NULL_HANDLE;
 }
 
 void VulkanShaderProgram::clearShaderModules() {
     for (const auto& module : _shaderModules) {
         _device.destroyShaderModule(module);
     }
-    _shaderModules.clear();
 
-    _device = VK_NULL_HANDLE;
+    _shaderModules.clear();
 }
 
 vk::ShaderModule VulkanShaderProgram::createShaderModule(
@@ -69,7 +74,7 @@ bool VulkanShaderProgram::loadFromFiles(
             return false;
         }
 
-        const auto [stageFlags, entryPoint] = it->second;
+        const auto [stage, entryPoint] = it->second;
 
         const std::vector<uint32_t>& bytecode = readShaderSPIRVBytecode(shaderFilesPath + path);
         if (bytecode.empty()) {
@@ -84,14 +89,15 @@ bool VulkanShaderProgram::loadFromFiles(
 
         vk::PipelineShaderStageCreateInfo stageInfo{};
         stageInfo
-            .setStage(stageFlags)
+            .setStage(stage)
             .setModule(module)
             .setPName(entryPoint);
 
         _shaderStages.push_back(stageInfo);
-        _stageFlags |= stageFlags;
+        _stageFlags |= stage;
 
-        //reflectShaderResources(bytecode, stageFlags);
+        Logger::debug("----- STAGE [" + path + "] -----");
+        TRY(reflectShaderResources(bytecode, stage, errorMessage));
     }
 
     guard.release();
@@ -105,52 +111,74 @@ bool VulkanShaderProgram::load(
     return loadFromFiles(findShaderFilePaths(path), fullscreen, device, errorMessage);
 }
 
-/*
-void VulkanShaderProgram::reflectShaderResources(
-    const std::vector<uint32_t>& bytecode, const vk::ShaderStageFlags stageFlags
+bool VulkanShaderProgram::reflectShaderResources(
+    const std::vector<uint32_t>& bytecode, const vk::ShaderStageFlags stage, std::string& errorMessage
 ) {
-    spirv_cross::Compiler compiler(std::move(bytecode));
-    const spirv_cross::ShaderResources resources = compiler.get_shader_resources();
+    const void*  bytecodeData = bytecode.data();
+    const size_t bytecodeSize = bytecode.size() * sizeof(uint32_t);
+
+    SpvReflectShaderModule module;
+    SpvReflectResult result = spvReflectCreateShaderModule(bytecodeSize, bytecodeData, &module);
+
+    if (result != SPV_REFLECT_RESULT_SUCCESS) {
+        errorMessage = "Failed to reflect SPIR-V shaders: invalid shader bytecode";
+        return false;
+    }
 
     // Stage outputs
-    for (const auto& stageOutput : resources.stage_outputs) {
-        const std::string& outputName = compiler.get_name(stageOutput.id);
+    Logger::debug("--> Stage Outputs <--");
 
-        const auto& outputType = compiler.get_type(stageOutput.type_id);
-        if (outputType.image.format == spv::ImageFormatUnknown) continue;
+    uint32_t outputCount = 0;
+    result = spvReflectEnumerateOutputVariables(&module, &outputCount, nullptr);
+    assert(result == SPV_REFLECT_RESULT_SUCCESS);
+    std::vector<SpvReflectInterfaceVariable*> outputs(outputCount);
+    result = spvReflectEnumerateOutputVariables(&module, &outputCount, outputs.data());
+    assert(result == SPV_REFLECT_RESULT_SUCCESS);
 
-        _stageOutputs.push_back(outputName);
+    for (const auto& output : outputs) {
+        if (!output->name) continue;
+
+        if (stage & vk::ShaderStageFlagBits::eFragment) {
+            if (output->type_description->type_flags == (SPV_REFLECT_TYPE_FLAG_VECTOR | SPV_REFLECT_TYPE_FLAG_FLOAT)) {
+                Logger::debug("location=" + std::to_string(output->location) + " : " + output->name);
+                _stageOutputs.emplace_back(output->name);
+            }
+        }
     }
 
-    // Sampled images (texture2D,...)
-    for (const auto& imageSampler : resources.sampled_images) {
-        const uint32_t set     = compiler.get_decoration(imageSampler.id, spv::DecorationDescriptorSet);
-        const uint32_t binding = compiler.get_decoration(imageSampler.id, spv::DecorationBinding);
+    // Descriptors
+    Logger::debug("--> Descriptors <--");
 
-        VulkanDescriptorBindingInfo info{
-            .binding    = binding,
-            .type       = vk::DescriptorType::eCombinedImageSampler,
-            .stageFlags = stageFlags
-        };
+    uint32_t descriptorSetCount = 0;
+    result = spvReflectEnumerateDescriptorSets(&module, &descriptorSetCount, nullptr);
+    assert(result == SPV_REFLECT_RESULT_SUCCESS);
+    std::vector<SpvReflectDescriptorSet*> descriptorSets(descriptorSetCount);
+    result = spvReflectEnumerateDescriptorSets(&module, &descriptorSetCount, descriptorSets.data());
+    assert(result == SPV_REFLECT_RESULT_SUCCESS);
 
-        _descriptorSchemes[set].push_back(info);
+    for (uint32_t set = 0; set < descriptorSetCount; set++) {
+        const SpvReflectDescriptorSet* descriptorSet = descriptorSets[set];
+
+        for (uint32_t binding = 0; binding < descriptorSet->binding_count; binding++) {
+            const SpvReflectDescriptorBinding* descriptorBinding = descriptorSet->bindings[binding];
+
+            Logger::debug(
+                "set=" + std::to_string(descriptorSet->set) + "(" + std::to_string(set) + "), " + "binding=" +
+                std::to_string(descriptorBinding->binding) + " : " + descriptorBinding->name
+            );
+
+            VulkanDescriptorBindingInfo info{
+                .binding    = binding,
+                .type       = vk::DescriptorType::eCombinedImageSampler,
+                .stageFlags = stage
+            };
+
+            _descriptorSchemes[descriptorSet->set].push_back(info);
+        }
     }
 
-    // Storage images (image2D,...)
-    for (const auto& storageImage : resources.storage_images) {
-        const uint32_t set     = compiler.get_decoration(storageImage.id, spv::DecorationDescriptorSet);
-        const uint32_t binding = compiler.get_decoration(storageImage.id, spv::DecorationBinding);
-
-        VulkanDescriptorBindingInfo info{
-            .binding    = binding,
-            .type       = vk::DescriptorType::eStorageImage,
-            .stageFlags = stageFlags
-        };
-
-        _descriptorSchemes[set].push_back(info);
-    }
+    return true;
 }
-*/
 
 std::string VulkanShaderProgram::extractStageExtension(const std::string& path) noexcept {
     const auto lastDot       = path.rfind('.');

@@ -31,14 +31,11 @@ public:
     );
 
     [[nodiscard]] bool createColorBuffer(
-        const std::unique_ptr<VulkanImage>& colorBuffer,
-        vk::Format                          format,
-        vk::Extent2D                        extent,
-        std::string&                        errorMessage
+        VulkanImage& colorBuffer, vk::Format format, vk::Extent2D extent, std::string& errorMessage
     ) const;
 
     [[nodiscard]] bool createDepthBuffer(
-        const std::unique_ptr<VulkanImage>& depthBuffer, vk::Extent2D extent, std::string& errorMessage
+        VulkanImage& depthBuffer, vk::Extent2D extent, std::string& errorMessage
     ) const;
 
 private:

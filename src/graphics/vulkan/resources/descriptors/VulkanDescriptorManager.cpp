@@ -39,12 +39,12 @@ void VulkanDescriptorManager::destroy() noexcept {
 }
 
 bool VulkanDescriptorManager::allocate(VulkanDescriptorSets*& descriptorSets, std::string& errorMessage) {
-    auto descriptorSetsPtr = std::make_unique<VulkanDescriptorSets>(*this);
+    VulkanDescriptorSets tempDescriptorSets{*this};
 
-    TRY(descriptorSetsPtr->allocate(errorMessage));
+    TRY(tempDescriptorSets.allocate(errorMessage));
 
-    descriptorSets = descriptorSetsPtr.get();
-    _descriptorSets.push_back(std::move(descriptorSetsPtr));
+    _descriptorSets.push_back(std::make_unique<VulkanDescriptorSets>(std::move(tempDescriptorSets)));
+    descriptorSets = _descriptorSets.back().get();
 
     return true;
 }

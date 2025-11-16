@@ -11,6 +11,8 @@
 #include <vector>
 
 static const std::vector deviceExtensions = {
+    VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+    VK_EXT_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_EXTENSION_NAME,
     VK_KHR_SPIRV_1_4_EXTENSION_NAME,
     VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
@@ -165,26 +167,35 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
         .pQueuePriorities = &queuePriority
     };
 
-    VkPhysicalDeviceFeatures deviceFeatures{};
-    deviceFeatures.fillModeNonSolid        = vk::True;
-    deviceFeatures.samplerAnisotropy       = vk::True;
-    deviceFeatures.pipelineStatisticsQuery = vk::True;
+    VkPhysicalDeviceFeatures deviceFeatures{
+        .fillModeNonSolid        = vk::True,
+        .samplerAnisotropy       = vk::True,
+        .pipelineStatisticsQuery = vk::True
+    };
 
-    VkPhysicalDeviceVulkan11Features deviceFeatures_1_1{};
-    deviceFeatures_1_1.shaderDrawParameters = vk::True;
+    VkPhysicalDeviceVulkan11Features deviceFeatures_1_1{
+        .shaderDrawParameters = vk::True
+    };
 
-    VkPhysicalDeviceVulkan13Features deviceFeatures_1_3{};
-    deviceFeatures_1_3.pNext            = &deviceFeatures_1_1;
-    deviceFeatures_1_3.dynamicRendering = vk::True;
-    deviceFeatures_1_3.synchronization2 = vk::True;
+    VkPhysicalDeviceVulkan13Features deviceFeatures_1_3{
+        .pNext            = &deviceFeatures_1_1,
+        .synchronization2 = vk::True,
+        .dynamicRendering = vk::True
+    };
 
-    VkPhysicalDeviceBufferDeviceAddressFeatures deviceBufferAddressFeatures{};
-    deviceBufferAddressFeatures.pNext               = &deviceFeatures_1_3;
-    deviceBufferAddressFeatures.bufferDeviceAddress = vk::True;
+    VkPhysicalDeviceBufferDeviceAddressFeatures deviceBufferAddressFeatures{
+        .pNext               = &deviceFeatures_1_3,
+        .bufferDeviceAddress = vk::True
+    };
+
+    VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT deviceDynamicRenderingFeatures{
+        .pNext                             = &deviceBufferAddressFeatures,
+        .dynamicRenderingUnusedAttachments = vk::True
+    };
 
     VkDeviceCreateInfo deviceInfo{
         .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        .pNext                   = &deviceBufferAddressFeatures,
+        .pNext                   = &deviceDynamicRenderingFeatures,
         .queueCreateInfoCount    = 1,
         .pQueueCreateInfos       = &deviceQueueInfo,
         .enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size()),

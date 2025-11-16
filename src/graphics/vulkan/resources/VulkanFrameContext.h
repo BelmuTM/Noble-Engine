@@ -1,24 +1,17 @@
 #pragma once
-#ifndef NOBLEENGINE_FRAMECONTEXT_H
-#define NOBLEENGINE_FRAMECONTEXT_H
+#ifndef NOBLEENGINE_VULKANFRAMECONTEXT_H
+#define NOBLEENGINE_VULKANFRAMECONTEXT_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 struct VulkanFrameContext {
-    uint32_t          frameIndex = 0;
-    vk::CommandBuffer cmdBuffer{};
-    vk::ImageView     swapchainImageView{};
-    vk::Extent2D      extent{};
+    uint32_t frameIndex = 0;
 
-    std::vector<vk::DescriptorSet> frameDescriptors;
+    vk::ImageView swapchainImageView{};
+    vk::Extent2D  extent{};
 
     VulkanFrameContext& setFrameIndex(const uint32_t _frameIndex) noexcept {
         frameIndex = _frameIndex;
-        return *this;
-    }
-
-    VulkanFrameContext& setCommandBuffer(const vk::CommandBuffer _cmdBuffer) noexcept {
-        cmdBuffer = _cmdBuffer;
         return *this;
     }
 
@@ -33,4 +26,4 @@ struct VulkanFrameContext {
     }
 };
 
-#endif // NOBLEENGINE_FRAMECONTEXT_H
+#endif // NOBLEENGINE_VULKANFRAMECONTEXT_H

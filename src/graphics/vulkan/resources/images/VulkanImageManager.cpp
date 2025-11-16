@@ -30,12 +30,14 @@ bool VulkanImageManager::loadImage(
         return false;
     }
 
-    auto imagePtr = std::make_unique<VulkanImage>();
+    VulkanImage tempImage{};
 
     constexpr int depth = 1;
 
     const auto extent = vk::Extent3D{
-        static_cast<uint32_t>(imageData->width), static_cast<uint32_t>(imageData->height), static_cast<uint32_t>(depth)
+        static_cast<uint32_t>(imageData->width),
+        static_cast<uint32_t>(imageData->height),
+        static_cast<uint32_t>(depth)
     };
 
     constexpr auto    format          = vk::Format::eR8G8B8A8Srgb;
@@ -43,7 +45,7 @@ bool VulkanImageManager::loadImage(
 
     const uint32_t mipLevels = useMipmaps ? getMipLevels(extent) : 1;
 
-    TRY(imagePtr->createFromData(
+    TRY(tempImage.createFromData(
         imageData->pixels.data(),
         imageData->channels,
         bytesPerChannel,
@@ -55,24 +57,21 @@ bool VulkanImageManager::loadImage(
         errorMessage
     ));
 
-    image = imagePtr.get();
-    _images.push_back(std::move(imagePtr));
+    _images.push_back(std::make_unique<VulkanImage>(std::move(tempImage)));
+    image = _images.back().get();
 
     return true;
 }
 
 bool VulkanImageManager::createColorBuffer(
-    const std::unique_ptr<VulkanImage>& colorBuffer,
-    const vk::Format                    format,
-    const vk::Extent2D                  extent,
-    std::string&                        errorMessage
+    VulkanImage& colorBuffer, const vk::Format format, const vk::Extent2D extent, std::string& errorMessage
 ) const {
-    const auto colorExtent = vk::Extent3D(extent.width, extent.height, 1);
+    const auto colorExtent = vk::Extent3D{extent.width, extent.height, 1};
 
-    colorBuffer->setFormat(format);
-    colorBuffer->setExtent(colorExtent);
+    colorBuffer.setFormat(format);
+    colorBuffer.setExtent(colorExtent);
 
-    TRY(colorBuffer->createImage(
+    TRY(colorBuffer.createImage(
         vk::ImageType::e2D,
         format,
         colorExtent,
@@ -83,11 +82,11 @@ bool VulkanImageManager::createColorBuffer(
         errorMessage
     ));
 
-    TRY(colorBuffer->createImageView(
+    TRY(colorBuffer.createImageView(
         vk::ImageViewType::e2D, format, vk::ImageAspectFlagBits::eColor, 1, _device, errorMessage
     ));
 
-    TRY(colorBuffer->transitionLayout(
+    TRY(colorBuffer.transitionLayout(
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eColorAttachmentOptimal,
         1,
@@ -95,26 +94,26 @@ bool VulkanImageManager::createColorBuffer(
         errorMessage
     ));
 
-    TRY(colorBuffer->createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, _device, errorMessage));
+    TRY(colorBuffer.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, _device, errorMessage));
 
     return true;
 }
 
 bool VulkanImageManager::createDepthBuffer(
-    const std::unique_ptr<VulkanImage>& depthBuffer, const vk::Extent2D extent, std::string& errorMessage
+    VulkanImage& depthBuffer, const vk::Extent2D extent, std::string& errorMessage
 ) const {
     constexpr auto depthFormat = vk::Format::eD32Sfloat;
     const     auto depthExtent = vk::Extent3D(extent.width, extent.height, 1);
 
-    depthBuffer->setFormat(depthFormat);
-    depthBuffer->setExtent(depthExtent);
+    depthBuffer.setFormat(depthFormat);
+    depthBuffer.setExtent(depthExtent);
 
     vk::ImageAspectFlags aspects = vk::ImageAspectFlagBits::eDepth;
-    if (VulkanImage::hasStencilComponent(depthBuffer->getFormat())) {
+    if (VulkanImage::hasStencilComponent(depthBuffer.getFormat())) {
         aspects |= vk::ImageAspectFlagBits::eStencil;
     }
 
-    TRY(depthBuffer->createImage(
+    TRY(depthBuffer.createImage(
         vk::ImageType::e2D,
         depthFormat,
         depthExtent,
@@ -125,9 +124,9 @@ bool VulkanImageManager::createDepthBuffer(
         errorMessage
     ));
 
-    TRY(depthBuffer->createImageView(vk::ImageViewType::e2D, depthFormat, aspects, 1, _device, errorMessage));
+    TRY(depthBuffer.createImageView(vk::ImageViewType::e2D, depthFormat, aspects, 1, _device, errorMessage));
 
-    TRY(depthBuffer->transitionLayout(
+    TRY(depthBuffer.transitionLayout(
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eDepthStencilAttachmentOptimal,
         1,

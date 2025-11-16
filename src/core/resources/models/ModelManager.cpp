@@ -331,19 +331,19 @@ const Model* ModelManager::load(const std::string& path, std::string& errorMessa
     }
 
     // Loading model
-    auto model = std::make_unique<Model>();
+    Model model{};
 
-    model->retrieveName(path);
+    model.retrieveName(path);
 
     if (path.ends_with(".obj")) {
 
-        if (!load_OBJ(*model, path, errorMessage)) {
+        if (!load_OBJ(model, path, errorMessage)) {
             return nullptr;
         }
 
     } else if (path.ends_with(".gltf")) {
 
-        if (!load_glTF(*model, path, errorMessage)) {
+        if (!load_glTF(model, path, errorMessage)) {
             return nullptr;
         }
 
@@ -355,7 +355,7 @@ const Model* ModelManager::load(const std::string& path, std::string& errorMessa
     // Inserting model data into cache
     std::lock_guard lock(_mutex);
 
-    auto [it, inserted] = _cache.try_emplace(path, std::move(model));
+    auto [it, inserted] = _cache.try_emplace(path, std::make_unique<Model>(std::move(model)));
 
     return it->second.get();
 }

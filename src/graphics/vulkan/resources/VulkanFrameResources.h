@@ -8,7 +8,7 @@
 #include "ubo/VulkanUniformBufferManager.h"
 #include "ubo/FrameUniformBuffer.h"
 
-#include "graphics/vulkan/pipeline/framegraph/nodes/VulkanFramePassAttachment.h"
+#include "graphics/vulkan/pipeline/rendergraph/nodes/VulkanRenderPassAttachment.h"
 
 static const VulkanDescriptorScheme frameDescriptorScheme = {
     {0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eAllGraphics}
@@ -36,21 +36,25 @@ public:
 
     void destroy() noexcept;
 
-    void update(uint32_t frameIndex, const Camera& camera) const;
+    void update(uint32_t frameIndex, uint32_t imageIndex, const Camera& camera);
 
     [[nodiscard]] bool recreate(std::string& errorMessage) const;
 
+    [[nodiscard]] const VulkanFrameContext& getFrameContext() const noexcept { return _frameContext; }
+
     [[nodiscard]] const VulkanDescriptorManager& getDescriptorManager() const noexcept { return _descriptorManager; }
 
-    [[nodiscard]] const VulkanDescriptorSets* getUBODescriptors() const noexcept { return _frameUBODescriptors; }
+    [[nodiscard]] const VulkanDescriptorSets* getDescriptors() const noexcept { return _frameUBODescriptors; }
 
-    [[nodiscard]] const VulkanFramePassAttachment& getDepthBufferAttachment() const noexcept {
+    [[nodiscard]] const VulkanRenderPassAttachment& getDepthBufferAttachment() const noexcept {
         return _depthBufferAttachment;
     }
 
-    void addColorBuffer(std::unique_ptr<VulkanImage> colorBuffer) noexcept {
-        _colorBuffers.push_back(std::move(colorBuffer));
+    [[nodiscard]] const std::vector<std::unique_ptr<VulkanImage>>& getColorBuffers() const noexcept {
+        return _colorBuffers;
     }
+
+    VulkanImage* allocateColorBuffer();
 
 private:
     const VulkanDevice*       _device       = nullptr;
@@ -59,13 +63,15 @@ private:
 
     uint32_t _framesInFlight = 0;
 
+    VulkanFrameContext _frameContext{};
+
     VulkanDescriptorManager _descriptorManager{};
 
     FrameUniformBuffer    _frameUBO{};
-    VulkanDescriptorSets* _frameUBODescriptors{};
+    VulkanDescriptorSets* _frameUBODescriptors;
 
     std::unique_ptr<VulkanImage> _depthBuffer{};
-    VulkanFramePassAttachment    _depthBufferAttachment{};
+    VulkanRenderPassAttachment   _depthBufferAttachment{};
 
     std::vector<std::unique_ptr<VulkanImage>> _colorBuffers{};
 };

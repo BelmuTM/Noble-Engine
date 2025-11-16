@@ -3,10 +3,9 @@
 #include "core/debug/ErrorHandling.h"
 
 bool VulkanPipelineManager::create(
-    const vk::Device& device, const VulkanSwapchain& swapchain, std::string& errorMessage
+    const vk::Device& device, std::string& errorMessage
 ) noexcept {
-    _device    = device;
-    _swapchain = &swapchain;
+    _device = device;
     return true;
 }
 
@@ -17,8 +16,7 @@ void VulkanPipelineManager::destroy() noexcept {
 
     _graphicsPipelines.clear();
 
-    _device    = VK_NULL_HANDLE;
-    _swapchain = nullptr;
+    _device = VK_NULL_HANDLE;
 }
 
 VulkanGraphicsPipeline* VulkanPipelineManager::allocatePipeline() {
@@ -27,35 +25,12 @@ VulkanGraphicsPipeline* VulkanPipelineManager::allocatePipeline() {
 }
 
 bool VulkanPipelineManager::createGraphicsPipeline(
-    VulkanGraphicsPipeline*                     graphicsPipeline,
-    const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
-    const VulkanShaderProgram&                  shaderProgram,
-    std::string&                                errorMessage
+    VulkanGraphicsPipeline*                        graphicsPipeline,
+    const VulkanPipelineDescriptor&                descriptor,
+    const std::vector<VulkanRenderPassAttachment>& colorAttachments,
+    std::string&                                   errorMessage
 ) {
-    TRY(graphicsPipeline->create(_device, *_swapchain, descriptorSetLayouts, {}, shaderProgram, errorMessage));
-
-    _graphicsPipelines.emplace_back(graphicsPipeline);
-
-    return true;
-}
-
-bool VulkanPipelineManager::createGraphicsPipeline(
-    VulkanGraphicsPipeline*                     graphicsPipeline,
-    const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
-    const uint32_t                              pushConstantRangeSize,
-    const VulkanShaderProgram&                  shaderProgram,
-    std::string&                                errorMessage
-) {
-    // TO-DO: use shader reflection for push constant size
-    vk::PushConstantRange pushConstantRange{};
-    pushConstantRange
-        .setStageFlags(shaderProgram.getStageFlags())
-        .setOffset(0)
-        .setSize(pushConstantRangeSize);
-
-    TRY(graphicsPipeline->create(
-        _device, *_swapchain, descriptorSetLayouts, {pushConstantRange}, shaderProgram, errorMessage
-    ));
+    TRY(graphicsPipeline->create(_device, descriptor, colorAttachments, errorMessage));
 
     _graphicsPipelines.emplace_back(graphicsPipeline);
 

@@ -10,7 +10,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++")
 
 # Collect source files
-file(GLOB_RECURSE SOURCES "src/*.cpp")
+file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
 add_executable(NobleEngine ${SOURCES})
 
 # Include source headers
@@ -24,7 +24,7 @@ target_compile_definitions(NobleEngine PRIVATE RESOURCES_DIR="${CMAKE_SOURCE_DIR
 #                       VULKAN SDK                       #
 ##########################################################
 
-# Vulkan SDK setup
+# Vulkan SDK setup (https://vulkan.lunarg.com/sdk/home)
 find_package(Vulkan REQUIRED)
 target_include_directories(NobleEngine PRIVATE ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(NobleEngine PRIVATE ${Vulkan_LIBRARIES})
@@ -99,32 +99,24 @@ add_dependencies(NobleEngine ShadersModule)
 # glfw (https://github.com/glfw/glfw)
 add_subdirectory(external/glfw)
 
-# json (https://github.com/nlohmann/json)
-add_library(json INTERFACE)
-target_include_directories(json INTERFACE ${CMAKE_SOURCE_DIR}/external/json)
+# SPIRV-Reflect (https://github.com/KhronosGroup/SPIRV-Reflect)
+add_library(spirv-reflect STATIC external/spirv-reflect/spirv_reflect.cpp)
+target_include_directories(spirv-reflect PUBLIC ${CMAKE_SOURCE_DIR}/external)
+target_compile_definitions(spirv-reflect PUBLIC SPIRV_REFLECT_USE_SYSTEM_SPIRV_H)
 
-# STB (https://github.com/nothings/stb)
-add_library(stb INTERFACE)
-target_include_directories(stb INTERFACE ${CMAKE_SOURCE_DIR}/external/stb)
-
-# tinygltf (https://github.com/syoyo/tinygltf)
-add_library(tinygltf INTERFACE)
-target_include_directories(tinygltf INTERFACE ${CMAKE_SOURCE_DIR}/external/tinygltf)
-
-# tinyobjloader (https://github.com/tinyobjloader/tinyobjloader)
-add_library(tinyobjloader INTERFACE)
-target_include_directories(tinyobjloader INTERFACE ${CMAKE_SOURCE_DIR}/external/tinyobjloader)
-
-# Vulkan Memory Allocator (https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
-add_library(vma INTERFACE)
-target_include_directories(vma INTERFACE ${CMAKE_SOURCE_DIR}/external/vma/include)
-
-# Link libraries to executable
+# Link compiled libraries to executable
 target_link_libraries(NobleEngine PRIVATE
     glfw
-    json
-    stb
-    tinygltf
-    tinyobjloader
-    vma
+    spirv-reflect
+)
+
+# json (https://github.com/nlohmann/json)
+# STB (https://github.com/nothings/stb)
+# tinygltf (https://github.com/syoyo/tinygltf)
+# tinyobjloader (https://github.com/tinyobjloader/tinyobjloader)
+# Vulkan Memory Allocator (https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
+target_include_directories(NobleEngine PRIVATE
+    ${CMAKE_SOURCE_DIR}/external
+    ${CMAKE_SOURCE_DIR}/external/json
+    ${CMAKE_SOURCE_DIR}/external/stb
 )

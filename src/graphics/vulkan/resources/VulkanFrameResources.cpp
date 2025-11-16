@@ -15,6 +15,8 @@ bool VulkanFrameResources::create(
     _imageManager   = &imageManager;
     _framesInFlight = framesInFlight;
 
+    _frameContext.setExtent(swapchain.getExtent());
+
     // Descriptors creation
     TRY(_descriptorManager.create(device.getLogicalDevice(), frameDescriptorScheme, framesInFlight, 1, errorMessage));
 
@@ -25,9 +27,9 @@ bool VulkanFrameResources::create(
 
     // Depth buffer creation
     _depthBuffer = std::make_unique<VulkanImage>();
-    TRY(imageManager.createDepthBuffer(_depthBuffer, swapchain.getExtent(), errorMessage));
+    TRY(imageManager.createDepthBuffer(*_depthBuffer, swapchain.getExtent(), errorMessage));
 
-    VulkanFramePassResource depthBufferResource{};
+    VulkanRenderPassResource depthBufferResource{};
     depthBufferResource
         .setType(Buffer)
         .setImage(*_depthBuffer)
@@ -53,22 +55,34 @@ void VulkanFrameResources::destroy() noexcept {
     }
 }
 
-void VulkanFrameResources::update(const uint32_t frameIndex, const Camera& camera) const {
+void VulkanFrameResources::update(
+    const uint32_t frameIndex, const uint32_t imageIndex, const Camera& camera
+) {
     _frameUBO.update(frameIndex, *_swapchain, camera);
+
+    _frameContext
+        .setFrameIndex(frameIndex)
+        .setSwapchainImageView(_swapchain->getImageViews()[imageIndex])
+        .setExtent(_swapchain->getExtent());
 }
 
 bool VulkanFrameResources::recreate(std::string& errorMessage) const {
     _depthBuffer->destroy(*_device);
 
-    TRY(_imageManager->createDepthBuffer(_depthBuffer, _swapchain->getExtent(), errorMessage));
+    TRY(_imageManager->createDepthBuffer(*_depthBuffer, _swapchain->getExtent(), errorMessage));
 
     for (auto& colorBuffer : _colorBuffers) {
         colorBuffer->destroy(*_device);
 
         TRY(_imageManager->createColorBuffer(
-            colorBuffer, colorBuffer->getFormat(), _swapchain->getExtent(), errorMessage
+            *colorBuffer, colorBuffer->getFormat(), _swapchain->getExtent(), errorMessage
         ));
     }
 
     return true;
+}
+
+VulkanImage* VulkanFrameResources::allocateColorBuffer() {
+    _colorBuffers.push_back(std::make_unique<VulkanImage>());
+    return _colorBuffers.back().get();
 }

@@ -4,7 +4,6 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "graphics/vulkan/core/VulkanSwapchain.h"
 #include "VulkanGraphicsPipeline.h"
 
 #include <memory>
@@ -20,33 +19,21 @@ public:
     VulkanPipelineManager(VulkanPipelineManager&&)            = delete;
     VulkanPipelineManager& operator=(VulkanPipelineManager&&) = delete;
 
-    [[nodiscard]] bool create(
-        const vk::Device& device, const VulkanSwapchain& swapchain, std::string& errorMessage
-    ) noexcept;
+    [[nodiscard]] bool create(const vk::Device& device, std::string& errorMessage) noexcept;
 
     void destroy() noexcept;
 
     [[nodiscard]] VulkanGraphicsPipeline* allocatePipeline();
 
     [[nodiscard]] bool createGraphicsPipeline(
-        VulkanGraphicsPipeline*                     graphicsPipeline,
-        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
-        const VulkanShaderProgram&                  shaderProgram,
-        std::string&                                errorMessage
-    );
-
-    [[nodiscard]] bool createGraphicsPipeline(
-        VulkanGraphicsPipeline*                     graphicsPipeline,
-        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
-        uint32_t                                    pushConstantRangeSize,
-        const VulkanShaderProgram&                  shaderProgram,
-        std::string&                                errorMessage
+        VulkanGraphicsPipeline*                        graphicsPipeline,
+        const VulkanPipelineDescriptor&                descriptor,
+        const std::vector<VulkanRenderPassAttachment>& colorAttachments,
+        std::string&                                   errorMessage
     );
 
 private:
     vk::Device _device{};
-
-    const VulkanSwapchain* _swapchain = nullptr;
 
     std::vector<std::unique_ptr<VulkanGraphicsPipeline>> _graphicsPipelines{};
 };

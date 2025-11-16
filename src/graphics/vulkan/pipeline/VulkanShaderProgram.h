@@ -11,14 +11,16 @@
 
 class VulkanShaderProgram {
 public:
-    VulkanShaderProgram() = default;
-    ~VulkanShaderProgram();
+    VulkanShaderProgram()  = default;
+    ~VulkanShaderProgram() = default;
 
     VulkanShaderProgram(const VulkanShaderProgram&)            = default;
     VulkanShaderProgram& operator=(const VulkanShaderProgram&) = default;
 
-    VulkanShaderProgram(VulkanShaderProgram&&)            = delete;
-    VulkanShaderProgram& operator=(VulkanShaderProgram&&) = delete;
+    VulkanShaderProgram(VulkanShaderProgram&&)            = default;
+    VulkanShaderProgram& operator=(VulkanShaderProgram&&) = default;
+
+    void destroy() noexcept;
 
     [[nodiscard]] bool loadFromFiles(
         const std::vector<std::string>& paths, bool fullscreen, const vk::Device& device, std::string& errorMessage
@@ -54,11 +56,13 @@ private:
     std::vector<std::string>                             _stageOutputs{};
     std::unordered_map<uint32_t, VulkanDescriptorScheme> _descriptorSchemes{};
 
-    vk::ShaderModule createShaderModule(const std::vector<uint32_t>& bytecode, std::string& errorMessage) const;
-
     void clearShaderModules();
 
-    //void reflectShaderResources(const std::vector<uint32_t>& bytecode, vk::ShaderStageFlags stageFlags);
+    vk::ShaderModule createShaderModule(const std::vector<uint32_t>& bytecode, std::string& errorMessage) const;
+
+    [[nodiscard]] bool reflectShaderResources(
+        const std::vector<uint32_t>& bytecode, vk::ShaderStageFlags stage, std::string& errorMessage
+    );
 
     static std::string extractStageExtension(const std::string& path) noexcept;
 

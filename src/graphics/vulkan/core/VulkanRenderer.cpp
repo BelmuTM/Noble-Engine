@@ -1,11 +1,12 @@
 #include "VulkanRenderer.h"
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
+
+#include "graphics/vulkan/pipeline/rendergraph/VulkanRenderGraphBuilder.h"
 #include "graphics/vulkan/resources/images/VulkanImageLayoutTransitions.h"
 
 #include "core/debug/ErrorHandling.h"
 #include "core/debug/Logger.h"
-#include "graphics/vulkan/pipeline/framegraph/passes/MeshRenderPass.h"
 
 VulkanRenderer::VulkanRenderer(const uint32_t framesInFlight) : _framesInFlight(framesInFlight) {}
 
@@ -17,7 +18,6 @@ bool VulkanRenderer::init(Platform::Window& window, const ObjectsVector& objects
     _window = &window;
 
     errorMessage = "Failed to init Vulkan renderer: no error message provided";
-
     ScopeGuard guard{[this] { shutdown(); }};
 
     // Create Vulkan context
@@ -47,17 +47,23 @@ bool VulkanRenderer::init(Platform::Window& window, const ObjectsVector& objects
 
     // Pipeline managers creation
     TRY(createVulkanEntity(&shaderProgramManager, errorMessage, logicalDevice));
-    TRY(createVulkanEntity(&pipelineManager, errorMessage, logicalDevice, swapchain));
-    TRY(createVulkanEntity(&frameGraph, errorMessage, meshManager, device.getQueryPool()));
+    TRY(createVulkanEntity(&pipelineManager, errorMessage, logicalDevice));
+    TRY(createVulkanEntity(&renderGraph, errorMessage, meshManager, frameResources, device.getQueryPool()));
 
-    auto meshRenderPass = std::make_unique<MeshRenderPass>();
-    TRY(meshRenderPass->create(
-        "mesh_render", shaderProgramManager, pipelineManager, frameResources, renderObjectManager, errorMessage
+    TRY(VulkanRenderGraphBuilder::buildPasses(
+        renderGraph,
+        shaderProgramManager,
+        imageManager,
+        frameResources,
+        renderObjectManager,
+        errorMessage
     ));
 
-    frameGraph.addPass(std::move(meshRenderPass));
+    renderGraph.attachSwapchainOutput(swapchain);
 
-    frameGraph.attachSwapchainOutput();
+    TRY(VulkanRenderGraphBuilder::createPipelines(renderGraph, pipelineManager, errorMessage));
+
+    shaderProgramManager.destroy();
 
     guard.release();
 
@@ -81,22 +87,19 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
 
     if (!onFramebufferResize(errorMessage)) return;
 
-    const auto imageIndexOpt = swapchainManager.acquireNextImage(currentFrame, errorMessage, discardLogging);
-    if (!imageIndexOpt) return;
+    uint32_t imageIndex;
+    if (!swapchainManager.acquireNextImage(imageIndex, currentFrame, errorMessage, discardLogging)) return;
 
-    const uint32_t imageIndex = *imageIndexOpt;
-
-    if (!recordCurrentCommandBuffer(imageIndex, errorMessage)) return;
-
-    frameResources.update(currentFrame, camera);
+    frameResources.update(currentFrame, imageIndex, camera);
     renderObjectManager.updateObjects();
 
-    if (!submitCurrentCommandBuffer(currentFrame, imageIndex, errorMessage, discardLogging)) return;
+    if (!recordCurrentCommandBuffer(imageIndex, errorMessage)) return;
+    if (!submitCurrentCommandBuffer(imageIndex, errorMessage, discardLogging)) return;
 
     currentFrame = (currentFrame + 1) % _framesInFlight;
 
+    /*
     uint64_t primitiveCount = 0;
-
     vk::Result queryResults = context.getDevice().getLogicalDevice().getQueryPoolResults(
         context.getDevice().getQueryPool(),
         0, 1,
@@ -106,8 +109,8 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
         vk::QueryResultFlagBits::eWait |
         vk::QueryResultFlagBits::e64
     );
-
-    //Logger::debug("Drew " + std::to_string(primitiveCount) + " triangles");
+    Logger::debug("Drew " + std::to_string(primitiveCount) + " triangles");
+    */
 
     guard.release();
 }
@@ -138,12 +141,8 @@ bool VulkanRenderer::recordCommandBuffer(
     VK_TRY(commandBuffer.begin(beginInfo), errorMessage);
 
     const VulkanSwapchain& swapchain = context.getSwapchain();
-
-    const vk::Extent2D swapchainExtent = swapchain.getExtent();
-    const vk::Format   swapchainFormat = swapchain.getFormat();
-
-    const vk::Image&     swapchainImage     = swapchain.getImages()[imageIndex];
-    const vk::ImageView& swapchainImageView = swapchain.getImageViews()[imageIndex];
+    const vk::Format swapchainFormat = swapchain.getFormat();
+    const vk::Image& swapchainImage  = swapchain.getImages()[imageIndex];
 
     TRY(VulkanImageLayoutTransitions::transitionImageLayout(
         swapchainImage,
@@ -155,16 +154,7 @@ bool VulkanRenderer::recordCommandBuffer(
         errorMessage
     ));
 
-    VulkanFrameContext frameContext{};
-    frameContext
-        .setFrameIndex(currentFrame)
-        .setCommandBuffer(commandBuffer)
-        .setSwapchainImageView(swapchainImageView)
-        .setExtent(swapchainExtent);
-
-    frameContext.frameDescriptors = frameResources.getUBODescriptors()->getSets();
-
-    frameGraph.execute(frameContext);
+    renderGraph.execute(commandBuffer);
 
     TRY(VulkanImageLayoutTransitions::transitionImageLayout(
         swapchainImage,
@@ -191,11 +181,11 @@ bool VulkanRenderer::recordCurrentCommandBuffer(const uint32_t imageIndex, std::
 }
 
 bool VulkanRenderer::submitCurrentCommandBuffer(
-    const uint32_t frameIndex, const uint32_t imageIndex, std::string& errorMessage, bool& discardLogging
+    const uint32_t imageIndex, std::string& errorMessage, bool& discardLogging
 ) {
     const vk::CommandBuffer& currentBuffer = commandManager.getCommandBuffers()[currentFrame];
 
-    TRY(swapchainManager.submitCommandBuffer(currentBuffer, frameIndex, imageIndex, errorMessage, discardLogging));
+    TRY(swapchainManager.submitCommandBuffer(currentBuffer, currentFrame, imageIndex, errorMessage, discardLogging));
 
     return true;
 }

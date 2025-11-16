@@ -4,8 +4,16 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "graphics/vulkan/core/VulkanSwapchain.h"
 #include "VulkanShaderProgram.h"
+#include "graphics/vulkan/core/VulkanSwapchain.h"
+#include "rendergraph/nodes/VulkanRenderPassAttachment.h"
+
+struct VulkanPipelineDescriptor {
+    const VulkanShaderProgram* shaderProgram = nullptr;
+
+    std::vector<vk::DescriptorSetLayout> descriptorLayouts{};
+    std::vector<vk::PushConstantRange>   pushConstants{};
+};
 
 class VulkanGraphicsPipeline {
 public:
@@ -22,12 +30,10 @@ public:
     VulkanGraphicsPipeline& operator=(VulkanGraphicsPipeline&&) = delete;
 
     [[nodiscard]] bool create(
-        const vk::Device&                           device,
-        const VulkanSwapchain&                      swapchain,
-        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
-        const std::vector<vk::PushConstantRange>&   pushConstantRanges,
-        const VulkanShaderProgram&                  shaderProgram,
-        std::string&                                errorMessage
+        const vk::Device&                              device,
+        const VulkanPipelineDescriptor&                descriptor,
+        const std::vector<VulkanRenderPassAttachment>& colorAttachments,
+        std::string&                                   errorMessage
     ) noexcept;
 
     void destroy() noexcept;
@@ -105,23 +111,13 @@ private:
                 vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
                 vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
             )
-            .setBlendEnable(vk::True)
+            .setBlendEnable(vk::False)
             .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
             .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
             .setColorBlendOp(vk::BlendOp::eAdd)
             .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
             .setDstAlphaBlendFactor(vk::BlendFactor::eZero)
             .setAlphaBlendOp(vk::BlendOp::eAdd);
-        return info;
-    }();
-
-    static constexpr vk::PipelineColorBlendStateCreateInfo colorBlendInfo = []{
-        vk::PipelineColorBlendStateCreateInfo info{};
-        info
-            .setLogicOpEnable(vk::False)
-            .setLogicOp(vk::LogicOp::eCopy)
-            .setAttachmentCount(1)
-            .setPAttachments(&colorBlendAttachment);
         return info;
     }();
 
@@ -144,10 +140,10 @@ private:
     );
 
     [[nodiscard]] bool createPipeline(
-        const vk::Device&          device,
-        const VulkanSwapchain&     swapchain,
-        const VulkanShaderProgram& shaderProgram,
-        std::string&               errorMessage
+        const vk::Device&                              device,
+        const VulkanShaderProgram&                     shaderProgram,
+        const std::vector<VulkanRenderPassAttachment>& colorAttachments,
+        std::string&                                   errorMessage
     );
 };
 

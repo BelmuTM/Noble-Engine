@@ -42,7 +42,7 @@ VSOutput vertMain(VSInput input) {
     return output;
 }
 
-layout(set = 1, binding = 0) Sampler2D texture;
+layout (set = 1, binding = 0) Sampler2D texture;
 
 float bayer2(float2 a) {
     a = floor(a);
@@ -60,8 +60,11 @@ float bayer2(float2 a) {
 
 #define TAU 2.0 * 3.14159
 
+layout (location = 0) out float4 output;
+layout (location = 1) out float4 foo;
+
 [shader("fragment")]
-float4 fragMain(VSOutput vertIn) : SV_TARGET {
+void fragMain(VSOutput vertIn) : SV_TARGET {
     const float3 lightPosition0 = float3(-1.5, 1.0, 5.0);
     const float3 lightPosition1 = float3(4.5, -1.0, 1.0);
 
@@ -93,6 +96,8 @@ float4 fragMain(VSOutput vertIn) : SV_TARGET {
 
     float4 albedo = texture.Sample(vertIn.texCoords);
 
+    foo = float4(1.0);
+
     if (albedo.a < 1.0) {
         discard;
     }
@@ -105,5 +110,7 @@ float4 fragMain(VSOutput vertIn) : SV_TARGET {
 
     float3 lighting = albedo.rgb * (lightColor0 * NdotL0 * attenuation0 + lightColor1 * NdotL1 * attenuation1);
 
-    return float4(lighting, 1.0);
+    output = float4(lighting, 1.0);
+
+    foo = float4(1.0, 0.0, 1.0, 1.0);
 }
