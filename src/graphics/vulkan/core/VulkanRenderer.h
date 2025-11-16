@@ -36,6 +36,8 @@ public:
 
     void drawFrame(const Camera& camera) override;
 
+    uint32_t primitiveCount = 0;
+
 private:
     Platform::Window* _window = nullptr;
 

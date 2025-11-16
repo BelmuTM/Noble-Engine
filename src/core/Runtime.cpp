@@ -145,7 +145,7 @@ int main() {
     objectManager.createObject("lucy.obj", {-1.0f, 1.0f, 1.47f}, {0.0f, 0.0f, -30.0f}, glm::vec3{0.0025f});
     objectManager.createObject("lucy.obj", {-1.0f, 1.0f, 1.47f}, {0.0f, 0.0f, -30.0f}, glm::vec3{0.0025f});
 
-        objectManager.createObject("lucy.obj", {-1.0f, 1.0f, 1.47f}, {0.0f, 0.0f, -30.0f}, glm::vec3{0.0025f});
+    objectManager.createObject("lucy.obj", {-1.0f, 1.0f, 1.47f}, {0.0f, 0.0f, -30.0f}, glm::vec3{0.0025f});
     objectManager.createObject("lucy.obj", {-1.0f, 1.0f, 1.47f}, {0.0f, 0.0f, -30.0f}, glm::vec3{0.0025f});
     objectManager.createObject("lucy.obj", {-1.0f, 1.0f, 1.47f}, {0.0f, 0.0f, -30.0f}, glm::vec3{0.0025f});
     objectManager.createObject("lucy.obj", {-1.0f, 1.0f, 1.47f}, {0.0f, 0.0f, -30.0f}, glm::vec3{0.0025f});
@@ -297,7 +297,10 @@ int main() {
                 frameCount    = 0;
                 lastFpsUpdate = currentTime;
 
-                window.setTitle("Noble Engine | " + std::to_string(framerate) + " fps");
+                window.setTitle(
+                    "Noble Engine | " + std::to_string(framerate) + " FPS" + " | " +
+                    std::to_string(renderer.primitiveCount) + " Triangles"
+                );
             }
 
             std::this_thread::yield();

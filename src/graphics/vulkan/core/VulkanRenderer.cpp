@@ -98,9 +98,8 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
 
     currentFrame = (currentFrame + 1) % _framesInFlight;
 
-    /*
-    uint64_t primitiveCount = 0;
-    vk::Result queryResults = context.getDevice().getLogicalDevice().getQueryPoolResults(
+    // Queried drawn triangles count
+    VK_CALL(context.getDevice().getLogicalDevice().getQueryPoolResults(
         context.getDevice().getQueryPool(),
         0, 1,
         sizeof(uint64_t),
@@ -108,9 +107,7 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
         sizeof(uint64_t),
         vk::QueryResultFlagBits::eWait |
         vk::QueryResultFlagBits::e64
-    );
-    Logger::debug("Drew " + std::to_string(primitiveCount) + " triangles");
-    */
+    ), errorMessage);
 
     guard.release();
 }
