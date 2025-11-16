@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Static linking the runtime
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libgcc")
 
 # Collect source files
 file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
@@ -29,7 +29,7 @@ find_package(Vulkan REQUIRED)
 target_include_directories(NobleEngine PRIVATE ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(NobleEngine PRIVATE ${Vulkan_LIBRARIES})
 
-#Vulkan debug utils
+# Vulkan debug utils
 target_compile_definitions(NobleEngine PRIVATE $<$<CONFIG:Debug>:VULKAN_DEBUG_UTILS>)
 
 ##########################################################

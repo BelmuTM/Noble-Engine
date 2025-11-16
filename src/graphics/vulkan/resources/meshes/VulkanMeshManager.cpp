@@ -62,8 +62,8 @@ void VulkanMeshManager::copyMeshData(void* stagingData) {
         mesh->setVertexOffset(_currentVertexOffset);
         mesh->setIndexOffset(_currentIndexOffset - _vertexBufferSize);
 
-        memcpy(static_cast<char*>(stagingData) + _currentVertexOffset, mesh->getVertices().data(), verticesSize);
-        memcpy(static_cast<char*>(stagingData) + _currentIndexOffset , mesh->getIndices().data() , indicesSize);
+        std::memcpy(static_cast<char*>(stagingData) + _currentVertexOffset, mesh->getVertices().data(), verticesSize);
+        std::memcpy(static_cast<char*>(stagingData) + _currentIndexOffset , mesh->getIndices().data() , indicesSize);
 
         _currentVertexOffset += verticesSize;
         _currentIndexOffset  += indicesSize;

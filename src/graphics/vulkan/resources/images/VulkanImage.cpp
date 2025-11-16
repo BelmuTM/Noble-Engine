@@ -363,7 +363,7 @@ bool VulkanImage::createFromData(
     void* stagingData = stagingBuffer.mapMemory(errorMessage);
     if (!stagingData) return false;
 
-    memcpy(stagingData, pixels, imageSize);
+    std::memcpy(stagingData, pixels, imageSize);
     stagingBuffer.unmapMemory();
 
     TRY(createImage(

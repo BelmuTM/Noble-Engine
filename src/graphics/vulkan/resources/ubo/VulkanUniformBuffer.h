@@ -106,7 +106,7 @@ protected:
 
     template<typename UBOType>
     void updateMemory(const uint32_t frameIndex, UBOType ubo) const {
-        memcpy(uniformBuffers[frameIndex].getMappedPointer(), &ubo, sizeof(ubo));
+        std::memcpy(uniformBuffers[frameIndex].getMappedPointer(), &ubo, sizeof(ubo));
     }
 };
 
