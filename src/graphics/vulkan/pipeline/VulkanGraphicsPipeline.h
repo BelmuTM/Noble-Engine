@@ -5,14 +5,12 @@
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 #include "VulkanShaderProgram.h"
-#include "graphics/vulkan/core/VulkanSwapchain.h"
 #include "rendergraph/nodes/VulkanRenderPassAttachment.h"
 
 struct VulkanPipelineDescriptor {
     const VulkanShaderProgram* shaderProgram = nullptr;
 
     std::vector<vk::DescriptorSetLayout> descriptorLayouts{};
-    std::vector<vk::PushConstantRange>   pushConstants{};
 };
 
 class VulkanGraphicsPipeline {
@@ -50,9 +48,9 @@ private:
 
     vk::ShaderStageFlags _stageFlags{};
 
-    // -------------------------------
-    //       Vulkan Info structs
-    // -------------------------------
+    /*---------------------------------------*/
+    /*        Pipeline State Structs         */
+    /*---------------------------------------*/
 
     static constexpr vk::PipelineInputAssemblyStateCreateInfo inputAssemblyInfo = []{
         vk::PipelineInputAssemblyStateCreateInfo info{};
@@ -133,10 +131,10 @@ private:
     }();
 
     [[nodiscard]] bool createPipelineLayout(
-        const vk::Device&                           device,
-        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
-        const std::vector<vk::PushConstantRange>&   pushConstantRanges,
-        std::string&                                errorMessage
+        const vk::Device&                                               device,
+        const std::vector<vk::DescriptorSetLayout>&                     descriptorSetLayouts,
+        const std::unordered_map<std::string, VulkanPushConstantRange>& pushConstantRanges,
+        std::string&                                                    errorMessage
     );
 
     [[nodiscard]] bool createPipeline(

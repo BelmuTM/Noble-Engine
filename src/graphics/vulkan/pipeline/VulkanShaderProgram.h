@@ -9,6 +9,12 @@
 #include <unordered_map>
 #include <vector>
 
+struct VulkanPushConstantRange {
+    vk::ShaderStageFlags stageFlags;
+    uint32_t offset = 0;
+    uint32_t size   = 0;
+};
+
 class VulkanShaderProgram {
 public:
     VulkanShaderProgram()  = default;
@@ -44,6 +50,10 @@ public:
         return _descriptorSchemes;
     }
 
+    [[nodiscard]] const std::unordered_map<std::string, VulkanPushConstantRange>& getPushConstants() const noexcept {
+        return _pushConstants;
+    }
+
 private:
     vk::Device _device{};
 
@@ -53,8 +63,9 @@ private:
     std::vector<vk::PipelineShaderStageCreateInfo> _shaderStages{};
     vk::ShaderStageFlags                           _stageFlags{};
 
-    std::vector<std::string>                             _stageOutputs{};
-    std::unordered_map<uint32_t, VulkanDescriptorScheme> _descriptorSchemes{};
+    std::vector<std::string>                                 _stageOutputs{};
+    std::unordered_map<uint32_t, VulkanDescriptorScheme>     _descriptorSchemes{};
+    std::unordered_map<std::string, VulkanPushConstantRange> _pushConstants{};
 
     void clearShaderModules();
 

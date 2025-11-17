@@ -15,7 +15,7 @@ public:
         const std::string&          path,
         VulkanShaderProgramManager& shaderProgramManager,
         const VulkanImageManager&   imageManager,
-        const VulkanFrameResources& frameResources,
+        VulkanFrameResources&       frameResources,
         std::string&                errorMessage
     );
 };

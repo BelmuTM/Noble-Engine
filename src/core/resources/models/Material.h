@@ -22,9 +22,9 @@ struct Material {
     std::string roughnessPath;
     std::string metallicPath;
 
-    float ior       = 1.0f;
-    float metallic  = 0.0f;
-    float roughness = 0.0f;
+    double ior       = 1.0;
+    double metallic  = 0.0;
+    double roughness = 0.0;
 };
 
 namespace TextureHelper {

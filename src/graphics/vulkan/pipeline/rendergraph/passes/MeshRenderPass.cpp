@@ -13,17 +13,9 @@ bool MeshRenderPass::create(
     VulkanShaderProgram* program;
     TRY(shaderProgramManager.load(program, path, false, errorMessage));
 
-    // TO-DO: Use reflections for push constants
-    vk::PushConstantRange pushConstantRange{};
-    pushConstantRange
-        .setStageFlags(program->getStageFlags())
-        .setOffset(0)
-        .setSize(objectDataGPUSize);
-
     const VulkanPipelineDescriptor pipelineDescriptor{
         program,
-        {frameResources.getDescriptorManager().getLayout(), renderObjectManager.getDescriptorManager().getLayout()},
-        {pushConstantRange}
+        {frameResources.getDescriptorManager().getLayout(), renderObjectManager.getDescriptorManager().getLayout()}
     };
 
     setPipelineDescriptor(pipelineDescriptor);

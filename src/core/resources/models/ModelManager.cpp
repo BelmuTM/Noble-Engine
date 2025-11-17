@@ -1,14 +1,13 @@
 #include "ModelManager.h"
 
 #include "core/ResourceManager.h"
-#include "core/debug/ErrorHandling.h"
 #include "core/debug/Logger.h"
 
 #include <glm/gtc/type_ptr.hpp>
 
-// -------------------------------
-//        .OBJ file loader
-// -------------------------------
+/*---------------------------------------*/
+/*           .OBJ file loader            */
+/*---------------------------------------*/
 
 void ModelManager::loadMaterial_OBJ(Mesh& mesh, const tinyobj::material_t& material) {
     Material meshMaterial{};
@@ -102,11 +101,11 @@ bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& 
                 mesh.addIndex(uniqueVertices[vertex]);
             }
 
-            const int materialIndex = objMesh.material_ids[face];
+            const unsigned int materialIndex = objMesh.material_ids[face];
 
             // Load material if ID is valid
-            if (materialIndex >= 0 && materialIndex < materials.size()) {
-                tinyobj::material_t material = materials[materialIndex];
+            if (materialIndex < materials.size()) {
+                const tinyobj::material_t& material = materials[materialIndex];
 
                 loadMaterial_OBJ(mesh, material);
             }
@@ -122,9 +121,9 @@ bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& 
     return true;
 }
 
-// -------------------------------
-//        .GLTF file loader
-// -------------------------------
+/*---------------------------------------*/
+/*           .GLTF file loader           */
+/*---------------------------------------*/
 
 struct AttributeData {
     const unsigned char* base;
@@ -304,10 +303,10 @@ bool ModelManager::load_glTF(Model& model, const std::string& path, std::string&
                 mesh.generateSmoothNormals();
             }
 
-            const int materialIndex = primitive.material;
+            const unsigned int materialIndex = primitive.material;
 
             // Load material if ID is valid
-            if (materialIndex >= 0 && materialIndex < glTFModel.materials.size()) {
+            if (materialIndex < glTFModel.materials.size()) {
                 tinygltf::Material material = glTFModel.materials[materialIndex];
 
                 loadMaterial_glTF(mesh, model.name, material, glTFModel.textures, glTFModel.images);

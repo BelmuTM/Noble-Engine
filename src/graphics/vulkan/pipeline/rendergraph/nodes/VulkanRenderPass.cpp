@@ -6,7 +6,7 @@
 VulkanRenderPass& VulkanRenderPass::addObjectDrawCall(const VulkanRenderObject* renderObject) {
     // Each submesh requires its own draw call
     for (const auto& submesh : renderObject->submeshes) {
-        auto verticesDraw = std::make_unique<DrawCallPushConstant<ObjectDataGPU>>();
+        auto verticesDraw = std::make_unique<VulkanDrawCallWithPushConstants>();
         verticesDraw->setMesh(*submesh.mesh);
 
         verticesDraw->setDescriptorResolver(
@@ -15,9 +15,7 @@ VulkanRenderPass& VulkanRenderPass::addObjectDrawCall(const VulkanRenderObject* 
             }
         );
 
-        verticesDraw->setPushConstantResolver([renderObject](const VulkanFrameContext&) {
-            return renderObject->data;
-        });
+        verticesDraw->setPushConstant("object", &renderObject->data);
 
         addDrawCall(std::move(verticesDraw));
     }
@@ -36,7 +34,7 @@ bool VulkanRenderPass::createColorAttachments(
 
         size_t bufferIndex = frameResources.getColorBuffers().size() - 1;
 
-        const auto format = vk::Format::eB8G8R8A8Srgb;
+        constexpr auto format = vk::Format::eB8G8R8A8Srgb;
 
         TRY(imageManager.createColorBuffer(
             *colorImage,

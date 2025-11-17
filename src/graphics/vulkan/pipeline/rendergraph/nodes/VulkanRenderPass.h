@@ -38,9 +38,6 @@ public:
 
     [[nodiscard]] const VulkanRenderPassAttachment& getDepthAttachment() const noexcept { return _depthAttachment; }
 
-    [[nodiscard]] const std::vector<VulkanRenderPassResource>& getReads() const noexcept { return _reads; }
-    [[nodiscard]] const std::vector<VulkanRenderPassResource>& getWrites() const noexcept { return _writes; }
-
     [[nodiscard]] const std::vector<std::unique_ptr<VulkanDrawCall>>& getDrawCalls() const noexcept {
         return _drawCalls;
     }
@@ -77,16 +74,6 @@ public:
         return *this;
     }
 
-    VulkanRenderPass& addRead(const VulkanRenderPassResource& read) noexcept {
-        _reads.push_back(read);
-        return *this;
-    }
-
-    VulkanRenderPass& addWrite(const VulkanRenderPassResource& write) noexcept {
-        _writes.push_back(write);
-        return *this;
-    }
-
     VulkanRenderPass& addDrawCall(std::unique_ptr<VulkanDrawCall> drawCall) noexcept {
         _drawCalls.push_back(std::move(drawCall));
         return *this;
@@ -111,9 +98,6 @@ private:
 
     std::vector<VulkanRenderPassAttachment> _colorAttachments{};
     VulkanRenderPassAttachment              _depthAttachment{};
-
-    std::vector<VulkanRenderPassResource> _reads{};
-    std::vector<VulkanRenderPassResource> _writes{};
 
     std::vector<std::unique_ptr<VulkanDrawCall>> _drawCalls{};
 };

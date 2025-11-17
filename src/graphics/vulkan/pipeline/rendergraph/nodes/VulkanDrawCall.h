@@ -14,7 +14,9 @@ struct VulkanDrawCall {
 
     VulkanMesh mesh{};
 
-    std::function<std::vector<vk::DescriptorSet>(const VulkanFrameContext&)> descriptorResolver{};
+    using DescriptorResolver = std::function<std::vector<vk::DescriptorSet>(const VulkanFrameContext&)>;
+
+    DescriptorResolver descriptorResolver{};
 
     std::optional<vk::Viewport> viewport{};
     std::optional<vk::Rect2D>   scissor{};
@@ -33,10 +35,9 @@ struct VulkanDrawCall {
 
     VulkanDrawCall& setMesh(const VulkanMesh& _mesh) noexcept { mesh = _mesh; return *this; }
 
-    VulkanDrawCall& setDescriptorResolver(
-        const std::function<std::vector<vk::DescriptorSet>(const VulkanFrameContext&)>& _descriptorResolver
-    ) {
-        descriptorResolver = _descriptorResolver; return *this;
+    VulkanDrawCall& setDescriptorResolver(const DescriptorResolver& _descriptorResolver) {
+        descriptorResolver = _descriptorResolver;
+        return *this;
     }
 
     VulkanDrawCall& setViewport(const vk::Viewport& _viewport) noexcept { viewport = _viewport; return *this; }
@@ -44,36 +45,49 @@ struct VulkanDrawCall {
     VulkanDrawCall& setScissor(const vk::Rect2D _scissor) noexcept { scissor = _scissor; return *this; }
 };
 
-struct DrawCallPushConstantBase {
-    virtual ~DrawCallPushConstantBase() = default;
-    virtual void pushConstants(
-        vk::CommandBuffer    cmdBuffer,
-        vk::PipelineLayout   layout,
-        vk::ShaderStageFlags stageFlags,
-        const VulkanFrameContext&  frame
+struct IVulkanPushConstant {
+    virtual ~IVulkanPushConstant() = default;
+    virtual void push(
+        const vk::CommandBuffer& cmdBuffer,
+        const vk::PipelineLayout& layout,
+        const VulkanPushConstantRange& range
     ) const = 0;
 };
 
-template<typename PushConstantType>
-struct DrawCallPushConstant final : VulkanDrawCall, DrawCallPushConstantBase {
-    std::function<PushConstantType(const VulkanFrameContext&)> pushConstantResolver;
+template <typename PushConstantType>
+struct VulkanPushConstant final : IVulkanPushConstant {
+    const PushConstantType* ptr = nullptr;
 
-    DrawCallPushConstant& setPushConstantResolver(
-        const std::function<PushConstantType(const VulkanFrameContext&)>& _pushConstantResolver
-    ) {
-        pushConstantResolver = _pushConstantResolver; return *this;
+    explicit VulkanPushConstant(const PushConstantType* data) : ptr(data) {}
+
+    void push(const vk::CommandBuffer&       commandBuffer,
+              const vk::PipelineLayout&      layout,
+              const VulkanPushConstantRange& range
+    ) const override {
+        if(ptr) {
+            commandBuffer.pushConstants(layout, range.stageFlags, range.offset, range.size, ptr);
+        }
+    }
+};
+
+struct VulkanDrawCallWithPushConstants final : VulkanDrawCall {
+    std::unordered_map<std::string, std::unique_ptr<IVulkanPushConstant>> pushConstantData;
+
+    template <typename PushConstantType>
+    VulkanDrawCallWithPushConstants& setPushConstant(const std::string& name, const PushConstantType* data) {
+        pushConstantData[name] = std::make_unique<VulkanPushConstant<PushConstantType>>(data);
+        return *this;
     }
 
     void pushConstants(
-        const vk::CommandBuffer    cmdBuffer,
-        const vk::PipelineLayout   layout,
-        const vk::ShaderStageFlags stageFlags,
-        const VulkanFrameContext&        frame
-    ) const override {
-        if (!pushConstantResolver) return;
-
-        PushConstantType data = pushConstantResolver(frame);
-        cmdBuffer.pushConstants(layout, stageFlags, 0, sizeof(PushConstantType), &data);
+        const vk::CommandBuffer commandBuffer, const vk::PipelineLayout layout, const VulkanShaderProgram* program
+    ) const {
+        for (const auto& [name, range] : program->getPushConstants()) {
+            auto it = pushConstantData.find(name);
+            if (it != pushConstantData.end()) {
+                it->second->push(commandBuffer, layout, range);
+            }
+        }
     }
 };
 

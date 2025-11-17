@@ -6,6 +6,8 @@
 
 #include "core/debug/ErrorHandling.h"
 
+#include <ranges>
+
 bool VulkanGraphicsPipeline::create(
     const vk::Device&                              device,
     const VulkanPipelineDescriptor&                descriptor,
@@ -14,7 +16,10 @@ bool VulkanGraphicsPipeline::create(
 ) noexcept {
     _device = device;
 
-    TRY(createPipelineLayout(device, descriptor.descriptorLayouts, descriptor.pushConstants, errorMessage));
+    TRY(createPipelineLayout(
+        device, descriptor.descriptorLayouts, descriptor.shaderProgram->getPushConstants(), errorMessage
+    ));
+
     TRY(createPipeline(device, *descriptor.shaderProgram, colorAttachments, errorMessage));
 
     _stageFlags = descriptor.shaderProgram->getStageFlags();
@@ -37,15 +42,21 @@ void VulkanGraphicsPipeline::destroy() noexcept {
 }
 
 bool VulkanGraphicsPipeline::createPipelineLayout(
-    const vk::Device&                           device,
-    const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
-    const std::vector<vk::PushConstantRange>&   pushConstantRanges,
-    std::string&                                errorMessage
+    const vk::Device&                                               device,
+    const std::vector<vk::DescriptorSetLayout>&                     descriptorSetLayouts,
+    const std::unordered_map<std::string, VulkanPushConstantRange>& pushConstantRanges,
+    std::string&                                                    errorMessage
 ) {
+    std::vector<vk::PushConstantRange> _pushConstantRanges{};
+
+    for (const auto& [stageFlags, offset, size] : pushConstantRanges | std::views::values) {
+        _pushConstantRanges.emplace_back(stageFlags, offset, size);
+    }
+
     vk::PipelineLayoutCreateInfo layoutInfo{};
     layoutInfo
         .setSetLayouts(descriptorSetLayouts)
-        .setPushConstantRanges(pushConstantRanges);
+        .setPushConstantRanges(_pushConstantRanges);
 
     VK_CREATE(device.createPipelineLayout(layoutInfo), _pipelineLayout, errorMessage);
 
@@ -86,7 +97,7 @@ bool VulkanGraphicsPipeline::createPipeline(
     colorBlendInfo
         .setLogicOpEnable(vk::False)
         .setLogicOp(vk::LogicOp::eCopy)
-        .setAttachmentCount(shaderProgram.getStageOutputs().size() + 1)
+        .setAttachmentCount(colorAttachments.size())
         .setPAttachments(colorBlendAttachments.data());
 
     vk::GraphicsPipelineCreateInfo pipelineInfo{};

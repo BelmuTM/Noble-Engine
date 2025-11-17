@@ -125,6 +125,8 @@ bool VulkanShaderProgram::reflectShaderResources(
         return false;
     }
 
+    constexpr SpvReflectTypeFlags floatVectorFlags = SPV_REFLECT_TYPE_FLAG_VECTOR | SPV_REFLECT_TYPE_FLAG_FLOAT;
+
     // Stage outputs
     Logger::debug("--> Stage Outputs <--");
 
@@ -139,7 +141,7 @@ bool VulkanShaderProgram::reflectShaderResources(
         if (!output->name) continue;
 
         if (stage & vk::ShaderStageFlagBits::eFragment) {
-            if (output->type_description->type_flags == (SPV_REFLECT_TYPE_FLAG_VECTOR | SPV_REFLECT_TYPE_FLAG_FLOAT)) {
+            if (output->type_description->type_flags == floatVectorFlags) {
                 Logger::debug("location=" + std::to_string(output->location) + " : " + output->name);
                 _stageOutputs.emplace_back(output->name);
             }
@@ -162,19 +164,44 @@ bool VulkanShaderProgram::reflectShaderResources(
         for (uint32_t binding = 0; binding < descriptorSet->binding_count; binding++) {
             const SpvReflectDescriptorBinding* descriptorBinding = descriptorSet->bindings[binding];
 
-            Logger::debug(
-                "set=" + std::to_string(descriptorSet->set) + "(" + std::to_string(set) + "), " + "binding=" +
-                std::to_string(descriptorBinding->binding) + " : " + descriptorBinding->name
-            );
+            if (descriptorBinding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER) {
+                Logger::debug(
+                    "set=" + std::to_string(descriptorSet->set) + "(" + std::to_string(set) + "), " + "binding=" +
+                    std::to_string(descriptorBinding->binding) + " : " + descriptorBinding->name
+                );
 
-            VulkanDescriptorBindingInfo info{
-                .binding    = binding,
-                .type       = vk::DescriptorType::eCombinedImageSampler,
-                .stageFlags = stage
-            };
+                const VulkanDescriptorBindingInfo info{
+                    .binding    = binding,
+                    .type       = vk::DescriptorType::eCombinedImageSampler,
+                    .stageFlags = stage
+                };
 
-            _descriptorSchemes[descriptorSet->set].push_back(info);
+                _descriptorSchemes[descriptorSet->set].push_back(info);
+            }
         }
+    }
+
+    // Push constants
+    Logger::debug("--> Push Constants <--");
+
+    uint32_t pushConstantCount = 0;
+    result = spvReflectEnumeratePushConstantBlocks(&module, &pushConstantCount, nullptr);
+    assert(result == SPV_REFLECT_RESULT_SUCCESS);
+    std::vector<SpvReflectBlockVariable*> pushConstants(pushConstantCount);
+    result = spvReflectEnumeratePushConstantBlocks(&module, &pushConstantCount, pushConstants.data());
+    assert(result == SPV_REFLECT_RESULT_SUCCESS);
+
+    for (const auto& pushConstant : pushConstants) {
+        const std::string& name = pushConstant->name;
+
+        const VulkanPushConstantRange pushConstantRange{
+            .stageFlags = stage,
+            .offset     = 0,
+            .size       = pushConstant->size
+        };
+
+        Logger::debug(name);
+        _pushConstants[name] = pushConstantRange;
     }
 
     return true;

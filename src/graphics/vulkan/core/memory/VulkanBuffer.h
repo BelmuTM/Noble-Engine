@@ -49,7 +49,6 @@ public:
         vk::DeviceSize              size,
         vk::DeviceSize              srcOffset,
         vk::DeviceSize              dstOffset,
-        const VulkanDevice*         device,
         const VulkanCommandManager* commandManager,
         std::string&                errorMessage
     );

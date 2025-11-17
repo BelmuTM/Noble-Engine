@@ -116,7 +116,7 @@ VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
     const auto& properties = device.getQueueFamilyProperties2();
 
     // Find a queue family with graphics capabilities
-    for (int i = 0; i < properties.size(); i++) {
+    for (size_t i = 0; i < properties.size(); i++) {
         if (properties[i].queueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics) {
             indices.graphicsFamily = i;
             break;

@@ -24,8 +24,8 @@ public:
     void onMouseScroll(double offsetX, double offsetY) override;
 
 private:
-    Camera&     _camera;
     GLFWwindow* _window = nullptr;
+    Camera&     _camera;
 
     std::unordered_map<InputAction, glm::vec3> _actionMovementMap{};
 

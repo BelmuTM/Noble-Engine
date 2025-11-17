@@ -118,7 +118,6 @@ bool VulkanBuffer::copyBuffer(
     const vk::DeviceSize        size,
     const vk::DeviceSize        srcOffset,
     const vk::DeviceSize        dstOffset,
-    const VulkanDevice*         device,
     const VulkanCommandManager* commandManager,
     std::string&                errorMessage
 ) {
@@ -149,7 +148,7 @@ bool VulkanBuffer::copyFrom(
     const vk::DeviceSize        dstOffset
 ) const {
     if (size == VK_WHOLE_SIZE) size = _bufferSize;
-    TRY(copyBuffer(srcBuffer, _buffer, size, srcOffset, dstOffset, _device, commandManager, errorMessage));
+    TRY(copyBuffer(srcBuffer, _buffer, size, srcOffset, dstOffset, commandManager, errorMessage));
 
     return true;
 }

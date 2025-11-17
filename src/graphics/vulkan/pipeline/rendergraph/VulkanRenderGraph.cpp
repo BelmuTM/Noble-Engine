@@ -18,8 +18,6 @@ void VulkanRenderGraph::destroy() noexcept {
 }
 
 void VulkanRenderGraph::attachSwapchainOutput(const VulkanSwapchain& swapchain) const {
-    VulkanRenderPass* lastPass = _passes.back().get();
-
     VulkanRenderPassResource swapchainOutput{};
     swapchainOutput
         .setType(SwapchainOutput)
@@ -34,6 +32,7 @@ void VulkanRenderGraph::attachSwapchainOutput(const VulkanSwapchain& swapchain) 
         .setStoreOp(vk::AttachmentStoreOp::eStore)
         .setClearValue(defaultClearColor);
 
+    VulkanRenderPass* lastPass = _passes.back().get();
     lastPass->addColorAttachmentAtIndex(0, swapchainAttachment);
 }
 
@@ -47,9 +46,14 @@ void VulkanRenderGraph::executePass(const vk::CommandBuffer commandBuffer, const
     const vk::Buffer& vertexBuffer = _meshManager->getVertexBuffer();
     const vk::Buffer& indexBuffer  = _meshManager->getIndexBuffer();
 
-    const VulkanFrameContext& frameContext = _frame->getFrameContext();
+    const VulkanFrameContext&  frameContext  = _frame->getFrameContext();
+    const VulkanShaderProgram* shaderProgram = pass->getPipelineDescriptor().shaderProgram;
 
     if (pass->getBindPoint() == vk::PipelineBindPoint::eGraphics) {
+        /*---------------------------------------*/
+        /*     Rendering Info & Attachments      */
+        /*---------------------------------------*/
+
         std::vector<vk::RenderingAttachmentInfo> colorAttachmentsInfo{};
 
         for (const auto& [resource, loadOp, storeOp, clearValue] : pass->getColorAttachments()) {
@@ -94,6 +98,10 @@ void VulkanRenderGraph::executePass(const vk::CommandBuffer commandBuffer, const
 
             const vk::PipelineLayout pipelineLayout = pass->getPipeline()->getLayout();
 
+            /*---------------------------------------*/
+            /*            Bind Resources             */
+            /*---------------------------------------*/
+
             std::vector<vk::DescriptorSet> descriptorSets{};
             descriptorSets.push_back(_frame->getDescriptors()->getSets().at(frameContext.frameIndex));
 
@@ -109,11 +117,13 @@ void VulkanRenderGraph::executePass(const vk::CommandBuffer commandBuffer, const
                 );
             }
 
-            if (auto* drawPushConstant = dynamic_cast<const DrawCallPushConstantBase*>(&draw)) {
-                drawPushConstant->pushConstants(
-                    commandBuffer, pipelineLayout, pass->getPipeline()->getStageFlags(), frameContext
-                );
+            if (auto* drawPushConstant = dynamic_cast<const VulkanDrawCallWithPushConstants*>(&draw)) {
+                drawPushConstant->pushConstants(commandBuffer, pipelineLayout, shaderProgram);
             }
+
+            /*---------------------------------------*/
+            /*              Draw Meshes              */
+            /*---------------------------------------*/
 
             commandBuffer.setViewport(0, draw.resolveViewport(frameContext));
             commandBuffer.setScissor(0, draw.resolveScissor(frameContext));

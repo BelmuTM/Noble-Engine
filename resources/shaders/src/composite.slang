@@ -28,10 +28,11 @@ VSOutput vertMain(VSInput input) {
     return output;
 }
 
-[shader("fragment")]
-float4 fragMain(VSOutput vertIn) : SV_TARGET {
-    float2 ndc = vertIn.uv * 2.0 - 1.0;
+layout (location = 0) out float4 plane;
 
+[shader("fragment")]
+void fragMain(VSOutput vertIn) : SV_TARGET {
+    float2 ndc   = vertIn.uv * 2.0 - 1.0;
     float4 view  = mul(frameUBO.projectionInverse, float4(ndc, 1.0, 1.0));
            view /= view.w;
 
@@ -48,5 +49,5 @@ float4 fragMain(VSOutput vertIn) : SV_TARGET {
 
     float3 planeColor = checker < 1.0 ? float3(0.1, 0.1, 0.1) : float3(1.0, 1.0, 1.0);
 
-    return float4(planeColor, 1.0);
+    plane = float4(planeColor, 1.0);
 }

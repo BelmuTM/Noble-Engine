@@ -1,6 +1,7 @@
 #include "VulkanRenderGraphBuilder.h"
 
-#include "graphics/vulkan/pipeline/rendergraph/passes/MeshRenderPass.h"
+#include "passes/MeshRenderPass.h"
+#include "passes/CompositePass.h"
 
 bool VulkanRenderGraphBuilder::buildPasses(
     VulkanRenderGraph&          renderGraph,
@@ -10,6 +11,17 @@ bool VulkanRenderGraphBuilder::buildPasses(
     VulkanRenderObjectManager&  renderObjectManager,
     std::string&                errorMessage
 ) {
+
+    auto compositePass = std::make_unique<CompositePass>();
+    TRY(compositePass->create(
+        "composite",
+        shaderProgramManager,
+        imageManager,
+        frameResources,
+        errorMessage
+    ));
+
+    renderGraph.addPass(std::move(compositePass));
 
     auto meshRenderPass = std::make_unique<MeshRenderPass>();
     TRY(meshRenderPass->create(
