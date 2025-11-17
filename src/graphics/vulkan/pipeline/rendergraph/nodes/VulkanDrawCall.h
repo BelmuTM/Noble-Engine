@@ -5,6 +5,7 @@
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 #include "graphics/vulkan/resources/VulkanFrameContext.h"
+#include "graphics/vulkan/resources/VulkanPushConstant.h"
 #include "graphics/vulkan/resources/meshes/VulkanMesh.h"
 
 #include <functional>
@@ -43,31 +44,6 @@ struct VulkanDrawCall {
     VulkanDrawCall& setViewport(const vk::Viewport& _viewport) noexcept { viewport = _viewport; return *this; }
 
     VulkanDrawCall& setScissor(const vk::Rect2D _scissor) noexcept { scissor = _scissor; return *this; }
-};
-
-struct IVulkanPushConstant {
-    virtual ~IVulkanPushConstant() = default;
-    virtual void push(
-        const vk::CommandBuffer& cmdBuffer,
-        const vk::PipelineLayout& layout,
-        const VulkanPushConstantRange& range
-    ) const = 0;
-};
-
-template <typename PushConstantType>
-struct VulkanPushConstant final : IVulkanPushConstant {
-    const PushConstantType* ptr = nullptr;
-
-    explicit VulkanPushConstant(const PushConstantType* data) : ptr(data) {}
-
-    void push(const vk::CommandBuffer&       commandBuffer,
-              const vk::PipelineLayout&      layout,
-              const VulkanPushConstantRange& range
-    ) const override {
-        if(ptr) {
-            commandBuffer.pushConstants(layout, range.stageFlags, range.offset, range.size, ptr);
-        }
-    }
 };
 
 struct VulkanDrawCallWithPushConstants final : VulkanDrawCall {

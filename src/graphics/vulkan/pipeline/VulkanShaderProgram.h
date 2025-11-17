@@ -4,16 +4,11 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
+#include "graphics/vulkan/resources/VulkanPushConstant.h"
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
 
 #include <unordered_map>
 #include <vector>
-
-struct VulkanPushConstantRange {
-    vk::ShaderStageFlags stageFlags;
-    uint32_t offset = 0;
-    uint32_t size   = 0;
-};
 
 class VulkanShaderProgram {
 public:
