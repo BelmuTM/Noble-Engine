@@ -67,6 +67,13 @@ void VulkanDevice::destroy() noexcept {
 }
 
 bool VulkanDevice::isPhysicalDeviceSuitable(const vk::PhysicalDevice device) {
+    const vk::PhysicalDeviceProperties& properties = device.getProperties();
+
+    // Eliminate current candidate device if critical conditions aren't met
+    if (properties.apiVersion < VK_API_VERSION_1_3) {
+        return false;
+    }
+
     const auto availableDeviceExtensions = device.enumerateDeviceExtensionProperties();
     if (availableDeviceExtensions.result != vk::Result::eSuccess) return false;
 
@@ -81,28 +88,39 @@ bool VulkanDevice::isPhysicalDeviceSuitable(const vk::PhysicalDevice device) {
 }
 
 bool VulkanDevice::pickPhysicalDevice(std::string& errorMessage) {
-    // Enumerate available devides
     const auto availableDevices = VK_CALL(_instance.enumeratePhysicalDevices(), errorMessage);
     if (availableDevices.result != vk::Result::eSuccess) return false;
 
-    // Picking the best suitable candidate within available devices
-    auto suitablePhysicalDevices = availableDevices.value | std::views::filter([&](const auto& device) {
-        vk::Bool32 profileSupported = vk::False;
+    // Pick the best suitable candidate within available devices
+    std::vector<vk::PhysicalDevice> discreteCandidates;
+    std::vector<vk::PhysicalDevice> integratedCandidates;
 
+    for (const auto& device : availableDevices.value) {
+        vk::Bool32 profileSupported = vk::False;
         VK_TRY(vpGetPhysicalDeviceProfileSupport(*_capabilities, _instance, device, &vulkanProfile, &profileSupported),
             errorMessage);
 
-        return static_cast<bool>(profileSupported) && isPhysicalDeviceSuitable(device);
-    });
+        if (!static_cast<bool>(profileSupported) || !isPhysicalDeviceSuitable(device)) {
+            continue;
+        }
 
-    const auto it = std::ranges::begin(suitablePhysicalDevices);
+        const auto& properties = device.getProperties();
 
-    if (it == std::ranges::end(suitablePhysicalDevices)) {
+        if (properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
+            discreteCandidates.push_back(device);
+        } else if (properties.deviceType == vk::PhysicalDeviceType::eIntegratedGpu) {
+            integratedCandidates.push_back(device);
+        }
+    }
+
+    if (!discreteCandidates.empty()) {
+        _physicalDevice = discreteCandidates.front();
+    } else if (!integratedCandidates.empty()) {
+        _physicalDevice = integratedCandidates.front();
+    } else {
         errorMessage = "Failed to find suitable graphics devices";
         return false;
     }
-
-    _physicalDevice = *it;
 
     Logger::info("Using graphics device \"" + std::string(_physicalDevice.getProperties().deviceName) + "\"");
 

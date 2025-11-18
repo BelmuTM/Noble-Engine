@@ -83,7 +83,6 @@ function(add_slang_shader_target TARGET)
                     -profile spirv_1_4
                     -emit-spirv-directly
                     -fvk-use-entrypoint-name
-                    -fvk-use-c-layout
                     -o ${SPV_FILE}
                 DEPENDS ${SOURCE}
                 COMMENT "Building SPIR-V object ${SHADERS_SPV_DIR_RELATIVE}/${SPV_FILE_NAME}"
@@ -110,9 +109,17 @@ add_dependencies(NobleEngine ShadersModule)
 # glfw (https://github.com/glfw/glfw)
 add_subdirectory(external/glfw)
 
+# SPIRV-Headers (https://github.com/KhronosGroup/SPIRV-Headers)
+add_subdirectory(external/spirv-headers)
+
 # SPIRV-Reflect (https://github.com/KhronosGroup/SPIRV-Reflect)
 add_library(spirv-reflect STATIC external/spirv-reflect/spirv_reflect.cpp)
-target_include_directories(spirv-reflect PUBLIC ${CMAKE_SOURCE_DIR}/external)
+
+target_include_directories(spirv-reflect PUBLIC
+    ${CMAKE_SOURCE_DIR}/external
+    ${SPIRV-Headers_SOURCE_DIR}/include
+)
+
 target_compile_definitions(spirv-reflect PUBLIC SPIRV_REFLECT_USE_SYSTEM_SPIRV_H)
 
 # Link compiled libraries to executable
