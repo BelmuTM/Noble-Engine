@@ -70,19 +70,6 @@ private:
         return info;
     }();
 
-    static constexpr vk::PipelineRasterizationStateCreateInfo rasterizationInfo = []{
-        vk::PipelineRasterizationStateCreateInfo info{};
-        info
-            .setDepthClampEnable(vk::False)
-            .setRasterizerDiscardEnable(vk::False)
-            .setPolygonMode(vk::PolygonMode::eFill)
-            .setCullMode(vk::CullModeFlagBits::eBack)
-            .setFrontFace(vk::FrontFace::eCounterClockwise)
-            .setDepthBiasEnable(vk::False)
-            .setLineWidth(1.0f);
-        return info;
-    }();
-
     static constexpr vk::PipelineMultisampleStateCreateInfo multisamplingInfo = []{
         vk::PipelineMultisampleStateCreateInfo info{};
         info

@@ -14,6 +14,8 @@ struct FrameUBO {
     float    nearPlane;
     float    farPlane;
     float    frameTimeCounter;
+    float    viewWidth;
+    float    viewHeight;
 };
 [[vk::binding(0, 0)]] ConstantBuffer<FrameUBO> frameUBO;
 

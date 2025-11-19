@@ -13,7 +13,7 @@
 struct VulkanDrawCall {
     virtual ~VulkanDrawCall() = default;
 
-    VulkanMesh mesh{};
+    const VulkanMesh* mesh = nullptr;
 
     using DescriptorResolver = std::function<std::vector<vk::DescriptorSet>(const VulkanFrameContext&)>;
 
@@ -34,7 +34,7 @@ struct VulkanDrawCall {
         return {vk::Offset2D(0, 0), frame.extent};
     }
 
-    VulkanDrawCall& setMesh(const VulkanMesh& _mesh) noexcept { mesh = _mesh; return *this; }
+    VulkanDrawCall& setMesh(const VulkanMesh* _mesh) noexcept { mesh = _mesh; return *this; }
 
     VulkanDrawCall& setDescriptorResolver(const DescriptorResolver& _descriptorResolver) {
         descriptorResolver = _descriptorResolver;

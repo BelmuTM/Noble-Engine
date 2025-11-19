@@ -8,8 +8,6 @@
 
 #include "core/entities/objects/Object.h"
 
-#include <memory>
-
 struct VulkanRenderSubmesh {
     VulkanMesh*           mesh;
     VulkanImage*          texture;

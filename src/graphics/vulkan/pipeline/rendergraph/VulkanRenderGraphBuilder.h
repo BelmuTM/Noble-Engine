@@ -25,10 +25,11 @@ public:
 
     [[nodiscard]] static bool buildPasses(
         VulkanRenderGraph&          renderGraph,
-        VulkanShaderProgramManager& shaderProgramManager,
+        VulkanMeshManager&          meshManager,
         const VulkanImageManager&   imageManager,
         VulkanFrameResources&       frameResources,
         VulkanRenderObjectManager&  renderObjectManager,
+        VulkanShaderProgramManager& shaderProgramManager,
         std::string&                errorMessage
     );
 

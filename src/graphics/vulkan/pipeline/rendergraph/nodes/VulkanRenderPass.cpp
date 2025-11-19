@@ -7,7 +7,7 @@ VulkanRenderPass& VulkanRenderPass::addObjectDrawCall(const VulkanRenderObject* 
     // Each submesh requires its own draw call
     for (const auto& submesh : renderObject->submeshes) {
         auto verticesDraw = std::make_unique<VulkanDrawCallWithPushConstants>();
-        verticesDraw->setMesh(*submesh.mesh);
+        verticesDraw->setMesh(submesh.mesh);
 
         verticesDraw->setDescriptorResolver(
             [&submesh](const VulkanFrameContext& frame) {

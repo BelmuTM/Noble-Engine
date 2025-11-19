@@ -22,6 +22,9 @@ struct alignas(16) FrameUBO {
     float farPlane;
 
     float frameTimeCounter;
+
+    float viewWidth;
+    float viewHeight;
 };
 
 class FrameUniformBuffer final : public VulkanUniformBuffer<FrameUBO> {

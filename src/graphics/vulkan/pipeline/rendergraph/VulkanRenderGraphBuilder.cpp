@@ -5,19 +5,20 @@
 
 bool VulkanRenderGraphBuilder::buildPasses(
     VulkanRenderGraph&          renderGraph,
-    VulkanShaderProgramManager& shaderProgramManager,
+    VulkanMeshManager&          meshManager,
     const VulkanImageManager&   imageManager,
     VulkanFrameResources&       frameResources,
     VulkanRenderObjectManager&  renderObjectManager,
+    VulkanShaderProgramManager& shaderProgramManager,
     std::string&                errorMessage
 ) {
-
     auto compositePass = std::make_unique<CompositePass>();
     TRY(compositePass->create(
         "composite",
-        shaderProgramManager,
+        meshManager,
         imageManager,
         frameResources,
+        shaderProgramManager,
         errorMessage
     ));
 
@@ -26,10 +27,10 @@ bool VulkanRenderGraphBuilder::buildPasses(
     auto meshRenderPass = std::make_unique<MeshRenderPass>();
     TRY(meshRenderPass->create(
         "mesh_render",
-        shaderProgramManager,
         imageManager,
         frameResources,
         renderObjectManager,
+        shaderProgramManager,
         errorMessage
     ));
 

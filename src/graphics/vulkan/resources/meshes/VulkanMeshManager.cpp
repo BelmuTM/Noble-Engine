@@ -10,16 +10,6 @@ bool VulkanMeshManager::create(
 ) noexcept {
     _device         = &device;
     _commandManager = &commandManager;
-
-    queryVertexBufferSize();
-    queryIndexBufferSize();
-
-    TRY(createStagingBuffer(errorMessage));
-    TRY(createVertexBuffer(errorMessage));
-    TRY(createIndexBuffer(errorMessage));
-
-    _stagingBuffer.destroy();
-
     return true;
 }
 
@@ -34,6 +24,19 @@ void VulkanMeshManager::destroy() noexcept {
 VulkanMesh* VulkanMeshManager::allocateMesh(const Mesh& meshData) {
     _meshes.push_back(std::make_unique<VulkanMesh>(meshData));
     return _meshes.back().get();
+}
+
+bool VulkanMeshManager::fillBuffers(std::string& errorMessage) {
+    queryVertexBufferSize();
+    queryIndexBufferSize();
+
+    TRY(createStagingBuffer(errorMessage));
+    TRY(createVertexBuffer(errorMessage));
+    TRY(createIndexBuffer(errorMessage));
+
+    _stagingBuffer.destroy();
+
+    return true;
 }
 
 void VulkanMeshManager::queryVertexBufferSize() {

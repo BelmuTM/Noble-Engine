@@ -4,9 +4,10 @@
 
 bool CompositePass::create(
     const std::string&          path,
-    VulkanShaderProgramManager& shaderProgramManager,
+    VulkanMeshManager&          meshManager,
     const VulkanImageManager&   imageManager,
     VulkanFrameResources&       frameResources,
+    VulkanShaderProgramManager& shaderProgramManager,
     std::string&                errorMessage
 ) {
     VulkanShaderProgram* program;
@@ -27,8 +28,10 @@ bool CompositePass::create(
     setBindPoint(vk::PipelineBindPoint::eGraphics);
     setDepthAttachment(frameResources.getDepthBufferAttachment());
 
+    const VulkanMesh* fullscreenMesh = meshManager.allocateMesh(VulkanMesh::makeFullscreenTriangle());
+
     auto fullscreenDraw = std::make_unique<VulkanDrawCall>();
-    fullscreenDraw->setMesh(VulkanMesh::makeFullscreenTriangle());
+    fullscreenDraw->setMesh(fullscreenMesh);
     addDrawCall(std::move(fullscreenDraw));
 
     return true;

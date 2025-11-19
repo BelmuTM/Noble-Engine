@@ -93,6 +93,21 @@ bool VulkanGraphicsPipeline::createPipeline(
             .setVertexAttributeDescriptions(attributeDescriptions);
     }
 
+    vk::PipelineRasterizationStateCreateInfo rasterizationInfo{};
+    rasterizationInfo
+        .setDepthClampEnable(vk::False)
+        .setRasterizerDiscardEnable(vk::False)
+        .setPolygonMode(vk::PolygonMode::eFill)
+        .setFrontFace(vk::FrontFace::eCounterClockwise)
+        .setDepthBiasEnable(vk::False)
+        .setLineWidth(1.0f);
+
+    if (shaderProgram.isFullscreen()) {
+        rasterizationInfo.setCullMode(vk::CullModeFlagBits::eNone);
+    } else {
+        rasterizationInfo.setCullMode(vk::CullModeFlagBits::eBack);
+    }
+
     vk::PipelineColorBlendStateCreateInfo colorBlendInfo{};
     colorBlendInfo
         .setLogicOpEnable(vk::False)

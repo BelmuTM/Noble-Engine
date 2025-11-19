@@ -128,15 +128,15 @@ void VulkanRenderGraph::executePass(const vk::CommandBuffer commandBuffer, const
             commandBuffer.setViewport(0, draw.resolveViewport(frameContext));
             commandBuffer.setScissor(0, draw.resolveScissor(frameContext));
 
-            const vk::DeviceSize vertexOffset = draw.mesh.getVertexOffset();
-            const vk::DeviceSize indexOffset  = draw.mesh.getIndexOffset();
+            const vk::DeviceSize vertexOffset = draw.mesh->getVertexOffset();
+            const vk::DeviceSize indexOffset  = draw.mesh->getIndexOffset();
 
-            if (!draw.mesh.isBufferless()) {
+            if (!draw.mesh->isBufferless()) {
                 commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &vertexOffset);
                 commandBuffer.bindIndexBuffer(indexBuffer, indexOffset, vk::IndexType::eUint32);
-                commandBuffer.drawIndexed(draw.mesh.getIndices().size(), 1, 0, 0, 0);
+                commandBuffer.drawIndexed(draw.mesh->getIndices().size(), 1, 0, 0, 0);
             } else {
-                commandBuffer.draw(draw.mesh.getVertices().size(), 1, 0, 0);
+                commandBuffer.draw(draw.mesh->getVertices().size(), 1, 0, 0);
             }
         }
 

@@ -31,10 +31,12 @@ public:
 
     void destroy() noexcept;
 
+    [[nodiscard]] VulkanMesh* allocateMesh(const Mesh& meshData);
+
+    [[nodiscard]] bool fillBuffers(std::string& errorMessage);
+
     [[nodiscard]] const VulkanBuffer& getVertexBuffer() const noexcept { return _vertexBuffer; }
     [[nodiscard]] const VulkanBuffer& getIndexBuffer()  const noexcept { return _indexBuffer; }
-
-    [[nodiscard]] VulkanMesh* allocateMesh(const Mesh& meshData);
 
 private:
     const VulkanDevice*         _device         = nullptr;

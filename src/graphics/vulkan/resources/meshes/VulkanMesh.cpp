@@ -12,7 +12,7 @@ VulkanMesh VulkanMesh::makeFullscreenTriangle() {
     static const std::vector<uint32_t> indices = {0, 1, 2};
 
     fullscreenTriangle.loadData(vertices, indices);
-    fullscreenTriangle.setBufferless(false);
+    fullscreenTriangle.setBufferless(true);
 
     return fullscreenTriangle;
 }

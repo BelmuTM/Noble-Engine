@@ -4,10 +4,10 @@
 
 bool MeshRenderPass::create(
     const std::string&          path,
-    VulkanShaderProgramManager& shaderProgramManager,
     const VulkanImageManager&   imageManager,
     VulkanFrameResources&       frameResources,
     VulkanRenderObjectManager&  renderObjectManager,
+    VulkanShaderProgramManager& shaderProgramManager,
     std::string&                errorMessage
 ) {
     VulkanShaderProgram* program;

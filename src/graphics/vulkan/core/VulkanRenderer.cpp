@@ -32,6 +32,7 @@ bool VulkanRenderer::init(Platform::Window& window, const ObjectsVector& objects
     // Resource managers creation
     TRY(createVulkanEntity(&swapchainManager, errorMessage, window, surface, device, swapchain, _framesInFlight));
     TRY(createVulkanEntity(&commandManager, errorMessage, device, _framesInFlight));
+    TRY(createVulkanEntity(&meshManager, errorMessage, device, commandManager));
     TRY(createVulkanEntity(&imageManager, errorMessage, device, commandManager));
     TRY(createVulkanEntity(&uniformBufferManager, errorMessage, device, _framesInFlight));
 
@@ -43,8 +44,6 @@ bool VulkanRenderer::init(Platform::Window& window, const ObjectsVector& objects
         &renderObjectManager, errorMessage, objects, device, imageManager, meshManager, _framesInFlight
     ));
 
-    TRY(createVulkanEntity(&meshManager, errorMessage, device, commandManager));
-
     // Pipeline managers creation
     TRY(createVulkanEntity(&shaderProgramManager, errorMessage, logicalDevice));
     TRY(createVulkanEntity(&pipelineManager, errorMessage, logicalDevice));
@@ -52,10 +51,11 @@ bool VulkanRenderer::init(Platform::Window& window, const ObjectsVector& objects
 
     TRY(VulkanRenderGraphBuilder::buildPasses(
         renderGraph,
-        shaderProgramManager,
+        meshManager,
         imageManager,
         frameResources,
         renderObjectManager,
+        shaderProgramManager,
         errorMessage
     ));
 
@@ -64,6 +64,8 @@ bool VulkanRenderer::init(Platform::Window& window, const ObjectsVector& objects
     TRY(VulkanRenderGraphBuilder::createPipelines(renderGraph, pipelineManager, errorMessage));
 
     shaderProgramManager.destroy();
+
+    TRY(meshManager.fillBuffers(errorMessage));
 
     guard.release();
 
