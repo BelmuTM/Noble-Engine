@@ -27,6 +27,7 @@ bool VulkanRenderPass::createColorAttachments(
     const VulkanShaderProgram& shaderProgram,
     const VulkanImageManager&  imageManager,
     VulkanFrameResources&      frameResources,
+    VulkanRenderResources&     renderResources,
     std::string&               errorMessage
 ) {
     for (const auto& colorOutput : shaderProgram.getStageOutputs()) {
@@ -62,6 +63,7 @@ bool VulkanRenderPass::createColorAttachments(
             .setClearValue(vk::ClearColorValue{0.0f, 0.0f, 0.0f, 1.0f});
 
         addColorAttachment(colorAttachment);
+        renderResources.addResource(colorBuffer);
 
         Logger::debug("Added color attachment: " + colorOutput);
     }

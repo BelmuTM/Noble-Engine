@@ -4,7 +4,7 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "graphics/vulkan/pipeline/rendergraph/nodes/VulkanRenderPassResource.h"
+#include "VulkanRenderPassResource.h"
 
 static constexpr vk::ClearValue defaultClearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
 

@@ -3,9 +3,10 @@
 #define NOBLEENGINE_VULKANRENDERPASS_H
 
 #include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
+#include "graphics/vulkan/pipeline/rendergraph/VulkanRenderResources.h"
 
-#include "graphics/vulkan/pipeline/rendergraph/nodes/VulkanDrawCall.h"
-#include "graphics/vulkan/pipeline/rendergraph/nodes/VulkanRenderPassAttachment.h"
+#include "VulkanDrawCall.h"
+#include "VulkanRenderPassAttachment.h"
 
 #include "graphics/vulkan/resources/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/images/VulkanImageManager.h"
@@ -85,6 +86,7 @@ public:
         const VulkanShaderProgram& shaderProgram,
         const VulkanImageManager&  imageManager,
         VulkanFrameResources&      frameResources,
+        VulkanRenderResources&     renderResources,
         std::string&               errorMessage
     );
 

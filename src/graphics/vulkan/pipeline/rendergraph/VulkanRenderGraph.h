@@ -7,8 +7,7 @@
 #include "graphics/vulkan/resources/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"
 
-#include "graphics/vulkan/pipeline/rendergraph/nodes/VulkanRenderPass.h"
-#include "graphics/vulkan/pipeline/rendergraph/nodes/VulkanRenderPassResource.h"
+#include "nodes/VulkanRenderPass.h"
 
 class VulkanRenderGraph {
 public:
@@ -49,7 +48,6 @@ private:
     vk::QueryPool _queryPool{};
 
     std::vector<std::unique_ptr<VulkanRenderPass>> _passes{};
-    std::vector<VulkanRenderPassResource>          _resources{};
 };
 
 #endif //NOBLEENGINE_VULKANRENDERGRAPH_H
