@@ -53,7 +53,7 @@ void quantizeColor(inout float3 color, float quantizationPeriod) {
 }
 
 void ditherColor(inout float3 color, float2 coords, float quantizationPeriod) {
-    color += (bayer2(coords) - 0.5) * quantizationPeriod;
+    color += (bayer4(coords) - 0.5) * quantizationPeriod;
 }
 
 [shader("fragment")]
