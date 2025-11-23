@@ -44,11 +44,9 @@ VSOutput vertMain(VSInput input) {
     return output;
 }
 
-layout (location = 0) out float4 output;
+layout (location = 0) out float4 meshColor;
 
 layout (set = 1, binding = 0) Sampler2D texture;
-
-layout (set = 2, binding = 0) Sampler2D plane;
 
 float bayer2(float2 a) {
     a = floor(a);
@@ -113,5 +111,5 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
     float3 lighting = albedo.rgb * (ambient + lightColor0 * NdotL0 * attenuation0 + lightColor1 * NdotL1 * attenuation1);
 
-    output = float4(lighting, 1.0);
+    meshColor = float4(lighting, 1.0);
 }

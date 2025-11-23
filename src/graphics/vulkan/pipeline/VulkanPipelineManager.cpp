@@ -2,10 +2,9 @@
 
 #include "core/debug/ErrorHandling.h"
 
-bool VulkanPipelineManager::create(
-    const vk::Device& device, std::string& errorMessage
-) noexcept {
+bool VulkanPipelineManager::create(const vk::Device& device, std::string& errorMessage) noexcept {
     _device = device;
+
     return true;
 }
 
@@ -25,10 +24,10 @@ VulkanGraphicsPipeline* VulkanPipelineManager::allocatePipeline() {
 }
 
 bool VulkanPipelineManager::createGraphicsPipeline(
-    VulkanGraphicsPipeline*                        graphicsPipeline,
-    const VulkanPipelineDescriptor&                descriptor,
-    const std::vector<VulkanRenderPassAttachment>& colorAttachments,
-    std::string&                                   errorMessage
+    VulkanGraphicsPipeline*         graphicsPipeline,
+    const VulkanPipelineDescriptor& descriptor,
+    const AttachmentsVector&        colorAttachments,
+    std::string&                    errorMessage
 ) {
     TRY(graphicsPipeline->create(_device, descriptor, colorAttachments, errorMessage));
 

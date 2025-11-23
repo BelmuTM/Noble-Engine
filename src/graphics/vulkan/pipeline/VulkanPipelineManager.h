@@ -26,10 +26,10 @@ public:
     [[nodiscard]] VulkanGraphicsPipeline* allocatePipeline();
 
     [[nodiscard]] bool createGraphicsPipeline(
-        VulkanGraphicsPipeline*                        graphicsPipeline,
-        const VulkanPipelineDescriptor&                descriptor,
-        const std::vector<VulkanRenderPassAttachment>& colorAttachments,
-        std::string&                                   errorMessage
+        VulkanGraphicsPipeline*         graphicsPipeline,
+        const VulkanPipelineDescriptor& descriptor,
+        const AttachmentsVector&        colorAttachments,
+        std::string&                    errorMessage
     );
 
 private:

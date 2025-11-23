@@ -4,15 +4,17 @@
 #include "core/debug/Logger.h"
 
 bool VulkanRenderObjectManager::create(
-    const ObjectsVector& objects,
-    const VulkanDevice&  device,
-    VulkanImageManager&  imageManager,
-    VulkanMeshManager&   meshManager,
-    const uint32_t       framesInFlight,
-    std::string&         errorMessage
+    const ObjectsVector&   objects,
+    const VulkanDevice&    device,
+    VulkanImageManager&    imageManager,
+    VulkanMeshManager&     meshManager,
+    VulkanRenderResources& renderResources,
+    const uint32_t         framesInFlight,
+    std::string&           errorMessage
 ) noexcept {
-    _imageManager = &imageManager;
-    _meshManager  = &meshManager;
+    _imageManager    = &imageManager;
+    _meshManager     = &meshManager;
+    _renderResources = &renderResources;
 
     _renderObjects.reserve(objects.size());
 
@@ -97,6 +99,8 @@ bool VulkanRenderObjectManager::createRenderObject(
         // Allocate and bind descriptor sets
         TRY(_descriptorManager.allocate(submesh.descriptorSets, errorMessage));
         submesh.descriptorSets->bindPerFrameResource(submesh.texture->getDescriptorInfo(0));
+
+        _renderResources->addResource(VulkanRenderPassResource{"texture"}.setImageObject(submesh.texture));
 
         renderObject.submeshes.push_back(submesh);
         ++meshCount;

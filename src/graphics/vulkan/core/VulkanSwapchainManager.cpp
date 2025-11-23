@@ -163,6 +163,8 @@ bool VulkanSwapchainManager::submitCommandBuffer(
         .setCommandBufferInfos(commandBufferInfo)
         .setSignalSemaphoreInfos(renderFinishedSemaphoreInfo);
 
+    VK_TRY(_device->getLogicalDevice().resetFences(1, &inFlightFence), errorMessage);
+
     VK_TRY(_device->getGraphicsQueue().submit2(submitInfo, inFlightFence), errorMessage);
 
     const vk::PresentInfoKHR presentInfo(renderFinishedSemaphore, swapchain, imageIndex);

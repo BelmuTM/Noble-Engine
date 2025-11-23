@@ -22,7 +22,7 @@ int main() {
         Engine::fatalExit(errorMessage);
     }
 
-    Platform::Window window(800, 600, "Noble Engine");
+    Platform::Window window(1280, 720, "Noble Engine");
     window.show();
 
     InputManager inputManager{};

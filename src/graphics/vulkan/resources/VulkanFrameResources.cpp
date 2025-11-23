@@ -32,7 +32,7 @@ bool VulkanFrameResources::create(
     VulkanRenderPassResource depthBufferResource{};
     depthBufferResource
         .setType(Buffer)
-        .setImage(*_depthBuffer)
+        .setImageHandle(*_depthBuffer)
         .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
         .setResolveImageView([this](const VulkanFrameContext&) { return _depthBuffer->getImageView(); });
 

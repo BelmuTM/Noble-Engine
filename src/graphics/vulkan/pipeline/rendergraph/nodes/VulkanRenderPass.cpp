@@ -1,8 +1,5 @@
 #include "VulkanRenderPass.h"
 
-#include "core/debug/Logger.h"
-#include "graphics/vulkan/resources/VulkanFrameResources.h"
-
 VulkanRenderPass& VulkanRenderPass::addObjectDrawCall(const VulkanRenderObject* renderObject) {
     // Each submesh requires its own draw call
     for (const auto& submesh : renderObject->submeshes) {
@@ -48,7 +45,8 @@ bool VulkanRenderPass::createColorAttachments(
         colorBuffer
             .setName(colorOutput)
             .setType(Buffer)
-            .setImage(*colorImage)
+            .setImageObject(colorImage)
+            .setImageHandle(*colorImage)
             .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
             .setFormat(format)
             .setResolveImageView([bufferIndex, &frameResources](const VulkanFrameContext&) {
@@ -63,9 +61,8 @@ bool VulkanRenderPass::createColorAttachments(
             .setClearValue(vk::ClearColorValue{0.0f, 0.0f, 0.0f, 1.0f});
 
         addColorAttachment(colorAttachment);
-        renderResources.addResource(colorBuffer);
 
-        Logger::debug("Added color attachment: " + colorOutput);
+        renderResources.addResource(colorBuffer);
     }
 
     return true;

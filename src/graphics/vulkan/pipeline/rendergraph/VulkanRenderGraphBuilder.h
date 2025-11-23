@@ -28,6 +28,7 @@ public:
         VulkanMeshManager&          meshManager,
         const VulkanImageManager&   imageManager,
         VulkanFrameResources&       frameResources,
+        VulkanRenderResources&      renderResources,
         VulkanRenderObjectManager&  renderObjectManager,
         VulkanShaderProgramManager& shaderProgramManager,
         std::string&                errorMessage

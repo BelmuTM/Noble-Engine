@@ -11,6 +11,7 @@ struct VulkanPipelineDescriptor {
     const VulkanShaderProgram* shaderProgram = nullptr;
 
     std::vector<vk::DescriptorSetLayout> descriptorLayouts{};
+    std::vector<VulkanDescriptorSets*> descriptorSetGroups;
 };
 
 class VulkanGraphicsPipeline {
@@ -28,10 +29,10 @@ public:
     VulkanGraphicsPipeline& operator=(VulkanGraphicsPipeline&&) = delete;
 
     [[nodiscard]] bool create(
-        const vk::Device&                              device,
-        const VulkanPipelineDescriptor&                descriptor,
-        const std::vector<VulkanRenderPassAttachment>& colorAttachments,
-        std::string&                                   errorMessage
+        const vk::Device&               device,
+        const VulkanPipelineDescriptor& descriptor,
+        const AttachmentsVector&        colorAttachments,
+        std::string&                    errorMessage
     ) noexcept;
 
     void destroy() noexcept;
@@ -118,17 +119,17 @@ private:
     }();
 
     [[nodiscard]] bool createPipelineLayout(
-        const vk::Device&                                               device,
-        const std::vector<vk::DescriptorSetLayout>&                     descriptorSetLayouts,
-        const std::unordered_map<std::string, VulkanPushConstantRange>& pushConstantRanges,
-        std::string&                                                    errorMessage
+        const vk::Device&                           device,
+        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
+        const PushConstantsMap&                     pushConstantRanges,
+        std::string&                                errorMessage
     );
 
     [[nodiscard]] bool createPipeline(
-        const vk::Device&                              device,
-        const VulkanShaderProgram&                     shaderProgram,
-        const std::vector<VulkanRenderPassAttachment>& colorAttachments,
-        std::string&                                   errorMessage
+        const vk::Device&          device,
+        const VulkanShaderProgram& shaderProgram,
+        const AttachmentsVector&   colorAttachments,
+        std::string&               errorMessage
     );
 };
 

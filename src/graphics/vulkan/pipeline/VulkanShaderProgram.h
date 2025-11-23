@@ -12,6 +12,8 @@
 
 class VulkanShaderProgram {
 public:
+    using DescriptorSchemeMap = std::unordered_map<uint32_t, VulkanDescriptorScheme>;
+
     VulkanShaderProgram()  = default;
     ~VulkanShaderProgram() = default;
 
@@ -41,11 +43,11 @@ public:
 
     [[nodiscard]] std::vector<std::string> getStageOutputs() const noexcept { return _stageOutputs; }
 
-    [[nodiscard]] std::unordered_map<uint32_t, VulkanDescriptorScheme> getDescriptorSchemes() const noexcept {
+    [[nodiscard]] const DescriptorSchemeMap& getDescriptorSchemes() const noexcept {
         return _descriptorSchemes;
     }
 
-    [[nodiscard]] const std::unordered_map<std::string, VulkanPushConstantRange>& getPushConstants() const noexcept {
+    [[nodiscard]] const PushConstantsMap& getPushConstants() const noexcept {
         return _pushConstants;
     }
 
@@ -58,9 +60,9 @@ private:
     std::vector<vk::PipelineShaderStageCreateInfo> _shaderStages{};
     vk::ShaderStageFlags                           _stageFlags{};
 
-    std::vector<std::string>                                 _stageOutputs{};
-    std::unordered_map<uint32_t, VulkanDescriptorScheme>     _descriptorSchemes{};
-    std::unordered_map<std::string, VulkanPushConstantRange> _pushConstants{};
+    std::vector<std::string> _stageOutputs{};
+    DescriptorSchemeMap      _descriptorSchemes{};
+    PushConstantsMap         _pushConstants{};
 
     void clearShaderModules();
 

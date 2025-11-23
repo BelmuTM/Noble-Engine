@@ -10,6 +10,7 @@ bool VulkanMeshManager::create(
 ) noexcept {
     _device         = &device;
     _commandManager = &commandManager;
+
     return true;
 }
 

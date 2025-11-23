@@ -5,6 +5,7 @@
 #include "VulkanObjectBuffer.h"
 #include "VulkanRenderObject.h"
 
+#include "graphics/vulkan/pipeline/rendergraph/VulkanRenderResources.h"
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorInfo.h"
 #include "graphics/vulkan/resources/images/VulkanImageManager.h"
 #include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"
@@ -32,12 +33,13 @@ public:
     VulkanRenderObjectManager& operator=(VulkanRenderObjectManager&&) = delete;
 
     [[nodiscard]] bool create(
-        const ObjectsVector& objects,
-        const VulkanDevice&  device,
-        VulkanImageManager&  imageManager,
-        VulkanMeshManager&   meshManager,
-        uint32_t             framesInFlight,
-        std::string&         errorMessage
+        const ObjectsVector&   objects,
+        const VulkanDevice&    device,
+        VulkanImageManager&    imageManager,
+        VulkanMeshManager&     meshManager,
+        VulkanRenderResources& renderResources,
+        uint32_t               framesInFlight,
+        std::string&           errorMessage
     ) noexcept;
 
     void destroy() noexcept;
@@ -49,8 +51,9 @@ public:
     [[nodiscard]] const RenderObjectsVector& getRenderObjects() noexcept { return _renderObjects; }
 
 private:
-    VulkanImageManager* _imageManager = nullptr;
-    VulkanMeshManager*  _meshManager  = nullptr;
+    VulkanImageManager*    _imageManager    = nullptr;
+    VulkanMeshManager*     _meshManager     = nullptr;
+    VulkanRenderResources* _renderResources = nullptr;
 
     VulkanDescriptorManager _descriptorManager{};
     VulkanObjectBuffer      _objectBuffer{};

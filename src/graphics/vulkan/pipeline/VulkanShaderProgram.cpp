@@ -140,10 +140,19 @@ bool VulkanShaderProgram::reflectShaderResources(
     for (const auto& output : outputs) {
         if (!output->name) continue;
 
+        std::string cleanName = output->name;
+
+        if (cleanName.rfind("entryPointParam_", 0) == 0) {
+            const size_t pos = cleanName.rfind('.');
+            if (pos != std::string::npos) {
+                cleanName = cleanName.substr(pos + 1);
+            }
+        }
+
         if (stage & vk::ShaderStageFlagBits::eFragment) {
             if (output->type_description->type_flags == floatVectorFlags) {
-                Logger::debug("location=" + std::to_string(output->location) + " : " + output->name);
-                _stageOutputs.emplace_back(output->name);
+                Logger::debug("location=" + std::to_string(output->location) + " : " + cleanName);
+                _stageOutputs.emplace_back(cleanName);
             }
         }
     }
@@ -164,16 +173,17 @@ bool VulkanShaderProgram::reflectShaderResources(
         for (uint32_t binding = 0; binding < descriptorSet->binding_count; binding++) {
             const SpvReflectDescriptorBinding* descriptorBinding = descriptorSet->bindings[binding];
 
-            if (descriptorBinding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER) {
+            if (descriptorBinding->type_description->type_flags & SPV_REFLECT_TYPE_FLAG_EXTERNAL_SAMPLED_IMAGE) {
                 Logger::debug(
                     "set=" + std::to_string(descriptorSet->set) + "(" + std::to_string(set) + "), " + "binding=" +
                     std::to_string(descriptorBinding->binding) + " : " + descriptorBinding->name
                 );
 
                 const VulkanDescriptorBindingInfo info{
-                    .binding    = binding,
+                    .binding    = descriptorBinding->binding,
                     .type       = vk::DescriptorType::eCombinedImageSampler,
-                    .stageFlags = stage
+                    .stageFlags = stage,
+                    .name       = descriptorBinding->name
                 };
 
                 _descriptorSchemes[descriptorSet->set].push_back(info);

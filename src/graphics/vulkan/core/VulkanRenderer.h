@@ -54,6 +54,7 @@ private:
     VulkanUniformBufferManager uniformBufferManager{};
 
     VulkanFrameResources      frameResources{};
+    VulkanRenderResources     renderResources{};
     VulkanRenderObjectManager renderObjectManager{};
 
     VulkanShaderProgramManager shaderProgramManager{};

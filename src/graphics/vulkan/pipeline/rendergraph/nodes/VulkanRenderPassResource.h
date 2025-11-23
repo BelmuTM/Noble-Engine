@@ -5,6 +5,7 @@
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 #include "graphics/vulkan/resources/VulkanFrameContext.h"
+#include "graphics/vulkan/resources/images/VulkanImage.h"
 
 #include <functional>
 
@@ -15,11 +16,15 @@ struct VulkanRenderPassResource {
 
     FramePassResourceType type = Texture;
 
-    vk::Image     image{};
+    const VulkanImage* imageObject = nullptr;
+
+    vk::Image     imageHandle{};
     vk::ImageView imageView{};
 
     vk::ImageLayout layout = vk::ImageLayout::eUndefined;
     vk::Format      format = vk::Format::eUndefined;
+
+    vk::ImageLayout currentLayout = vk::ImageLayout::eUndefined;
 
     std::function<vk::ImageView(const VulkanFrameContext&)> resolveImageView;
 
@@ -27,7 +32,9 @@ struct VulkanRenderPassResource {
 
     VulkanRenderPassResource& setType(const FramePassResourceType _type) noexcept { type = _type; return *this; }
 
-    VulkanRenderPassResource& setImage(const vk::Image _image) noexcept { image = _image; return *this; }
+    VulkanRenderPassResource& setImageObject(const VulkanImage* _image) noexcept { imageObject = _image; return *this; }
+
+    VulkanRenderPassResource& setImageHandle(const vk::Image _image) noexcept { imageHandle = _image; return *this; }
 
     VulkanRenderPassResource& setImageView(const vk::ImageView _imageView) noexcept {
         imageView = _imageView;

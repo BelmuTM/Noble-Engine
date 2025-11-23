@@ -7,20 +7,23 @@ bool CompositePass::create(
     VulkanMeshManager&          meshManager,
     const VulkanImageManager&   imageManager,
     VulkanFrameResources&       frameResources,
+    VulkanRenderResources&      renderResources,
     VulkanShaderProgramManager& shaderProgramManager,
     std::string&                errorMessage
 ) {
     VulkanShaderProgram* program;
     TRY(shaderProgramManager.load(program, path, true, errorMessage));
 
-    const VulkanPipelineDescriptor pipelineDescriptor{
+    TRY(createColorAttachments(*program, imageManager, frameResources, renderResources, errorMessage));
+
+    VulkanPipelineDescriptor pipelineDescriptor{
         program,
         {frameResources.getDescriptorManager().getLayout()}
     };
 
-    setPipelineDescriptor(pipelineDescriptor);
+    TRY(renderResources.allocateDescriptors(pipelineDescriptor, program->getDescriptorSchemes(), errorMessage));
 
-    TRY(createColorAttachments(*program, imageManager, frameResources, errorMessage));
+    setPipelineDescriptor(pipelineDescriptor);
 
     const std::string& passName = std::filesystem::path(path).stem().string();
 

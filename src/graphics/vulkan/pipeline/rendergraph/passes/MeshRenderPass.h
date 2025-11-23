@@ -16,6 +16,7 @@ public:
         const std::string&          path,
         const VulkanImageManager&   imageManager,
         VulkanFrameResources&       frameResources,
+        VulkanRenderResources&      renderResources,
         VulkanRenderObjectManager&  renderObjectManager,
         VulkanShaderProgramManager& shaderProgramManager,
         std::string&                errorMessage

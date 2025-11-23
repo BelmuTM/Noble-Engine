@@ -23,13 +23,14 @@ public:
     [[nodiscard]] bool create(
         const VulkanMeshManager&    meshManager,
         const VulkanFrameResources& frame,
+        VulkanRenderResources&      resources,
         vk::QueryPool               queryPool,
         std::string&                errorMessage
     ) noexcept;
 
     void destroy() noexcept;
 
-    void execute(vk::CommandBuffer commandBuffer) const;
+    [[nodiscard]] std::vector<std::unique_ptr<VulkanRenderPass>>& getPasses() { return _passes; }
 
     void addPass(std::unique_ptr<VulkanRenderPass> pass) {
         _passes.push_back(std::move(pass));
@@ -37,13 +38,14 @@ public:
 
     void attachSwapchainOutput(const VulkanSwapchain& swapchain) const;
 
-    void executePass(vk::CommandBuffer commandBuffer, const VulkanRenderPass* pass) const;
+    void execute(vk::CommandBuffer commandBuffer) const;
 
-    [[nodiscard]] std::vector<std::unique_ptr<VulkanRenderPass>>& getPasses() { return _passes; }
+    void executePass(vk::CommandBuffer commandBuffer, VulkanRenderPass* pass, size_t currentPassIndex) const;
 
 private:
     const VulkanMeshManager*    _meshManager = nullptr;
     const VulkanFrameResources* _frame       = nullptr;
+    VulkanRenderResources*      _resources   = nullptr;
 
     vk::QueryPool _queryPool{};
 

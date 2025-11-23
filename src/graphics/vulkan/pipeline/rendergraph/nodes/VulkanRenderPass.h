@@ -2,11 +2,11 @@
 #ifndef NOBLEENGINE_VULKANRENDERPASS_H
 #define NOBLEENGINE_VULKANRENDERPASS_H
 
-#include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
-#include "graphics/vulkan/pipeline/rendergraph/VulkanRenderResources.h"
-
 #include "VulkanDrawCall.h"
 #include "VulkanRenderPassAttachment.h"
+
+#include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
+#include "graphics/vulkan/pipeline/rendergraph/VulkanRenderResources.h"
 
 #include "graphics/vulkan/resources/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/images/VulkanImageManager.h"
@@ -33,11 +33,11 @@ public:
 
     [[nodiscard]] vk::PipelineBindPoint getBindPoint() const noexcept { return _bindPoint; }
 
-    [[nodiscard]] const std::vector<VulkanRenderPassAttachment>& getColorAttachments() const noexcept {
+    [[nodiscard]] const VulkanRenderPassAttachment& getDepthAttachment() const noexcept { return _depthAttachment; }
+
+    [[nodiscard]] std::vector<std::unique_ptr<VulkanRenderPassAttachment>>& getColorAttachments() noexcept {
         return _colorAttachments;
     }
-
-    [[nodiscard]] const VulkanRenderPassAttachment& getDepthAttachment() const noexcept { return _depthAttachment; }
 
     [[nodiscard]] const std::vector<std::unique_ptr<VulkanDrawCall>>& getDrawCalls() const noexcept {
         return _drawCalls;
@@ -60,18 +60,20 @@ public:
         return *this;
     }
 
-    VulkanRenderPass& addColorAttachment(const VulkanRenderPassAttachment& colorAttachment) noexcept {
-        _colorAttachments.push_back(colorAttachment);
-        return *this;
-    }
-
-    VulkanRenderPass& addColorAttachmentAtIndex(const long index, const VulkanRenderPassAttachment& attachment) {
-        _colorAttachments.insert(_colorAttachments.begin() + index, attachment);
-        return *this;
-    }
-
     VulkanRenderPass& setDepthAttachment(const VulkanRenderPassAttachment& depthAttachment) noexcept {
         _depthAttachment = depthAttachment;
+        return *this;
+    }
+
+    VulkanRenderPass& addColorAttachment(const VulkanRenderPassAttachment& colorAttachment) noexcept {
+        _colorAttachments.push_back(std::make_unique<VulkanRenderPassAttachment>(colorAttachment));
+        return *this;
+    }
+
+    VulkanRenderPass& addColorAttachmentAtIndex(const long index, const VulkanRenderPassAttachment& colorAttachment) {
+        _colorAttachments.insert(
+            _colorAttachments.begin() + index, std::make_unique<VulkanRenderPassAttachment>(colorAttachment)
+        );
         return *this;
     }
 
@@ -90,6 +92,8 @@ public:
         std::string&               errorMessage
     );
 
+    std::vector<VulkanRenderPassResource*> _sampledInputs;
+
 private:
     std::string _name = "Undefined_Pass";
 
@@ -98,8 +102,9 @@ private:
     const VulkanGraphicsPipeline* _pipeline  = nullptr;
     vk::PipelineBindPoint         _bindPoint = vk::PipelineBindPoint::eGraphics;
 
-    std::vector<VulkanRenderPassAttachment> _colorAttachments{};
-    VulkanRenderPassAttachment              _depthAttachment{};
+    VulkanRenderPassAttachment _depthAttachment{};
+
+    std::vector<std::unique_ptr<VulkanRenderPassAttachment>> _colorAttachments{};
 
     std::vector<std::unique_ptr<VulkanDrawCall>> _drawCalls{};
 };

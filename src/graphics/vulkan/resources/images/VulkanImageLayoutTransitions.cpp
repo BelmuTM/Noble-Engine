@@ -56,6 +56,22 @@ namespace VulkanImageLayoutTransitions {
             };
 
         if (oldLayout == ImageLayout::eColorAttachmentOptimal &&
+            newLayout == ImageLayout::eShaderReadOnlyOptimal) {
+            return LayoutTransition{
+                vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eShaderRead,
+                vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eFragmentShader
+            };
+        }
+
+        if (oldLayout == ImageLayout::eShaderReadOnlyOptimal &&
+            newLayout == ImageLayout::eColorAttachmentOptimal) {
+            return LayoutTransition{
+                vk::AccessFlagBits2::eShaderRead, vk::AccessFlagBits2::eColorAttachmentWrite,
+                vk::PipelineStageFlagBits2::eFragmentShader, vk::PipelineStageFlagBits2::eColorAttachmentOutput
+            };
+        }
+
+        if (oldLayout == ImageLayout::eColorAttachmentOptimal &&
             newLayout == ImageLayout::ePresentSrcKHR)
             return LayoutTransition{
                 vk::AccessFlagBits2::eColorAttachmentWrite, {},

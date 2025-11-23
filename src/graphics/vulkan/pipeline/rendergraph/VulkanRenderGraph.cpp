@@ -1,20 +1,28 @@
 #include "VulkanRenderGraph.h"
 
+#include "graphics/vulkan/resources/images/VulkanImageLayoutTransitions.h"
+
+#include "core/debug/Logger.h"
+
 bool VulkanRenderGraph::create(
     const VulkanMeshManager&    meshManager,
     const VulkanFrameResources& frame,
+    VulkanRenderResources&      resources,
     const vk::QueryPool         queryPool,
     std::string&                errorMessage
 ) noexcept {
     _meshManager = &meshManager;
     _frame       = &frame;
+    _resources   = &resources;
     _queryPool   = queryPool;
+
     return true;
 }
 
 void VulkanRenderGraph::destroy() noexcept {
     _meshManager = nullptr;
     _frame       = nullptr;
+    _resources   = nullptr;
 }
 
 void VulkanRenderGraph::attachSwapchainOutput(const VulkanSwapchain& swapchain) const {
@@ -37,12 +45,14 @@ void VulkanRenderGraph::attachSwapchainOutput(const VulkanSwapchain& swapchain) 
 }
 
 void VulkanRenderGraph::execute(const vk::CommandBuffer commandBuffer) const {
-    for (const auto& pass : _passes) {
-        executePass(commandBuffer, pass.get());
+    for (size_t i = 0; i < _passes.size(); ++i) {
+        executePass(commandBuffer, _passes[i].get(), i);
     }
 }
 
-void VulkanRenderGraph::executePass(const vk::CommandBuffer commandBuffer, const VulkanRenderPass* pass) const {
+void VulkanRenderGraph::executePass(const vk::CommandBuffer commandBuffer, VulkanRenderPass* pass, const size_t currentPassIndex) const {
+    std::string errorMessage;
+
     const vk::Buffer& vertexBuffer = _meshManager->getVertexBuffer();
     const vk::Buffer& indexBuffer  = _meshManager->getIndexBuffer();
 
@@ -56,13 +66,35 @@ void VulkanRenderGraph::executePass(const vk::CommandBuffer commandBuffer, const
 
         std::vector<vk::RenderingAttachmentInfo> colorAttachmentsInfo{};
 
-        for (const auto& [resource, loadOp, storeOp, clearValue] : pass->getColorAttachments()) {
-            colorAttachmentsInfo.push_back(vk::RenderingAttachmentInfo{}
-                .setImageView(resource.resolveImageView(_frame->getFrameContext()))
-                .setImageLayout(resource.layout)
-                .setLoadOp(loadOp)
-                .setStoreOp(storeOp)
-                .setClearValue(clearValue)
+        for (const auto& attachment : pass->getColorAttachments()) {
+            auto& resource = attachment->resource;
+
+            if (resource.imageHandle != VK_NULL_HANDLE) {
+                const bool transition = VulkanImageLayoutTransitions::transitionImageLayout(
+                    resource.imageHandle,
+                    resource.format,
+                    commandBuffer,
+                    resource.currentLayout,
+                    vk::ImageLayout::eColorAttachmentOptimal,
+                    1,
+                    errorMessage
+                );
+
+                if (!transition) {
+                    Logger::error(errorMessage);
+                    return;
+                }
+            }
+
+            resource.currentLayout = vk::ImageLayout::eColorAttachmentOptimal;
+
+            colorAttachmentsInfo.push_back(
+                vk::RenderingAttachmentInfo{}
+                    .setImageView(resource.resolveImageView(frameContext))
+                    .setImageLayout(resource.currentLayout)
+                    .setLoadOp(attachment->loadOp)
+                    .setStoreOp(attachment->storeOp)
+                    .setClearValue(attachment->clearValue)
             );
         }
 
@@ -102,6 +134,7 @@ void VulkanRenderGraph::executePass(const vk::CommandBuffer commandBuffer, const
             /*            Bind Resources             */
             /*---------------------------------------*/
 
+            // Descriptors
             std::vector<vk::DescriptorSet> descriptorSets{};
             descriptorSets.push_back(_frame->getDescriptors()->getSets().at(frameContext.frameIndex));
 
@@ -111,12 +144,21 @@ void VulkanRenderGraph::executePass(const vk::CommandBuffer commandBuffer, const
                 }
             }
 
+            const auto& passDescriptors = _resources->buildDescriptorSetsForFrame(
+                pass->getPipelineDescriptor(), frameContext.frameIndex
+            );
+
+            for (const auto& descriptorSet : passDescriptors) {
+                descriptorSets.push_back(descriptorSet);
+            }
+
             if (!descriptorSets.empty()) {
                 commandBuffer.bindDescriptorSets(
                     pass->getBindPoint(), pipelineLayout, 0, descriptorSets, nullptr
                 );
             }
 
+            // Push constants
             if (auto* drawPushConstant = dynamic_cast<const VulkanDrawCallWithPushConstants*>(&draw)) {
                 drawPushConstant->pushConstants(commandBuffer, pipelineLayout, shaderProgram);
             }
@@ -143,5 +185,33 @@ void VulkanRenderGraph::executePass(const vk::CommandBuffer commandBuffer, const
         commandBuffer.endQuery(_queryPool, 0);
 
         commandBuffer.endRendering();
+
+        if (currentPassIndex + 1 < _passes.size()) {
+            auto* nextPass = _passes[currentPassIndex + 1].get();
+            for (const auto& nextInput : nextPass->_sampledInputs) {
+                for (const auto& att : pass->getColorAttachments()) {
+                    if (nextInput->imageHandle == att->resource.imageHandle &&
+                        att->resource.currentLayout != vk::ImageLayout::eShaderReadOnlyOptimal)
+                    {
+                        const bool transition = VulkanImageLayoutTransitions::transitionImageLayout(
+                            att->resource.imageHandle,
+                            att->resource.format,
+                            commandBuffer,
+                            att->resource.currentLayout,
+                            vk::ImageLayout::eShaderReadOnlyOptimal,
+                            1,
+                            errorMessage
+                        );
+
+                        if (!transition) {
+                            Logger::error(errorMessage);
+                            return;
+                        }
+
+                        att->resource.currentLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+                    }
+                }
+            }
+        }
     }
 }

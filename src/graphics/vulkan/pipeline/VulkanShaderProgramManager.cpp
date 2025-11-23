@@ -6,6 +6,7 @@
 
 bool VulkanShaderProgramManager::create(const vk::Device& device, std::string& errorMessage) noexcept {
     _device = device;
+
     return true;
 }
 

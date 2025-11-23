@@ -9,6 +9,7 @@ bool VulkanUniformBufferManager::create(
 ) noexcept {
     _device         = &device;
     _framesInFlight = framesInFlight;
+
     return true;
 }
 

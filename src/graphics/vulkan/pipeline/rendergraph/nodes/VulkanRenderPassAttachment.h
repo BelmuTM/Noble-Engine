@@ -6,6 +6,8 @@
 
 #include "VulkanRenderPassResource.h"
 
+#include <memory>
+
 static constexpr vk::ClearValue defaultClearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
 
 struct VulkanRenderPassAttachment {
@@ -37,5 +39,7 @@ struct VulkanRenderPassAttachment {
         return static_cast<bool>(resource.resolveImageView);
     }
 };
+
+using AttachmentsVector = std::vector<std::unique_ptr<VulkanRenderPassAttachment>>;
 
 #endif // NOBLEENGINE_VULKANRENDERPASSATTACHMENT_H

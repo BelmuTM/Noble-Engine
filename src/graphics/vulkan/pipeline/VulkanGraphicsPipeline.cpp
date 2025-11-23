@@ -9,10 +9,10 @@
 #include <ranges>
 
 bool VulkanGraphicsPipeline::create(
-    const vk::Device&                              device,
-    const VulkanPipelineDescriptor&                descriptor,
-    const std::vector<VulkanRenderPassAttachment>& colorAttachments,
-    std::string&                                   errorMessage
+    const vk::Device&               device,
+    const VulkanPipelineDescriptor& descriptor,
+    const AttachmentsVector&        colorAttachments,
+    std::string&                    errorMessage
 ) noexcept {
     _device = device;
 
@@ -42,10 +42,10 @@ void VulkanGraphicsPipeline::destroy() noexcept {
 }
 
 bool VulkanGraphicsPipeline::createPipelineLayout(
-    const vk::Device&                                               device,
-    const std::vector<vk::DescriptorSetLayout>&                     descriptorSetLayouts,
-    const std::unordered_map<std::string, VulkanPushConstantRange>& pushConstantRanges,
-    std::string&                                                    errorMessage
+    const vk::Device&                           device,
+    const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
+    const PushConstantsMap&                     pushConstantRanges,
+    std::string&                                errorMessage
 ) {
     std::vector<vk::PushConstantRange> _pushConstantRanges{};
 
@@ -64,16 +64,16 @@ bool VulkanGraphicsPipeline::createPipelineLayout(
 }
 
 bool VulkanGraphicsPipeline::createPipeline(
-    const vk::Device&                              device,
-    const VulkanShaderProgram&                     shaderProgram,
-    const std::vector<VulkanRenderPassAttachment>& colorAttachments,
-    std::string&                                   errorMessage
+    const vk::Device&          device,
+    const VulkanShaderProgram& shaderProgram,
+    const AttachmentsVector&   colorAttachments,
+    std::string&               errorMessage
 ) {
     std::vector<vk::Format>                            colorAttachmentFormats{};
     std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments{};
 
     for (const auto& colorAttachment : colorAttachments) {
-        colorAttachmentFormats.push_back(colorAttachment.resource.format);
+        colorAttachmentFormats.push_back(colorAttachment->resource.format);
         colorBlendAttachments.push_back(colorBlendAttachment);
     }
 

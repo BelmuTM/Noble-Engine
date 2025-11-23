@@ -4,6 +4,7 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
+#include "graphics/vulkan/pipeline/VulkanShaderProgram.h"
 #include "graphics/vulkan/resources/VulkanFrameContext.h"
 #include "graphics/vulkan/resources/VulkanPushConstant.h"
 #include "graphics/vulkan/resources/meshes/VulkanMesh.h"
@@ -59,8 +60,7 @@ struct VulkanDrawCallWithPushConstants final : VulkanDrawCall {
         const vk::CommandBuffer commandBuffer, const vk::PipelineLayout layout, const VulkanShaderProgram* program
     ) const {
         for (const auto& [name, range] : program->getPushConstants()) {
-            auto it = pushConstantData.find(name);
-            if (it != pushConstantData.end()) {
+            if (auto it = pushConstantData.find(name); it != pushConstantData.end()) {
                 it->second->push(commandBuffer, layout, range);
             }
         }

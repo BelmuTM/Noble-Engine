@@ -2,6 +2,8 @@
 #ifndef NOBLEENGINE_VULKANPUSHCONSTANT_H
 #define NOBLEENGINE_VULKANPUSHCONSTANT_H
 
+#include <unordered_map>
+
 struct VulkanPushConstantRange {
     vk::ShaderStageFlags stageFlags;
     uint32_t offset = 0;
@@ -32,5 +34,7 @@ struct VulkanPushConstant final : IVulkanPushConstant {
         }
     }
 };
+
+using PushConstantsMap = std::unordered_map<std::string, VulkanPushConstantRange>;
 
 #endif // NOBLEENGINE_VULKANPUSHCONSTANT_H

@@ -40,20 +40,25 @@ bool VulkanRenderer::init(Platform::Window& window, const ObjectsVector& objects
         &frameResources, errorMessage, device, swapchain, imageManager, uniformBufferManager, _framesInFlight
     ));
 
+    TRY(createVulkanEntity(&renderResources, errorMessage, logicalDevice, _framesInFlight));
+
     TRY(createVulkanEntity(
-        &renderObjectManager, errorMessage, objects, device, imageManager, meshManager, _framesInFlight
+        &renderObjectManager, errorMessage, objects, device, imageManager, meshManager, renderResources, _framesInFlight
     ));
 
     // Pipeline managers creation
     TRY(createVulkanEntity(&shaderProgramManager, errorMessage, logicalDevice));
     TRY(createVulkanEntity(&pipelineManager, errorMessage, logicalDevice));
-    TRY(createVulkanEntity(&renderGraph, errorMessage, meshManager, frameResources, device.getQueryPool()));
+    TRY(createVulkanEntity(
+        &renderGraph, errorMessage, meshManager, frameResources, renderResources, device.getQueryPool()
+    ));
 
     TRY(VulkanRenderGraphBuilder::buildPasses(
         renderGraph,
         meshManager,
         imageManager,
         frameResources,
+        renderResources,
         renderObjectManager,
         shaderProgramManager,
         errorMessage

@@ -23,33 +23,50 @@ struct VSOutput {
 
 [shader("vertex")]
 VSOutput vertMain(VSInput input) {
-    float2 uv = float2((input.id << 1) & 2, (input.id & 2));
+    float2 uv = float2((input.id << 1) & 2, input.id & 2);
     VSOutput output;
     output.uv       = uv;
     output.position = float4(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, 0.0, 1.0);
     return output;
 }
 
-layout (location = 0) out float4 plane;
+layout (location = 0) out float4 output;
+
+layout (set = 1, binding = 0) Sampler2D meshColor;
+
+float bayer2(float2 a) {
+    a = floor(a);
+    return fract(dot(a, float2(0.5, a.y * 0.75)));
+}
+
+#define bayer4(a)   (bayer2(0.5   * (a))  *  0.25 + bayer2(a))
+#define bayer8(a)   (bayer4(0.5   * (a))  *  0.25 + bayer2(a))
+#define bayer16(a)  (bayer8(0.5   * (a))  *  0.25 + bayer2(a))
+#define bayer32(a)  (bayer16(0.5  * (a))  *  0.25 + bayer2(a))
+#define bayer64(a)  (bayer32(0.5  * (a))  *  0.25 + bayer2(a))
+#define bayer128(a) (bayer64(0.5  * (a))  *  0.25 + bayer2(a))
+#define bayer256(a) (bayer128(0.5 * (a))  *  0.25 + bayer2(a))
+#define bayer512(a) (bayer256(0.5 * (a))  *  0.25 + bayer2(a))
+
+void quantizeColor(inout float3 color, float quantizationPeriod) {
+    color = floor((color + quantizationPeriod * 0.5) / quantizationPeriod) * quantizationPeriod;
+}
+
+void ditherColor(inout float3 color, float2 coords, float quantizationPeriod) {
+    color += (bayer2(coords) - 0.5) * quantizationPeriod;
+}
 
 [shader("fragment")]
 void fragMain(VSOutput vertIn) : SV_TARGET {
-    float2 ndc  = vertIn.uv * 2.0 - 1.0;
-    float4 view = mul(frameUBO.projectionInverse, float4(ndc, 1.0, 1.0));
+    float2 coords = vertIn.uv * float2(frameUBO.viewWidth, frameUBO.viewHeight);
 
-    float3 rayOrigin    = frameUBO.cameraPosition;
-    float3 rayDirection = normalize(mul((float3x3) frameUBO.viewInverse, normalize(view.xyz / view.w)));
+    float3 color = meshColor.Sample(float2(vertIn.uv.x, 1.0 - vertIn.uv.y)).rgb;
 
-    float t = -rayOrigin.z / rayDirection.z;
-    if (t <= 0.0) discard;
+    const int   colorPaletteSize   = 8;
+    const float quantizationPeriod = 1.0 / colorPaletteSize;
 
-    float3 hit = rayOrigin + t * rayDirection;
+    ditherColor  (color, coords, quantizationPeriod);
+    quantizeColor(color, quantizationPeriod);
 
-    float  scale   = 1.0;
-    float  checker = fmod(floor(hit.x * scale) + floor(hit.y * scale), 2.0);
-    if (checker < 0.0) checker += 2.0;
-
-    float3 planeColor = checker < 1.0 ? float3(0.1, 0.1, 0.1) : float3(1.0, 1.0, 1.0);
-
-    plane = float4(planeColor, 1.0);
+    output = float4(color, 1.0);
 }
