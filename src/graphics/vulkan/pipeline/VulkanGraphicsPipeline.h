@@ -11,7 +11,6 @@ struct VulkanPipelineDescriptor {
     const VulkanShaderProgram* shaderProgram = nullptr;
 
     std::vector<vk::DescriptorSetLayout> descriptorLayouts{};
-    std::vector<VulkanDescriptorSets*> descriptorSetGroups;
 };
 
 class VulkanGraphicsPipeline {

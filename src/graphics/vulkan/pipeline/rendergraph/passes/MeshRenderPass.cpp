@@ -4,30 +4,22 @@
 
 bool MeshRenderPass::create(
     const std::string&          path,
-    const VulkanImageManager&   imageManager,
-    VulkanFrameResources&       frameResources,
-    VulkanRenderResources&      renderResources,
+    const VulkanFrameResources& frameResources,
     VulkanRenderObjectManager&  renderObjectManager,
     VulkanShaderProgramManager& shaderProgramManager,
     std::string&                errorMessage
 ) {
-    VulkanShaderProgram* program;
-    TRY(shaderProgramManager.load(program, path, false, errorMessage));
-
-    TRY(createColorAttachments(*program, imageManager, frameResources, renderResources, errorMessage));
-
-    VulkanPipelineDescriptor pipelineDescriptor{
-        program,
-        {frameResources.getDescriptorManager().getLayout(), renderObjectManager.getDescriptorManager().getLayout()}
-    };
-
-    TRY(renderResources.allocateDescriptors(pipelineDescriptor, program->getDescriptorSchemes(), errorMessage));
-
-    setPipelineDescriptor(pipelineDescriptor);
+    TRY(shaderProgramManager.load(getShaderProgram(), path, false, errorMessage));
 
     const std::string& passName = std::filesystem::path(path).stem().string();
 
+    const VulkanPipelineDescriptor pipelineDescriptor{
+        getShaderProgram(),
+        {frameResources.getDescriptorManager().getLayout(), renderObjectManager.getDescriptorManager().getLayout()}
+    };
+
     setName(passName + "_MeshRenderPass");
+    setPipelineDescriptor(pipelineDescriptor);
     setBindPoint(vk::PipelineBindPoint::eGraphics);
     setDepthAttachment(frameResources.getDepthBufferAttachment());
 

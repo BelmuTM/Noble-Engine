@@ -2,6 +2,7 @@
 #ifndef NOBLEENGINE_VULKANFRAMERESOURCES_H
 #define NOBLEENGINE_VULKANFRAMERESOURCES_H
 
+#include "VulkanFrameContext.h"
 #include "descriptors/VulkanDescriptorManager.h"
 #include "descriptors/VulkanDescriptorSets.h"
 #include "images/VulkanImageManager.h"
@@ -38,16 +39,16 @@ public:
 
     void update(uint32_t frameIndex, uint32_t imageIndex, const Camera& camera);
 
-    [[nodiscard]] bool recreate(std::string& errorMessage) const;
+    [[nodiscard]] bool recreate(const VulkanCommandManager* commandManager, std::string& errorMessage) const;
 
-    [[nodiscard]] const VulkanFrameContext& getFrameContext() const noexcept { return _frameContext; }
+    [[nodiscard]] VulkanFrameContext& getFrameContext() noexcept { return _frameContext; }
 
     [[nodiscard]] const VulkanDescriptorManager& getDescriptorManager() const noexcept { return _descriptorManager; }
 
     [[nodiscard]] const VulkanDescriptorSets* getDescriptors() const noexcept { return _frameUBODescriptors; }
 
-    [[nodiscard]] const VulkanRenderPassAttachment& getDepthBufferAttachment() const noexcept {
-        return _depthBufferAttachment;
+    [[nodiscard]] const VulkanRenderPassAttachment* getDepthBufferAttachment() const noexcept {
+        return _depthBufferAttachment.get();
     }
 
     [[nodiscard]] const std::vector<std::unique_ptr<VulkanImage>>& getColorBuffers() const noexcept {
@@ -68,10 +69,10 @@ private:
     VulkanDescriptorManager _descriptorManager{};
 
     FrameUniformBuffer    _frameUBO{};
-    VulkanDescriptorSets* _frameUBODescriptors;
+    VulkanDescriptorSets* _frameUBODescriptors = nullptr;
 
-    std::unique_ptr<VulkanImage> _depthBuffer{};
-    VulkanRenderPassAttachment   _depthBufferAttachment{};
+    std::unique_ptr<VulkanImage>                _depthBuffer{};
+    std::unique_ptr<VulkanRenderPassAttachment> _depthBufferAttachment{};
 
     std::vector<std::unique_ptr<VulkanImage>> _colorBuffers{};
 };

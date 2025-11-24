@@ -21,11 +21,11 @@ public:
     VulkanRenderGraph& operator=(VulkanRenderGraph&&) = delete;
 
     [[nodiscard]] bool create(
-        const VulkanMeshManager&    meshManager,
-        const VulkanFrameResources& frame,
-        VulkanRenderResources&      resources,
-        vk::QueryPool               queryPool,
-        std::string&                errorMessage
+        const VulkanMeshManager& meshManager,
+        VulkanFrameResources&    frame,
+        VulkanRenderResources&   resources,
+        vk::QueryPool            queryPool,
+        std::string&             errorMessage
     ) noexcept;
 
     void destroy() noexcept;
@@ -40,12 +40,12 @@ public:
 
     void execute(vk::CommandBuffer commandBuffer) const;
 
-    void executePass(vk::CommandBuffer commandBuffer, VulkanRenderPass* pass, size_t currentPassIndex) const;
+    bool executePass(vk::CommandBuffer commandBuffer, const VulkanRenderPass* pass, std::string& errorMessage) const;
 
 private:
-    const VulkanMeshManager*    _meshManager = nullptr;
-    const VulkanFrameResources* _frame       = nullptr;
-    VulkanRenderResources*      _resources   = nullptr;
+    const VulkanMeshManager* _meshManager = nullptr;
+    VulkanFrameResources*    _frame       = nullptr;
+    VulkanRenderResources*   _resources   = nullptr;
 
     vk::QueryPool _queryPool{};
 

@@ -8,14 +8,19 @@
 #include <unordered_map>
 #include <vector>
 
-#include "graphics/vulkan/core/VulkanDevice.h"
 #include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
-#include "graphics/vulkan/pipeline/VulkanShaderProgram.h"
+#include "graphics/vulkan/resources/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
+#include "graphics/vulkan/resources/images/VulkanImageManager.h"
+
+#include "nodes/VulkanRenderPass.h"
+
+class VulkanRenderPass;
 
 class VulkanRenderResources {
 public:
-    using ResourcesMap = std::unordered_map<std::string, std::unique_ptr<VulkanRenderPassResource>>;
+    using ResourcesMap         = std::unordered_map<std::string, std::unique_ptr<VulkanRenderPassResource>>;
+    using ResourceAccessorsMap = std::unordered_map<std::string, std::vector<VulkanRenderPass*>>;
 
     VulkanRenderResources()  = default;
     ~VulkanRenderResources() = default;
@@ -30,32 +35,50 @@ public:
 
     void destroy() noexcept;
 
+    [[nodiscard]] bool recreate(std::string& errorMessage);
+
     [[nodiscard]] const ResourcesMap& getResources() const noexcept {
         return _resources;
     }
 
+    [[nodiscard]] const ResourceAccessorsMap& getResourceReaders() const noexcept { return _resourceReaders; }
+    [[nodiscard]] const ResourceAccessorsMap& getResourceWriters() const noexcept { return _resourceWriters; }
+
     void addResource(const VulkanRenderPassResource& resource) {
-        _resources[resource.name] = std::make_unique<VulkanRenderPassResource>(resource);
+        if (!_resources.contains(resource.name)) {
+            _resources[resource.name] = std::make_unique<VulkanRenderPassResource>(resource);
+        }
     }
 
-    [[nodiscard]] bool allocateDescriptors(
-        VulkanPipelineDescriptor&                       pipelineDescriptor,
-        const VulkanShaderProgram::DescriptorSchemeMap& descriptorSchemes,
-        std::string&                                    errorMessage
+    [[nodiscard]] bool createColorAttachments(
+        VulkanRenderPass*         pass,
+        const VulkanImageManager& imageManager,
+        VulkanFrameResources&     frameResources,
+        std::string&              errorMessage
     );
 
-    static std::vector<vk::DescriptorSet> buildDescriptorSetsForFrame(
-        const VulkanPipelineDescriptor& pipelineDescriptor, uint32_t currentFrameIndex
-    );
+    [[nodiscard]] bool allocateDescriptors(VulkanRenderPass* pass, std::string& errorMessage);
+
+    std::vector<vk::DescriptorSet> buildDescriptorSets(uint32_t currentFrameIndex) const;
 
 private:
     vk::Device _device{};
 
     uint32_t _framesInFlight = 0;
 
-    ResourcesMap _resources{};
+    ResourcesMap         _resources{};
+    ResourceAccessorsMap _resourceReaders{};
+    ResourceAccessorsMap _resourceWriters{};
 
     std::vector<std::unique_ptr<VulkanDescriptorManager>> _descriptorManagers{};
+    std::vector<VulkanDescriptorSets*>                    _descriptorSetGroups{};
+
+    struct BindingEntry {
+        uint32_t    binding;
+        std::string resourceName;
+    };
+
+    std::vector<std::vector<BindingEntry>> _descriptorBindingsPerManager{};
 };
 
 #endif // NOBLEENGINE_VULKANRENDERRESOURCES_H

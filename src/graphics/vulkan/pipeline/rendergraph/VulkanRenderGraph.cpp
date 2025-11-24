@@ -5,11 +5,11 @@
 #include "core/debug/Logger.h"
 
 bool VulkanRenderGraph::create(
-    const VulkanMeshManager&    meshManager,
-    const VulkanFrameResources& frame,
-    VulkanRenderResources&      resources,
-    const vk::QueryPool         queryPool,
-    std::string&                errorMessage
+    const VulkanMeshManager& meshManager,
+    VulkanFrameResources&    frame,
+    VulkanRenderResources&   resources,
+    const vk::QueryPool      queryPool,
+    std::string&             errorMessage
 ) noexcept {
     _meshManager = &meshManager;
     _frame       = &frame;
@@ -31,7 +31,7 @@ void VulkanRenderGraph::attachSwapchainOutput(const VulkanSwapchain& swapchain) 
         .setType(SwapchainOutput)
         .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
         .setFormat(swapchain.getFormat())
-        .setResolveImageView([](const VulkanFrameContext& frame) { return frame.swapchainImageView; });
+        .setImageViewResolver([this] { return _frame->getFrameContext().swapchainImageView; });
 
     VulkanRenderPassAttachment swapchainAttachment{};
     swapchainAttachment
@@ -45,14 +45,19 @@ void VulkanRenderGraph::attachSwapchainOutput(const VulkanSwapchain& swapchain) 
 }
 
 void VulkanRenderGraph::execute(const vk::CommandBuffer commandBuffer) const {
-    for (size_t i = 0; i < _passes.size(); ++i) {
-        executePass(commandBuffer, _passes[i].get(), i);
+    std::string errorMessage;
+    ScopeGuard guard{[&errorMessage] { Logger::error(errorMessage); }};
+
+    for (const auto& pass : _passes) {
+        if (!executePass(commandBuffer, pass.get(), errorMessage)) return;
     }
+
+    guard.release();
 }
 
-void VulkanRenderGraph::executePass(const vk::CommandBuffer commandBuffer, VulkanRenderPass* pass, const size_t currentPassIndex) const {
-    std::string errorMessage;
-
+bool VulkanRenderGraph::executePass(
+    const vk::CommandBuffer commandBuffer, const VulkanRenderPass* pass, std::string& errorMessage
+) const {
     const vk::Buffer& vertexBuffer = _meshManager->getVertexBuffer();
     const vk::Buffer& indexBuffer  = _meshManager->getIndexBuffer();
 
@@ -69,28 +74,23 @@ void VulkanRenderGraph::executePass(const vk::CommandBuffer commandBuffer, Vulka
         for (const auto& attachment : pass->getColorAttachments()) {
             auto& resource = attachment->resource;
 
-            if (resource.imageHandle != VK_NULL_HANDLE) {
-                const bool transition = VulkanImageLayoutTransitions::transitionImageLayout(
-                    resource.imageHandle,
+            if (resource.image) {
+                TRY(VulkanImageLayoutTransitions::transitionImageLayout(
+                    *resource.image,
                     resource.format,
                     commandBuffer,
                     resource.currentLayout,
                     vk::ImageLayout::eColorAttachmentOptimal,
                     1,
                     errorMessage
-                );
-
-                if (!transition) {
-                    Logger::error(errorMessage);
-                    return;
-                }
+                ));
             }
 
             resource.currentLayout = vk::ImageLayout::eColorAttachmentOptimal;
 
             colorAttachmentsInfo.push_back(
                 vk::RenderingAttachmentInfo{}
-                    .setImageView(resource.resolveImageView(frameContext))
+                    .setImageView(resource.resolveImageView())
                     .setImageLayout(resource.currentLayout)
                     .setLoadOp(attachment->loadOp)
                     .setStoreOp(attachment->storeOp)
@@ -98,16 +98,16 @@ void VulkanRenderGraph::executePass(const vk::CommandBuffer commandBuffer, Vulka
             );
         }
 
-        const VulkanRenderPassAttachment& depthAttachment = pass->getDepthAttachment();
+        const VulkanRenderPassAttachment* depthAttachment = pass->getDepthAttachment();
         vk::RenderingAttachmentInfo depthAttachmentInfo{};
 
         if (depthAttachment) {
             depthAttachmentInfo
-                .setImageView(depthAttachment.resource.resolveImageView(frameContext))
-                .setImageLayout(depthAttachment.resource.layout)
-                .setLoadOp(depthAttachment.loadOp)
-                .setStoreOp(depthAttachment.storeOp)
-                .setClearValue(depthAttachment.clearValue);
+                .setImageView(depthAttachment->resource.resolveImageView())
+                .setImageLayout(depthAttachment->resource.layout)
+                .setLoadOp(depthAttachment->loadOp)
+                .setStoreOp(depthAttachment->storeOp)
+                .setClearValue(depthAttachment->clearValue);
         }
 
         vk::RenderingInfo renderingInfo{};
@@ -144,11 +144,7 @@ void VulkanRenderGraph::executePass(const vk::CommandBuffer commandBuffer, Vulka
                 }
             }
 
-            const auto& passDescriptors = _resources->buildDescriptorSetsForFrame(
-                pass->getPipelineDescriptor(), frameContext.frameIndex
-            );
-
-            for (const auto& descriptorSet : passDescriptors) {
+            for (const auto& descriptorSet : _resources->buildDescriptorSets(frameContext.frameIndex)) {
                 descriptorSets.push_back(descriptorSet);
             }
 
@@ -186,32 +182,20 @@ void VulkanRenderGraph::executePass(const vk::CommandBuffer commandBuffer, Vulka
 
         commandBuffer.endRendering();
 
-        if (currentPassIndex + 1 < _passes.size()) {
-            auto* nextPass = _passes[currentPassIndex + 1].get();
-            for (const auto& nextInput : nextPass->_sampledInputs) {
-                for (const auto& att : pass->getColorAttachments()) {
-                    if (nextInput->imageHandle == att->resource.imageHandle &&
-                        att->resource.currentLayout != vk::ImageLayout::eShaderReadOnlyOptimal)
-                    {
-                        const bool transition = VulkanImageLayoutTransitions::transitionImageLayout(
-                            att->resource.imageHandle,
-                            att->resource.format,
-                            commandBuffer,
-                            att->resource.currentLayout,
-                            vk::ImageLayout::eShaderReadOnlyOptimal,
-                            1,
-                            errorMessage
-                        );
+        for (const auto& [resource, targetLayout] : pass->getTransitions()) {
+            TRY(VulkanImageLayoutTransitions::transitionImageLayout(
+                *resource->image,
+                resource->format,
+                commandBuffer,
+                resource->currentLayout,
+                targetLayout,
+                1,
+                errorMessage
+            ));
 
-                        if (!transition) {
-                            Logger::error(errorMessage);
-                            return;
-                        }
-
-                        att->resource.currentLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-                    }
-                }
-            }
+            resource->currentLayout = targetLayout;
         }
     }
+
+    return true;
 }

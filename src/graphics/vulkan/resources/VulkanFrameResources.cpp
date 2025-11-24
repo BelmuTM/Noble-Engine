@@ -1,5 +1,7 @@
 #include "VulkanFrameResources.h"
 
+#include "images/VulkanImageLayoutTransitions.h"
+
 #include "core/debug/ErrorHandling.h"
 
 bool VulkanFrameResources::create(
@@ -32,15 +34,17 @@ bool VulkanFrameResources::create(
     VulkanRenderPassResource depthBufferResource{};
     depthBufferResource
         .setType(Buffer)
-        .setImageHandle(*_depthBuffer)
-        .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
-        .setResolveImageView([this](const VulkanFrameContext&) { return _depthBuffer->getImageView(); });
+        .setImage(_depthBuffer.get())
+        .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
-    _depthBufferAttachment
+    VulkanRenderPassAttachment depthBufferAttachment{};
+    depthBufferAttachment
         .setResource(depthBufferResource)
         .setLoadOp(vk::AttachmentLoadOp::eClear)
         .setStoreOp(vk::AttachmentStoreOp::eStore)
         .setClearValue(vk::ClearDepthStencilValue{1.0f, 0});
+
+    _depthBufferAttachment = std::make_unique<VulkanRenderPassAttachment>(depthBufferAttachment);
 
     return true;
 }
@@ -66,7 +70,7 @@ void VulkanFrameResources::update(
         .setExtent(_swapchain->getExtent());
 }
 
-bool VulkanFrameResources::recreate(std::string& errorMessage) const {
+bool VulkanFrameResources::recreate(const VulkanCommandManager* commandManager, std::string& errorMessage) const {
     _depthBuffer->destroy(*_device);
 
     TRY(_imageManager->createDepthBuffer(*_depthBuffer, _swapchain->getExtent(), errorMessage));
@@ -76,6 +80,14 @@ bool VulkanFrameResources::recreate(std::string& errorMessage) const {
 
         TRY(_imageManager->createColorBuffer(
             *colorBuffer, colorBuffer->getFormat(), _swapchain->getExtent(), errorMessage
+        ));
+
+        TRY(colorBuffer->transitionLayout(
+            vk::ImageLayout::eColorAttachmentOptimal,
+            vk::ImageLayout::eShaderReadOnlyOptimal,
+            1,
+            commandManager,
+            errorMessage
         ));
     }
 

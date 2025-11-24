@@ -100,7 +100,7 @@ bool VulkanRenderObjectManager::createRenderObject(
         TRY(_descriptorManager.allocate(submesh.descriptorSets, errorMessage));
         submesh.descriptorSets->bindPerFrameResource(submesh.texture->getDescriptorInfo(0));
 
-        _renderResources->addResource(VulkanRenderPassResource{"texture"}.setImageObject(submesh.texture));
+        _renderResources->addResource(VulkanRenderPassResource{"texture"}.setImage(submesh.texture));
 
         renderObject.submeshes.push_back(submesh);
         ++meshCount;

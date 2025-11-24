@@ -53,22 +53,19 @@ bool VulkanRenderer::init(Platform::Window& window, const ObjectsVector& objects
         &renderGraph, errorMessage, meshManager, frameResources, renderResources, device.getQueryPool()
     ));
 
-    TRY(VulkanRenderGraphBuilder::buildPasses(
-        renderGraph,
-        meshManager,
-        imageManager,
-        frameResources,
-        renderResources,
-        renderObjectManager,
-        shaderProgramManager,
-        errorMessage
-    ));
+    const VulkanRenderGraphBuilderContext graphBuilderContext{
+        .renderGraph          = renderGraph,
+        .meshManager          = meshManager,
+        .imageManager         = imageManager,
+        .frameResources       = frameResources,
+        .renderResources      = renderResources,
+        .renderObjectManager  = renderObjectManager,
+        .shaderProgramManager = shaderProgramManager,
+        .pipelineManager      = pipelineManager,
+        .swapchain            = swapchain
+    };
 
-    renderGraph.attachSwapchainOutput(swapchain);
-
-    TRY(VulkanRenderGraphBuilder::createPipelines(renderGraph, pipelineManager, errorMessage));
-
-    shaderProgramManager.destroy();
+    TRY(VulkanRenderGraphBuilder::build(graphBuilderContext, errorMessage));
 
     TRY(meshManager.fillBuffers(errorMessage));
 
@@ -126,7 +123,8 @@ bool VulkanRenderer::onFramebufferResize(std::string& errorMessage) {
     VK_CALL_LOG(context.getDevice().getLogicalDevice().waitIdle(), Logger::Level::ERROR);
 
     TRY(swapchainManager.recreateSwapchain(errorMessage));
-    TRY(frameResources.recreate(errorMessage));
+    TRY(frameResources.recreate(&commandManager, errorMessage));
+    TRY(renderResources.recreate(errorMessage));
 
     _window->setFramebufferResized(false);
 

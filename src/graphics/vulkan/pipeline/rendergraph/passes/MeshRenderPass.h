@@ -7,16 +7,13 @@
 #include "graphics/vulkan/pipeline/VulkanShaderProgramManager.h"
 
 #include "graphics/vulkan/resources/VulkanFrameResources.h"
-#include "graphics/vulkan/resources/images/VulkanImageManager.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 
 class MeshRenderPass final : public VulkanRenderPass {
 public:
     [[nodiscard]] bool create(
         const std::string&          path,
-        const VulkanImageManager&   imageManager,
-        VulkanFrameResources&       frameResources,
-        VulkanRenderResources&      renderResources,
+        const VulkanFrameResources& frameResources,
         VulkanRenderObjectManager&  renderObjectManager,
         VulkanShaderProgramManager& shaderProgramManager,
         std::string&                errorMessage

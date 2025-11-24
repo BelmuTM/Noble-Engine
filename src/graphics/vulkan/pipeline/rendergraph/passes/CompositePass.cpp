@@ -5,29 +5,21 @@
 bool CompositePass::create(
     const std::string&          path,
     VulkanMeshManager&          meshManager,
-    const VulkanImageManager&   imageManager,
-    VulkanFrameResources&       frameResources,
-    VulkanRenderResources&      renderResources,
+    const VulkanFrameResources& frameResources,
     VulkanShaderProgramManager& shaderProgramManager,
     std::string&                errorMessage
 ) {
-    VulkanShaderProgram* program;
-    TRY(shaderProgramManager.load(program, path, true, errorMessage));
-
-    TRY(createColorAttachments(*program, imageManager, frameResources, renderResources, errorMessage));
-
-    VulkanPipelineDescriptor pipelineDescriptor{
-        program,
-        {frameResources.getDescriptorManager().getLayout()}
-    };
-
-    TRY(renderResources.allocateDescriptors(pipelineDescriptor, program->getDescriptorSchemes(), errorMessage));
-
-    setPipelineDescriptor(pipelineDescriptor);
+    TRY(shaderProgramManager.load(getShaderProgram(), path, true, errorMessage));
 
     const std::string& passName = std::filesystem::path(path).stem().string();
 
+    const VulkanPipelineDescriptor pipelineDescriptor{
+        getShaderProgram(),
+        {frameResources.getDescriptorManager().getLayout()}
+    };
+
     setName(passName + "_CompositePass");
+    setPipelineDescriptor(pipelineDescriptor);
     setBindPoint(vk::PipelineBindPoint::eGraphics);
     setDepthAttachment(frameResources.getDepthBufferAttachment());
 

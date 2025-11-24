@@ -22,14 +22,14 @@ target_compile_definitions(NobleEngine PRIVATE RESOURCES_DIR="${CMAKE_SOURCE_DIR
 target_compile_features(NobleEngine PRIVATE cxx_std_23)
 
 # Set compiler flags
-target_compile_options(NobleEngine PRIVATE
-    # MSVC
-    $<$<CXX_COMPILER_ID:MSVC>:
-    /W4 /permissive- /wd4100>
-    # GCC-based compilers
-    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:
-    -Wall -Wextra -Wpedantic -Wno-missing-field-initializers -Wno-unused-parameter -Wno-unused-variable>
-)
+# target_compile_options(NobleEngine PRIVATE
+#     # MSVC
+#     $<$<CXX_COMPILER_ID:MSVC>:
+#     /W4 /permissive- /wd4100>
+#     # GCC-based compilers
+#     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:
+#     -Wall -Wextra -Wpedantic -Wno-missing-field-initializers -Wno-unused-parameter -Wno-unused-variable>
+# )
 
 ##########################################################
 #                       VULKAN SDK                       #

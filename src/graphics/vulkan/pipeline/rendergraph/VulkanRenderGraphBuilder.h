@@ -12,6 +12,20 @@
 #include "graphics/vulkan/resources/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 
+struct VulkanRenderGraphBuilderContext {
+    VulkanRenderGraph& renderGraph;
+
+    VulkanMeshManager&          meshManager;
+    const VulkanImageManager&   imageManager;
+    VulkanFrameResources&       frameResources;
+    VulkanRenderResources&      renderResources;
+    VulkanRenderObjectManager&  renderObjectManager;
+    VulkanShaderProgramManager& shaderProgramManager;
+    VulkanPipelineManager&      pipelineManager;
+
+    VulkanSwapchain& swapchain;
+};
+
 class VulkanRenderGraphBuilder {
 public:
     VulkanRenderGraphBuilder()  = default;
@@ -23,15 +37,33 @@ public:
     VulkanRenderGraphBuilder(VulkanRenderGraphBuilder&&)            = delete;
     VulkanRenderGraphBuilder& operator=(VulkanRenderGraphBuilder&&) = delete;
 
+    [[nodiscard]] static bool build(const VulkanRenderGraphBuilderContext& context, std::string& errorMessage);
+
     [[nodiscard]] static bool buildPasses(
         VulkanRenderGraph&          renderGraph,
         VulkanMeshManager&          meshManager,
-        const VulkanImageManager&   imageManager,
-        VulkanFrameResources&       frameResources,
-        VulkanRenderResources&      renderResources,
+        const VulkanFrameResources& frameResources,
         VulkanRenderObjectManager&  renderObjectManager,
         VulkanShaderProgramManager& shaderProgramManager,
         std::string&                errorMessage
+    );
+
+    [[nodiscard]] static bool createColorAttachments(
+        VulkanRenderResources&    renderResources,
+        const VulkanImageManager& imageManager,
+        VulkanFrameResources&     frameResources,
+        VulkanRenderGraph&        renderGraph,
+        std::string&              errorMessage
+    );
+
+    [[nodiscard]] static bool allocateDescriptors(
+        VulkanRenderResources& renderResources,
+        VulkanRenderGraph&     renderGraph,
+        std::string&           errorMessage
+    );
+
+    [[nodiscard]] static bool setupResourceTransitions(
+        const VulkanRenderResources& renderResources, std::string& errorMessage
     );
 
     [[nodiscard]] static bool createPipelines(

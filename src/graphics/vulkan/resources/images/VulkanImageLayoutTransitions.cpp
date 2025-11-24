@@ -90,7 +90,7 @@ namespace VulkanImageLayoutTransitions {
         const uint32_t          mipLevels,
         std::string&            errorMessage
     ) {
-        if (oldLayout == newLayout) return true;
+        if (oldLayout == newLayout || image == VK_NULL_HANDLE) return true;
 
         // Specify which region of the image to transition
         vk::ImageSubresourceRange subresourceRange{};

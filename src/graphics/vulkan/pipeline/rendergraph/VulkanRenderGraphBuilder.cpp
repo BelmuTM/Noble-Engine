@@ -1,16 +1,41 @@
 #include "VulkanRenderGraphBuilder.h"
 
-#include <ranges>
-
 #include "passes/CompositePass.h"
 #include "passes/MeshRenderPass.h"
+
+#include <ranges>
+
+bool VulkanRenderGraphBuilder::build(const VulkanRenderGraphBuilderContext& context, std::string& errorMessage) {
+    TRY(buildPasses(
+        context.renderGraph,
+        context.meshManager,
+        context.frameResources,
+        context.renderObjectManager,
+        context.shaderProgramManager,
+        errorMessage
+    ));
+
+    context.renderGraph.attachSwapchainOutput(context.swapchain);
+
+    TRY(createColorAttachments(
+        context.renderResources, context.imageManager, context.frameResources, context.renderGraph, errorMessage
+    ));
+
+    TRY(allocateDescriptors(context.renderResources, context.renderGraph, errorMessage));
+
+    TRY(setupResourceTransitions(context.renderResources, errorMessage));
+
+    TRY(createPipelines(context.renderGraph, context.pipelineManager, errorMessage));
+
+    context.shaderProgramManager.destroy();
+
+    return true;
+}
 
 bool VulkanRenderGraphBuilder::buildPasses(
     VulkanRenderGraph&          renderGraph,
     VulkanMeshManager&          meshManager,
-    const VulkanImageManager&   imageManager,
-    VulkanFrameResources&       frameResources,
-    VulkanRenderResources&      renderResources,
+    const VulkanFrameResources& frameResources,
     VulkanRenderObjectManager&  renderObjectManager,
     VulkanShaderProgramManager& shaderProgramManager,
     std::string&                errorMessage
@@ -18,9 +43,7 @@ bool VulkanRenderGraphBuilder::buildPasses(
     auto meshRenderPass = std::make_unique<MeshRenderPass>();
     TRY(meshRenderPass->create(
         "mesh_render",
-        imageManager,
         frameResources,
-        renderResources,
         renderObjectManager,
         shaderProgramManager,
         errorMessage
@@ -32,38 +55,56 @@ bool VulkanRenderGraphBuilder::buildPasses(
     TRY(compositePass->create(
         "composite",
         meshManager,
-        imageManager,
         frameResources,
-        renderResources,
         shaderProgramManager,
         errorMessage
     ));
 
     renderGraph.addPass(std::move(compositePass));
 
-    for (const auto& pass : renderGraph.getPasses()) {
-        pass->_sampledInputs.clear();
+    return true;
+}
 
-        std::unordered_set<std::string> outputs;
-        for (const auto& attachment : pass->getColorAttachments()) {
-            outputs.insert(attachment->resource.name);
-        }
+bool VulkanRenderGraphBuilder::createColorAttachments(
+    VulkanRenderResources&    renderResources,
+    const VulkanImageManager& imageManager,
+    VulkanFrameResources&     frameResources,
+    VulkanRenderGraph&        renderGraph,
+    std::string&              errorMessage
+) {
+    for (auto& pass : renderGraph.getPasses()) {
+        TRY(renderResources.createColorAttachments(pass.get(), imageManager, frameResources, errorMessage));
+    }
 
-        const auto& shaderProgram = pass->getPipelineDescriptor().shaderProgram;
-        for (const auto& scheme : shaderProgram->getDescriptorSchemes() | std::views::values) {
-            for (const auto& bindingInfo : scheme) {
-                if (bindingInfo.type == vk::DescriptorType::eCombinedImageSampler ||
-                    bindingInfo.type == vk::DescriptorType::eSampledImage) {
+    return true;
+}
 
-                    auto it = renderResources.getResources().find(bindingInfo.name);
-                    if (it != renderResources.getResources().end()) {
-                        VulkanRenderPassResource* resource = it->second.get();
-                        if (!outputs.contains(resource->name)) {
-                            pass->_sampledInputs.push_back(resource);
-                        }
-                    }
-                }
-            }
+bool VulkanRenderGraphBuilder::allocateDescriptors(
+    VulkanRenderResources& renderResources,
+    VulkanRenderGraph&     renderGraph,
+    std::string&           errorMessage
+) {
+    for (auto& pass : renderGraph.getPasses()) {
+        TRY(renderResources.allocateDescriptors(pass.get(), errorMessage));
+    }
+
+    return true;
+}
+
+bool VulkanRenderGraphBuilder::setupResourceTransitions(
+    const VulkanRenderResources& renderResources, std::string& errorMessage
+) {
+    for (const auto& resourceName : renderResources.getResourceReaders() | std::views::keys) {
+        auto it = renderResources.getResources().find(resourceName);
+        if (it == renderResources.getResources().end()) continue;
+
+        VulkanRenderPassResource* resource = it->second.get();
+
+        if (!renderResources.getResourceWriters().contains(resourceName)) continue;
+
+        for (VulkanRenderPass* writerPass : renderResources.getResourceWriters().at(resourceName)) {
+            if (!writerPass) continue;
+            writerPass->addTransition({resource, vk::ImageLayout::eShaderReadOnlyOptimal});
         }
     }
 

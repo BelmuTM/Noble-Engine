@@ -7,12 +7,19 @@
 
 #include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
 #include "graphics/vulkan/pipeline/rendergraph/VulkanRenderResources.h"
-
-#include "graphics/vulkan/resources/VulkanFrameResources.h"
-#include "graphics/vulkan/resources/images/VulkanImageManager.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObject.h"
 
 #include <memory>
+#include <ranges>
+
+struct VulkanPassTransition {
+    VulkanRenderPassResource* resource     = nullptr;
+    vk::ImageLayout           targetLayout = vk::ImageLayout::eUndefined;
+
+    bool operator==(const VulkanPassTransition& other) const {
+        return resource == other.resource && targetLayout == other.targetLayout;
+    }
+};
 
 class VulkanRenderPass {
 public:
@@ -27,21 +34,28 @@ public:
 
     [[nodiscard]] const std::string& getName() const noexcept { return _name; }
 
+    [[nodiscard]]       VulkanShaderProgram*& getShaderProgram()       noexcept { return _shaderProgram; }
+    [[nodiscard]] const VulkanShaderProgram*  getShaderProgram() const noexcept { return _shaderProgram; }
+
+    [[nodiscard]]       VulkanPipelineDescriptor& getPipelineDescriptor()       noexcept { return _pipelineDescriptor; }
     [[nodiscard]] const VulkanPipelineDescriptor& getPipelineDescriptor() const noexcept { return _pipelineDescriptor; }
 
     [[nodiscard]] const VulkanGraphicsPipeline* getPipeline() const noexcept { return _pipeline; }
 
     [[nodiscard]] vk::PipelineBindPoint getBindPoint() const noexcept { return _bindPoint; }
 
-    [[nodiscard]] const VulkanRenderPassAttachment& getDepthAttachment() const noexcept { return _depthAttachment; }
+    [[nodiscard]] const VulkanRenderPassAttachment* getDepthAttachment() const noexcept { return _depthAttachment; }
 
-    [[nodiscard]] std::vector<std::unique_ptr<VulkanRenderPassAttachment>>& getColorAttachments() noexcept {
+    [[nodiscard]] const std::vector<std::unique_ptr<VulkanRenderPassAttachment>>& getColorAttachments() const noexcept {
         return _colorAttachments;
     }
 
     [[nodiscard]] const std::vector<std::unique_ptr<VulkanDrawCall>>& getDrawCalls() const noexcept {
         return _drawCalls;
     }
+
+    [[nodiscard]]       std::vector<VulkanPassTransition>& getTransitions()       noexcept { return _transitions; }
+    [[nodiscard]] const std::vector<VulkanPassTransition>& getTransitions() const noexcept { return _transitions; }
 
     VulkanRenderPass& setName(const std::string& name) noexcept { _name = name; return *this; }
 
@@ -60,7 +74,7 @@ public:
         return *this;
     }
 
-    VulkanRenderPass& setDepthAttachment(const VulkanRenderPassAttachment& depthAttachment) noexcept {
+    VulkanRenderPass& setDepthAttachment(const VulkanRenderPassAttachment* depthAttachment) noexcept {
         _depthAttachment = depthAttachment;
         return *this;
     }
@@ -82,31 +96,32 @@ public:
         return *this;
     }
 
+    VulkanRenderPass& addTransition(const VulkanPassTransition& transition) {
+        if (const auto it = std::ranges::find(_transitions, transition); it == _transitions.end()) {
+            _transitions.push_back(transition);
+        }
+        return *this;
+    }
+
     VulkanRenderPass& addObjectDrawCall(const VulkanRenderObject* renderObject);
-
-    [[nodiscard]] bool createColorAttachments(
-        const VulkanShaderProgram& shaderProgram,
-        const VulkanImageManager&  imageManager,
-        VulkanFrameResources&      frameResources,
-        VulkanRenderResources&     renderResources,
-        std::string&               errorMessage
-    );
-
-    std::vector<VulkanRenderPassResource*> _sampledInputs;
 
 private:
     std::string _name = "Undefined_Pass";
+
+    VulkanShaderProgram* _shaderProgram = nullptr;
 
     VulkanPipelineDescriptor _pipelineDescriptor{};
 
     const VulkanGraphicsPipeline* _pipeline  = nullptr;
     vk::PipelineBindPoint         _bindPoint = vk::PipelineBindPoint::eGraphics;
 
-    VulkanRenderPassAttachment _depthAttachment{};
+    const VulkanRenderPassAttachment* _depthAttachment = nullptr;
 
     std::vector<std::unique_ptr<VulkanRenderPassAttachment>> _colorAttachments{};
 
     std::vector<std::unique_ptr<VulkanDrawCall>> _drawCalls{};
+
+    std::vector<VulkanPassTransition> _transitions{};
 };
 
 #endif // NOBLEENGINE_VULKANRENDERPASS_H
