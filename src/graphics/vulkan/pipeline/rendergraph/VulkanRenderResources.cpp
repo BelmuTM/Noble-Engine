@@ -1,5 +1,7 @@
 #include "VulkanRenderResources.h"
 
+#include <iostream>
+
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorSets.h"
 
 #include "core/debug/ErrorHandling.h"
@@ -21,6 +23,8 @@ void VulkanRenderResources::destroy() noexcept {
     }
 
     _descriptorManagers.clear();
+    _descriptorBindingsPerManager.clear();
+    _descriptorSetGroups.clear();
 
     _device = nullptr;
 }
@@ -97,6 +101,8 @@ bool VulkanRenderResources::createColorAttachments(
 }
 
 bool VulkanRenderResources::allocateDescriptors(VulkanRenderPass* pass, std::string& errorMessage) {
+    _descriptorManagers.clear();
+    _descriptorBindingsPerManager.clear();
     _descriptorSetGroups.clear();
 
     for (const auto& scheme : pass->getShaderProgram()->getDescriptorSchemes() | std::views::values) {
@@ -139,9 +145,9 @@ std::vector<vk::DescriptorSet> VulkanRenderResources::buildDescriptorSets(const 
     sets.reserve(_descriptorSetGroups.size());
 
     for (const auto& group : _descriptorSetGroups) {
-        const auto groupSets = group->getSets();
+        const auto& groupSets = group->getSets();
         if (currentFrameIndex >= groupSets.size()) {
-            sets.push_back(VK_NULL_HANDLE);
+            sets.emplace_back(VK_NULL_HANDLE);
             continue;
         }
         sets.push_back(groupSets[currentFrameIndex]);

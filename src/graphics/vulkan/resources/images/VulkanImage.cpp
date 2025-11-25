@@ -7,8 +7,8 @@
 #include "core/debug/ErrorHandling.h"
 
 void VulkanImage::destroy(const VulkanDevice& device) noexcept {
-    const vk::Device& logicalDevice = device.getLogicalDevice();
-    VmaAllocator      allocator     = device.getAllocator();
+    const vk::Device&  logicalDevice = device.getLogicalDevice();
+    const VmaAllocator allocator     = device.getAllocator();
 
     if (_sampler) {
         logicalDevice.destroySampler(_sampler);
@@ -62,7 +62,7 @@ bool VulkanImage::createImage(
     const VulkanDevice*       device,
     std::string&              errorMessage
 ) {
-    VmaAllocator allocator = device->getAllocator();
+    const VmaAllocator allocator = device->getAllocator();
 
     vk::ImageCreateInfo imageInfo{};
     imageInfo

@@ -67,7 +67,7 @@ bool VulkanBuffer::create(
 void VulkanBuffer::destroy() noexcept {
     if (!_device) return;
 
-    VmaAllocator allocator = _device->getAllocator();
+    const VmaAllocator allocator = _device->getAllocator();
 
     if (allocator && _buffer) {
         unmapMemory();
@@ -89,7 +89,7 @@ bool VulkanBuffer::createBuffer(
     const VulkanDevice*        device,
     std::string&               errorMessage
 ) {
-    VmaAllocator allocator = device->getAllocator();
+    const VmaAllocator allocator = device->getAllocator();
 
     vk::BufferCreateInfo bufferInfo{};
     bufferInfo
@@ -159,7 +159,7 @@ void* VulkanBuffer::mapMemory(std::string& errorMessage) {
         return nullptr;
     }
 
-    VmaAllocator allocator = _device->getAllocator();
+    const VmaAllocator allocator = _device->getAllocator();
 
     const auto memoryMap = VK_CALL(vmaMapMemory(allocator, _allocation, &_mappedPointer), errorMessage);
     if (memoryMap != VK_SUCCESS) {
@@ -171,7 +171,7 @@ void* VulkanBuffer::mapMemory(std::string& errorMessage) {
 
 void VulkanBuffer::unmapMemory() {
     if (_device && _allocation && _mappedPointer) {
-        VmaAllocator allocator = _device->getAllocator();
+        const VmaAllocator allocator = _device->getAllocator();
         vmaUnmapMemory(allocator, _allocation);
         _mappedPointer = nullptr;
     }
