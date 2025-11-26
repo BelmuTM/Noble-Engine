@@ -48,6 +48,8 @@ void VulkanInstance::destroy() noexcept {
         _instance.destroy();
         _instance = VK_NULL_HANDLE;
     }
+
+    _capabilities = nullptr;
 }
 
 std::vector<const char*> VulkanInstance::getRequiredExtensions() {

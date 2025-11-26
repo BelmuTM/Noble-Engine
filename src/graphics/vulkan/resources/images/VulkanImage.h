@@ -32,8 +32,11 @@ public:
     [[nodiscard]] vk::Extent3D getExtent() const noexcept { return _extent; }
     [[nodiscard]] vk::ImageLayout getLayout() const noexcept { return _layout; }
 
+    void setHandle(const vk::Image image) noexcept { _image = image; }
+    void setImageView(const vk::ImageView imageView) noexcept { _imageView = imageView; }
     void setFormat(const vk::Format format) noexcept { _format = format; }
     void setExtent(const vk::Extent3D extent) noexcept { _extent = extent; }
+    void setLayout(const vk::ImageLayout layout) noexcept { _layout = layout; }
     void setDescriptorType(const vk::DescriptorType descriptorType) noexcept { _descriptorType = descriptorType; }
 
     [[nodiscard]] static bool isDepthBuffer(const vk::Format format) {
@@ -60,18 +63,18 @@ public:
 
     [[nodiscard]] bool transitionLayout(
         vk::CommandBuffer commandBuffer,
+        std::string&      errorMessage,
         vk::ImageLayout   oldLayout,
         vk::ImageLayout   newLayout,
-        uint32_t          mipLevels,
-        std::string&      errorMessage
+        uint32_t          mipLevels = 1
     );
 
     [[nodiscard]] bool transitionLayout(
+        const VulkanCommandManager* commandManager,
+        std::string&                errorMessage,
         vk::ImageLayout             oldLayout,
         vk::ImageLayout             newLayout,
-        uint32_t                    mipLevels,
-        const VulkanCommandManager* commandManager,
-        std::string&                errorMessage
+        uint32_t                    mipLevels = 1
     );
 
     [[nodiscard]] bool createImage(

@@ -4,6 +4,8 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
+#include "graphics/vulkan/core/VulkanSwapchainManager.h"
+
 #include "graphics/vulkan/pipeline/rendergraph/VulkanRenderGraph.h"
 
 #include "graphics/vulkan/pipeline/VulkanPipelineManager.h"
@@ -23,7 +25,7 @@ struct VulkanRenderGraphBuilderContext {
     VulkanShaderProgramManager& shaderProgramManager;
     VulkanPipelineManager&      pipelineManager;
 
-    VulkanSwapchain& swapchain;
+    const VulkanSwapchain& swapchain;
 };
 
 class VulkanRenderGraphBuilder {
@@ -47,6 +49,10 @@ public:
         VulkanRenderObjectManager&   renderObjectManager,
         VulkanShaderProgramManager&  shaderProgramManager,
         std::string&                 errorMessage
+    );
+
+    static void attachSwapchainOutput(
+        const VulkanSwapchain& swapchain, VulkanFrameResources& frameResources, VulkanRenderGraph& renderGraph
     );
 
     [[nodiscard]] static bool createColorAttachments(

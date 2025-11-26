@@ -94,17 +94,24 @@ namespace VulkanImageLayoutTransitions {
                 vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eBottomOfPipe
             };
 
+        if (oldLayout == ImageLayout::ePresentSrcKHR &&
+            newLayout == ImageLayout::eColorAttachmentOptimal)
+            return LayoutTransition{
+                {}, vk::AccessFlagBits2::eColorAttachmentWrite,
+                vk::PipelineStageFlagBits2::eBottomOfPipe, vk::PipelineStageFlagBits2::eColorAttachmentOutput
+            };
+
         return std::nullopt;
     }
 
     bool transitionImageLayout(
         const vk::CommandBuffer commandBuffer,
+        std::string&            errorMessage,
         const vk::Image         image,
         const vk::Format        format,
         const vk::ImageLayout   oldLayout,
         const vk::ImageLayout   newLayout,
-        const uint32_t          mipLevels,
-        std::string&            errorMessage
+        const uint32_t          mipLevels
     ) {
         if (oldLayout == newLayout || image == VK_NULL_HANDLE) return true;
 

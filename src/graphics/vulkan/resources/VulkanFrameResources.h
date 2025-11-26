@@ -2,7 +2,6 @@
 #ifndef NOBLEENGINE_VULKANFRAMERESOURCES_H
 #define NOBLEENGINE_VULKANFRAMERESOURCES_H
 
-#include "VulkanFrameContext.h"
 #include "descriptors/VulkanDescriptorManager.h"
 #include "descriptors/VulkanDescriptorSets.h"
 #include "images/VulkanImageManager.h"
@@ -43,7 +42,10 @@ public:
 
     [[nodiscard]] bool recreate(const VulkanCommandManager* commandManager, std::string& errorMessage) const;
 
-    [[nodiscard]] VulkanFrameContext& getFrameContext() noexcept { return _frameContext; }
+    [[nodiscard]] uint32_t getFrameIndex() const noexcept { return _frameIndex; }
+    [[nodiscard]] uint32_t getImageIndex() const noexcept { return _imageIndex; }
+
+    [[nodiscard]] vk::Extent2D getExtent() const { return _swapchain->getExtent(); }
 
     [[nodiscard]] const VulkanDescriptorManager& getDescriptorManager() const noexcept { return _descriptorManager; }
 
@@ -57,8 +59,8 @@ private:
     const VulkanImageManager* _imageManager = nullptr;
 
     uint32_t _framesInFlight = 0;
-
-    VulkanFrameContext _frameContext{};
+    uint32_t _frameIndex     = 0;
+    uint32_t _imageIndex     = 0;
 
     VulkanDescriptorManager _descriptorManager{};
 

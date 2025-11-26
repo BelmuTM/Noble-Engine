@@ -17,8 +17,6 @@ bool VulkanFrameResources::create(
     _imageManager   = &imageManager;
     _framesInFlight = framesInFlight;
 
-    _frameContext.setExtent(swapchain.getExtent());
-
     // Descriptors creation
     TRY(_descriptorManager.create(device.getLogicalDevice(), frameDescriptorScheme, framesInFlight, 1, errorMessage));
 
@@ -47,10 +45,8 @@ void VulkanFrameResources::update(
 ) {
     _frameUBO.update(frameIndex, *_swapchain, camera);
 
-    _frameContext
-        .setFrameIndex(frameIndex)
-        .setSwapchainImageView(_swapchain->getImageViews()[imageIndex])
-        .setExtent(_swapchain->getExtent());
+    _frameIndex = frameIndex;
+    _imageIndex = imageIndex;
 }
 
 bool VulkanFrameResources::recreate(const VulkanCommandManager* commandManager, std::string& errorMessage) const {
@@ -62,11 +58,9 @@ bool VulkanFrameResources::recreate(const VulkanCommandManager* commandManager, 
         ));
 
         TRY(colorBuffer->transitionLayout(
-            vk::ImageLayout::eColorAttachmentOptimal,
-            vk::ImageLayout::eShaderReadOnlyOptimal,
-            1,
-            commandManager,
-            errorMessage
+            commandManager, errorMessage,
+            colorBuffer->getLayout(),
+            vk::ImageLayout::eShaderReadOnlyOptimal
         ));
     }
 

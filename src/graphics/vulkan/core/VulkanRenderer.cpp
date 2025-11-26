@@ -50,7 +50,7 @@ bool VulkanRenderer::init(Platform::Window& window, const ObjectsVector& objects
     TRY(createVulkanEntity(&shaderProgramManager, errorMessage, logicalDevice));
     TRY(createVulkanEntity(&pipelineManager, errorMessage, logicalDevice));
     TRY(createVulkanEntity(
-        &renderGraph, errorMessage, meshManager, frameResources, renderResources, device.getQueryPool()
+        &renderGraph, errorMessage, swapchain, meshManager, frameResources, renderResources, device.getQueryPool()
     ));
 
     const VulkanRenderGraphBuilderContext graphBuilderContext{
@@ -117,8 +117,7 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
 }
 
 bool VulkanRenderer::onFramebufferResize(std::string& errorMessage) {
-    if (!_window) return false;
-    if (!_window->isFramebufferResized()) return true;
+    if (!_window || !_window->isFramebufferResized()) return true;
 
     VK_CALL_LOG(context.getDevice().getLogicalDevice().waitIdle(), Logger::Level::ERROR);
 
@@ -142,30 +141,20 @@ bool VulkanRenderer::recordCommandBuffer(
     constexpr vk::CommandBufferBeginInfo beginInfo{};
     VK_TRY(commandBuffer.begin(beginInfo), errorMessage);
 
-    const VulkanSwapchain& swapchain = context.getSwapchain();
-    const vk::Format swapchainFormat = swapchain.getFormat();
-    const vk::Image& swapchainImage  = swapchain.getImages()[imageIndex];
+    VulkanImage* swapchainImage  = context.getSwapchain().getImage(imageIndex);
 
-    TRY(VulkanImageLayoutTransitions::transitionImageLayout(
-        commandBuffer,
-        swapchainImage,
-        swapchainFormat,
+    TRY(swapchainImage->transitionLayout(
+        commandBuffer, errorMessage,
         vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eColorAttachmentOptimal,
-        1,
-        errorMessage
+        vk::ImageLayout::eColorAttachmentOptimal
     ));
 
     renderGraph.execute(commandBuffer);
 
-    TRY(VulkanImageLayoutTransitions::transitionImageLayout(
-        commandBuffer,
-        swapchainImage,
-        swapchainFormat,
+    TRY(swapchainImage->transitionLayout(
+        commandBuffer, errorMessage,
         vk::ImageLayout::eColorAttachmentOptimal,
-        vk::ImageLayout::ePresentSrcKHR,
-        1,
-        errorMessage
+        vk::ImageLayout::ePresentSrcKHR
     ));
 
     VK_TRY(commandBuffer.end(), errorMessage);

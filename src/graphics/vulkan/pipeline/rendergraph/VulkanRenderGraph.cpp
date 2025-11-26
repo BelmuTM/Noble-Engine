@@ -5,12 +5,14 @@
 #include "core/debug/Logger.h"
 
 bool VulkanRenderGraph::create(
+    const VulkanSwapchain&   swapchain,
     const VulkanMeshManager& meshManager,
     VulkanFrameResources&    frame,
     VulkanRenderResources&   resources,
     const vk::QueryPool      queryPool,
     std::string&             errorMessage
 ) noexcept {
+    _swapchain   = &swapchain;
     _meshManager = &meshManager;
     _frame       = &frame;
     _resources   = &resources;
@@ -20,28 +22,10 @@ bool VulkanRenderGraph::create(
 }
 
 void VulkanRenderGraph::destroy() noexcept {
+    _swapchain   = nullptr;
     _meshManager = nullptr;
     _frame       = nullptr;
     _resources   = nullptr;
-}
-
-void VulkanRenderGraph::attachSwapchainOutput(const VulkanSwapchain& swapchain) const {
-    VulkanRenderPassResource swapchainOutput{};
-    swapchainOutput
-        .setType(SwapchainOutput)
-        .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
-        .setFormat(swapchain.getFormat())
-        .setImageViewResolver([this] { return _frame->getFrameContext().swapchainImageView; });
-
-    VulkanRenderPassAttachment swapchainAttachment{};
-    swapchainAttachment
-        .setResource(swapchainOutput)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eStore)
-        .setClearValue(defaultClearColor);
-
-    VulkanRenderPass* lastPass = _passes.back().get();
-    lastPass->addColorAttachmentAtIndex(0, swapchainAttachment);
 }
 
 void VulkanRenderGraph::execute(const vk::CommandBuffer commandBuffer) const {
@@ -58,10 +42,13 @@ void VulkanRenderGraph::execute(const vk::CommandBuffer commandBuffer) const {
 bool VulkanRenderGraph::executePass(
     const vk::CommandBuffer commandBuffer, const VulkanRenderPass* pass, std::string& errorMessage
 ) const {
+    const uint32_t frameIndex = _frame->getFrameIndex();
+
+    const vk::Extent2D extent = _swapchain->getExtent();
+
     const vk::Buffer& vertexBuffer = _meshManager->getVertexBuffer();
     const vk::Buffer& indexBuffer  = _meshManager->getIndexBuffer();
 
-    const VulkanFrameContext&  frameContext  = _frame->getFrameContext();
     const VulkanShaderProgram* shaderProgram = pass->getPipelineDescriptor().shaderProgram;
 
     if (pass->getBindPoint() == vk::PipelineBindPoint::eGraphics) {
@@ -78,13 +65,11 @@ bool VulkanRenderGraph::executePass(
 
             if (colorResource.image) {
                 TRY(VulkanImageLayoutTransitions::transitionImageLayout(
-                    commandBuffer,
+                    commandBuffer, errorMessage,
                     *colorResource.image,
                     colorResource.format,
                     colorResource.layout,
-                    vk::ImageLayout::eColorAttachmentOptimal,
-                    1,
-                    errorMessage
+                    vk::ImageLayout::eColorAttachmentOptimal
                 ));
             }
 
@@ -104,7 +89,7 @@ bool VulkanRenderGraph::executePass(
 
         vk::RenderingInfo renderingInfo{};
         renderingInfo
-            .setRenderArea({{0, 0}, frameContext.extent})
+            .setRenderArea({{0, 0}, extent})
             .setLayerCount(1)
             .setColorAttachments(colorAttachmentsInfo);
 
@@ -125,13 +110,11 @@ bool VulkanRenderGraph::executePass(
 
         if (depthResource.layout != targetDepthLayout) {
             TRY(VulkanImageLayoutTransitions::transitionImageLayout(
-                commandBuffer,
+                commandBuffer, errorMessage,
                 *depthResource.image,
                 depthResource.format,
                 depthResource.layout,
-                targetDepthLayout,
-                1,
-                errorMessage
+                targetDepthLayout
             ));
             depthResource.setLayout(targetDepthLayout);
         }
@@ -168,15 +151,15 @@ bool VulkanRenderGraph::executePass(
             // Descriptors
 
             std::vector<vk::DescriptorSet> descriptorSets{};
-            descriptorSets.push_back(_frame->getDescriptors()->getSets().at(frameContext.frameIndex));
+            descriptorSets.push_back(_frame->getDescriptors()->getSets().at(frameIndex));
 
             if (draw.descriptorResolver) {
-                if (const auto objectSet = draw.descriptorResolver(frameContext); !objectSet.empty()) {
+                if (const auto objectSet = draw.descriptorResolver(frameIndex); !objectSet.empty()) {
                     descriptorSets.push_back(objectSet[0]);
                 }
             }
 
-            for (const auto& descriptorSet : _resources->buildDescriptorSets(frameContext.frameIndex)) {
+            for (const auto& descriptorSet : _resources->buildDescriptorSets(frameIndex)) {
                 descriptorSets.push_back(descriptorSet);
             }
 
@@ -196,8 +179,8 @@ bool VulkanRenderGraph::executePass(
             /*              Draw Meshes              */
             /*---------------------------------------*/
 
-            commandBuffer.setViewport(0, draw.resolveViewport(frameContext));
-            commandBuffer.setScissor(0, draw.resolveScissor(frameContext));
+            commandBuffer.setViewport(0, draw.resolveViewport(extent));
+            commandBuffer.setScissor(0, draw.resolveScissor(extent));
 
             if (!draw.mesh->isBufferless()) {
                 const vk::DeviceSize vertexOffset = draw.mesh->getVertexOffset();
@@ -217,13 +200,11 @@ bool VulkanRenderGraph::executePass(
 
         for (const auto& [resource, targetLayout] : pass->getTransitions()) {
             TRY(VulkanImageLayoutTransitions::transitionImageLayout(
-                commandBuffer,
+                commandBuffer, errorMessage,
                 *resource->image,
                 resource->format,
                 resource->layout,
-                targetLayout,
-                1,
-                errorMessage
+                targetLayout
             ));
 
             resource->setLayout(targetLayout);

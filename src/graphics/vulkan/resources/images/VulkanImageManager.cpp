@@ -88,11 +88,9 @@ bool VulkanImageManager::createColorBuffer(
     ));
 
     TRY(colorBuffer.transitionLayout(
+        _commandManager, errorMessage,
         vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eColorAttachmentOptimal,
-        1,
-        _commandManager,
-        errorMessage
+        vk::ImageLayout::eColorAttachmentOptimal
     ));
 
     TRY(colorBuffer.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, _device, errorMessage));
@@ -129,11 +127,9 @@ bool VulkanImageManager::createDepthBuffer(
     TRY(depthBuffer.createImageView(vk::ImageViewType::e2D, depthFormat, aspects, 1, _device, errorMessage));
 
     TRY(depthBuffer.transitionLayout(
+        _commandManager, errorMessage,
         vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eDepthStencilAttachmentOptimal,
-        1,
-        _commandManager,
-        errorMessage
+        vk::ImageLayout::eDepthStencilAttachmentOptimal
     ));
 
     TRY(depthBuffer.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eClampToEdge, _device, errorMessage));

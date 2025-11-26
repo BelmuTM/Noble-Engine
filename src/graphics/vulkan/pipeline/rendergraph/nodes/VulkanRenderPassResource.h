@@ -8,14 +8,14 @@
 
 #include <functional>
 
-enum FramePassResourceType { Texture, Buffer, SwapchainOutput };
+enum VulkanRenderPassResourceType { Texture, Buffer, SwapchainOutput };
 
 struct VulkanRenderPassResource {
     std::string name = "Undefined_Resource";
 
-    FramePassResourceType type = Texture;
+    VulkanRenderPassResourceType type = Texture;
 
-    const VulkanImage* image = nullptr;
+    VulkanImage* image = nullptr;
 
     vk::Image     imageHandle{};
     vk::ImageView imageView{};
@@ -26,7 +26,7 @@ struct VulkanRenderPassResource {
 
     std::function<vk::ImageView()> imageViewResolver = nullptr;
 
-    vk::ImageView resolveImageView() const {
+    [[nodiscard]] vk::ImageView resolveImageView() const {
         if (image && image->getImageView() != VK_NULL_HANDLE) {
             return image->getImageView();
         }
@@ -36,9 +36,9 @@ struct VulkanRenderPassResource {
 
     VulkanRenderPassResource& setName(const std::string& _name) noexcept { name = _name; return *this; }
 
-    VulkanRenderPassResource& setType(const FramePassResourceType _type) noexcept { type = _type; return *this; }
+    VulkanRenderPassResource& setType(const VulkanRenderPassResourceType _type) noexcept { type = _type; return *this; }
 
-    VulkanRenderPassResource& setImage(const VulkanImage* _image) noexcept { image = _image; return *this; }
+    VulkanRenderPassResource& setImage(VulkanImage* _image) noexcept { image = _image; return *this; }
 
     VulkanRenderPassResource& setImageHandle(const vk::Image _image) noexcept { imageHandle = _image; return *this; }
 

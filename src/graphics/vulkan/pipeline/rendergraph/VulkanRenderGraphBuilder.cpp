@@ -18,7 +18,7 @@ bool VulkanRenderGraphBuilder::build(const VulkanRenderGraphBuilderContext& cont
         errorMessage
     ));
 
-    context.renderGraph.attachSwapchainOutput(context.swapchain);
+    attachSwapchainOutput(context.swapchain, context.frameResources, context.renderGraph);
 
     TRY(createColorAttachments(
         context.renderResources, context.imageManager, context.frameResources, context.renderGraph, errorMessage
@@ -70,6 +70,28 @@ bool VulkanRenderGraphBuilder::buildPasses(
     return true;
 }
 
+void VulkanRenderGraphBuilder::attachSwapchainOutput(
+    const VulkanSwapchain& swapchain, VulkanFrameResources& frameResources, VulkanRenderGraph& renderGraph
+) {
+    VulkanRenderPassResource swapchainOutput{};
+    swapchainOutput
+        .setType(SwapchainOutput)
+        .setFormat(swapchain.getFormat())
+        .setImageViewResolver([&swapchain, &frameResources] {
+            return swapchain.getImage(frameResources.getImageIndex())->getImageView();
+        });
+
+    VulkanRenderPassAttachment swapchainAttachment{};
+    swapchainAttachment
+        .setResource(swapchainOutput)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eStore)
+        .setClearValue(defaultClearColor);
+
+    VulkanRenderPass* lastPass = renderGraph.getPasses().back().get();
+    lastPass->addColorAttachmentAtIndex(0, swapchainAttachment);
+}
+
 bool VulkanRenderGraphBuilder::createColorAttachments(
     VulkanRenderResources&    renderResources,
     const VulkanImageManager& imageManager,
@@ -108,7 +130,9 @@ bool VulkanRenderGraphBuilder::setupResourceTransitions(
 
         for (VulkanRenderPass* writerPass : renderResources.getResourceWriters().at(resourceName)) {
             if (!writerPass) continue;
+
             Logger::debug("Pass " + writerPass->getName() + " transitions " + resourceName);
+
             writerPass->addTransition({resource, vk::ImageLayout::eShaderReadOnlyOptimal});
         }
     }

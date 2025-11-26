@@ -7,6 +7,7 @@
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 #include "VulkanDevice.h"
+#include "graphics/vulkan/resources/images/VulkanImage.h"
 
 #include <string>
 #include <vector>
@@ -31,10 +32,9 @@ public:
 
     [[nodiscard]] const vk::SwapchainKHR& handle() const noexcept { return _swapchain; }
 
-    [[nodiscard]] const std::vector<vk::Image>& getImages() const noexcept { return _images; }
-    [[nodiscard]] uint32_t getImageCount() const noexcept { return _images.size(); }
+    [[nodiscard]] VulkanImage* getImage(const uint32_t imageIndex) const { return _images[imageIndex].get(); }
 
-    [[nodiscard]] const std::vector<vk::ImageView>& getImageViews() const noexcept { return _imageViews; }
+    [[nodiscard]] uint32_t getImageCount() const noexcept { return _imageHandles.size(); }
 
     [[nodiscard]] vk::Format getFormat() const noexcept { return _format; }
     [[nodiscard]] vk::Extent2D getExtent() const noexcept { return _extent; }
@@ -42,6 +42,8 @@ public:
     [[nodiscard]] float getAspectRatio() const noexcept {
         return static_cast<float>(_extent.width) / static_cast<float>(_extent.height);
     }
+
+    void createImages();
 
 private:
     struct SwapchainSupportInfo {
@@ -54,11 +56,13 @@ private:
     const VulkanDevice*     _device = nullptr;
 
     vk::SwapchainKHR           _swapchain{};
-    std::vector<vk::Image>     _images{};
+    std::vector<vk::Image>     _imageHandles{};
     std::vector<vk::ImageView> _imageViews{};
 
     vk::Extent2D _extent{};
     vk::Format   _format = vk::Format::eUndefined;
+
+    std::vector<std::unique_ptr<VulkanImage>> _images{};
 
     bool createSwapchain(vk::SurfaceKHR surface, std::string& errorMessage);
     bool createImageViews(std::string& errorMessage);

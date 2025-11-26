@@ -63,6 +63,9 @@ void VulkanDevice::destroy() noexcept {
         _logicalDevice.destroy();
         _logicalDevice = VK_NULL_HANDLE;
     }
+
+    _capabilities = nullptr;
+
     _queueFamilyIndices = {};
 }
 

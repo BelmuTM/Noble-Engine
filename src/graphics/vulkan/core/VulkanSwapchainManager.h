@@ -5,7 +5,6 @@
 #include "core/Platform.h"
 
 #include "VulkanContext.h"
-#include "VulkanCommandManager.h"
 #include "VulkanSyncObjects.h"
 
 class VulkanSwapchainManager {

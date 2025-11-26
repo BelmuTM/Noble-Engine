@@ -16,11 +16,15 @@ bool VulkanSwapchain::create(
     TRY(createSwapchain(surface, errorMessage));
     TRY(createImageViews(errorMessage));
 
+    createImages();
+
     return true;
 }
 
 void VulkanSwapchain::destroy() noexcept {
     if (!_device) return;
+
+    _imageHandles.clear();
 
     for (auto& imageView : _imageViews) {
         if (imageView) {
@@ -43,7 +47,23 @@ bool VulkanSwapchain::recreate(const vk::SurfaceKHR surface, std::string& errorM
     destroy();
 
     TRY(create(*_window, *_device, surface, errorMessage));
+
     return true;
+}
+
+void VulkanSwapchain::createImages() {
+    _images.resize(_imageHandles.size());
+
+    for (uint32_t i = 0; i < _imageHandles.size(); i++) {
+        if (!_images[i]) {
+            _images[i] = std::make_unique<VulkanImage>();
+        }
+
+        _images[i]->setHandle(_imageHandles[i]);
+        _images[i]->setImageView(_imageViews[i]);
+        _images[i]->setFormat(_format);
+        _images[i]->setExtent(vk::Extent3D{_extent, 1});
+    }
 }
 
 VulkanSwapchain::SwapchainSupportInfo VulkanSwapchain::querySwapchainSupport(
@@ -162,7 +182,7 @@ bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string&
     _format = surfaceFormat.format;
     _extent = extent;
 
-    VK_CREATE(logicalDevice.getSwapchainImagesKHR(_swapchain), _images, errorMessage);
+    VK_CREATE(logicalDevice.getSwapchainImagesKHR(_swapchain), _imageHandles, errorMessage);
 
     return true;
 }
@@ -171,7 +191,7 @@ bool VulkanSwapchain::createImageViews(std::string& errorMessage) {
     const vk::Device& logicalDevice = _device->getLogicalDevice();
 
     _imageViews.clear();
-    _imageViews.reserve(_images.size());
+    _imageViews.reserve(_imageHandles.size());
 
     vk::ImageViewCreateInfo imageViewInfo{};
     imageViewInfo
@@ -179,7 +199,7 @@ bool VulkanSwapchain::createImageViews(std::string& errorMessage) {
         .setFormat(_format)
         .setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
 
-    for (const auto swapchainImage : _images) {
+    for (const auto swapchainImage : _imageHandles) {
         imageViewInfo.image = swapchainImage;
 
         const auto imageViewCreate = VK_CALL(logicalDevice.createImageView(imageViewInfo), errorMessage);

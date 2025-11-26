@@ -6,8 +6,6 @@
 
 #include <ranges>
 
-#include "core/debug/Logger.h"
-
 bool VulkanRenderResources::create(
     const VulkanDevice&       device,
     const VulkanSwapchain&    swapchain,
@@ -111,12 +109,7 @@ bool VulkanRenderResources::createColorAttachments(
 
         constexpr auto format = vk::Format::eB8G8R8A8Srgb;
 
-        TRY(imageManager.createColorBuffer(
-            *colorImage,
-            format,
-            frameResources.getFrameContext().extent,
-            errorMessage
-        ));
+        TRY(imageManager.createColorBuffer(*colorImage, format, frameResources.getExtent(), errorMessage));
 
         VulkanRenderPassResource colorBuffer{};
         colorBuffer

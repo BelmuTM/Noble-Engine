@@ -21,6 +21,7 @@ public:
     VulkanRenderGraph& operator=(VulkanRenderGraph&&) = delete;
 
     [[nodiscard]] bool create(
+        const VulkanSwapchain&   swapchain,
         const VulkanMeshManager& meshManager,
         VulkanFrameResources&    frame,
         VulkanRenderResources&   resources,
@@ -37,13 +38,12 @@ public:
         _passes.push_back(std::move(pass));
     }
 
-    void attachSwapchainOutput(const VulkanSwapchain& swapchain) const;
-
     void execute(vk::CommandBuffer commandBuffer) const;
 
     bool executePass(vk::CommandBuffer commandBuffer, const VulkanRenderPass* pass, std::string& errorMessage) const;
 
 private:
+    const VulkanSwapchain*   _swapchain   = nullptr;
     const VulkanMeshManager* _meshManager = nullptr;
     VulkanFrameResources*    _frame       = nullptr;
     VulkanRenderResources*   _resources   = nullptr;

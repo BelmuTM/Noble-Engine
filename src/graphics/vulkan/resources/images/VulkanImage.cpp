@@ -7,8 +7,8 @@
 #include "core/debug/ErrorHandling.h"
 
 void VulkanImage::destroy(const VulkanDevice& device) noexcept {
-    const vk::Device&  logicalDevice = device.getLogicalDevice();
-    const VmaAllocator allocator     = device.getAllocator();
+    const vk::Device&   logicalDevice = device.getLogicalDevice();
+    const VmaAllocator& allocator     = device.getAllocator();
 
     if (_sampler) {
         logicalDevice.destroySampler(_sampler);
@@ -29,19 +29,19 @@ void VulkanImage::destroy(const VulkanDevice& device) noexcept {
 
 bool VulkanImage::transitionLayout(
     const vk::CommandBuffer commandBuffer,
+    std::string&            errorMessage,
     const vk::ImageLayout   oldLayout,
     const vk::ImageLayout   newLayout,
-    const uint32_t          mipLevels,
-    std::string&            errorMessage
+    const uint32_t          mipLevels
 ) {
     TRY(VulkanImageLayoutTransitions::transitionImageLayout(
         commandBuffer,
+        errorMessage,
         _image,
         _format,
         oldLayout,
         newLayout,
-        mipLevels,
-        errorMessage
+        mipLevels
     ));
 
     _layout = newLayout;
@@ -50,16 +50,16 @@ bool VulkanImage::transitionLayout(
 }
 
 bool VulkanImage::transitionLayout(
+    const VulkanCommandManager* commandManager,
+    std::string&                errorMessage,
     const vk::ImageLayout       oldLayout,
     const vk::ImageLayout       newLayout,
-    const uint32_t              mipLevels,
-    const VulkanCommandManager* commandManager,
-    std::string&                errorMessage
+    const uint32_t              mipLevels
 ) {
     vk::CommandBuffer commandBuffer{};
     TRY(commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
 
-    TRY(transitionLayout(commandBuffer, oldLayout, newLayout, mipLevels, errorMessage));
+    TRY(transitionLayout(commandBuffer, errorMessage, oldLayout, newLayout, mipLevels));
 
     TRY(commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
 
@@ -76,7 +76,7 @@ bool VulkanImage::createImage(
     const VulkanDevice*       device,
     std::string&              errorMessage
 ) {
-    const VmaAllocator allocator = device->getAllocator();
+    const VmaAllocator& allocator = device->getAllocator();
 
     vk::ImageCreateInfo imageInfo{};
     imageInfo
@@ -393,11 +393,11 @@ bool VulkanImage::createFromData(
     ));
 
     TRY(transitionLayout(
+        commandManager,
+        errorMessage,
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eTransferDstOptimal,
-        mipLevels,
-        commandManager,
-        errorMessage
+        mipLevels
     ));
 
     TRY(copyBufferToImage(stagingBuffer, extent, commandManager, errorMessage));
@@ -407,11 +407,11 @@ bool VulkanImage::createFromData(
         TRY(generateMipmaps(extent, mipLevels, commandManager, errorMessage));
     } else {
         TRY(transitionLayout(
+            commandManager,
+            errorMessage,
             vk::ImageLayout::eTransferDstOptimal,
             vk::ImageLayout::eShaderReadOnlyOptimal,
-            mipLevels,
-            commandManager,
-            errorMessage
+            mipLevels
         ));
     }
 
