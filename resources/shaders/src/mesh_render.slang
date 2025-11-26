@@ -44,7 +44,8 @@ VSOutput vertMain(VSInput input) {
     return output;
 }
 
-layout (location = 0) out float4 meshColor;
+layout (location = 0) out float4 albedoTexture;
+layout (location = 1) out float4 normalTexture;
 
 layout (set = 1, binding = 0) Sampler2D texture;
 
@@ -62,38 +63,9 @@ float bayer2(float2 a) {
 #define bayer256(a) (bayer128(0.5 * (a))  *  0.25 + bayer2(a))
 #define bayer512(a) (bayer256(0.5 * (a))  *  0.25 + bayer2(a))
 
-#define TAU 2.0 * 3.14159
-
 [shader("fragment")]
 void fragMain(VSOutput vertIn) : SV_TARGET {
-    const float3 lightPosition0 = float3(-1.5, 1.0, 5.0);
-    const float3 lightPosition1 = float3(4.5, -1.0, 1.0);
-
-    float3 lightDirection0 = normalize(lightPosition0 - vertIn.worldPos.xyz);
-    float3 lightDirection1 = normalize(lightPosition1 - vertIn.worldPos.xyz);
-
-    float NdotL0 = max(0.0, dot(normalize(vertIn.normal), lightDirection0));
-    float NdotL1 = max(0.0, dot(normalize(vertIn.normal), lightDirection1));
-
-    float3 rainbow;
-    rainbow.r = sin(frameUBO.frameTimeCounter * TAU / 6.0 + 0.0) * 0.5 + 0.5;
-    rainbow.g = sin(frameUBO.frameTimeCounter * TAU / 6.0 + 2.0) * 0.5 + 0.5;
-    rainbow.b = sin(frameUBO.frameTimeCounter * TAU / 6.0 + 4.0) * 0.5 + 0.5;
-
-    const float3 lightColor0 = float3(0.969, 0.549, 0.125);
-    float3 lightColor1 = rainbow;
-
     const float fadeStartDist = 0.25;
-
-    float dist = distance(frameUBO.cameraPosition, vertIn.worldPos.xyz);
-    float fade = saturate((dist - frameUBO.nearPlane) / (fadeStartDist - frameUBO.nearPlane));
-
-    const float ditherScale = 0.5;
-    float threshold = bayer32(vertIn.position.xy * ditherScale);
-
-    if (threshold > fade) {
-        discard;
-    }
 
     float4 albedo = texture.Sample(vertIn.texCoords);
 
@@ -101,15 +73,6 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
         discard;
     }
 
-    float dist0 = length(lightPosition0 - vertIn.worldPos.xyz);
-    float dist1 = length(lightPosition1 - vertIn.worldPos.xyz);
-
-    float attenuation0 = 1.0 / (dist0 * dist0 * 0.15);
-    float attenuation1 = 1.0 / (dist1 * dist1 * 0.35);
-
-    const float3 ambient = float3(0.005);
-
-    float3 lighting = albedo.rgb * (ambient + lightColor0 * NdotL0 * attenuation0 + lightColor1 * NdotL1 * attenuation1);
-
-    meshColor = float4(lighting, 1.0);
+    albedoTexture = albedo;
+    normalTexture = float4(vertIn.normal * 0.5 + 0.5, 1.0);
 }

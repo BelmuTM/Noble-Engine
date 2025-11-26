@@ -25,6 +25,22 @@ namespace VulkanImageLayoutTransitions {
                 vk::PipelineStageFlagBits2::eTopOfPipe, vk::PipelineStageFlagBits2::eEarlyFragmentTests
             };
 
+        if (oldLayout == ImageLayout::eDepthStencilAttachmentOptimal &&
+            newLayout == ImageLayout::eShaderReadOnlyOptimal)
+            return LayoutTransition{
+                vk::AccessFlagBits2::eDepthStencilAttachmentRead | vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
+                vk::AccessFlagBits2::eShaderRead,
+                vk::PipelineStageFlagBits2::eEarlyFragmentTests, vk::PipelineStageFlagBits2::eFragmentShader
+            };
+
+        if (oldLayout == ImageLayout::eShaderReadOnlyOptimal &&
+            newLayout == ImageLayout::eDepthStencilAttachmentOptimal)
+            return LayoutTransition{
+                vk::AccessFlagBits2::eShaderRead,
+                vk::AccessFlagBits2::eDepthStencilAttachmentRead | vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
+                vk::PipelineStageFlagBits2::eFragmentShader, vk::PipelineStageFlagBits2::eEarlyFragmentTests
+            };
+
         if (oldLayout == ImageLayout::eUndefined &&
             newLayout == ImageLayout::eTransferDstOptimal)
             return LayoutTransition{
@@ -82,9 +98,9 @@ namespace VulkanImageLayoutTransitions {
     }
 
     bool transitionImageLayout(
+        const vk::CommandBuffer commandBuffer,
         const vk::Image         image,
         const vk::Format        format,
-        const vk::CommandBuffer commandBuffer,
         const vk::ImageLayout   oldLayout,
         const vk::ImageLayout   newLayout,
         const uint32_t          mipLevels,
@@ -100,7 +116,7 @@ namespace VulkanImageLayoutTransitions {
             .setBaseArrayLayer(0)
             .setLayerCount(1);
 
-        if (newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
+        if (VulkanImage::isDepthBuffer(format)) {
             subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
 
             if (VulkanImage::hasStencilComponent(format)) {

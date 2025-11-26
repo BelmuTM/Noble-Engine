@@ -27,27 +27,44 @@ public:
     void destroy(const VulkanDevice& device) noexcept;
 
     [[nodiscard]] vk::ImageView getImageView() const noexcept { return _imageView; }
-
     [[nodiscard]] vk::Sampler getSampler() const noexcept { return _sampler; }
-
     [[nodiscard]] vk::Format getFormat() const noexcept { return _format; }
-    void setFormat(const vk::Format format) noexcept { _format = format; }
-
     [[nodiscard]] vk::Extent3D getExtent() const noexcept { return _extent; }
+    [[nodiscard]] vk::ImageLayout getLayout() const noexcept { return _layout; }
+
+    void setFormat(const vk::Format format) noexcept { _format = format; }
     void setExtent(const vk::Extent3D extent) noexcept { _extent = extent; }
+    void setDescriptorType(const vk::DescriptorType descriptorType) noexcept { _descriptorType = descriptorType; }
+
+    [[nodiscard]] static bool isDepthBuffer(const vk::Format format) {
+        return format == vk::Format::eD16Unorm
+            || format == vk::Format::eD32Sfloat
+            || format == vk::Format::eD16UnormS8Uint
+            || format == vk::Format::eD24UnormS8Uint
+            || format == vk::Format::eD32SfloatS8Uint;
+    }
 
     [[nodiscard]] static bool hasStencilComponent(const vk::Format format) {
-        return format == vk::Format::eD32SfloatS8Uint
-            || format == vk::Format::eD24UnormS8Uint;
+        return format == vk::Format::eD16UnormS8Uint
+            || format == vk::Format::eD24UnormS8Uint
+            || format == vk::Format::eD32SfloatS8Uint;
     }
 
     [[nodiscard]] VulkanDescriptorInfo getDescriptorInfo(const uint32_t binding) const noexcept {
         return {
-            .type      = vk::DescriptorType::eCombinedImageSampler,
+            .type      = _descriptorType,
             .imageInfo = {_sampler, _imageView, vk::ImageLayout::eShaderReadOnlyOptimal},
             .binding   = binding
         };
     }
+
+    [[nodiscard]] bool transitionLayout(
+        vk::CommandBuffer commandBuffer,
+        vk::ImageLayout   oldLayout,
+        vk::ImageLayout   newLayout,
+        uint32_t          mipLevels,
+        std::string&      errorMessage
+    );
 
     [[nodiscard]] bool transitionLayout(
         vk::ImageLayout             oldLayout,
@@ -55,7 +72,7 @@ public:
         uint32_t                    mipLevels,
         const VulkanCommandManager* commandManager,
         std::string&                errorMessage
-    ) const;
+    );
 
     [[nodiscard]] bool createImage(
         vk::ImageType       type,
@@ -119,6 +136,10 @@ private:
 
     vk::Format   _format;
     vk::Extent3D _extent{};
+
+    vk::ImageLayout _layout = vk::ImageLayout::eUndefined;
+
+    vk::DescriptorType _descriptorType = vk::DescriptorType::eCombinedImageSampler;
 };
 
 #endif // NOBLEENGINE_VULKANIMAGE_H

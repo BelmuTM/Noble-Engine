@@ -70,6 +70,7 @@ bool VulkanImageManager::createColorBuffer(
 
     colorBuffer.setFormat(format);
     colorBuffer.setExtent(colorExtent);
+    colorBuffer.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
 
     TRY(colorBuffer.createImage(
         vk::ImageType::e2D,
@@ -107,6 +108,7 @@ bool VulkanImageManager::createDepthBuffer(
 
     depthBuffer.setFormat(depthFormat);
     depthBuffer.setExtent(depthExtent);
+    depthBuffer.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
 
     vk::ImageAspectFlags aspects = vk::ImageAspectFlagBits::eDepth;
     if (VulkanImage::hasStencilComponent(depthBuffer.getFormat())) {
@@ -118,7 +120,7 @@ bool VulkanImageManager::createDepthBuffer(
         depthFormat,
         depthExtent,
         1,
-        vk::ImageUsageFlagBits::eDepthStencilAttachment,
+        vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
         VMA_MEMORY_USAGE_GPU_ONLY,
         _device,
         errorMessage
@@ -133,6 +135,8 @@ bool VulkanImageManager::createDepthBuffer(
         _commandManager,
         errorMessage
     ));
+
+    TRY(depthBuffer.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eClampToEdge, _device, errorMessage));
 
     return true;
 }

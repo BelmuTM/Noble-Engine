@@ -28,24 +28,38 @@ void VulkanImage::destroy(const VulkanDevice& device) noexcept {
 }
 
 bool VulkanImage::transitionLayout(
-    const vk::ImageLayout       oldLayout,
-    const vk::ImageLayout       newLayout,
-    const uint32_t              mipLevels,
-    const VulkanCommandManager* commandManager,
-    std::string&                errorMessage
-) const {
-    vk::CommandBuffer commandBuffer{};
-    TRY(commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
-
+    const vk::CommandBuffer commandBuffer,
+    const vk::ImageLayout   oldLayout,
+    const vk::ImageLayout   newLayout,
+    const uint32_t          mipLevels,
+    std::string&            errorMessage
+) {
     TRY(VulkanImageLayoutTransitions::transitionImageLayout(
+        commandBuffer,
         _image,
         _format,
-        commandBuffer,
         oldLayout,
         newLayout,
         mipLevels,
         errorMessage
     ));
+
+    _layout = newLayout;
+
+    return true;
+}
+
+bool VulkanImage::transitionLayout(
+    const vk::ImageLayout       oldLayout,
+    const vk::ImageLayout       newLayout,
+    const uint32_t              mipLevels,
+    const VulkanCommandManager* commandManager,
+    std::string&                errorMessage
+) {
+    vk::CommandBuffer commandBuffer{};
+    TRY(commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
+
+    TRY(transitionLayout(commandBuffer, oldLayout, newLayout, mipLevels, errorMessage));
 
     TRY(commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
 
@@ -338,8 +352,9 @@ bool VulkanImage::createFromData(
     const VulkanCommandManager* commandManager,
     std::string&                errorMessage
 ) {
-    _format = format;
-    _extent = extent;
+    _format         = format;
+    _extent         = extent;
+    _descriptorType = vk::DescriptorType::eCombinedImageSampler;
 
     const bool hasMipmaps = mipLevels > 1;
 

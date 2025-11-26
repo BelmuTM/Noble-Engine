@@ -21,7 +21,6 @@ bool CompositePass::create(
     setName(passName + "_CompositePass");
     setPipelineDescriptor(pipelineDescriptor);
     setBindPoint(vk::PipelineBindPoint::eGraphics);
-    setDepthAttachment(frameResources.getDepthBufferAttachment());
 
     const VulkanMesh* fullscreenMesh = meshManager.allocateMesh(VulkanMesh::makeFullscreenTriangle());
 

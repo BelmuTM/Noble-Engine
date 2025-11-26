@@ -40,7 +40,7 @@ bool VulkanRenderer::init(Platform::Window& window, const ObjectsVector& objects
         &frameResources, errorMessage, device, swapchain, imageManager, uniformBufferManager, _framesInFlight
     ));
 
-    TRY(createVulkanEntity(&renderResources, errorMessage, logicalDevice, _framesInFlight));
+    TRY(createVulkanEntity(&renderResources, errorMessage, device, swapchain, imageManager, _framesInFlight));
 
     TRY(createVulkanEntity(
         &renderObjectManager, errorMessage, objects, device, imageManager, meshManager, renderResources, _framesInFlight
@@ -147,9 +147,9 @@ bool VulkanRenderer::recordCommandBuffer(
     const vk::Image& swapchainImage  = swapchain.getImages()[imageIndex];
 
     TRY(VulkanImageLayoutTransitions::transitionImageLayout(
+        commandBuffer,
         swapchainImage,
         swapchainFormat,
-        commandBuffer,
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eColorAttachmentOptimal,
         1,
@@ -159,9 +159,9 @@ bool VulkanRenderer::recordCommandBuffer(
     renderGraph.execute(commandBuffer);
 
     TRY(VulkanImageLayoutTransitions::transitionImageLayout(
+        commandBuffer,
         swapchainImage,
         swapchainFormat,
-        commandBuffer,
         vk::ImageLayout::eColorAttachmentOptimal,
         vk::ImageLayout::ePresentSrcKHR,
         1,

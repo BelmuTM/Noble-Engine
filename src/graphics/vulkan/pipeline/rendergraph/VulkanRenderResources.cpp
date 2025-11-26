@@ -1,55 +1,100 @@
 #include "VulkanRenderResources.h"
 
-#include <iostream>
-
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorSets.h"
 
 #include "core/debug/ErrorHandling.h"
 
 #include <ranges>
 
+#include "core/debug/Logger.h"
+
 bool VulkanRenderResources::create(
-    const vk::Device& device, const uint32_t framesInFlight, std::string& errorMessage
+    const VulkanDevice&       device,
+    const VulkanSwapchain&    swapchain,
+    const VulkanImageManager& imageManager,
+    const uint32_t            framesInFlight,
+    std::string&              errorMessage
 ) noexcept {
-    _device         = device;
+    _device         = &device;
+    _swapchain      = &swapchain;
+    _imageManager   = &imageManager;
     _framesInFlight = framesInFlight;
+
+    // Depth buffer creation
+    _depthBuffer = std::make_unique<VulkanImage>();
+    TRY(imageManager.createDepthBuffer(*_depthBuffer, swapchain.getExtent(), errorMessage));
+
+    VulkanRenderPassResource depthBufferResource{};
+    depthBufferResource
+        .setName(DEPTH_BUFFER_NAME)
+        .setType(Buffer)
+        .setImage(_depthBuffer.get())
+        .setFormat(_depthBuffer->getFormat())
+        .setLayout(_depthBuffer->getLayout());
+
+    VulkanRenderPassAttachment depthBufferAttachment{};
+    depthBufferAttachment
+        .setResource(depthBufferResource)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eStore)
+        .setClearValue(vk::ClearDepthStencilValue{1.0f, 0});
+
+    _depthBufferAttachment = std::make_unique<VulkanRenderPassAttachment>(depthBufferAttachment);
+
+    addResource(depthBufferResource);
 
     return true;
 }
 
 void VulkanRenderResources::destroy() noexcept {
+    // Global resources destruction
     for (const auto& descriptorManager : _descriptorManagers) {
         descriptorManager->destroy();
     }
+
+    _resources.clear();
+    _resourceReaders.clear();
+    _resourceWriters.clear();
 
     _descriptorManagers.clear();
     _descriptorBindingsPerManager.clear();
     _descriptorSetGroups.clear();
 
-    _device = nullptr;
+    // Depth buffer destruction
+    _depthBuffer->destroy(*_device);
+
+    _device       = nullptr;
+    _swapchain    = nullptr;
+    _imageManager = nullptr;
 }
 
 [[nodiscard]] bool VulkanRenderResources::recreate(std::string& errorMessage) {
-    if (_descriptorSetGroups.empty() || _descriptorManagers.empty()) {
-        return true;
-    }
+    // Depth buffer recreation
+    _depthBuffer->destroy(*_device);
 
-    for (size_t managerIndex = 0; managerIndex < _descriptorManagers.size(); managerIndex++) {
-        const VulkanDescriptorSets* descriptorSets = _descriptorSetGroups[managerIndex];
+    TRY(_imageManager->createDepthBuffer(*_depthBuffer, _swapchain->getExtent(), errorMessage));
 
-        if (!descriptorSets) continue;
+    // Descriptor sets re-binding
+    if (!_descriptorSetGroups.empty() && !_descriptorManagers.empty()) {
 
-        const auto& bindings = _descriptorBindingsPerManager[managerIndex];
+        for (size_t managerIndex = 0; managerIndex < _descriptorManagers.size(); managerIndex++) {
+            const VulkanDescriptorSets* descriptorSets = _descriptorSetGroups[managerIndex];
 
-        for (const auto& [binding, resourceName] : bindings) {
-            auto it = _resources.find(resourceName);
-            if (it == _resources.end()) continue;
+            if (!descriptorSets) continue;
 
-            const auto& resource = it->second;
-            if (!resource->image) continue;
+            const auto& bindings = _descriptorBindingsPerManager[managerIndex];
 
-            descriptorSets->bindPerFrameResource(resource->image->getDescriptorInfo(binding));
+            for (const auto& [binding, resourceName] : bindings) {
+                auto it = _resources.find(resourceName);
+                if (it == _resources.end()) continue;
+
+                const auto& resource = it->second;
+                if (!resource->image) continue;
+
+                descriptorSets->bindPerFrameResource(resource->image->getDescriptorInfo(binding));
+            }
         }
+
     }
 
     return true;
@@ -79,9 +124,7 @@ bool VulkanRenderResources::createColorAttachments(
             .setType(Buffer)
             .setImage(colorImage)
             .setFormat(format)
-            .setLayout(vk::ImageLayout::eColorAttachmentOptimal);
-
-        colorBuffer.currentLayout = vk::ImageLayout::eColorAttachmentOptimal;
+            .setLayout(colorImage->getLayout());
 
         VulkanRenderPassAttachment colorAttachment{};
         colorAttachment
@@ -108,7 +151,7 @@ bool VulkanRenderResources::allocateDescriptors(VulkanRenderPass* pass, std::str
     for (const auto& scheme : pass->getShaderProgram()->getDescriptorSchemes() | std::views::values) {
         auto descriptorManager = std::make_unique<VulkanDescriptorManager>();
 
-        TRY(descriptorManager->create(_device, scheme, _framesInFlight, 1, errorMessage));
+        TRY(descriptorManager->create(_device->getLogicalDevice(), scheme, _framesInFlight, 1, errorMessage));
 
         VulkanDescriptorSets* descriptorSets = nullptr;
         TRY(descriptorManager->allocate(descriptorSets, errorMessage));
@@ -124,11 +167,15 @@ bool VulkanRenderResources::allocateDescriptors(VulkanRenderPass* pass, std::str
 
                 if (resource->image) {
                     descriptorSets->bindPerFrameResource(resource->image->getDescriptorInfo(descriptor.binding));
+
+                    _descriptorBindingsPerManager[managerIndex].push_back({descriptor.binding, descriptor.name});
                 }
 
-                _descriptorBindingsPerManager[managerIndex].push_back({descriptor.binding, descriptor.name});
+                _resourceReaders[resource->name].push_back(pass);
 
-                _resourceReaders[descriptor.name].push_back(pass);
+                if (resource->name == DEPTH_BUFFER_NAME) {
+                    pass->setReadsDepthBuffer(true);
+                }
             }
         }
 
@@ -140,17 +187,18 @@ bool VulkanRenderResources::allocateDescriptors(VulkanRenderPass* pass, std::str
     return true;
 }
 
-std::vector<vk::DescriptorSet> VulkanRenderResources::buildDescriptorSets(const uint32_t currentFrameIndex) const {
+
+std::vector<vk::DescriptorSet> VulkanRenderResources::buildDescriptorSets(const uint32_t frameIndex) const {
     std::vector<vk::DescriptorSet> sets{};
     sets.reserve(_descriptorSetGroups.size());
 
     for (const auto& group : _descriptorSetGroups) {
         const auto& groupSets = group->getSets();
-        if (currentFrameIndex >= groupSets.size()) {
+        if (frameIndex >= groupSets.size()) {
             sets.emplace_back(VK_NULL_HANDLE);
             continue;
         }
-        sets.push_back(groupSets[currentFrameIndex]);
+        sets.push_back(groupSets[frameIndex]);
     }
 
     return sets;

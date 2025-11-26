@@ -40,12 +40,13 @@ public:
     [[nodiscard]] static bool build(const VulkanRenderGraphBuilderContext& context, std::string& errorMessage);
 
     [[nodiscard]] static bool buildPasses(
-        VulkanRenderGraph&          renderGraph,
-        VulkanMeshManager&          meshManager,
-        const VulkanFrameResources& frameResources,
-        VulkanRenderObjectManager&  renderObjectManager,
-        VulkanShaderProgramManager& shaderProgramManager,
-        std::string&                errorMessage
+        VulkanRenderGraph&           renderGraph,
+        VulkanMeshManager&           meshManager,
+        const VulkanFrameResources&  frameResources,
+        const VulkanRenderResources& renderResources,
+        VulkanRenderObjectManager&   renderObjectManager,
+        VulkanShaderProgramManager&  shaderProgramManager,
+        std::string&                 errorMessage
     );
 
     [[nodiscard]] static bool createColorAttachments(
@@ -63,7 +64,7 @@ public:
     );
 
     [[nodiscard]] static bool setupResourceTransitions(
-        const VulkanRenderResources& renderResources, std::string& errorMessage
+        VulkanRenderResources& renderResources, const VulkanRenderGraph& renderGraph, std::string& errorMessage
     );
 
     [[nodiscard]] static bool createPipelines(

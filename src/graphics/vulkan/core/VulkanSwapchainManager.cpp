@@ -168,6 +168,7 @@ bool VulkanSwapchainManager::submitCommandBuffer(
     VK_TRY(_device->getGraphicsQueue().submit2(submitInfo, inFlightFence), errorMessage);
 
     const vk::PresentInfoKHR presentInfo(renderFinishedSemaphore, swapchain, imageIndex);
+
     const auto queuePresent = VK_CALL(_device->getPresentQueue().presentKHR(presentInfo), errorMessage);
 
     if (queuePresent == vk::Result::eErrorOutOfDateKHR ||
@@ -198,6 +199,7 @@ bool VulkanSwapchainManager::waitForImageFence(
     if (const vk::Fence& imageInFlight = _syncObjects.imagesInFlight[imageIndex]) {
         VK_TRY(logicalDevice.waitForFences(imageInFlight, vk::True, UINT64_MAX), errorMessage);
     }
+
     _syncObjects.imagesInFlight[imageIndex] = inFlightFence;
 
     VK_TRY(logicalDevice.resetFences(inFlightFence), errorMessage);

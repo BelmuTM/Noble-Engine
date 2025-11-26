@@ -69,53 +69,84 @@ bool VulkanRenderGraph::executePass(
         /*     Rendering Info & Attachments      */
         /*---------------------------------------*/
 
+        // Attach color buffers
+
         std::vector<vk::RenderingAttachmentInfo> colorAttachmentsInfo{};
 
-        for (const auto& attachment : pass->getColorAttachments()) {
-            auto& resource = attachment->resource;
+        for (const auto& colorAttachment : pass->getColorAttachments()) {
+            auto& colorResource = colorAttachment->resource;
 
-            if (resource.image) {
+            if (colorResource.image) {
                 TRY(VulkanImageLayoutTransitions::transitionImageLayout(
-                    *resource.image,
-                    resource.format,
                     commandBuffer,
-                    resource.currentLayout,
+                    *colorResource.image,
+                    colorResource.format,
+                    colorResource.layout,
                     vk::ImageLayout::eColorAttachmentOptimal,
                     1,
                     errorMessage
                 ));
             }
 
-            resource.currentLayout = vk::ImageLayout::eColorAttachmentOptimal;
+            colorResource.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
             colorAttachmentsInfo.push_back(
                 vk::RenderingAttachmentInfo{}
-                    .setImageView(resource.resolveImageView())
-                    .setImageLayout(resource.currentLayout)
-                    .setLoadOp(attachment->loadOp)
-                    .setStoreOp(attachment->storeOp)
-                    .setClearValue(attachment->clearValue)
+                    .setImageView(colorResource.resolveImageView())
+                    .setImageLayout(colorResource.layout)
+                    .setLoadOp(colorAttachment->loadOp)
+                    .setStoreOp(colorAttachment->storeOp)
+                    .setClearValue(colorAttachment->clearValue)
             );
         }
 
-        const VulkanRenderPassAttachment* depthAttachment = pass->getDepthAttachment();
-        vk::RenderingAttachmentInfo depthAttachmentInfo{};
-
-        if (depthAttachment) {
-            depthAttachmentInfo
-                .setImageView(depthAttachment->resource.resolveImageView())
-                .setImageLayout(depthAttachment->resource.layout)
-                .setLoadOp(depthAttachment->loadOp)
-                .setStoreOp(depthAttachment->storeOp)
-                .setClearValue(depthAttachment->clearValue);
-        }
+        // Rendering info
 
         vk::RenderingInfo renderingInfo{};
         renderingInfo
             .setRenderArea({{0, 0}, frameContext.extent})
             .setLayerCount(1)
-            .setColorAttachments(colorAttachmentsInfo)
-            .setPDepthAttachment(&depthAttachmentInfo);
+            .setColorAttachments(colorAttachmentsInfo);
+
+        // Attach depth buffer
+
+        const VulkanRenderPassAttachment* depthAttachment = pass->getDepthAttachment();
+        auto& depthResource = _resources->getDepthBufferAttachment()->resource;
+
+        vk::ImageLayout targetDepthLayout = depthResource.layout;
+
+        if (depthAttachment) {
+            // Pass writes depth
+            targetDepthLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+        } else if (pass->readsDepthBuffer()) {
+            // Pass reads depth
+            targetDepthLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+        }
+
+        if (depthResource.layout != targetDepthLayout) {
+            TRY(VulkanImageLayoutTransitions::transitionImageLayout(
+                commandBuffer,
+                *depthResource.image,
+                depthResource.format,
+                depthResource.layout,
+                targetDepthLayout,
+                1,
+                errorMessage
+            ));
+            depthResource.setLayout(targetDepthLayout);
+        }
+
+        if (depthAttachment) {
+            vk::RenderingAttachmentInfo depthAttachmentInfo{};
+            depthAttachmentInfo
+                .setImageView(depthResource.resolveImageView())
+                .setImageLayout(depthResource.layout)
+                .setLoadOp(depthAttachment->loadOp)
+                .setStoreOp(depthAttachment->storeOp)
+                .setClearValue(depthAttachment->clearValue);
+
+            renderingInfo.setPDepthAttachment(&depthAttachmentInfo);
+        }
 
         commandBuffer.resetQueryPool(_queryPool, 0, 1);
 
@@ -135,6 +166,7 @@ bool VulkanRenderGraph::executePass(
             /*---------------------------------------*/
 
             // Descriptors
+
             std::vector<vk::DescriptorSet> descriptorSets{};
             descriptorSets.push_back(_frame->getDescriptors()->getSets().at(frameContext.frameIndex));
 
@@ -155,6 +187,7 @@ bool VulkanRenderGraph::executePass(
             }
 
             // Push constants
+
             if (auto* drawPushConstant = dynamic_cast<const VulkanDrawCallWithPushConstants*>(&draw)) {
                 drawPushConstant->pushConstants(commandBuffer, pipelineLayout, shaderProgram);
             }
@@ -166,10 +199,10 @@ bool VulkanRenderGraph::executePass(
             commandBuffer.setViewport(0, draw.resolveViewport(frameContext));
             commandBuffer.setScissor(0, draw.resolveScissor(frameContext));
 
-            const vk::DeviceSize vertexOffset = draw.mesh->getVertexOffset();
-            const vk::DeviceSize indexOffset  = draw.mesh->getIndexOffset();
-
             if (!draw.mesh->isBufferless()) {
+                const vk::DeviceSize vertexOffset = draw.mesh->getVertexOffset();
+                const vk::DeviceSize indexOffset  = draw.mesh->getIndexOffset();
+
                 commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &vertexOffset);
                 commandBuffer.bindIndexBuffer(indexBuffer, indexOffset, vk::IndexType::eUint32);
                 commandBuffer.drawIndexed(draw.mesh->getIndices().size(), 1, 0, 0, 0);
@@ -184,16 +217,16 @@ bool VulkanRenderGraph::executePass(
 
         for (const auto& [resource, targetLayout] : pass->getTransitions()) {
             TRY(VulkanImageLayoutTransitions::transitionImageLayout(
+                commandBuffer,
                 *resource->image,
                 resource->format,
-                commandBuffer,
-                resource->currentLayout,
+                resource->layout,
                 targetLayout,
                 1,
                 errorMessage
             ));
 
-            resource->currentLayout = targetLayout;
+            resource->setLayout(targetLayout);
         }
     }
 

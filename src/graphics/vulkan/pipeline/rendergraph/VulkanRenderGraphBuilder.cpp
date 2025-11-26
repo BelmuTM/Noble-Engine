@@ -5,11 +5,14 @@
 
 #include <ranges>
 
+#include "core/debug/Logger.h"
+
 bool VulkanRenderGraphBuilder::build(const VulkanRenderGraphBuilderContext& context, std::string& errorMessage) {
     TRY(buildPasses(
         context.renderGraph,
         context.meshManager,
         context.frameResources,
+        context.renderResources,
         context.renderObjectManager,
         context.shaderProgramManager,
         errorMessage
@@ -23,7 +26,7 @@ bool VulkanRenderGraphBuilder::build(const VulkanRenderGraphBuilderContext& cont
 
     TRY(allocateDescriptors(context.renderResources, context.renderGraph, errorMessage));
 
-    TRY(setupResourceTransitions(context.renderResources, errorMessage));
+    TRY(setupResourceTransitions(context.renderResources, context.renderGraph, errorMessage));
 
     TRY(createPipelines(context.renderGraph, context.pipelineManager, errorMessage));
 
@@ -33,17 +36,19 @@ bool VulkanRenderGraphBuilder::build(const VulkanRenderGraphBuilderContext& cont
 }
 
 bool VulkanRenderGraphBuilder::buildPasses(
-    VulkanRenderGraph&          renderGraph,
-    VulkanMeshManager&          meshManager,
-    const VulkanFrameResources& frameResources,
-    VulkanRenderObjectManager&  renderObjectManager,
-    VulkanShaderProgramManager& shaderProgramManager,
-    std::string&                errorMessage
+    VulkanRenderGraph&           renderGraph,
+    VulkanMeshManager&           meshManager,
+    const VulkanFrameResources&  frameResources,
+    const VulkanRenderResources& renderResources,
+    VulkanRenderObjectManager&   renderObjectManager,
+    VulkanShaderProgramManager&  shaderProgramManager,
+    std::string&                 errorMessage
 ) {
     auto meshRenderPass = std::make_unique<MeshRenderPass>();
     TRY(meshRenderPass->create(
         "mesh_render",
         frameResources,
+        renderResources,
         renderObjectManager,
         shaderProgramManager,
         errorMessage
@@ -92,18 +97,18 @@ bool VulkanRenderGraphBuilder::allocateDescriptors(
 }
 
 bool VulkanRenderGraphBuilder::setupResourceTransitions(
-    const VulkanRenderResources& renderResources, std::string& errorMessage
+    VulkanRenderResources& renderResources, const VulkanRenderGraph& renderGraph, std::string& errorMessage
 ) {
     for (const auto& resourceName : renderResources.getResourceReaders() | std::views::keys) {
         auto it = renderResources.getResources().find(resourceName);
         if (it == renderResources.getResources().end()) continue;
 
         VulkanRenderPassResource* resource = it->second.get();
-
         if (!renderResources.getResourceWriters().contains(resourceName)) continue;
 
         for (VulkanRenderPass* writerPass : renderResources.getResourceWriters().at(resourceName)) {
             if (!writerPass) continue;
+            Logger::debug("Pass " + writerPass->getName() + " transitions " + resourceName);
             writerPass->addTransition({resource, vk::ImageLayout::eShaderReadOnlyOptimal});
         }
     }

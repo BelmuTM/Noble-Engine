@@ -3,11 +3,12 @@
 #include "core/debug/ErrorHandling.h"
 
 bool MeshRenderPass::create(
-    const std::string&          path,
-    const VulkanFrameResources& frameResources,
-    VulkanRenderObjectManager&  renderObjectManager,
-    VulkanShaderProgramManager& shaderProgramManager,
-    std::string&                errorMessage
+    const std::string&           path,
+    const VulkanFrameResources&  frameResources,
+    const VulkanRenderResources& renderResources,
+    VulkanRenderObjectManager&   renderObjectManager,
+    VulkanShaderProgramManager&  shaderProgramManager,
+    std::string&                 errorMessage
 ) {
     TRY(shaderProgramManager.load(getShaderProgram(), path, false, errorMessage));
 
@@ -21,7 +22,7 @@ bool MeshRenderPass::create(
     setName(passName + "_MeshRenderPass");
     setPipelineDescriptor(pipelineDescriptor);
     setBindPoint(vk::PipelineBindPoint::eGraphics);
-    setDepthAttachment(frameResources.getDepthBufferAttachment());
+    setDepthAttachment(renderResources.getDepthBufferAttachment());
 
     for (const auto& renderObject : renderObjectManager.getRenderObjects()) {
         addObjectDrawCall(renderObject.get());

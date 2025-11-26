@@ -11,6 +11,8 @@
 
 #include "graphics/vulkan/pipeline/rendergraph/nodes/VulkanRenderPassAttachment.h"
 
+#include <memory>
+
 static const VulkanDescriptorScheme frameDescriptorScheme = {
     {0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eAllGraphics}
 };
@@ -47,14 +49,6 @@ public:
 
     [[nodiscard]] const VulkanDescriptorSets* getDescriptors() const noexcept { return _frameUBODescriptors; }
 
-    [[nodiscard]] const VulkanRenderPassAttachment* getDepthBufferAttachment() const noexcept {
-        return _depthBufferAttachment.get();
-    }
-
-    [[nodiscard]] const std::vector<std::unique_ptr<VulkanImage>>& getColorBuffers() const noexcept {
-        return _colorBuffers;
-    }
-
     VulkanImage* allocateColorBuffer();
 
 private:
@@ -70,9 +64,6 @@ private:
 
     FrameUniformBuffer    _frameUBO{};
     VulkanDescriptorSets* _frameUBODescriptors = nullptr;
-
-    std::unique_ptr<VulkanImage>                _depthBuffer{};
-    std::unique_ptr<VulkanRenderPassAttachment> _depthBufferAttachment{};
 
     std::vector<std::unique_ptr<VulkanImage>> _colorBuffers{};
 };

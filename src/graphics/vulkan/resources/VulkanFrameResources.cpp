@@ -27,36 +27,19 @@ bool VulkanFrameResources::create(
     TRY(_descriptorManager.allocate(_frameUBODescriptors, errorMessage));
     _frameUBODescriptors->bindPerFrameUBO(_frameUBO, 0);
 
-    // Depth buffer creation
-    _depthBuffer = std::make_unique<VulkanImage>();
-    TRY(imageManager.createDepthBuffer(*_depthBuffer, swapchain.getExtent(), errorMessage));
-
-    VulkanRenderPassResource depthBufferResource{};
-    depthBufferResource
-        .setType(Buffer)
-        .setImage(_depthBuffer.get())
-        .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
-
-    VulkanRenderPassAttachment depthBufferAttachment{};
-    depthBufferAttachment
-        .setResource(depthBufferResource)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eStore)
-        .setClearValue(vk::ClearDepthStencilValue{1.0f, 0});
-
-    _depthBufferAttachment = std::make_unique<VulkanRenderPassAttachment>(depthBufferAttachment);
-
     return true;
 }
 
 void VulkanFrameResources::destroy() noexcept {
     _descriptorManager.destroy();
 
-    _depthBuffer->destroy(*_device);
-
     for (const auto& colorBuffer : _colorBuffers) {
         colorBuffer->destroy(*_device);
     }
+
+    _device       = nullptr;
+    _swapchain    = nullptr;
+    _imageManager = nullptr;
 }
 
 void VulkanFrameResources::update(
@@ -71,10 +54,6 @@ void VulkanFrameResources::update(
 }
 
 bool VulkanFrameResources::recreate(const VulkanCommandManager* commandManager, std::string& errorMessage) const {
-    _depthBuffer->destroy(*_device);
-
-    TRY(_imageManager->createDepthBuffer(*_depthBuffer, _swapchain->getExtent(), errorMessage));
-
     for (auto& colorBuffer : _colorBuffers) {
         colorBuffer->destroy(*_device);
 

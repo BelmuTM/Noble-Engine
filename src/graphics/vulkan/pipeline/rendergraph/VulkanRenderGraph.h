@@ -30,7 +30,8 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] std::vector<std::unique_ptr<VulkanRenderPass>>& getPasses() { return _passes; }
+    [[nodiscard]]       std::vector<std::unique_ptr<VulkanRenderPass>>& getPasses()       noexcept { return _passes; }
+    [[nodiscard]] const std::vector<std::unique_ptr<VulkanRenderPass>>& getPasses() const noexcept { return _passes; }
 
     void addPass(std::unique_ptr<VulkanRenderPass> pass) {
         _passes.push_back(std::move(pass));

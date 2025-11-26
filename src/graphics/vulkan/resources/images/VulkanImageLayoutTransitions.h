@@ -19,9 +19,9 @@ namespace VulkanImageLayoutTransitions {
     );
 
     [[nodiscard]] bool transitionImageLayout(
+        vk::CommandBuffer commandBuffer,
         vk::Image         image,
         vk::Format        format,
-        vk::CommandBuffer commandBuffer,
         vk::ImageLayout   oldLayout,
         vk::ImageLayout   newLayout,
         uint32_t          mipLevels,

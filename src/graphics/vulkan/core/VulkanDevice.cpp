@@ -207,8 +207,7 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
     };
 
     VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT deviceDynamicRenderingFeatures{
-        .pNext                             = &deviceBufferAddressFeatures,
-        .dynamicRenderingUnusedAttachments = vk::True
+        .pNext = &deviceBufferAddressFeatures,
     };
 
     VkDeviceCreateInfo deviceInfo{

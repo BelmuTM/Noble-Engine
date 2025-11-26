@@ -22,8 +22,7 @@ struct VulkanRenderPassResource {
 
     vk::Format format = vk::Format::eUndefined;
 
-    vk::ImageLayout layout        = vk::ImageLayout::eUndefined;
-    vk::ImageLayout currentLayout = vk::ImageLayout::eUndefined;
+    vk::ImageLayout layout = vk::ImageLayout::eUndefined;
 
     std::function<vk::ImageView()> imageViewResolver = nullptr;
 
