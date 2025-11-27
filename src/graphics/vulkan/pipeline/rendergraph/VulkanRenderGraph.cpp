@@ -63,26 +63,23 @@ bool VulkanRenderGraph::executePass(
         for (const auto& colorAttachment : pass->getColorAttachments()) {
             auto& colorResource = colorAttachment->resource;
 
-            if (colorResource.image) {
-                TRY(VulkanImageLayoutTransitions::transitionImageLayout(
+            VulkanImage* colorImage = colorResource.resolveImage();
+
+            if (colorImage) {
+                TRY(colorImage->transitionLayout(
                     commandBuffer, errorMessage,
-                    *colorResource.image,
-                    colorResource.format,
-                    colorResource.layout,
                     vk::ImageLayout::eColorAttachmentOptimal
                 ));
+
+                colorAttachmentsInfo.push_back(
+                    vk::RenderingAttachmentInfo{}
+                        .setImageView(colorImage->getImageView())
+                        .setImageLayout(colorImage->getLayout())
+                        .setLoadOp(colorAttachment->loadOp)
+                        .setStoreOp(colorAttachment->storeOp)
+                        .setClearValue(colorAttachment->clearValue)
+                );
             }
-
-            colorResource.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
-
-            colorAttachmentsInfo.push_back(
-                vk::RenderingAttachmentInfo{}
-                    .setImageView(colorResource.resolveImageView())
-                    .setImageLayout(colorResource.layout)
-                    .setLoadOp(colorAttachment->loadOp)
-                    .setStoreOp(colorAttachment->storeOp)
-                    .setClearValue(colorAttachment->clearValue)
-            );
         }
 
         // Rendering info
@@ -96,9 +93,10 @@ bool VulkanRenderGraph::executePass(
         // Attach depth buffer
 
         const VulkanRenderPassAttachment* depthAttachment = pass->getDepthAttachment();
-        auto& depthResource = _resources->getDepthBufferAttachment()->resource;
 
-        vk::ImageLayout targetDepthLayout = depthResource.layout;
+        VulkanImage* depthImage = _resources->getDepthBufferAttachment()->resource.image;
+
+        vk::ImageLayout targetDepthLayout = depthImage->getLayout();
 
         if (depthAttachment) {
             // Pass writes depth
@@ -108,22 +106,14 @@ bool VulkanRenderGraph::executePass(
             targetDepthLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
         }
 
-        if (depthResource.layout != targetDepthLayout) {
-            TRY(VulkanImageLayoutTransitions::transitionImageLayout(
-                commandBuffer, errorMessage,
-                *depthResource.image,
-                depthResource.format,
-                depthResource.layout,
-                targetDepthLayout
-            ));
-            depthResource.setLayout(targetDepthLayout);
-        }
+        // Depth image transition
+        TRY(depthImage->transitionLayout(commandBuffer, errorMessage, targetDepthLayout));
 
         if (depthAttachment) {
             vk::RenderingAttachmentInfo depthAttachmentInfo{};
             depthAttachmentInfo
-                .setImageView(depthResource.resolveImageView())
-                .setImageLayout(depthResource.layout)
+                .setImageView(depthImage->getImageView())
+                .setImageLayout(depthImage->getLayout())
                 .setLoadOp(depthAttachment->loadOp)
                 .setStoreOp(depthAttachment->storeOp)
                 .setClearValue(depthAttachment->clearValue);
@@ -199,15 +189,9 @@ bool VulkanRenderGraph::executePass(
         commandBuffer.endRendering();
 
         for (const auto& [resource, targetLayout] : pass->getTransitions()) {
-            TRY(VulkanImageLayoutTransitions::transitionImageLayout(
-                commandBuffer, errorMessage,
-                *resource->image,
-                resource->format,
-                resource->layout,
-                targetLayout
-            ));
+            VulkanImage* resourceImage = resource->resolveImage();
 
-            resource->setLayout(targetLayout);
+            TRY(resourceImage->transitionLayout(commandBuffer, errorMessage, targetLayout));
         }
     }
 

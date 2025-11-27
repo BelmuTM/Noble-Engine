@@ -66,6 +66,43 @@ bool VulkanImage::transitionLayout(
     return true;
 }
 
+bool VulkanImage::transitionLayout(
+    const vk::CommandBuffer commandBuffer,
+    std::string&            errorMessage,
+    const vk::ImageLayout   newLayout,
+    const uint32_t          mipLevels
+) {
+    TRY(VulkanImageLayoutTransitions::transitionImageLayout(
+        commandBuffer,
+        errorMessage,
+        _image,
+        _format,
+        _layout,
+        newLayout,
+        mipLevels
+    ));
+
+    _layout = newLayout;
+
+    return true;
+}
+
+bool VulkanImage::transitionLayout(
+    const VulkanCommandManager* commandManager,
+    std::string&                errorMessage,
+    const vk::ImageLayout       newLayout,
+    const uint32_t              mipLevels
+) {
+    vk::CommandBuffer commandBuffer{};
+    TRY(commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
+
+    TRY(transitionLayout(commandBuffer, errorMessage, newLayout, mipLevels));
+
+    TRY(commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
+
+    return true;
+}
+
 bool VulkanImage::createImage(
     const vk::ImageType       type,
     const vk::Format          format,
@@ -214,9 +251,9 @@ bool VulkanImage::generateMipmaps(
     std::vector<vk::Extent3D> mipExtents(mipLevels);
     mipExtents[0] = extent;
     for (uint32_t i = 1; i < mipLevels; i++) {
-        mipExtents[i].width  = std::max(1u, mipExtents[i-1].width  / 2);
-        mipExtents[i].height = std::max(1u, mipExtents[i-1].height / 2);
-        mipExtents[i].depth  = std::max(1u, mipExtents[i-1].depth  / 2);
+        mipExtents[i].width  = std::max(1u, mipExtents[i - 1].width  / 2);
+        mipExtents[i].height = std::max(1u, mipExtents[i - 1].height / 2);
+        mipExtents[i].depth  = std::max(1u, mipExtents[i - 1].depth  / 2);
     }
 
     // Generate mips
@@ -395,7 +432,6 @@ bool VulkanImage::createFromData(
     TRY(transitionLayout(
         commandManager,
         errorMessage,
-        vk::ImageLayout::eUndefined,
         vk::ImageLayout::eTransferDstOptimal,
         mipLevels
     ));
@@ -409,7 +445,6 @@ bool VulkanImage::createFromData(
         TRY(transitionLayout(
             commandManager,
             errorMessage,
-            vk::ImageLayout::eTransferDstOptimal,
             vk::ImageLayout::eShaderReadOnlyOptimal,
             mipLevels
         ));

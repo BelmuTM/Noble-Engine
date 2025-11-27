@@ -26,9 +26,7 @@ bool VulkanRenderResources::create(
     depthBufferResource
         .setName(DEPTH_BUFFER_NAME)
         .setType(Buffer)
-        .setImage(_depthBuffer.get())
-        .setFormat(_depthBuffer->getFormat())
-        .setLayout(_depthBuffer->getLayout());
+        .setImage(_depthBuffer.get());
 
     VulkanRenderPassAttachment depthBufferAttachment{};
     depthBufferAttachment
@@ -115,9 +113,7 @@ bool VulkanRenderResources::createColorAttachments(
         colorBuffer
             .setName(colorOutput)
             .setType(Buffer)
-            .setImage(colorImage)
-            .setFormat(format)
-            .setLayout(colorImage->getLayout());
+            .setImage(colorImage);
 
         VulkanRenderPassAttachment colorAttachment{};
         colorAttachment

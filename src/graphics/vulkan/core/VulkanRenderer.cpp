@@ -133,15 +133,10 @@ bool VulkanRenderer::onFramebufferResize(std::string& errorMessage) {
 bool VulkanRenderer::recordCommandBuffer(
     const vk::CommandBuffer commandBuffer, const uint32_t imageIndex, std::string& errorMessage
 ) {
-    if (commandBuffer == vk::CommandBuffer{}) {
-        errorMessage = "Failed to record Vulkan command buffer: command buffer is null";
-        return false;
-    }
-
     constexpr vk::CommandBufferBeginInfo beginInfo{};
     VK_TRY(commandBuffer.begin(beginInfo), errorMessage);
 
-    VulkanImage* swapchainImage  = context.getSwapchain().getImage(imageIndex);
+    VulkanImage* swapchainImage = context.getSwapchain().getImage(imageIndex);
 
     TRY(swapchainImage->transitionLayout(
         commandBuffer, errorMessage,

@@ -76,9 +76,8 @@ void VulkanRenderGraphBuilder::attachSwapchainOutput(
     VulkanRenderPassResource swapchainOutput{};
     swapchainOutput
         .setType(SwapchainOutput)
-        .setFormat(swapchain.getFormat())
-        .setImageViewResolver([&swapchain, &frameResources] {
-            return swapchain.getImage(frameResources.getImageIndex())->getImageView();
+        .setImageResolver([&swapchain, &frameResources] {
+            return swapchain.getImage(frameResources.getImageIndex());
         });
 
     VulkanRenderPassAttachment swapchainAttachment{};
@@ -130,8 +129,6 @@ bool VulkanRenderGraphBuilder::setupResourceTransitions(
 
         for (VulkanRenderPass* writerPass : renderResources.getResourceWriters().at(resourceName)) {
             if (!writerPass) continue;
-
-            Logger::debug("Pass " + writerPass->getName() + " transitions " + resourceName);
 
             writerPass->addTransition({resource, vk::ImageLayout::eShaderReadOnlyOptimal});
         }

@@ -1,7 +1,6 @@
 #include "VulkanContext.h"
 
 #include "core/debug/ErrorHandling.h"
-#include "core/debug/Logger.h"
 
 VulkanContext::~VulkanContext() {
     destroy();

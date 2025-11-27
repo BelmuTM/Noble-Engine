@@ -36,7 +36,7 @@ struct VulkanRenderPassAttachment {
     }
 
     explicit operator bool() const noexcept {
-        return static_cast<bool>(resource.resolveImageView());
+        return static_cast<bool>(resource.resolveImage());
     }
 };
 

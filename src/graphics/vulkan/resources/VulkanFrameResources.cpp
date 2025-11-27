@@ -59,7 +59,6 @@ bool VulkanFrameResources::recreate(const VulkanCommandManager* commandManager, 
 
         TRY(colorBuffer->transitionLayout(
             commandManager, errorMessage,
-            colorBuffer->getLayout(),
             vk::ImageLayout::eShaderReadOnlyOptimal
         ));
     }

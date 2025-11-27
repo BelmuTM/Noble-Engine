@@ -10,6 +10,7 @@ namespace VulkanImageLayoutTransitions {
     struct LayoutTransition {
         vk::AccessFlags2 srcAccessMask;
         vk::AccessFlags2 dstAccessMask;
+
         vk::PipelineStageFlags2 srcStage;
         vk::PipelineStageFlags2 dstStage;
     };

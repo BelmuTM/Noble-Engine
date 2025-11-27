@@ -77,6 +77,20 @@ public:
         uint32_t                    mipLevels = 1
     );
 
+    [[nodiscard]] bool transitionLayout(
+        vk::CommandBuffer commandBuffer,
+        std::string&      errorMessage,
+        vk::ImageLayout   newLayout,
+        uint32_t          mipLevels = 1
+    );
+
+    [[nodiscard]] bool transitionLayout(
+        const VulkanCommandManager* commandManager,
+        std::string&                errorMessage,
+        vk::ImageLayout             newLayout,
+        uint32_t                    mipLevels = 1
+    );
+
     [[nodiscard]] bool createImage(
         vk::ImageType       type,
         vk::Format          format,

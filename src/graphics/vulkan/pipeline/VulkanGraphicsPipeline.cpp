@@ -73,7 +73,7 @@ bool VulkanGraphicsPipeline::createPipeline(
     std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments{};
 
     for (const auto& colorAttachment : colorAttachments) {
-        colorAttachmentFormats.push_back(colorAttachment->resource.format);
+        colorAttachmentFormats.push_back(colorAttachment->resource.resolveImage()->getFormat());
         colorBlendAttachments.push_back(colorBlendAttachment);
     }
 

@@ -4,14 +4,13 @@
 
 #include "core/ResourceManager.h"
 #include "core/debug/ErrorHandling.h"
+#include "core/debug/Logger.h"
 
 #include <fstream>
 #include <ranges>
 #include <unordered_map>
 
 #include <spirv-reflect/spirv_reflect.h>
-
-#include "core/debug/Logger.h"
 
 static const std::unordered_map<std::string, std::pair<vk::ShaderStageFlagBits, const char*>> stageData = {
     {"vert", {vk::ShaderStageFlagBits::eVertex,   "vertMain"}},
