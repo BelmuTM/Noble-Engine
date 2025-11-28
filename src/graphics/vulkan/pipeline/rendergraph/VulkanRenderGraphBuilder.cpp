@@ -18,11 +18,11 @@ bool VulkanRenderGraphBuilder::build(const VulkanRenderGraphBuilderContext& cont
         errorMessage
     ));
 
-    attachSwapchainOutput(context.swapchain, context.frameResources, context.renderGraph);
-
     TRY(createColorAttachments(
         context.renderResources, context.imageManager, context.frameResources, context.renderGraph, errorMessage
     ));
+
+    TRY(attachSwapchainOutput(context.swapchain, context.frameResources, context.renderGraph, errorMessage));
 
     TRY(allocateDescriptors(context.renderResources, context.renderGraph, errorMessage));
 
@@ -66,7 +66,6 @@ bool VulkanRenderGraphBuilder::buildPasses(
     ));
 
     renderGraph.addPass(std::move(compositePass0));
-
     auto compositePass1 = std::make_unique<CompositePass>();
     TRY(compositePass1->create(
         "composite_1",
@@ -81,11 +80,15 @@ bool VulkanRenderGraphBuilder::buildPasses(
     return true;
 }
 
-void VulkanRenderGraphBuilder::attachSwapchainOutput(
-    const VulkanSwapchain& swapchain, VulkanFrameResources& frameResources, VulkanRenderGraph& renderGraph
+bool VulkanRenderGraphBuilder::attachSwapchainOutput(
+    const VulkanSwapchain& swapchain,
+    VulkanFrameResources&  frameResources,
+    VulkanRenderGraph&     renderGraph,
+    std::string&           errorMessage
 ) {
     VulkanRenderPassResource swapchainOutput{};
     swapchainOutput
+        .setName("Swapchain_Output")
         .setType(SwapchainOutput)
         .setImageResolver([&swapchain, &frameResources] {
             return swapchain.getImage(frameResources.getImageIndex());
@@ -99,7 +102,16 @@ void VulkanRenderGraphBuilder::attachSwapchainOutput(
         .setClearValue(defaultClearColor);
 
     VulkanRenderPass* lastPass = renderGraph.getPasses().back().get();
-    lastPass->addColorAttachmentAtIndex(0, swapchainAttachment);
+
+    if (lastPass->getColorAttachments().empty()) {
+        errorMessage = "Failed to attach Vulkan swapchain output: last executing pass has no color attachments";
+        return false;
+    }
+
+    // Attach the swapchain output to the first declared color attachment of the last executing pass
+    lastPass->getColorAttachments().at(0) = std::make_unique<VulkanRenderPassAttachment>(swapchainAttachment);
+
+    return true;
 }
 
 bool VulkanRenderGraphBuilder::createColorAttachments(
@@ -173,14 +185,14 @@ bool VulkanRenderGraphBuilder::setupResourceTransitions(
 bool VulkanRenderGraphBuilder::createPipelines(
     VulkanRenderGraph& renderGraph, VulkanPipelineManager& pipelineManager, std::string& errorMessage
 ) {
-    for (const auto& renderPass : renderGraph.getPasses()) {
+    for (const auto& pass : renderGraph.getPasses()) {
         VulkanGraphicsPipeline* pipeline = pipelineManager.allocatePipeline();
 
         TRY(pipelineManager.createGraphicsPipeline(
-            pipeline, renderPass->getPipelineDescriptor(), renderPass->getColorAttachments(), errorMessage
+            pipeline, pass->getPipelineDescriptor(), pass->getColorAttachments(), errorMessage
         ));
 
-        renderPass->setPipeline(pipeline);
+        pass->setPipeline(pipeline);
     }
 
     return true;

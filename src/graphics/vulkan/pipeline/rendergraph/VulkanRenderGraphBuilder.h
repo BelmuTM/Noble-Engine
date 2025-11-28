@@ -51,8 +51,11 @@ public:
         std::string&                 errorMessage
     );
 
-    static void attachSwapchainOutput(
-        const VulkanSwapchain& swapchain, VulkanFrameResources& frameResources, VulkanRenderGraph& renderGraph
+    [[nodiscard]] static bool attachSwapchainOutput(
+        const VulkanSwapchain& swapchain,
+        VulkanFrameResources&  frameResources,
+        VulkanRenderGraph&     renderGraph,
+        std::string&           errorMessage
     );
 
     [[nodiscard]] static bool createColorAttachments(
