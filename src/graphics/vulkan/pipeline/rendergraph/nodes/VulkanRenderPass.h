@@ -46,8 +46,6 @@ public:
 
     [[nodiscard]] VulkanRenderPassAttachment* getDepthAttachment() const noexcept { return _depthAttachment; }
 
-    [[nodiscard]] bool readsDepthBuffer() const noexcept { return _readsDepthBuffer; }
-
     [[nodiscard]] const std::vector<std::unique_ptr<VulkanRenderPassAttachment>>& getColorAttachments() const noexcept {
         return _colorAttachments;
     }
@@ -78,11 +76,6 @@ public:
 
     VulkanRenderPass& setDepthAttachment(VulkanRenderPassAttachment* depthAttachment) noexcept {
         _depthAttachment = depthAttachment;
-        return *this;
-    }
-
-    VulkanRenderPass& setReadsDepthBuffer(const bool readsDepthBuffer) noexcept {
-        _readsDepthBuffer = readsDepthBuffer;
         return *this;
     }
 
@@ -123,7 +116,6 @@ private:
     vk::PipelineBindPoint         _bindPoint = vk::PipelineBindPoint::eGraphics;
 
     VulkanRenderPassAttachment* _depthAttachment = nullptr;
-    bool _readsDepthBuffer = false;
 
     std::vector<std::unique_ptr<VulkanRenderPassAttachment>> _colorAttachments{};
 

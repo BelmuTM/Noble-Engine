@@ -125,69 +125,63 @@ bool VulkanRenderResources::createColorAttachments(
         pass->addColorAttachment(colorAttachment);
 
         addResource(colorBuffer);
-
-        _resourceWriters[colorOutput].push_back(pass);
+        addResourceWriter(colorOutput, pass);
     }
 
     return true;
 }
 
-bool VulkanRenderResources::allocateDescriptors(VulkanRenderPass* pass, std::string& errorMessage) {
-    _descriptorManagers.clear();
-    _descriptorBindingsPerManager.clear();
-    _descriptorSetGroups.clear();
+bool VulkanRenderResources::allocateDescriptors(std::string& errorMessage) {
+    for (auto& scheme : _descriptorSchemes | std::views::values) {
+        VulkanDescriptorScheme uniqueScheme;
+        uniqueScheme.reserve(scheme.size());
 
-    for (const auto& scheme : pass->getShaderProgram()->getDescriptorSchemes() | std::views::values) {
+        std::unordered_map<uint32_t, size_t> seenDescriptor;
+
+        for (auto& descriptor : scheme) {
+            if (auto it = seenDescriptor.find(descriptor.binding); it != seenDescriptor.end()) {
+                uniqueScheme[it->second] = descriptor;
+            } else {
+                seenDescriptor[descriptor.binding] = uniqueScheme.size();
+                uniqueScheme.push_back(descriptor);
+            }
+        }
+
         auto descriptorManager = std::make_unique<VulkanDescriptorManager>();
-
-        TRY(descriptorManager->create(_device->getLogicalDevice(), scheme, _framesInFlight, 1, errorMessage));
+        TRY(descriptorManager->create(_device->getLogicalDevice(), uniqueScheme, _framesInFlight, 1, errorMessage));
 
         VulkanDescriptorSets* descriptorSets = nullptr;
         TRY(descriptorManager->allocate(descriptorSets, errorMessage));
 
+        const size_t managerIndex = _descriptorBindingsPerManager.size();
+
+        _descriptorManagers.push_back(std::move(descriptorManager));
         _descriptorSetGroups.push_back(descriptorSets);
         _descriptorBindingsPerManager.emplace_back();
 
-        const size_t managerIndex = _descriptorSetGroups.size() - 1;
+        for (auto& descriptor : uniqueScheme) {
+            auto it = _resources.find(descriptor.name);
+            if (it == _resources.end()) continue;
 
-        for (const auto& descriptor : scheme) {
-            if (auto it = _resources.find(descriptor.name); it != _resources.end()) {
-                const auto& resource = it->second;
+            const auto& resource = it->second;
 
-                if (resource->image) {
-                    descriptorSets->bindPerFrameResource(resource->image->getDescriptorInfo(descriptor.binding));
+            if (!resource->image) continue;
 
-                    _descriptorBindingsPerManager[managerIndex].push_back({descriptor.binding, descriptor.name});
-                }
+            descriptorSets->bindPerFrameResource(resource->image->getDescriptorInfo(descriptor.binding));
 
-                _resourceReaders[resource->name].push_back(pass);
-
-                if (resource->name == DEPTH_BUFFER_NAME) {
-                    pass->setReadsDepthBuffer(true);
-                }
-            }
+            _descriptorBindingsPerManager[managerIndex].push_back({descriptor.binding, descriptor.name});
         }
-
-        pass->getPipelineDescriptor().descriptorLayouts.push_back(descriptorManager->getLayout());
-
-        _descriptorManagers.push_back(std::move(descriptorManager));
     }
 
     return true;
 }
 
-
-std::vector<vk::DescriptorSet> VulkanRenderResources::buildDescriptorSets(const uint32_t frameIndex) const {
+std::vector<vk::DescriptorSet> VulkanRenderResources::getFrameDescriptorSets(const uint32_t frameIndex) const {
     std::vector<vk::DescriptorSet> sets{};
     sets.reserve(_descriptorSetGroups.size());
 
     for (const auto& group : _descriptorSetGroups) {
-        const auto& groupSets = group->getSets();
-        if (frameIndex >= groupSets.size()) {
-            sets.emplace_back(VK_NULL_HANDLE);
-            continue;
-        }
-        sets.push_back(groupSets[frameIndex]);
+        sets.push_back(group->getSets()[frameIndex]);
     }
 
     return sets;

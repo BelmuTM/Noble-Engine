@@ -32,17 +32,18 @@ VSOutput vertMain(VSInput input) {
     return output;
 }
 
-layout (location = 0) out float4 output;
+layout (location = 0) out float4 compositeBuffer;
 
 layout (set = 1, binding = 0) Sampler2D depthTexture;
 layout (set = 1, binding = 1) Sampler2D albedoTexture;
+layout (set = 1, binding = 2) Sampler2D normalTexture;
 
 #define TAU 2.0 * 3.14159
 
 [shader("fragment")]
 void fragMain(VSOutput vertIn) : SV_TARGET {
     float3 albedo = albedoTexture.Sample(vertIn.uv).rgb;
-    float3 normal = float3(0.0);//normalTexture.Sample(vertIn.uv).rgb * 2.0 - 1.0;
+    float3 normal = normalTexture.Sample(vertIn.uv).rgb * 2.0 - 1.0;
 
     float depth = depthTexture.Sample(vertIn.uv).r;
 
@@ -74,9 +75,9 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     const float3 lightColor0 = float3(0.969, 0.549, 0.125);
     float3 lightColor1 = rainbow;
 
-    const float3 ambient = float3(0.005);
+    const float3 ambient = float3(0.01);
 
-    float3 lighting = albedo;
+    float3 lighting = albedo * (ambient + lightColor0 * NdotL0 * attenuation0 + lightColor1 * NdotL1 * attenuation1);
 
-    output = float4(lighting, 1.0);
+    compositeBuffer = float4(lighting, 1.0);
 }

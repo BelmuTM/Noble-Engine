@@ -45,7 +45,7 @@ VSOutput vertMain(VSInput input) {
 }
 
 layout (location = 0) out float4 albedoTexture;
-//layout (location = 1) out float4 normalTexture;
+layout (location = 1) out float4 normalTexture;
 
 layout (set = 1, binding = 0) Sampler2D texture;
 
@@ -74,5 +74,5 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     }
 
     albedoTexture = albedo;
-    //normalTexture = float4(vertIn.normal * 0.5 + 0.5, 1.0);
+    normalTexture = float4(vertIn.normal * 0.5 + 0.5, 1.0);
 }

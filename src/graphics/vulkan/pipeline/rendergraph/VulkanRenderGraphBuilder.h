@@ -4,7 +4,7 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "graphics/vulkan/core/VulkanSwapchainManager.h"
+#include "graphics/vulkan/core/VulkanSwapchain.h"
 
 #include "graphics/vulkan/pipeline/rendergraph/VulkanRenderGraph.h"
 
@@ -64,13 +64,11 @@ public:
     );
 
     [[nodiscard]] static bool allocateDescriptors(
-        VulkanRenderResources& renderResources,
-        VulkanRenderGraph&     renderGraph,
-        std::string&           errorMessage
+        VulkanRenderResources& renderResources, VulkanRenderGraph& renderGraph, std::string& errorMessage
     );
 
     [[nodiscard]] static bool setupResourceTransitions(
-        VulkanRenderResources& renderResources, const VulkanRenderGraph& renderGraph, std::string& errorMessage
+        VulkanRenderResources& renderResources, std::string& errorMessage
     );
 
     [[nodiscard]] static bool createPipelines(

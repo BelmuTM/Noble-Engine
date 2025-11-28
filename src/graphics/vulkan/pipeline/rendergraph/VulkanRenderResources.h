@@ -56,6 +56,14 @@ public:
     [[nodiscard]]       ResourceAccessorsMap& getResourceWriters()       noexcept { return _resourceWriters; }
     [[nodiscard]] const ResourceAccessorsMap& getResourceWriters() const noexcept { return _resourceWriters; }
 
+    [[nodiscard]] VulkanShaderProgram::DescriptorSchemeMap& getDescriptorSchemes() noexcept {
+        return _descriptorSchemes;
+    }
+
+    [[nodiscard]] const std::vector<std::unique_ptr<VulkanDescriptorManager>>& getDescriptorManagers() const noexcept {
+        return _descriptorManagers;
+    }
+
     [[nodiscard]] VulkanRenderPassAttachment* getDepthBufferAttachment() const noexcept {
         return _depthBufferAttachment.get();
     }
@@ -66,6 +74,14 @@ public:
         }
     }
 
+    void addResourceReader(const std::string& name, VulkanRenderPass* pass) {
+        _resourceReaders[name].push_back(pass);
+    }
+
+    void addResourceWriter(const std::string& name, VulkanRenderPass* pass) {
+        _resourceWriters[name].push_back(pass);
+    }
+
     [[nodiscard]] bool createColorAttachments(
         VulkanRenderPass*         pass,
         const VulkanImageManager& imageManager,
@@ -73,9 +89,9 @@ public:
         std::string&              errorMessage
     );
 
-    [[nodiscard]] bool allocateDescriptors(VulkanRenderPass* pass, std::string& errorMessage);
+    [[nodiscard]] bool allocateDescriptors(std::string& errorMessage);
 
-    std::vector<vk::DescriptorSet> buildDescriptorSets(uint32_t frameIndex) const;
+    std::vector<vk::DescriptorSet> getFrameDescriptorSets(uint32_t frameIndex) const;
 
 private:
     const VulkanDevice*       _device       = nullptr;
@@ -89,10 +105,12 @@ private:
     ResourceAccessorsMap _resourceReaders{};
     ResourceAccessorsMap _resourceWriters{};
 
+    // Descriptors bookkeeping hell
+    VulkanShaderProgram::DescriptorSchemeMap _descriptorSchemes{};
+
     std::vector<std::unique_ptr<VulkanDescriptorManager>> _descriptorManagers{};
     std::vector<VulkanDescriptorSets*>                    _descriptorSetGroups{};
 
-    // Descriptor bindings cache
     struct BindingEntry {
         uint32_t    binding;
         std::string resourceName;

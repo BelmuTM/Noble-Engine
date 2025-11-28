@@ -112,8 +112,7 @@ bool VulkanGraphicsPipeline::createPipeline(
     colorBlendInfo
         .setLogicOpEnable(vk::False)
         .setLogicOp(vk::LogicOp::eCopy)
-        .setAttachmentCount(colorAttachments.size())
-        .setPAttachments(colorBlendAttachments.data());
+        .setAttachments(colorBlendAttachments);
 
     vk::GraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo

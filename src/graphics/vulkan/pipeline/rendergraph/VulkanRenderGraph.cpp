@@ -96,12 +96,12 @@ bool VulkanRenderGraph::executePass(
 
         VulkanImage* depthImage = _resources->getDepthBufferAttachment()->resource.image;
 
-        vk::ImageLayout targetDepthLayout = depthImage->getLayout();
+        vk::ImageLayout targetDepthLayout;
 
         if (depthAttachment) {
             // Pass writes depth
             targetDepthLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-        } else if (pass->readsDepthBuffer()) {
+        } else {
             // Pass reads depth
             targetDepthLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
         }
@@ -149,7 +149,7 @@ bool VulkanRenderGraph::executePass(
                 }
             }
 
-            for (const auto& descriptorSet : _resources->buildDescriptorSets(frameIndex)) {
+            for (const auto& descriptorSet : _resources->getFrameDescriptorSets(frameIndex)) {
                 descriptorSets.push_back(descriptorSet);
             }
 

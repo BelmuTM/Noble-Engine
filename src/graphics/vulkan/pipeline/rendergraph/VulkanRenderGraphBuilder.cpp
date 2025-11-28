@@ -26,7 +26,7 @@ bool VulkanRenderGraphBuilder::build(const VulkanRenderGraphBuilderContext& cont
 
     TRY(allocateDescriptors(context.renderResources, context.renderGraph, errorMessage));
 
-    TRY(setupResourceTransitions(context.renderResources, context.renderGraph, errorMessage));
+    TRY(setupResourceTransitions(context.renderResources, errorMessage));
 
     TRY(createPipelines(context.renderGraph, context.pipelineManager, errorMessage));
 
@@ -56,16 +56,27 @@ bool VulkanRenderGraphBuilder::buildPasses(
 
     renderGraph.addPass(std::move(meshRenderPass));
 
-    auto compositePass = std::make_unique<CompositePass>();
-    TRY(compositePass->create(
-        "composite",
+    auto compositePass0 = std::make_unique<CompositePass>();
+    TRY(compositePass0->create(
+        "composite_0",
         meshManager,
         frameResources,
         shaderProgramManager,
         errorMessage
     ));
 
-    renderGraph.addPass(std::move(compositePass));
+    renderGraph.addPass(std::move(compositePass0));
+
+    auto compositePass1 = std::make_unique<CompositePass>();
+    TRY(compositePass1->create(
+        "composite_1",
+        meshManager,
+        frameResources,
+        shaderProgramManager,
+        errorMessage
+    ));
+
+    renderGraph.addPass(std::move(compositePass1));
 
     return true;
 }
@@ -106,30 +117,52 @@ bool VulkanRenderGraphBuilder::createColorAttachments(
 }
 
 bool VulkanRenderGraphBuilder::allocateDescriptors(
-    VulkanRenderResources& renderResources,
-    VulkanRenderGraph&     renderGraph,
-    std::string&           errorMessage
+    VulkanRenderResources& renderResources, VulkanRenderGraph& renderGraph, std::string& errorMessage
 ) {
-    for (auto& pass : renderGraph.getPasses()) {
-        TRY(renderResources.allocateDescriptors(pass.get(), errorMessage));
+    // Merge all descriptors globally
+    for (const auto& pass : renderGraph.getPasses()) {
+        for (const auto& [set, scheme] : pass->getShaderProgram()->getDescriptorSchemes()) {
+            for (const auto& descriptor : scheme) {
+                if (renderResources.getResources().contains(descriptor.name)) {
+                    // Adding pass to this resource's readers
+                    renderResources.addResourceReader(descriptor.name, pass.get());
+                    // Adding descriptor to global scheme
+                    renderResources.getDescriptorSchemes()[set].push_back(descriptor);
+                }
+            }
+        }
+    }
+
+    // Allocate descriptor sets
+    TRY(renderResources.allocateDescriptors(errorMessage));
+
+    // Merge reflected layouts into each pass pipeline descriptor
+    for (const auto& pass : renderGraph.getPasses()) {
+        auto& descriptorLayouts = pass->getPipelineDescriptor().descriptorLayouts;
+
+        for (const auto& manager : renderResources.getDescriptorManagers()) {
+            vk::DescriptorSetLayout layout = manager->getLayout();
+
+            if (std::ranges::find(descriptorLayouts, layout) == descriptorLayouts.end()) {
+                descriptorLayouts.push_back(layout);
+            }
+        }
     }
 
     return true;
 }
 
 bool VulkanRenderGraphBuilder::setupResourceTransitions(
-    VulkanRenderResources& renderResources, const VulkanRenderGraph& renderGraph, std::string& errorMessage
+    VulkanRenderResources& renderResources, std::string& errorMessage
 ) {
-    for (const auto& resourceName : renderResources.getResourceReaders() | std::views::keys) {
+    for (const auto& [resourceName, writerPasses] : renderResources.getResourceWriters()) {
         auto it = renderResources.getResources().find(resourceName);
         if (it == renderResources.getResources().end()) continue;
 
         VulkanRenderPassResource* resource = it->second.get();
-        if (!renderResources.getResourceWriters().contains(resourceName)) continue;
 
-        for (VulkanRenderPass* writerPass : renderResources.getResourceWriters().at(resourceName)) {
+        for (VulkanRenderPass* writerPass : writerPasses) {
             if (!writerPass) continue;
-
             writerPass->addTransition({resource, vk::ImageLayout::eShaderReadOnlyOptimal});
         }
     }
