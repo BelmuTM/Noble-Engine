@@ -23,9 +23,6 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]]       std::vector<vk::CommandBuffer>& getCommandBuffers()       noexcept { return _commandBuffers; }
-    [[nodiscard]] const std::vector<vk::CommandBuffer>& getCommandBuffers() const noexcept { return _commandBuffers; }
-
     [[nodiscard]] bool createCommandBuffers(
         std::vector<vk::CommandBuffer>& commandBuffers, uint32_t commandBufferCount, std::string& errorMessage
     ) const;
@@ -36,13 +33,16 @@ public:
 
     [[nodiscard]] bool endSingleTimeCommands(vk::CommandBuffer& commandBuffer, std::string& errorMessage) const;
 
+    [[nodiscard]]       std::vector<vk::CommandBuffer>& getCommandBuffers()       noexcept { return _commandBuffers; }
+    [[nodiscard]] const std::vector<vk::CommandBuffer>& getCommandBuffers() const noexcept { return _commandBuffers; }
+
 private:
+    bool createCommandPool(std::string& errorMessage);
+
     const VulkanDevice* _device = nullptr;
 
     vk::CommandPool                _commandPool{};
     std::vector<vk::CommandBuffer> _commandBuffers{};
-
-    bool createCommandPool(std::string& errorMessage);
 };
 
 #endif //NOBLEENGINE_VULKANCOMMANDMANAGER_H

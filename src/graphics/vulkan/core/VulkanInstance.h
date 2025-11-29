@@ -28,13 +28,6 @@ public:
     void destroy() noexcept;
 
 private:
-    const VulkanCapabilities* _capabilities = nullptr;
-
-    vk::Instance               _instance{};
-    vk::DebugUtilsMessengerEXT _debugMessenger{};
-
-    vk::detail::DispatchLoaderDynamic _dldi{};
-
     static std::vector<const char*> getRequiredExtensions();
 
     bool createInstance(std::string& errorMessage);
@@ -51,6 +44,13 @@ private:
     );
 
 #endif
+
+    const VulkanCapabilities* _capabilities = nullptr;
+
+    vk::Instance               _instance{};
+    vk::DebugUtilsMessengerEXT _debugMessenger{};
+
+    vk::detail::DispatchLoaderDynamic _dldi{};
 };
 
 #endif //NOBLEENGINE_VULKANINSTANCE_H

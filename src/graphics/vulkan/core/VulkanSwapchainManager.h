@@ -14,8 +14,9 @@ public:
 
     VulkanSwapchainManager(const VulkanSwapchainManager&)            = delete;
     VulkanSwapchainManager& operator=(const VulkanSwapchainManager&) = delete;
-    VulkanSwapchainManager(VulkanSwapchainManager&&)                 = delete;
-    VulkanSwapchainManager& operator=(VulkanSwapchainManager&&)      = delete;
+
+    VulkanSwapchainManager(VulkanSwapchainManager&&)            = delete;
+    VulkanSwapchainManager& operator=(VulkanSwapchainManager&&) = delete;
 
     [[nodiscard]] bool create(
         Platform::Window&    window,
@@ -27,8 +28,6 @@ public:
     ) noexcept;
 
     void destroy() noexcept;
-
-    [[nodiscard]] bool isOutOfDate() const noexcept { return _outOfDate; }
 
     [[nodiscard]] bool recreateSwapchain(std::string& errorMessage);
 
@@ -44,7 +43,11 @@ public:
         bool&             discardLogging
     );
 
+    [[nodiscard]] bool isOutOfDate() const noexcept { return _outOfDate; }
+
 private:
+    [[nodiscard]] bool waitForImageFence(uint32_t frameIndex, uint32_t imageIndex, std::string& errorMessage);
+
     Platform::Window* _window = nullptr;
 
     const VulkanSurface* _surface   = nullptr;
@@ -56,8 +59,6 @@ private:
     uint32_t _framesInFlight = 0;
 
     bool _outOfDate = false;
-
-    [[nodiscard]] bool waitForImageFence(uint32_t frameIndex, uint32_t imageIndex, std::string& errorMessage);
 };
 
 #endif //NOBLEENGINE_VULKANSWAPCHAINMANAGER_H

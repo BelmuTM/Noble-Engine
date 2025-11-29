@@ -2,20 +2,17 @@
 #ifndef NOBLEENGINE_VULKANRENDERRESOURCES_H
 #define NOBLEENGINE_VULKANRENDERRESOURCES_H
 
-#include "nodes/VulkanRenderPassResource.h"
-
-#include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
 #include "graphics/vulkan/resources/VulkanFrameResources.h"
-#include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
 #include "graphics/vulkan/resources/images/VulkanImageManager.h"
 
 #include "nodes/VulkanRenderPass.h"
+#include "nodes/VulkanRenderPassResource.h"
 
 #include <memory>
 #include <unordered_map>
 #include <vector>
 
-class VulkanRenderPass;
+class VulkanRenderGraph;
 
 class VulkanRenderResources {
 public:
@@ -44,7 +41,18 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] bool recreate(std::string& errorMessage);
+    [[nodiscard]] bool recreate(VulkanRenderGraph& renderGraph, std::string& errorMessage);
+
+    [[nodiscard]] bool createDepthBuffer(std::string& errorMessage);
+
+    [[nodiscard]] bool createColorAttachments(
+    VulkanRenderPass*         pass,
+    const VulkanImageManager& imageManager,
+    VulkanFrameResources&     frameResources,
+    std::string&              errorMessage
+);
+
+    [[nodiscard]] bool allocateDescriptors(VulkanRenderPass* pass, std::string& errorMessage);
 
     [[nodiscard]] const ResourcesMap& getResources() const noexcept {
         return _resources;
@@ -55,14 +63,6 @@ public:
 
     [[nodiscard]]       ResourceAccessorsMap& getResourceWriters()       noexcept { return _resourceWriters; }
     [[nodiscard]] const ResourceAccessorsMap& getResourceWriters() const noexcept { return _resourceWriters; }
-
-    [[nodiscard]] VulkanShaderProgram::DescriptorSchemeMap& getDescriptorSchemes() noexcept {
-        return _descriptorSchemes;
-    }
-
-    [[nodiscard]] const std::vector<std::unique_ptr<VulkanDescriptorManager>>& getDescriptorManagers() const noexcept {
-        return _descriptorManagers;
-    }
 
     [[nodiscard]] VulkanRenderPassAttachment* getDepthBufferAttachment() const noexcept {
         return _depthBufferAttachment.get();
@@ -82,18 +82,11 @@ public:
         _resourceWriters[name].push_back(pass);
     }
 
-    [[nodiscard]] bool createColorAttachments(
-        VulkanRenderPass*         pass,
-        const VulkanImageManager& imageManager,
-        VulkanFrameResources&     frameResources,
-        std::string&              errorMessage
-    );
-
-    [[nodiscard]] bool allocateDescriptors(std::string& errorMessage);
-
-    std::vector<vk::DescriptorSet> getFrameDescriptorSets(uint32_t frameIndex) const;
-
 private:
+    void bindDescriptors(const VulkanDescriptorSets* descriptorSets, const VulkanDescriptorScheme& scheme);
+
+    void rebindDescriptors(VulkanRenderGraph& renderGraph);
+
     const VulkanDevice*       _device       = nullptr;
     const VulkanSwapchain*    _swapchain    = nullptr;
     const VulkanImageManager* _imageManager = nullptr;
@@ -104,19 +97,6 @@ private:
     ResourcesMap         _resources{};
     ResourceAccessorsMap _resourceReaders{};
     ResourceAccessorsMap _resourceWriters{};
-
-    // Descriptors bookkeeping hell
-    VulkanShaderProgram::DescriptorSchemeMap _descriptorSchemes{};
-
-    std::vector<std::unique_ptr<VulkanDescriptorManager>> _descriptorManagers{};
-    std::vector<VulkanDescriptorSets*>                    _descriptorSetGroups{};
-
-    struct BindingEntry {
-        uint32_t    binding;
-        std::string resourceName;
-    };
-
-    std::vector<std::vector<BindingEntry>> _descriptorBindingsPerManager{};
 
     // Depth buffer
     std::unique_ptr<VulkanImage>                _depthBuffer{};

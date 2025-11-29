@@ -16,8 +16,8 @@ public:
 
     ~VulkanDescriptorSets() = default;
 
-    VulkanDescriptorSets(const VulkanDescriptorSets&)            noexcept = default;
-    VulkanDescriptorSets& operator=(const VulkanDescriptorSets&) noexcept = default;
+    VulkanDescriptorSets(const VulkanDescriptorSets&)            = delete;
+    VulkanDescriptorSets& operator=(const VulkanDescriptorSets&) = delete;
 
     VulkanDescriptorSets(VulkanDescriptorSets&&)            noexcept = default;
     VulkanDescriptorSets& operator=(VulkanDescriptorSets&&) noexcept = default;
@@ -31,6 +31,10 @@ public:
     void bindPerFrameUBO(const VulkanUniformBufferBase& ubo, uint32_t binding) const;
 
     [[nodiscard]] const std::vector<vk::DescriptorSet>& getSets() const noexcept { return _descriptorSets; }
+
+    [[nodiscard]] vk::DescriptorSet getSet(const uint32_t frameIndex) const noexcept {
+        return _descriptorSets[frameIndex];
+    }
 
 private:
     const VulkanDescriptorManager* _manager = nullptr;

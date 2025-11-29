@@ -22,8 +22,8 @@ public:
     Object()  = default;
     ~Object() = default;
 
-    Object(const Object&)            noexcept = default;
-    Object& operator=(const Object&) noexcept = default;
+    Object(const Object&)            = delete;
+    Object& operator=(const Object&) = delete;
 
     Object(Object&&)            noexcept = default;
     Object& operator=(Object&&) noexcept = default;
@@ -36,6 +36,8 @@ public:
         glm::vec3           scale    = {1.0f, 1.0f, 1.0f}
     );
 
+    void updateMatrices();
+
     [[nodiscard]] const Model& getModel() const noexcept { return *_model; }
 
     [[nodiscard]] TexturesMap& getTexturesMap() noexcept { return _textures; }
@@ -46,8 +48,6 @@ public:
 
     [[nodiscard]] glm::mat4 getModelMatrix() const noexcept { return _modelMatrix; }
     [[nodiscard]] glm::mat4 getNormalMatrix() const noexcept { return _normalMatrix; }
-
-    void updateMatrices();
 
 private:
     const Model* _model =  nullptr;

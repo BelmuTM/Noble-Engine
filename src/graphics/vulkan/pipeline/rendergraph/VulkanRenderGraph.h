@@ -9,6 +9,8 @@
 
 #include "nodes/VulkanRenderPass.h"
 
+class VulkanRenderResources;
+
 class VulkanRenderGraph {
 public:
     VulkanRenderGraph()  = default;
@@ -31,16 +33,16 @@ public:
 
     void destroy() noexcept;
 
+    void execute(vk::CommandBuffer commandBuffer) const;
+
+    bool executePass(vk::CommandBuffer commandBuffer, const VulkanRenderPass* pass, std::string& errorMessage) const;
+
     [[nodiscard]]       std::vector<std::unique_ptr<VulkanRenderPass>>& getPasses()       noexcept { return _passes; }
     [[nodiscard]] const std::vector<std::unique_ptr<VulkanRenderPass>>& getPasses() const noexcept { return _passes; }
 
     void addPass(std::unique_ptr<VulkanRenderPass> pass) {
         _passes.push_back(std::move(pass));
     }
-
-    void execute(vk::CommandBuffer commandBuffer) const;
-
-    bool executePass(vk::CommandBuffer commandBuffer, const VulkanRenderPass* pass, std::string& errorMessage) const;
 
 private:
     const VulkanSwapchain*   _swapchain   = nullptr;

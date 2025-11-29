@@ -18,48 +18,13 @@ public:
     // Implicit conversion operator
     operator vk::Image() const { return _image; }
 
-    VulkanImage(const VulkanImage&)            noexcept = default;
-    VulkanImage& operator=(const VulkanImage&) noexcept = default;
+    VulkanImage(const VulkanImage&)            = delete;
+    VulkanImage& operator=(const VulkanImage&) = delete;
 
     VulkanImage(VulkanImage&&)            noexcept = default;
     VulkanImage& operator=(VulkanImage&&) noexcept = default;
 
     void destroy(const VulkanDevice& device) noexcept;
-
-    [[nodiscard]] vk::ImageView getImageView() const noexcept { return _imageView; }
-    [[nodiscard]] vk::Sampler getSampler() const noexcept { return _sampler; }
-    [[nodiscard]] vk::Format getFormat() const noexcept { return _format; }
-    [[nodiscard]] vk::Extent3D getExtent() const noexcept { return _extent; }
-    [[nodiscard]] vk::ImageLayout getLayout() const noexcept { return _layout; }
-
-    void setHandle(const vk::Image image) noexcept { _image = image; }
-    void setImageView(const vk::ImageView imageView) noexcept { _imageView = imageView; }
-    void setFormat(const vk::Format format) noexcept { _format = format; }
-    void setExtent(const vk::Extent3D extent) noexcept { _extent = extent; }
-    void setLayout(const vk::ImageLayout layout) noexcept { _layout = layout; }
-    void setDescriptorType(const vk::DescriptorType descriptorType) noexcept { _descriptorType = descriptorType; }
-
-    [[nodiscard]] static bool isDepthBuffer(const vk::Format format) {
-        return format == vk::Format::eD16Unorm
-            || format == vk::Format::eD32Sfloat
-            || format == vk::Format::eD16UnormS8Uint
-            || format == vk::Format::eD24UnormS8Uint
-            || format == vk::Format::eD32SfloatS8Uint;
-    }
-
-    [[nodiscard]] static bool hasStencilComponent(const vk::Format format) {
-        return format == vk::Format::eD16UnormS8Uint
-            || format == vk::Format::eD24UnormS8Uint
-            || format == vk::Format::eD32SfloatS8Uint;
-    }
-
-    [[nodiscard]] VulkanDescriptorInfo getDescriptorInfo(const uint32_t binding) const noexcept {
-        return {
-            .type      = _descriptorType,
-            .imageInfo = {_sampler, _imageView, vk::ImageLayout::eShaderReadOnlyOptimal},
-            .binding   = binding
-        };
-    }
 
     [[nodiscard]] bool transitionLayout(
         vk::CommandBuffer commandBuffer,
@@ -143,6 +108,41 @@ public:
         const VulkanCommandManager* commandManager,
         std::string&                errorMessage
     );
+
+    [[nodiscard]] vk::ImageView getImageView() const noexcept { return _imageView; }
+    [[nodiscard]] vk::Sampler getSampler() const noexcept { return _sampler; }
+    [[nodiscard]] vk::Format getFormat() const noexcept { return _format; }
+    [[nodiscard]] vk::Extent3D getExtent() const noexcept { return _extent; }
+    [[nodiscard]] vk::ImageLayout getLayout() const noexcept { return _layout; }
+
+    void setHandle(const vk::Image image) noexcept { _image = image; }
+    void setImageView(const vk::ImageView imageView) noexcept { _imageView = imageView; }
+    void setFormat(const vk::Format format) noexcept { _format = format; }
+    void setExtent(const vk::Extent3D extent) noexcept { _extent = extent; }
+    void setLayout(const vk::ImageLayout layout) noexcept { _layout = layout; }
+    void setDescriptorType(const vk::DescriptorType descriptorType) noexcept { _descriptorType = descriptorType; }
+
+    [[nodiscard]] static bool isDepthBuffer(const vk::Format format) {
+        return format == vk::Format::eD16Unorm
+            || format == vk::Format::eD32Sfloat
+            || format == vk::Format::eD16UnormS8Uint
+            || format == vk::Format::eD24UnormS8Uint
+            || format == vk::Format::eD32SfloatS8Uint;
+    }
+
+    [[nodiscard]] static bool hasStencilComponent(const vk::Format format) {
+        return format == vk::Format::eD16UnormS8Uint
+            || format == vk::Format::eD24UnormS8Uint
+            || format == vk::Format::eD32SfloatS8Uint;
+    }
+
+    [[nodiscard]] VulkanDescriptorInfo getDescriptorInfo(const uint32_t binding) const noexcept {
+        return {
+            .type      = _descriptorType,
+            .imageInfo = {_sampler, _imageView, vk::ImageLayout::eShaderReadOnlyOptimal},
+            .binding   = binding
+        };
+    }
 
 private:
     vk::Image     _image{};

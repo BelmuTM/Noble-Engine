@@ -123,7 +123,7 @@ bool VulkanRenderer::onFramebufferResize(std::string& errorMessage) {
 
     TRY(swapchainManager.recreateSwapchain(errorMessage));
     TRY(frameResources.recreate(&commandManager, errorMessage));
-    TRY(renderResources.recreate(errorMessage));
+    TRY(renderResources.recreate(renderGraph, errorMessage));
 
     _window->setFramebufferResized(false);
 

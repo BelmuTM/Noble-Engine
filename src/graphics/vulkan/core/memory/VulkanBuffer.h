@@ -64,6 +64,7 @@ public:
 
     // Mapping GPU allocated memory to CPU memory
     void* mapMemory(std::string& errorMessage);
+
     void unmapMemory();
 
     [[nodiscard]] vk::DeviceAddress getDeviceAddress() const noexcept { return _deviceAddress; }

@@ -39,14 +39,14 @@ public:
     ) const;
 
 private:
+    [[nodiscard]] static uint32_t getMipLevels(const vk::Extent3D extent) {
+        return static_cast<uint32_t>(std::floor(std::log2(std::max({extent.width, extent.height, extent.depth})))) + 1;
+    }
+
     const VulkanDevice*         _device         = nullptr;
     const VulkanCommandManager* _commandManager = nullptr;
 
     std::vector<std::unique_ptr<VulkanImage>> _images{};
-
-    [[nodiscard]] static uint32_t getMipLevels(const vk::Extent3D extent) {
-        return static_cast<uint32_t>(std::floor(std::log2(std::max({extent.width, extent.height, extent.depth})))) + 1;
-    }
 };
 
 #endif //NOBLEENGINE_VULKANIMAGEMANAGER_H

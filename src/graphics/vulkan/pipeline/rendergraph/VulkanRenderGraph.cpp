@@ -1,5 +1,6 @@
 #include "VulkanRenderGraph.h"
 
+#include "VulkanRenderResources.h"
 #include "graphics/vulkan/resources/images/VulkanImageLayoutTransitions.h"
 
 #include "core/debug/Logger.h"
@@ -141,7 +142,7 @@ bool VulkanRenderGraph::executePass(
             // Descriptors
 
             std::vector<vk::DescriptorSet> descriptorSets{};
-            descriptorSets.push_back(_frame->getDescriptors()->getSets().at(frameIndex));
+            descriptorSets.push_back(_frame->getDescriptors()->getSet(frameIndex));
 
             if (draw.descriptorResolver) {
                 if (const auto objectSet = draw.descriptorResolver(frameIndex); !objectSet.empty()) {
@@ -149,8 +150,8 @@ bool VulkanRenderGraph::executePass(
                 }
             }
 
-            for (const auto& descriptorSet : _resources->getFrameDescriptorSets(frameIndex)) {
-                descriptorSets.push_back(descriptorSet);
+            for (const auto& descriptorSet : pass->getDescriptorSets() | std::views::values) {
+                descriptorSets.push_back(descriptorSet->getSet(frameIndex));
             }
 
             if (!descriptorSets.empty()) {

@@ -72,8 +72,8 @@ std::optional<uint32_t> VulkanSwapchainManager::acquireNextImage(
         return false;
     }
 
-    const vk::Semaphore& imageAvailableSemaphore = _syncObjects.imageAvailableSemaphores[frameIndex];
-    const vk::Fence&     inFlightFence           = _syncObjects.inFlightFences[frameIndex];
+    const vk::Semaphore& imageAvailableSemaphore = _syncObjects.getImageAvailableSemaphore(frameIndex);
+    const vk::Fence&     inFlightFence           = _syncObjects.getInFlightFence(frameIndex);
 
     while (vk::Result::eTimeout == logicalDevice.waitForFences(inFlightFence, vk::True, UINT64_MAX)) {
         std::this_thread::yield();
@@ -138,9 +138,9 @@ bool VulkanSwapchainManager::submitCommandBuffer(
         return false;
     }
 
-    const vk::Semaphore& imageAvailableSemaphore = _syncObjects.imageAvailableSemaphores[frameIndex];
-    const vk::Fence&     inFlightFence           = _syncObjects.inFlightFences[frameIndex];
-    const vk::Semaphore& renderFinishedSemaphore = _syncObjects.renderFinishedSemaphores[imageIndex];
+    const vk::Semaphore& imageAvailableSemaphore = _syncObjects.getImageAvailableSemaphore(frameIndex);
+    const vk::Fence&     inFlightFence           = _syncObjects.getInFlightFence(frameIndex);
+    const vk::Semaphore& renderFinishedSemaphore = _syncObjects.getRenderFinishedSemaphore(imageIndex);
 
     constexpr vk::PipelineStageFlags2 waitDestinationStageMask(vk::PipelineStageFlagBits2::eColorAttachmentOutput);
 
@@ -194,13 +194,13 @@ bool VulkanSwapchainManager::waitForImageFence(
     }
 
     const vk::Device& logicalDevice = _device->getLogicalDevice();
-    const vk::Fence&  inFlightFence = _syncObjects.inFlightFences[frameIndex];
+    const vk::Fence&  inFlightFence = _syncObjects.getInFlightFence(frameIndex);
 
-    if (const vk::Fence& imageInFlight = _syncObjects.imagesInFlight[imageIndex]) {
+    if (const vk::Fence& imageInFlight = _syncObjects.getImagesInFlightFence(imageIndex)) {
         VK_TRY(logicalDevice.waitForFences(imageInFlight, vk::True, UINT64_MAX), errorMessage);
     }
 
-    _syncObjects.imagesInFlight[imageIndex] = inFlightFence;
+    _syncObjects.getImagesInFlightFences()[imageIndex] = inFlightFence;
 
     VK_TRY(logicalDevice.resetFences(inFlightFence), errorMessage);
 

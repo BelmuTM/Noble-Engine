@@ -15,6 +15,12 @@ public:
     VulkanContext() = default;
     ~VulkanContext();
 
+    VulkanContext(const VulkanContext&)            = delete;
+    VulkanContext& operator=(const VulkanContext&) = delete;
+
+    VulkanContext(VulkanContext&&)            = delete;
+    VulkanContext& operator=(VulkanContext&&) = delete;
+
     bool create(const Platform::Window& window, std::string& errorMessage);
 
     void destroy();

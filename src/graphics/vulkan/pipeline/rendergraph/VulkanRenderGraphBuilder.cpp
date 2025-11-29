@@ -131,34 +131,8 @@ bool VulkanRenderGraphBuilder::createColorAttachments(
 bool VulkanRenderGraphBuilder::allocateDescriptors(
     VulkanRenderResources& renderResources, VulkanRenderGraph& renderGraph, std::string& errorMessage
 ) {
-    // Merge all descriptors globally
     for (const auto& pass : renderGraph.getPasses()) {
-        for (const auto& [set, scheme] : pass->getShaderProgram()->getDescriptorSchemes()) {
-            for (const auto& descriptor : scheme) {
-                if (renderResources.getResources().contains(descriptor.name)) {
-                    // Adding pass to this resource's readers
-                    renderResources.addResourceReader(descriptor.name, pass.get());
-                    // Adding descriptor to global scheme
-                    renderResources.getDescriptorSchemes()[set].push_back(descriptor);
-                }
-            }
-        }
-    }
-
-    // Allocate descriptor sets
-    TRY(renderResources.allocateDescriptors(errorMessage));
-
-    // Merge reflected layouts into each pass pipeline descriptor
-    for (const auto& pass : renderGraph.getPasses()) {
-        auto& descriptorLayouts = pass->getPipelineDescriptor().descriptorLayouts;
-
-        for (const auto& manager : renderResources.getDescriptorManagers()) {
-            vk::DescriptorSetLayout layout = manager->getLayout();
-
-            if (std::ranges::find(descriptorLayouts, layout) == descriptorLayouts.end()) {
-                descriptorLayouts.push_back(layout);
-            }
-        }
+        TRY(renderResources.allocateDescriptors(pass.get(), errorMessage));
     }
 
     return true;

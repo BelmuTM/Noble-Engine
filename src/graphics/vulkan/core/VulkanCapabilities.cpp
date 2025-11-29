@@ -2,7 +2,7 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-bool VulkanCapabilities::create(std::string& errorMessage) {
+bool VulkanCapabilities::create(std::string& errorMessage) noexcept {
     constexpr VpCapabilitiesCreateInfo createInfo{
         .flags            = VP_PROFILE_CREATE_STATIC_BIT,
         .apiVersion       = VULKAN_VERSION,
@@ -14,7 +14,7 @@ bool VulkanCapabilities::create(std::string& errorMessage) {
     return true;
 }
 
-void VulkanCapabilities::destroy() {
+void VulkanCapabilities::destroy() noexcept {
     if (_capabilities) {
         vpDestroyCapabilities(_capabilities, nullptr);
         _capabilities = VK_NULL_HANDLE;

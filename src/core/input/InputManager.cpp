@@ -41,6 +41,11 @@ void InputManager::initKeyBindings() {
     bindKey(GLFW_KEY_LEFT_SHIFT, InputAction::IncreaseSpeed);
 }
 
+void InputManager::update() {
+    _mouseDelta        = _mousePosition - _lastMousePosition;
+    _lastMousePosition = _mousePosition;
+}
+
 void InputManager::onKeyEvent(const int key, const int action) {
     const InputAction act = getKeybindAction(key);
 
@@ -80,17 +85,4 @@ void InputManager::onMouseScroll(const double offsetX, const double offsetY) con
     for (auto* listener : _listeners) {
         listener->onMouseScroll(offsetX, offsetY);
     }
-}
-
-bool InputManager::isKeyPressed(const int key) const {
-    return _currentKeys.contains(key) && _currentKeys.at(key);
-}
-
-bool InputManager::isActionPressed(const InputAction action) const {
-    return _pressedActions.contains(action);
-}
-
-void InputManager::update() {
-    _mouseDelta        = _mousePosition - _lastMousePosition;
-    _lastMousePosition = _mousePosition;
 }

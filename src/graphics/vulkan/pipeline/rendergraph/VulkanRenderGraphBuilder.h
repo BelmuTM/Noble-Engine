@@ -6,10 +6,9 @@
 
 #include "graphics/vulkan/core/VulkanSwapchain.h"
 
-#include "graphics/vulkan/pipeline/rendergraph/VulkanRenderGraph.h"
-
 #include "graphics/vulkan/pipeline/VulkanPipelineManager.h"
 #include "graphics/vulkan/pipeline/VulkanShaderProgramManager.h"
+#include "graphics/vulkan/pipeline/rendergraph/VulkanRenderGraph.h"
 
 #include "graphics/vulkan/resources/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"

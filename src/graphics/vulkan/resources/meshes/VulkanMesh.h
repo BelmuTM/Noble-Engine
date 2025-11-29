@@ -15,11 +15,13 @@ public:
         this->_material = baseMesh.getMaterial();
     }
 
-    VulkanMesh(const VulkanMesh&)            noexcept = default;
-    VulkanMesh& operator=(const VulkanMesh&) noexcept = default;
+    VulkanMesh(const VulkanMesh&)            = delete;
+    VulkanMesh& operator=(const VulkanMesh&) = delete;
 
     VulkanMesh(VulkanMesh&&)            noexcept = default;
     VulkanMesh& operator=(VulkanMesh&&) noexcept = default;
+
+    static VulkanMesh makeFullscreenTriangle();
 
     [[nodiscard]] bool isBufferless() const noexcept { return _bufferless; }
     void setBufferless(const bool bufferless) noexcept { _bufferless = bufferless; }
@@ -34,8 +36,6 @@ public:
     void setIndexOffset(const size_t offset) noexcept {
         _indexOffset = offset;
     }
-
-    static VulkanMesh makeFullscreenTriangle();
 
 private:
     bool _bufferless = false;

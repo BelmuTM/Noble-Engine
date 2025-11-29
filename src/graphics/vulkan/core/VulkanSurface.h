@@ -29,12 +29,12 @@ public:
     void destroy() noexcept;
 
 private:
+    bool createSurface(std::string& errorMessage);
+
     const Platform::Window* _window = nullptr;
 
     vk::Instance   _instance{};
     vk::SurfaceKHR _surface{};
-
-    bool createSurface(std::string& errorMessage);
 };
 
 #endif //NOBLEENGINE_VULKANSURFACE_H

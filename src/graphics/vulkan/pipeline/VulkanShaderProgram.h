@@ -17,11 +17,11 @@ public:
     VulkanShaderProgram()  = default;
     ~VulkanShaderProgram() = default;
 
-    VulkanShaderProgram(const VulkanShaderProgram&)            = default;
-    VulkanShaderProgram& operator=(const VulkanShaderProgram&) = default;
+    VulkanShaderProgram(const VulkanShaderProgram&)            = delete;
+    VulkanShaderProgram& operator=(const VulkanShaderProgram&) = delete;
 
-    VulkanShaderProgram(VulkanShaderProgram&&)            = default;
-    VulkanShaderProgram& operator=(VulkanShaderProgram&&) = default;
+    VulkanShaderProgram(VulkanShaderProgram&&)            noexcept = default;
+    VulkanShaderProgram& operator=(VulkanShaderProgram&&) noexcept = default;
 
     void destroy() noexcept;
 
@@ -52,18 +52,6 @@ public:
     }
 
 private:
-    vk::Device _device{};
-
-    bool _isFullscreen = false;
-
-    std::vector<vk::ShaderModule>                  _shaderModules{};
-    std::vector<vk::PipelineShaderStageCreateInfo> _shaderStages{};
-    vk::ShaderStageFlags                           _stageFlags{};
-
-    std::vector<std::string> _stageOutputs{};
-    DescriptorSchemeMap      _descriptorSchemes{};
-    PushConstantsMap         _pushConstants{};
-
     void clearShaderModules();
 
     vk::ShaderModule createShaderModule(const std::vector<uint32_t>& bytecode, std::string& errorMessage) const;
@@ -77,6 +65,18 @@ private:
     static std::vector<uint32_t> readShaderSPIRVBytecode(const std::string& path) noexcept;
 
     static std::vector<std::string> findShaderFilePaths(const std::string& path);
+
+    vk::Device _device{};
+
+    bool _isFullscreen = false;
+
+    std::vector<vk::ShaderModule>                  _shaderModules{};
+    std::vector<vk::PipelineShaderStageCreateInfo> _shaderStages{};
+    vk::ShaderStageFlags                           _stageFlags{};
+
+    std::vector<std::string> _stageOutputs{};
+    DescriptorSchemeMap      _descriptorSchemes{};
+    PushConstantsMap         _pushConstants{};
 };
 
 #endif //NOBLEENGINE_VULKANSHADERPROGRAM_H

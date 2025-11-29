@@ -25,6 +25,7 @@ public:
     void destroy() noexcept;
 
     void update(uint32_t objectIndex, const ObjectDataGPU& dataToGPU) const;
+
     void update(const std::vector<ObjectDataGPU>& dataToGPU) const;
 
 private:

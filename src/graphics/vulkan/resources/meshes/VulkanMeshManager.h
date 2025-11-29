@@ -39,6 +39,15 @@ public:
     [[nodiscard]] const VulkanBuffer& getIndexBuffer()  const noexcept { return _indexBuffer; }
 
 private:
+    void queryVertexBufferSize();
+    void queryIndexBufferSize();
+
+    void copyMeshData(void* stagingData);
+
+    bool createStagingBuffer(std::string& errorMessage);
+    bool createVertexBuffer(std::string& errorMessage);
+    bool createIndexBuffer(std::string& errorMessage);
+
     const VulkanDevice*         _device         = nullptr;
     const VulkanCommandManager* _commandManager = nullptr;
 
@@ -53,15 +62,6 @@ private:
 
     size_t _vertexBufferSize = 0;
     size_t _indexBufferSize  = 0;
-
-    void queryVertexBufferSize();
-    void queryIndexBufferSize();
-
-    void copyMeshData(void* stagingData);
-
-    bool createStagingBuffer(std::string& errorMessage);
-    bool createVertexBuffer(std::string& errorMessage);
-    bool createIndexBuffer(std::string& errorMessage);
 };
 
 #endif // NOBLEENGINE_VULKANMESHMANAGER_H

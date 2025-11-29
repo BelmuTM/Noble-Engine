@@ -12,7 +12,7 @@ bool VulkanSyncObjects::create(
 
     if (!createSyncObjects(framesInFlight, swapchainImageCount, errorMessage)) return false;
 
-    imagesInFlight.resize(swapchainImageCount, VK_NULL_HANDLE);
+    _imagesInFlight.resize(swapchainImageCount, VK_NULL_HANDLE);
 
     return true;
 }
@@ -25,26 +25,26 @@ void VulkanSyncObjects::destroy() noexcept {
 }
 
 void VulkanSyncObjects::backup() {
-    oldFences.insert(oldFences.end(), inFlightFences.begin(), inFlightFences.end());
-    oldImageAvailable.insert(oldImageAvailable.end(), imageAvailableSemaphores.begin(), imageAvailableSemaphores.end());
-    oldRenderFinished.insert(oldRenderFinished.end(), renderFinishedSemaphores.begin(), renderFinishedSemaphores.end());
+    _oldFences.insert(_oldFences.end(), _inFlightFences.begin(), _inFlightFences.end());
+    _oldImageAvailable.insert(_oldImageAvailable.end(), _imageAvailableSemaphores.begin(), _imageAvailableSemaphores.end());
+    _oldRenderFinished.insert(_oldRenderFinished.end(), _renderFinishedSemaphores.begin(), _renderFinishedSemaphores.end());
 }
 
 bool VulkanSyncObjects::createSyncObjects(
     const uint32_t framesInFlight, const uint32_t swapchainImageCount, std::string& errorMessage
 ) {
-    imageAvailableSemaphores.resize(framesInFlight);
-    renderFinishedSemaphores.resize(swapchainImageCount);
-    inFlightFences.resize(framesInFlight);
+    _imageAvailableSemaphores.resize(framesInFlight);
+    _renderFinishedSemaphores.resize(swapchainImageCount);
+    _inFlightFences.resize(framesInFlight);
 
     constexpr vk::FenceCreateInfo fenceInfo{vk::FenceCreateFlagBits::eSignaled};
 
     for (uint32_t i = 0; i < framesInFlight; i++) {
-        VK_CREATE(_device.createSemaphore({}), imageAvailableSemaphores[i], errorMessage);
-        VK_CREATE(_device.createFence(fenceInfo), inFlightFences[i], errorMessage);
+        VK_CREATE(_device.createSemaphore({}), _imageAvailableSemaphores[i], errorMessage);
+        VK_CREATE(_device.createFence(fenceInfo), _inFlightFences[i], errorMessage);
     }
 
-    for (auto& renderFinishedSemaphore : renderFinishedSemaphores) {
+    for (auto& renderFinishedSemaphore : _renderFinishedSemaphores) {
         VK_CREATE(_device.createSemaphore({}), renderFinishedSemaphore, errorMessage);
     }
 
@@ -52,37 +52,37 @@ bool VulkanSyncObjects::createSyncObjects(
 }
 
 void VulkanSyncObjects::destroySyncObjects() {
-    for (const auto& imageSemaphore : imageAvailableSemaphores) {
+    for (const auto& imageSemaphore : _imageAvailableSemaphores) {
         _device.destroySemaphore(imageSemaphore);
     }
 
-    for (const auto& renderSemaphore : renderFinishedSemaphores) {
+    for (const auto& renderSemaphore : _renderFinishedSemaphores) {
         _device.destroySemaphore(renderSemaphore);
     }
 
-    for (const auto& fence : inFlightFences) {
+    for (const auto& fence : _inFlightFences) {
         _device.destroyFence(fence);
     }
 
-    imageAvailableSemaphores.clear();
-    renderFinishedSemaphores.clear();
-    inFlightFences.clear();
+    _imageAvailableSemaphores.clear();
+    _renderFinishedSemaphores.clear();
+    _inFlightFences.clear();
 }
 
 void VulkanSyncObjects::cleanupOldSyncObjects() {
-    for (const auto& imageSemaphore : oldImageAvailable) {
+    for (const auto& imageSemaphore : _oldImageAvailable) {
         _device.destroySemaphore(imageSemaphore);
     }
 
-    for (const auto& renderSemaphore : oldRenderFinished) {
+    for (const auto& renderSemaphore : _oldRenderFinished) {
         _device.destroySemaphore(renderSemaphore);
     }
 
-    for (const auto& fence : oldFences) {
+    for (const auto& fence : _oldFences) {
         _device.destroyFence(fence);
     }
 
-    oldImageAvailable.clear();
-    oldRenderFinished.clear();
-    oldFences.clear();
+    _oldImageAvailable.clear();
+    _oldRenderFinished.clear();
+    _oldFences.clear();
 }

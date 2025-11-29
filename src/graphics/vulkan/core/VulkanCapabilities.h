@@ -18,8 +18,9 @@ public:
     VulkanCapabilities(VulkanCapabilities&&)            = delete;
     VulkanCapabilities& operator=(VulkanCapabilities&&) = delete;
 
-    [[nodiscard]] bool create(std::string& errorMessage);
-    void destroy();
+    [[nodiscard]] bool create(std::string& errorMessage) noexcept;
+
+    void destroy() noexcept;
 
 private:
     VpCapabilities _capabilities = VK_NULL_HANDLE;

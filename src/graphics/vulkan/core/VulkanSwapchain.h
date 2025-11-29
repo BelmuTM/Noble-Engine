@@ -19,8 +19,9 @@ public:
 
     VulkanSwapchain(const VulkanSwapchain&)            = delete;
     VulkanSwapchain& operator=(const VulkanSwapchain&) = delete;
-    VulkanSwapchain(VulkanSwapchain&&)                 = delete;
-    VulkanSwapchain& operator=(VulkanSwapchain&&)      = delete;
+
+    VulkanSwapchain(VulkanSwapchain&&)            = delete;
+    VulkanSwapchain& operator=(VulkanSwapchain&&) = delete;
 
     [[nodiscard]] bool create(
         const Platform::Window& window, const VulkanDevice& device, vk::SurfaceKHR surface, std::string& errorMessage
@@ -29,6 +30,8 @@ public:
     void destroy() noexcept;
 
     [[nodiscard]] bool recreate(vk::SurfaceKHR surface, std::string& errorMessage);
+
+    void createImages();
 
     [[nodiscard]] const vk::SwapchainKHR& handle() const noexcept { return _swapchain; }
 
@@ -43,14 +46,29 @@ public:
         return static_cast<float>(_extent.width) / static_cast<float>(_extent.height);
     }
 
-    void createImages();
-
 private:
     struct SwapchainSupportInfo {
         vk::SurfaceCapabilitiesKHR        capabilities;
         std::vector<vk::SurfaceFormatKHR> formats;
         std::vector<vk::PresentModeKHR>   presentModes;
     };
+
+    bool createSwapchain(vk::SurfaceKHR surface, std::string& errorMessage);
+    bool createImageViews(std::string& errorMessage);
+
+    static SwapchainSupportInfo querySwapchainSupport(
+        vk::PhysicalDevice device, vk::SurfaceKHR _surface, std::string& errorMessage
+    );
+
+    [[nodiscard]] static vk::SurfaceFormatKHR chooseSurfaceFormat(
+        const std::vector<vk::SurfaceFormatKHR>& availableFormats
+    );
+
+    [[nodiscard]] static vk::PresentModeKHR choosePresentMode(
+        const std::vector<vk::PresentModeKHR>& availablePresentModes
+    );
+
+    [[nodiscard]] vk::Extent2D chooseExtent(const vk::SurfaceCapabilitiesKHR& capabilities) const;
 
     const Platform::Window* _window = nullptr;
     const VulkanDevice*     _device = nullptr;
@@ -63,17 +81,6 @@ private:
     vk::Format   _format = vk::Format::eUndefined;
 
     std::vector<std::unique_ptr<VulkanImage>> _images{};
-
-    bool createSwapchain(vk::SurfaceKHR surface, std::string& errorMessage);
-    bool createImageViews(std::string& errorMessage);
-
-    static SwapchainSupportInfo querySwapchainSupport(
-        vk::PhysicalDevice device, vk::SurfaceKHR _surface, std::string& errorMessage
-    );
-
-    static vk::SurfaceFormatKHR chooseSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats);
-    static vk::PresentModeKHR   choosePresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes);
-    [[nodiscard]] vk::Extent2D  chooseExtent(const vk::SurfaceCapabilitiesKHR& capabilities) const;
 };
 
 #endif //NOBLEENGINE_VULKANSWAPCHAIN_H

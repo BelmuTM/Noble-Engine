@@ -8,7 +8,7 @@ VulkanRenderPass& VulkanRenderPass::addObjectDrawCall(const VulkanRenderObject* 
 
         verticesDraw->setDescriptorResolver(
             [&submesh](const uint32_t frameIndex) {
-                return std::vector{submesh.descriptorSets->getSets().at(frameIndex)};
+                return std::vector{submesh.descriptorSets->getSet(frameIndex)};
             }
         );
 

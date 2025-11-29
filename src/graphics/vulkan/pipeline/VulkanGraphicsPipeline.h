@@ -41,6 +41,20 @@ public:
     [[nodiscard]] vk::ShaderStageFlags getStageFlags() const noexcept { return _stageFlags; }
 
 private:
+    [[nodiscard]] bool createPipelineLayout(
+        const vk::Device&                           device,
+        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
+        const PushConstantsMap&                     pushConstantRanges,
+        std::string&                                errorMessage
+    );
+
+    [[nodiscard]] bool createPipeline(
+        const vk::Device&          device,
+        const VulkanShaderProgram& shaderProgram,
+        const AttachmentsVector&   colorAttachments,
+        std::string&               errorMessage
+    );
+
     vk::Device _device{};
 
     vk::Pipeline       _pipeline{};
@@ -116,20 +130,6 @@ private:
         info.setDynamicStates(dynamicStates);
         return info;
     }();
-
-    [[nodiscard]] bool createPipelineLayout(
-        const vk::Device&                           device,
-        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
-        const PushConstantsMap&                     pushConstantRanges,
-        std::string&                                errorMessage
-    );
-
-    [[nodiscard]] bool createPipeline(
-        const vk::Device&          device,
-        const VulkanShaderProgram& shaderProgram,
-        const AttachmentsVector&   colorAttachments,
-        std::string&               errorMessage
-    );
 };
 
 #endif //NOBLEENGINE_VULKANGRAPHICSPIPELINE_H

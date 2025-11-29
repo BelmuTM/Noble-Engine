@@ -30,6 +30,7 @@ namespace Platform {
         void getFramebufferSize(int& width, int& height) const;
 
         [[nodiscard]] bool isFramebufferResized() const noexcept { return _framebufferResized; }
+
         void setFramebufferResized(const bool resized) noexcept { _framebufferResized = resized; }
 
         void setTitle(const std::string& title) const;

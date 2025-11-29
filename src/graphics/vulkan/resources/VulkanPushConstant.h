@@ -2,7 +2,10 @@
 #ifndef NOBLEENGINE_VULKANPUSHCONSTANT_H
 #define NOBLEENGINE_VULKANPUSHCONSTANT_H
 
+#include "graphics/vulkan/common/VulkanHeader.h"
+
 #include <unordered_map>
+#include <string>
 
 struct VulkanPushConstantRange {
     vk::ShaderStageFlags stageFlags;

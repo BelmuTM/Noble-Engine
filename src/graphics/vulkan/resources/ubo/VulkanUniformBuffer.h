@@ -60,7 +60,7 @@ public:
     VulkanDescriptorInfo getDescriptorInfo(const uint32_t binding, const uint32_t frameIndex) const noexcept override {
         return {
             .type       = vk::DescriptorType::eUniformBuffer,
-            .bufferInfo = {uniformBuffers[frameIndex], 0, size},
+            .bufferInfo = {uniformBuffers[frameIndex], 0, BUFFER_SIZE},
             .binding    = binding
         };
     }
@@ -68,14 +68,6 @@ public:
     [[nodiscard]] const std::vector<VulkanBuffer>& getBuffers() const noexcept { return uniformBuffers; }
 
 protected:
-    static constexpr vk::DeviceSize size = sizeof(UniformBufferType);
-
-    const VulkanDevice* _device = nullptr;
-
-    uint32_t _framesInFlight = 0;
-
-    std::vector<VulkanBuffer> uniformBuffers{};
-
     bool createUniformBuffers(std::string& errorMessage) {
         if (!_device) {
             errorMessage = "Failed to create Vulkan uniform buffers: device is null";
@@ -89,7 +81,7 @@ protected:
             VulkanBuffer uniformBuffer;
 
             TRY(uniformBuffer.create(
-                size,
+                BUFFER_SIZE,
                 vk::BufferUsageFlagBits::eUniformBuffer,
                 VMA_MEMORY_USAGE_CPU_TO_GPU,
                 _device,
@@ -108,6 +100,14 @@ protected:
     void updateMemory(const uint32_t frameIndex, UBOType ubo) const {
         std::memcpy(uniformBuffers[frameIndex].getMappedPointer(), &ubo, sizeof(ubo));
     }
+
+    static constexpr vk::DeviceSize BUFFER_SIZE = sizeof(UniformBufferType);
+
+    const VulkanDevice* _device = nullptr;
+
+    uint32_t _framesInFlight = 0;
+
+    std::vector<VulkanBuffer> uniformBuffers{};
 };
 
 #endif //NOBLEENGINE_VULKANUNIFORMBUFFER_H

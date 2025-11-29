@@ -46,6 +46,12 @@ public:
     [[nodiscard]] vk::DescriptorPool getPool() const noexcept { return _descriptorPool; }
 
 private:
+    void buildDescriptorScheme(const VulkanDescriptorScheme& descriptorScheme);
+
+    [[nodiscard]] bool createSetLayout(std::string& errorMessage);
+
+    [[nodiscard]] bool createPool(std::string& errorMessage);
+
     vk::Device _device{};
 
     uint32_t _framesInFlight = 0;
@@ -58,11 +64,6 @@ private:
     vk::DescriptorPool      _descriptorPool{};
 
     std::vector<std::unique_ptr<VulkanDescriptorSets>> _descriptorSets{};
-
-    void buildDescriptorScheme(const VulkanDescriptorScheme& descriptorScheme);
-
-    [[nodiscard]] bool createSetLayout(std::string& errorMessage);
-    [[nodiscard]] bool createPool(std::string& errorMessage);
 };
 
 #endif //NOBLEENGINE_VULKANDESCRIPTORMANAGER_H

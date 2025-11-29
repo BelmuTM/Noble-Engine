@@ -22,6 +22,12 @@ public:
     Camera(Camera&&)            = delete;
     Camera& operator=(Camera&&) = delete;
 
+    void move(const glm::vec3& delta) noexcept { _position += delta; }
+
+    void updateRotation();
+
+    void update(double deltaTime);
+
     void setController(std::unique_ptr<CameraController> controller) {
         _controller = std::move(controller);
     }
@@ -56,13 +62,11 @@ public:
     }
     void addVelocity(const glm::vec3& delta) noexcept { _velocity += delta; }
 
-    void move(const glm::vec3& delta) noexcept { _position += delta; }
-
-    void updateRotation();
-
-    void update(double deltaTime);
-
 private:
+    void updateViewMatrix();
+
+    [[nodiscard]] glm::vec3 toWorldSpace(glm::vec3 vector) const;
+
     std::unique_ptr<CameraController> _controller{};
 
     float _fov = 70.0f;
@@ -88,10 +92,6 @@ private:
     float _rotationSensitivity = 0.2f;
 
     glm::mat4 _viewMatrix{1.0f};
-
-    void updateViewMatrix();
-
-    [[nodiscard]] glm::vec3 toWorldSpace(glm::vec3 vector) const;
 };
 
 #endif //NOBLEENGINE_CAMERA_H

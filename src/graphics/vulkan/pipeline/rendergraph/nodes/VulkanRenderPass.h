@@ -6,7 +6,6 @@
 #include "VulkanRenderPassAttachment.h"
 
 #include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
-#include "graphics/vulkan/pipeline/rendergraph/VulkanRenderResources.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObject.h"
 
 #include <memory>
@@ -23,11 +22,14 @@ struct VulkanPassTransition {
 
 class VulkanRenderPass {
 public:
+    using DescriptorSetsMap     = std::unordered_map<uint32_t, VulkanDescriptorSets*>;
+    using DescriptorManagersMap = std::unordered_map<uint32_t, std::unique_ptr<VulkanDescriptorManager>>;
+
     VulkanRenderPass()  = default;
     ~VulkanRenderPass() = default;
 
-    VulkanRenderPass(const VulkanRenderPass&)            = default;
-    VulkanRenderPass& operator=(const VulkanRenderPass&) = default;
+    VulkanRenderPass(const VulkanRenderPass&)            = delete;
+    VulkanRenderPass& operator=(const VulkanRenderPass&) = delete;
 
     VulkanRenderPass(VulkanRenderPass&&)            = delete;
     VulkanRenderPass& operator=(VulkanRenderPass&&) = delete;
@@ -43,6 +45,11 @@ public:
     [[nodiscard]] const VulkanGraphicsPipeline* getPipeline() const noexcept { return _pipeline; }
 
     [[nodiscard]] vk::PipelineBindPoint getBindPoint() const noexcept { return _bindPoint; }
+
+    [[nodiscard]]       DescriptorSetsMap& getDescriptorSets()       noexcept { return _descriptorSets; }
+    [[nodiscard]] const DescriptorSetsMap& getDescriptorSets() const noexcept { return _descriptorSets; }
+
+    [[nodiscard]] DescriptorManagersMap& getDescriptorManagers() noexcept { return _descriptorManagers; }
 
     [[nodiscard]] VulkanRenderPassAttachment* getDepthAttachment() const noexcept { return _depthAttachment; }
 
@@ -118,6 +125,9 @@ private:
 
     const VulkanGraphicsPipeline* _pipeline  = nullptr;
     vk::PipelineBindPoint         _bindPoint = vk::PipelineBindPoint::eGraphics;
+
+    DescriptorSetsMap     _descriptorSets{};
+    DescriptorManagersMap _descriptorManagers{};
 
     VulkanRenderPassAttachment* _depthAttachment = nullptr;
 

@@ -42,6 +42,8 @@ public:
 
     [[nodiscard]] bool recreate(const VulkanCommandManager* commandManager, std::string& errorMessage) const;
 
+    VulkanImage* allocateColorBuffer();
+
     [[nodiscard]] uint32_t getFrameIndex() const noexcept { return _frameIndex; }
     [[nodiscard]] uint32_t getImageIndex() const noexcept { return _imageIndex; }
 
@@ -50,8 +52,6 @@ public:
     [[nodiscard]] const VulkanDescriptorManager& getDescriptorManager() const noexcept { return _descriptorManager; }
 
     [[nodiscard]] const VulkanDescriptorSets* getDescriptors() const noexcept { return _frameUBODescriptors; }
-
-    VulkanImage* allocateColorBuffer();
 
 private:
     const VulkanDevice*       _device       = nullptr;

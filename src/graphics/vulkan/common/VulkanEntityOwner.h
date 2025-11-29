@@ -12,6 +12,10 @@ protected:
     std::vector<std::function<void()>> entityDeletionQueue;
 
 public:
+    ~VulkanEntityOwner() {
+        flushDeletionQueue();
+    }
+
     template<typename Resource, typename... Args>
     bool createVulkanEntity(Resource* res, std::string& errorMessage, Args&&... args) {
         if (!res->create(std::forward<Args>(args)..., errorMessage)) return false;
@@ -26,10 +30,6 @@ public:
             if (destroyFunction) destroyFunction();
         }
         entityDeletionQueue.clear();
-    }
-
-    ~VulkanEntityOwner() {
-        flushDeletionQueue();
     }
 };
 

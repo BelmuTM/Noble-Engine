@@ -51,15 +51,6 @@ public:
     [[nodiscard]] const RenderObjectsVector& getRenderObjects() noexcept { return _renderObjects; }
 
 private:
-    VulkanImageManager*    _imageManager    = nullptr;
-    VulkanMeshManager*     _meshManager     = nullptr;
-    VulkanRenderResources* _renderResources = nullptr;
-
-    VulkanDescriptorManager _descriptorManager{};
-    VulkanObjectBuffer      _objectBuffer{};
-
-    RenderObjectsVector _renderObjects{};
-
     [[nodiscard]] bool createRenderObjects(const ObjectsVector& objects, std::string& errorMessage);
 
     [[nodiscard]] bool createRenderObject(
@@ -69,6 +60,15 @@ private:
         uint32_t&           meshCount,
         std::string&        errorMessage
     );
+
+    VulkanImageManager*    _imageManager    = nullptr;
+    VulkanMeshManager*     _meshManager     = nullptr;
+    VulkanRenderResources* _renderResources = nullptr;
+
+    VulkanDescriptorManager _descriptorManager{};
+    VulkanObjectBuffer      _objectBuffer{};
+
+    RenderObjectsVector _renderObjects{};
 };
 
 #endif // NOBLEENGINE_VULKANRENDEROBJECTMANAGER_H

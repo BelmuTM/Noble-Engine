@@ -1,6 +1,6 @@
 #include "VulkanRenderResources.h"
 
-#include "graphics/vulkan/resources/descriptors/VulkanDescriptorSets.h"
+#include "VulkanRenderGraph.h"
 
 #include "core/debug/ErrorHandling.h"
 
@@ -18,9 +18,39 @@ bool VulkanRenderResources::create(
     _imageManager   = &imageManager;
     _framesInFlight = framesInFlight;
 
-    // Depth buffer creation
+    TRY(createDepthBuffer(errorMessage));
+
+    return true;
+}
+
+void VulkanRenderResources::destroy() noexcept {
+    _resources.clear();
+    _resourceReaders.clear();
+    _resourceWriters.clear();
+
+    // Depth buffer destruction
+    _depthBuffer->destroy(*_device);
+
+    _device       = nullptr;
+    _swapchain    = nullptr;
+    _imageManager = nullptr;
+}
+
+[[nodiscard]] bool VulkanRenderResources::recreate(VulkanRenderGraph& renderGraph, std::string& errorMessage) {
+    // Depth buffer recreation
+    _depthBuffer->destroy(*_device);
+
+    TRY(_imageManager->createDepthBuffer(*_depthBuffer, _swapchain->getExtent(), errorMessage));
+
+    // Re-bind descriptor sets
+    rebindDescriptors(renderGraph);
+
+    return true;
+}
+
+bool VulkanRenderResources::createDepthBuffer(std::string& errorMessage) {
     _depthBuffer = std::make_unique<VulkanImage>();
-    TRY(imageManager.createDepthBuffer(*_depthBuffer, swapchain.getExtent(), errorMessage));
+    TRY(_imageManager->createDepthBuffer(*_depthBuffer, _swapchain->getExtent(), errorMessage));
 
     VulkanRenderPassResource depthBufferResource{};
     depthBufferResource
@@ -38,60 +68,6 @@ bool VulkanRenderResources::create(
     _depthBufferAttachment = std::make_unique<VulkanRenderPassAttachment>(depthBufferAttachment);
 
     addResource(depthBufferResource);
-
-    return true;
-}
-
-void VulkanRenderResources::destroy() noexcept {
-    // Global resources destruction
-    for (const auto& descriptorManager : _descriptorManagers) {
-        descriptorManager->destroy();
-    }
-
-    _resources.clear();
-    _resourceReaders.clear();
-    _resourceWriters.clear();
-
-    _descriptorManagers.clear();
-    _descriptorBindingsPerManager.clear();
-    _descriptorSetGroups.clear();
-
-    // Depth buffer destruction
-    _depthBuffer->destroy(*_device);
-
-    _device       = nullptr;
-    _swapchain    = nullptr;
-    _imageManager = nullptr;
-}
-
-[[nodiscard]] bool VulkanRenderResources::recreate(std::string& errorMessage) {
-    // Depth buffer recreation
-    _depthBuffer->destroy(*_device);
-
-    TRY(_imageManager->createDepthBuffer(*_depthBuffer, _swapchain->getExtent(), errorMessage));
-
-    // Descriptor sets re-binding
-    if (!_descriptorSetGroups.empty() && !_descriptorManagers.empty()) {
-
-        for (size_t managerIndex = 0; managerIndex < _descriptorManagers.size(); managerIndex++) {
-            const VulkanDescriptorSets* descriptorSets = _descriptorSetGroups[managerIndex];
-
-            if (!descriptorSets) continue;
-
-            const auto& bindings = _descriptorBindingsPerManager[managerIndex];
-
-            for (const auto& [binding, resourceName] : bindings) {
-                auto it = _resources.find(resourceName);
-                if (it == _resources.end()) continue;
-
-                const auto& resource = it->second;
-                if (!resource->image) continue;
-
-                descriptorSets->bindPerFrameResource(resource->image->getDescriptorInfo(binding));
-            }
-        }
-
-    }
 
     return true;
 }
@@ -131,58 +107,73 @@ bool VulkanRenderResources::createColorAttachments(
     return true;
 }
 
-bool VulkanRenderResources::allocateDescriptors(std::string& errorMessage) {
-    for (auto& scheme : _descriptorSchemes | std::views::values) {
-        VulkanDescriptorScheme uniqueScheme;
-        uniqueScheme.reserve(scheme.size());
-
-        std::unordered_map<uint32_t, size_t> seenDescriptor;
-
-        for (auto& descriptor : scheme) {
-            if (auto it = seenDescriptor.find(descriptor.binding); it != seenDescriptor.end()) {
-                uniqueScheme[it->second] = descriptor;
-            } else {
-                seenDescriptor[descriptor.binding] = uniqueScheme.size();
-                uniqueScheme.push_back(descriptor);
+bool VulkanRenderResources::allocateDescriptors(VulkanRenderPass* pass, std::string& errorMessage) {
+    // Register resource reader passes
+    for (const auto& scheme : pass->getShaderProgram()->getDescriptorSchemes() | std::views::values) {
+        for (const auto& descriptor : scheme) {
+            if (_resources.contains(descriptor.name)) {
+                addResourceReader(descriptor.name, pass);
             }
         }
+    }
 
+    // Allocate per-pass descriptor sets keyed by set index
+    for (const auto& [set, scheme] : pass->getShaderProgram()->getDescriptorSchemes()) {
+        // Create one manager (pool, layout) per descriptor scheme
         auto descriptorManager = std::make_unique<VulkanDescriptorManager>();
-        TRY(descriptorManager->create(_device->getLogicalDevice(), uniqueScheme, _framesInFlight, 1, errorMessage));
+        TRY(descriptorManager->create(_device->getLogicalDevice(), scheme, _framesInFlight, 1, errorMessage));
 
         VulkanDescriptorSets* descriptorSets = nullptr;
         TRY(descriptorManager->allocate(descriptorSets, errorMessage));
 
-        const size_t managerIndex = _descriptorBindingsPerManager.size();
+        // Store descriptor manager and sets keyed by set index
+        pass->getDescriptorManagers()[set] = std::move(descriptorManager);
+        pass->getDescriptorSets()[set]     = descriptorSets;
 
-        _descriptorManagers.push_back(std::move(descriptorManager));
-        _descriptorSetGroups.push_back(descriptorSets);
-        _descriptorBindingsPerManager.emplace_back();
+        bindDescriptors(descriptorSets, scheme);
+    }
 
-        for (auto& descriptor : uniqueScheme) {
-            auto it = _resources.find(descriptor.name);
-            if (it == _resources.end()) continue;
+    // Attach the layouts belonging to this pass
+    auto& descriptorLayouts = pass->getPipelineDescriptor().descriptorLayouts;
 
-            const auto& resource = it->second;
+    for (const auto& manager : pass->getDescriptorManagers() | std::views::values) {
+        vk::DescriptorSetLayout layout = manager->getLayout();
 
-            if (!resource->image) continue;
-
-            descriptorSets->bindPerFrameResource(resource->image->getDescriptorInfo(descriptor.binding));
-
-            _descriptorBindingsPerManager[managerIndex].push_back({descriptor.binding, descriptor.name});
+        if (std::ranges::find(descriptorLayouts, layout) == descriptorLayouts.end()) {
+            descriptorLayouts.push_back(layout);
         }
     }
 
     return true;
 }
 
-std::vector<vk::DescriptorSet> VulkanRenderResources::getFrameDescriptorSets(const uint32_t frameIndex) const {
-    std::vector<vk::DescriptorSet> sets{};
-    sets.reserve(_descriptorSetGroups.size());
+void VulkanRenderResources::bindDescriptors(
+    const VulkanDescriptorSets* descriptorSets, const VulkanDescriptorScheme& scheme
+) {
+    for (const auto& descriptor : scheme) {
+        auto itRes = _resources.find(descriptor.name);
+        if (itRes == _resources.end()) continue;
 
-    for (const auto& group : _descriptorSetGroups) {
-        sets.push_back(group->getSets()[frameIndex]);
+        const auto& resource = itRes->second;
+        if (!resource->image) continue;
+
+        // Bind resource for each frame in flight
+        descriptorSets->bindPerFrameResource(resource->image->getDescriptorInfo(descriptor.binding));
     }
+}
 
-    return sets;
+void VulkanRenderResources::rebindDescriptors(VulkanRenderGraph& renderGraph) {
+    for (const auto& pass : renderGraph.getPasses()) {
+
+        for (const auto& [set, scheme] : pass->getShaderProgram()->getDescriptorSchemes()) {
+            auto itSets = pass->getDescriptorSets().find(set);
+            if (itSets == pass->getDescriptorSets().end()) continue;
+
+            const VulkanDescriptorSets* descriptorSets = itSets->second;
+            if (!descriptorSets) continue;
+
+            bindDescriptors(descriptorSets, scheme);
+        }
+
+    }
 }

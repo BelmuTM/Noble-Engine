@@ -34,7 +34,7 @@ VSOutput vertMain(VSInput input) {
 
 layout (location = 0) out float4 output;
 
-layout (set = 1, binding = 3) Sampler2D compositeBuffer;
+layout (set = 1, binding = 0) Sampler2D compositeBuffer;
 
 float bayer2(float2 a) {
     a = floor(a);

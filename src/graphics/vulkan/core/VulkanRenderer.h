@@ -39,6 +39,16 @@ public:
     uint32_t primitiveCount = 0;
 
 private:
+    [[nodiscard]] bool onFramebufferResize(std::string& errorMessage);
+
+    [[nodiscard]] bool recordCommandBuffer(
+        vk::CommandBuffer commandBuffer, uint32_t imageIndex, std::string& errorMessage
+    );
+
+    [[nodiscard]] bool recordCurrentCommandBuffer(uint32_t imageIndex, std::string& errorMessage);
+
+    [[nodiscard]] bool submitCurrentCommandBuffer(uint32_t imageIndex, std::string& errorMessage, bool& discardLogging);
+
     Platform::Window* _window = nullptr;
 
     uint32_t _framesInFlight;
@@ -60,16 +70,6 @@ private:
     VulkanShaderProgramManager shaderProgramManager{};
     VulkanPipelineManager      pipelineManager{};
     VulkanRenderGraph          renderGraph{};
-
-    [[nodiscard]] bool onFramebufferResize(std::string& errorMessage);
-
-    [[nodiscard]] bool recordCommandBuffer(
-        vk::CommandBuffer commandBuffer, uint32_t imageIndex, std::string& errorMessage
-    );
-
-    [[nodiscard]] bool recordCurrentCommandBuffer(uint32_t imageIndex, std::string& errorMessage);
-
-    [[nodiscard]] bool submitCurrentCommandBuffer(uint32_t imageIndex, std::string& errorMessage, bool& discardLogging);
 };
 
 #endif //NOBLEENGINE_VULKANRENDERER_H

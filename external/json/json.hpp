@@ -24249,9 +24249,9 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
 
         data() noexcept = default;
         data(data&&) noexcept = default;
-        data(const data&) noexcept = delete;
-        data& operator=(data&&) noexcept = delete;
-        data& operator=(const data&) noexcept = delete;
+        data(const data&) = delete;
+        data& operator=(data&&) = delete;
+        data& operator=(const data&) = delete;
 
         ~data() noexcept
         {
