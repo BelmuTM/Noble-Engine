@@ -8,16 +8,12 @@
 #include "graphics/vulkan/resources/VulkanPushConstant.h"
 #include "graphics/vulkan/resources/meshes/VulkanMesh.h"
 
-#include <functional>
-
 struct VulkanDrawCall {
     virtual ~VulkanDrawCall() = default;
 
     const VulkanMesh* mesh = nullptr;
 
-    using DescriptorResolver = std::function<std::vector<vk::DescriptorSet>(uint32_t)>;
-
-    DescriptorResolver descriptorResolver{};
+    std::vector<VulkanDescriptorSets*> descriptorSets{};
 
     std::optional<vk::Viewport> viewport{};
     std::optional<vk::Rect2D>   scissor{};
@@ -36,14 +32,19 @@ struct VulkanDrawCall {
 
     VulkanDrawCall& setMesh(const VulkanMesh* _mesh) noexcept { mesh = _mesh; return *this; }
 
-    VulkanDrawCall& setDescriptorResolver(const DescriptorResolver& _descriptorResolver) {
-        descriptorResolver = _descriptorResolver;
+    VulkanDrawCall& setDescriptorSets(const std::vector<VulkanDescriptorSets*>& _descriptorSets) noexcept {
+        descriptorSets = _descriptorSets;
         return *this;
     }
 
     VulkanDrawCall& setViewport(const vk::Viewport& _viewport) noexcept { viewport = _viewport; return *this; }
 
     VulkanDrawCall& setScissor(const vk::Rect2D _scissor) noexcept { scissor = _scissor; return *this; }
+
+    VulkanDrawCall& addDescriptorSets(VulkanDescriptorSets* _descriptorSets) {
+        descriptorSets.push_back(_descriptorSets);
+        return *this;
+    }
 };
 
 struct VulkanDrawCallWithPushConstants final : VulkanDrawCall {

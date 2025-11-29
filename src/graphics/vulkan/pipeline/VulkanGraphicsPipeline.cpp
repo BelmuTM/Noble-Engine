@@ -106,6 +106,7 @@ bool VulkanGraphicsPipeline::createPipeline(
         rasterizationInfo.setCullMode(vk::CullModeFlagBits::eNone);
     } else {
         rasterizationInfo.setCullMode(vk::CullModeFlagBits::eBack);
+        //rasterizationInfo.setPolygonMode(vk::PolygonMode::eLine);
     }
 
     vk::PipelineColorBlendStateCreateInfo colorBlendInfo{};

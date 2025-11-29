@@ -6,7 +6,7 @@
 #include <string>
 #include <ranges>
 
-template<typename Derived>
+template<typename>
 class VulkanEntityOwner {
 protected:
     std::vector<std::function<void()>> entityDeletionQueue;
@@ -27,7 +27,10 @@ public:
         if (entityDeletionQueue.empty()) return;
 
         for (auto& destroyFunction : std::ranges::reverse_view(entityDeletionQueue)) {
-            if (destroyFunction) destroyFunction();
+            if (destroyFunction) {
+                destroyFunction();
+                destroyFunction = nullptr;
+            }
         }
         entityDeletionQueue.clear();
     }

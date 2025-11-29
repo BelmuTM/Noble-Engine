@@ -5,18 +5,15 @@
 #include "graphics/GraphicsAPI.h"
 #include "graphics/vulkan/common/VulkanEntityOwner.h"
 
-#include "core/Platform.h"
+#include "graphics/vulkan/core/VulkanCommandManager.h"
+#include "graphics/vulkan/core/VulkanContext.h"
+#include "graphics/vulkan/core/VulkanSwapchainManager.h"
 
-#include "VulkanCommandManager.h"
-#include "VulkanContext.h"
-#include "VulkanSwapchainManager.h"
-
-#include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
+#include "graphics/vulkan/resources/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/images/VulkanImageManager.h"
 #include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 #include "graphics/vulkan/resources/ubo/VulkanUniformBufferManager.h"
-#include "graphics/vulkan/resources/VulkanFrameResources.h"
 
 #include "graphics/vulkan/pipeline/VulkanPipelineManager.h"
 #include "graphics/vulkan/pipeline/VulkanShaderProgramManager.h"
@@ -28,9 +25,7 @@ public:
 
     ~VulkanRenderer() override;
 
-    [[nodiscard]] bool init(
-        Platform::Window& window, const ObjectsVector& objects, std::string& errorMessage
-    ) override;
+    [[nodiscard]] bool init(Window& window, const ObjectsVector& objects, std::string& errorMessage) override;
 
     void shutdown() override;
 
@@ -49,7 +44,7 @@ private:
 
     [[nodiscard]] bool submitCurrentCommandBuffer(uint32_t imageIndex, std::string& errorMessage, bool& discardLogging);
 
-    Platform::Window* _window = nullptr;
+    Window* _window = nullptr;
 
     uint32_t _framesInFlight;
 

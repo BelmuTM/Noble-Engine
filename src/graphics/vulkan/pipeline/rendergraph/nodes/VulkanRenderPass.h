@@ -114,8 +114,6 @@ public:
         return *this;
     }
 
-    VulkanRenderPass& addObjectDrawCall(const VulkanRenderObject* renderObject);
-
 private:
     std::string _name = "Undefined_Pass";
 

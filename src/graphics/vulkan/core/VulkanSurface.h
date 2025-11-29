@@ -2,7 +2,7 @@
 #ifndef NOBLEENGINE_VULKANSURFACE_H
 #define NOBLEENGINE_VULKANSURFACE_H
 
-#include "core/Platform.h"
+#include "core/platform/Window.h"
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -22,16 +22,14 @@ public:
     VulkanSurface(VulkanSurface&&)            = delete;
     VulkanSurface& operator=(VulkanSurface&&) = delete;
 
-    [[nodiscard]] bool create(
-        const vk::Instance& instance, const Platform::Window& window, std::string& errorMessage
-    ) noexcept;
+    [[nodiscard]] bool create(const vk::Instance& instance, const Window& window, std::string& errorMessage) noexcept;
 
     void destroy() noexcept;
 
 private:
     bool createSurface(std::string& errorMessage);
 
-    const Platform::Window* _window = nullptr;
+    const Window* _window = nullptr;
 
     vk::Instance   _instance{};
     vk::SurfaceKHR _surface{};

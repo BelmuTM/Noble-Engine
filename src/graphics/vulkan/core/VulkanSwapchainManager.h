@@ -2,7 +2,7 @@
 #ifndef NOBLEENGINE_VULKANSWAPCHAINMANAGER_H
 #define NOBLEENGINE_VULKANSWAPCHAINMANAGER_H
 
-#include "core/Platform.h"
+#include "core/platform/Window.h"
 
 #include "VulkanContext.h"
 #include "VulkanSyncObjects.h"
@@ -19,7 +19,7 @@ public:
     VulkanSwapchainManager& operator=(VulkanSwapchainManager&&) = delete;
 
     [[nodiscard]] bool create(
-        Platform::Window&    window,
+        Window&              window,
         const VulkanSurface& surface,
         const VulkanDevice&  device,
         VulkanSwapchain&     swapchain,
@@ -48,7 +48,7 @@ public:
 private:
     [[nodiscard]] bool waitForImageFence(uint32_t frameIndex, uint32_t imageIndex, std::string& errorMessage);
 
-    Platform::Window* _window = nullptr;
+    Window* _window = nullptr;
 
     const VulkanSurface* _surface   = nullptr;
     const VulkanDevice*  _device    = nullptr;

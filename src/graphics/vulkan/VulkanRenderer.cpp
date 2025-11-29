@@ -14,7 +14,7 @@ VulkanRenderer::~VulkanRenderer() {
     shutdown();
 }
 
-bool VulkanRenderer::init(Platform::Window& window, const ObjectsVector& objects, std::string& errorMessage) {
+bool VulkanRenderer::init(Window& window, const ObjectsVector& objects, std::string& errorMessage) {
     _window = &window;
 
     errorMessage = "Failed to init Vulkan renderer: no error message provided";
@@ -35,15 +35,14 @@ bool VulkanRenderer::init(Platform::Window& window, const ObjectsVector& objects
     TRY(createVulkanEntity(&meshManager, errorMessage, device, commandManager));
     TRY(createVulkanEntity(&imageManager, errorMessage, device, commandManager));
     TRY(createVulkanEntity(&uniformBufferManager, errorMessage, device, _framesInFlight));
+    TRY(createVulkanEntity(&renderResources, errorMessage, device, swapchain, imageManager, _framesInFlight));
 
     TRY(createVulkanEntity(
         &frameResources, errorMessage, device, swapchain, imageManager, uniformBufferManager, _framesInFlight
     ));
 
-    TRY(createVulkanEntity(&renderResources, errorMessage, device, swapchain, imageManager, _framesInFlight));
-
     TRY(createVulkanEntity(
-        &renderObjectManager, errorMessage, objects, device, imageManager, meshManager, renderResources, _framesInFlight
+        &renderObjectManager, errorMessage, objects, device, imageManager, meshManager, _framesInFlight
     ));
 
     // Pipeline managers creation

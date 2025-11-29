@@ -144,14 +144,12 @@ bool VulkanRenderGraph::executePass(
             std::vector<vk::DescriptorSet> descriptorSets{};
             descriptorSets.push_back(_frame->getDescriptors()->getSet(frameIndex));
 
-            if (draw.descriptorResolver) {
-                if (const auto objectSet = draw.descriptorResolver(frameIndex); !objectSet.empty()) {
-                    descriptorSets.push_back(objectSet[0]);
-                }
+            for (const auto& drawDescriptorSets : draw.descriptorSets) {
+                descriptorSets.push_back(drawDescriptorSets->getSet(frameIndex));
             }
 
-            for (const auto& descriptorSet : pass->getDescriptorSets() | std::views::values) {
-                descriptorSets.push_back(descriptorSet->getSet(frameIndex));
+            for (const auto& passDescriptorSets : pass->getDescriptorSets() | std::views::values) {
+                descriptorSets.push_back(passDescriptorSets->getSet(frameIndex));
             }
 
             if (!descriptorSets.empty()) {

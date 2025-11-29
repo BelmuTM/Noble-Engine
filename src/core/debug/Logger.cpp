@@ -1,11 +1,11 @@
 #include "Logger.h"
-#include "core/Engine.h"
+
+#include "core/engine/Engine.h"
 
 #include <array>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
-#include <csignal>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -13,16 +13,11 @@
 #include <queue>
 #include <thread>
 
-#if defined(_WIN32) || defined(_WIN64)
-#include <Windows.h>
-#undef ERROR
-#endif
-
 namespace {
     constexpr size_t MAX_LOG_QUEUE_SIZE = 512;
 
 #ifdef LOG_FILE_WRITE
-    std::ofstream logFile;
+    std::ofstream           logFile;
 #endif
     std::thread             logThread;
     std::mutex              logMutex;
@@ -93,6 +88,7 @@ namespace {
             writeLogMessage(std::cout, entry);
 
             if (entry.level >= Logger::Level::ERROR) {
+
 #ifdef LOG_FILE_WRITE
                 logFile.flush();
 #endif
@@ -100,51 +96,15 @@ namespace {
             }
         }
     }
-
-    void setupAtexitHandler() {
-        std::atexit(Logger::shutdown);
-    }
-
-    void signalHandler(int signal) {
-        Logger::shutdown();
-        std::_Exit(EXIT_FAILURE);
-    }
-
-    void setupSignalHandlers() {
-        std::signal(SIGINT, signalHandler);
-        std::signal(SIGTERM, signalHandler);
-    }
-
-#if defined(_WIN32) || defined(_WIN64)
-
-    BOOL WINAPI ConsoleHandler(const DWORD ctrlType) {
-        switch (ctrlType) {
-            case CTRL_C_EVENT:
-            case CTRL_BREAK_EVENT:
-            case CTRL_CLOSE_EVENT:
-            case CTRL_LOGOFF_EVENT:
-            case CTRL_SHUTDOWN_EVENT:
-                Logger::shutdown();
-                return TRUE;
-            default:
-                return FALSE;
-        }
-    }
-
-    void setupConsoleHandler() {
-        if (!SetConsoleCtrlHandler(ConsoleHandler, TRUE)) {
-            Logger::error("Failed to set console control handler");
-        }
-    }
-
-#endif
 }
 
 namespace Logger {
     static const std::string logsDirectory = "logs";
 
     void init() {
+
 #ifdef LOG_FILE_WRITE
+
         const auto now  = std::chrono::system_clock::now();
         const auto time = std::chrono::system_clock::to_time_t(now);
         std::tm    tm{};
@@ -165,17 +125,11 @@ namespace Logger {
             std::cout << "[FATAL]: Failed to open log file" << std::endl;
             std::exit(EXIT_FAILURE);
         }
+
 #endif
 
         running   = true;
         logThread = std::thread(logWorker);
-
-        setupAtexitHandler();
-        setupSignalHandlers();
-
-#if defined(_WIN32) || defined(_WIN64)
-        setupConsoleHandler();
-#endif
     }
 
     void shutdown() {
@@ -195,6 +149,8 @@ namespace Logger {
     }
 
     void log(const Level level, const std::string& message) {
+        if (message.empty()) return;
+
         std::unique_lock lock(logMutex);
 
         // Drop the oldest messages if queue is overflowing

@@ -2,13 +2,15 @@
 #ifndef NOBLEENGINE_VULKANCONTEXT_H
 #define NOBLEENGINE_VULKANCONTEXT_H
 
+#include "core/platform/Window.h"
+
 #include "graphics/vulkan/common/VulkanEntityOwner.h"
 
-#include "VulkanCapabilities.h"
-#include "VulkanInstance.h"
-#include "VulkanDevice.h"
-#include "VulkanSurface.h"
-#include "VulkanSwapchain.h"
+#include "graphics/vulkan/core/VulkanCapabilities.h"
+#include "graphics/vulkan/core/VulkanInstance.h"
+#include "graphics/vulkan/core/VulkanDevice.h"
+#include "graphics/vulkan/core/VulkanSurface.h"
+#include "graphics/vulkan/core/VulkanSwapchain.h"
 
 class VulkanContext final : public VulkanEntityOwner<VulkanContext> {
 public:
@@ -21,7 +23,7 @@ public:
     VulkanContext(VulkanContext&&)            = delete;
     VulkanContext& operator=(VulkanContext&&) = delete;
 
-    bool create(const Platform::Window& window, std::string& errorMessage);
+    bool create(const Window& window, std::string& errorMessage);
 
     void destroy();
 

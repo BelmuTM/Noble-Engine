@@ -21,6 +21,8 @@ public:
     ModelManager(ModelManager&&)            = delete;
     ModelManager& operator=(ModelManager&&) = delete;
 
+    [[nodiscard]] const Model* load(const std::string& path, std::string& errorMessage);
+
     static void loadMaterial_OBJ(Mesh& mesh, const tinyobj::material_t& material);
     static void loadMaterial_glTF(
         Mesh&                                 mesh,
@@ -32,8 +34,6 @@ public:
 
     [[nodiscard]] static bool load_OBJ(Model& model, const std::string& path, std::string& errorMessage);
     [[nodiscard]] static bool load_glTF(Model& model, const std::string& path, std::string& errorMessage);
-
-    [[nodiscard]] const Model* load(const std::string& path, std::string& errorMessage);
 
 private:
     std::unordered_map<std::string, std::unique_ptr<Model>> _cache{};

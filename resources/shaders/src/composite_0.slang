@@ -34,18 +34,18 @@ VSOutput vertMain(VSInput input) {
 
 layout (location = 0) out float4 compositeBuffer;
 
-layout (set = 1, binding = 0) Sampler2D depthTexture;
-layout (set = 1, binding = 1) Sampler2D albedoTexture;
-layout (set = 1, binding = 2) Sampler2D normalTexture;
+layout (set = 1, binding = 0) Sampler2D depthBuffer;
+layout (set = 1, binding = 1) Sampler2D albedoBuffer;
+layout (set = 1, binding = 2) Sampler2D normalBuffer;
 
 #define TAU 2.0 * 3.14159
 
 [shader("fragment")]
 void fragMain(VSOutput vertIn) : SV_TARGET {
-    float3 albedo = albedoTexture.Sample(vertIn.uv).rgb;
-    float3 normal = normalTexture.Sample(vertIn.uv).rgb * 2.0 - 1.0;
+    float3 albedo = albedoBuffer.Sample(vertIn.uv).rgb;
+    float3 normal = normalBuffer.Sample(vertIn.uv).rgb * 2.0 - 1.0;
 
-    float depth = depthTexture.Sample(vertIn.uv).r;
+    float depth = depthBuffer.Sample(vertIn.uv).r;
 
     float4 clipPos  = float4(float2(vertIn.uv.x * 2.0 - 1.0, 1.0 - vertIn.uv.y * 2.0), depth, 1.0);
     float4 viewPos  = mul(frameUBO.projectionInverse, clipPos);

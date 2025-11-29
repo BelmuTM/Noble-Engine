@@ -2,9 +2,10 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include "core/ResourceManager.h"
 #include "core/debug/ErrorHandling.h"
 #include "core/debug/Logger.h"
+
+#include "core/engine/ResourceManager.h"
 
 #include <fstream>
 #include <ranges>

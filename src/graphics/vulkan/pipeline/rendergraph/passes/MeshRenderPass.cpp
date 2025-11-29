@@ -25,7 +25,16 @@ bool MeshRenderPass::create(
     setDepthAttachment(renderResources.getDepthBufferAttachment());
 
     for (const auto& renderObject : renderObjectManager.getRenderObjects()) {
-        addObjectDrawCall(renderObject.get());
+        // Each submesh requires its own draw call
+        for (const auto& submesh : renderObject->submeshes) {
+            auto verticesDraw = std::make_unique<VulkanDrawCallWithPushConstants>();
+
+            verticesDraw->setMesh(submesh.mesh);
+            verticesDraw->addDescriptorSets(submesh.descriptorSets);
+            verticesDraw->setPushConstant("object", &renderObject->data);
+
+            addDrawCall(std::move(verticesDraw));
+        }
     }
 
     return true;

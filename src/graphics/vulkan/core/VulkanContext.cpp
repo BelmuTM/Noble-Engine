@@ -6,7 +6,7 @@ VulkanContext::~VulkanContext() {
     destroy();
 }
 
-bool VulkanContext::create(const Platform::Window& window, std::string& errorMessage) {
+bool VulkanContext::create(const Window& window, std::string& errorMessage) {
     ScopeGuard guard{[this] { destroy(); }};
 
     TRY(createVulkanEntity(&capabilities, errorMessage));

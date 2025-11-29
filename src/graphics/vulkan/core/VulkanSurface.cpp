@@ -2,9 +2,7 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-bool VulkanSurface::create(
-    const vk::Instance& instance, const Platform::Window& window, std::string& errorMessage
-) noexcept {
+bool VulkanSurface::create(const vk::Instance& instance, const Window& window, std::string& errorMessage) noexcept {
     _window   = &window;
     _instance = instance;
 

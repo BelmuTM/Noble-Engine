@@ -2,7 +2,7 @@
 #ifndef NOBLEENGINE_VULKANSWAPCHAIN_H
 #define NOBLEENGINE_VULKANSWAPCHAIN_H
 
-#include "core/Platform.h"
+#include "core/platform/Window.h"
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -24,7 +24,7 @@ public:
     VulkanSwapchain& operator=(VulkanSwapchain&&) = delete;
 
     [[nodiscard]] bool create(
-        const Platform::Window& window, const VulkanDevice& device, vk::SurfaceKHR surface, std::string& errorMessage
+        const Window& window, const VulkanDevice& device, vk::SurfaceKHR surface, std::string& errorMessage
     ) noexcept;
 
     void destroy() noexcept;
@@ -70,8 +70,8 @@ private:
 
     [[nodiscard]] vk::Extent2D chooseExtent(const vk::SurfaceCapabilitiesKHR& capabilities) const;
 
-    const Platform::Window* _window = nullptr;
-    const VulkanDevice*     _device = nullptr;
+    const Window*       _window = nullptr;
+    const VulkanDevice* _device = nullptr;
 
     vk::SwapchainKHR           _swapchain{};
     std::vector<vk::Image>     _imageHandles{};

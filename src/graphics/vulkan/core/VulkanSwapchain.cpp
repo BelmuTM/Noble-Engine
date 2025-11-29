@@ -8,7 +8,7 @@
 #include <limits>
 
 bool VulkanSwapchain::create(
-    const Platform::Window& window, const VulkanDevice& device, const vk::SurfaceKHR surface, std::string& errorMessage
+    const Window& window, const VulkanDevice& device, const vk::SurfaceKHR surface, std::string& errorMessage
 ) noexcept {
     _window = &window;
     _device = &device;

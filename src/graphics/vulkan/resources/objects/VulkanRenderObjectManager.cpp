@@ -4,17 +4,15 @@
 #include "core/debug/Logger.h"
 
 bool VulkanRenderObjectManager::create(
-    const ObjectsVector&   objects,
-    const VulkanDevice&    device,
-    VulkanImageManager&    imageManager,
-    VulkanMeshManager&     meshManager,
-    VulkanRenderResources& renderResources,
-    const uint32_t         framesInFlight,
-    std::string&           errorMessage
+    const ObjectsVector& objects,
+    const VulkanDevice&  device,
+    VulkanImageManager&  imageManager,
+    VulkanMeshManager&   meshManager,
+    const uint32_t       framesInFlight,
+    std::string&         errorMessage
 ) noexcept {
-    _imageManager    = &imageManager;
-    _meshManager     = &meshManager;
-    _renderResources = &renderResources;
+    _imageManager = &imageManager;
+    _meshManager  = &meshManager;
 
     _renderObjects.reserve(objects.size());
 
@@ -85,22 +83,39 @@ bool VulkanRenderObjectManager::createRenderObject(
         VulkanRenderSubmesh submesh{};
         submesh.mesh = _meshManager->allocateMesh(mesh);
 
-        // Load texture
+        // Load textures
         const Material& material = mesh.getMaterial();
 
-        const Image* albedoTexture = object->getTexture(material.albedoPath);
+        const Image* albedoTexture   = object->getTexture(material.albedoPath);
+        const Image* normalTexture   = object->getTexture(material.normalPath);
+        const Image* specularTexture = object->getTexture(material.specularPath);
+
         if (albedoTexture) {
-            TRY(_imageManager->loadImage(submesh.texture, albedoTexture, true, errorMessage));
+            TRY(_imageManager->loadImage(submesh.albedoTexture, albedoTexture, true, errorMessage));
         } else {
             const Image diffuseColorImage = Image::createSinglePixelImage(material.diffuse);
-            TRY(_imageManager->loadImage(submesh.texture, &diffuseColorImage, false, errorMessage));
+            TRY(_imageManager->loadImage(submesh.albedoTexture, &diffuseColorImage, false, errorMessage));
+        }
+
+        if (normalTexture) {
+            TRY(_imageManager->loadImage(submesh.normalTexture, normalTexture, true, errorMessage));
+        } else {
+            const Image normalImage = Image::createSinglePixelImage(glm::vec3{0.0f});
+            TRY(_imageManager->loadImage(submesh.normalTexture, &normalImage, false, errorMessage));
+        }
+
+        if (specularTexture) {
+            TRY(_imageManager->loadImage(submesh.specularTexture, specularTexture, true, errorMessage));
+        } else {
+            const Image specularImage = Image::createSinglePixelImage(material.specular);
+            TRY(_imageManager->loadImage(submesh.specularTexture, &specularImage, false, errorMessage));
         }
 
         // Allocate and bind descriptor sets
         TRY(_descriptorManager.allocate(submesh.descriptorSets, errorMessage));
-        submesh.descriptorSets->bindPerFrameResource(submesh.texture->getDescriptorInfo(0));
-
-        _renderResources->addResource(VulkanRenderPassResource{"texture"}.setImage(submesh.texture));
+        submesh.descriptorSets->bindPerFrameResource(submesh.albedoTexture->getDescriptorInfo(0));
+        submesh.descriptorSets->bindPerFrameResource(submesh.normalTexture->getDescriptorInfo(1));
+        submesh.descriptorSets->bindPerFrameResource(submesh.specularTexture->getDescriptorInfo(2));
 
         renderObject.submeshes.push_back(submesh);
         ++meshCount;

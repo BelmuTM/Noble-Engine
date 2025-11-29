@@ -14,7 +14,9 @@
 #include "core/entities/objects/Object.h"
 
 static const VulkanDescriptorScheme objectDescriptorScheme = {
-    {0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment}
+    {0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment},
+    {1, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment},
+    {2, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment}
 };
 
 class VulkanRenderObjectManager {
@@ -33,13 +35,12 @@ public:
     VulkanRenderObjectManager& operator=(VulkanRenderObjectManager&&) = delete;
 
     [[nodiscard]] bool create(
-        const ObjectsVector&   objects,
-        const VulkanDevice&    device,
-        VulkanImageManager&    imageManager,
-        VulkanMeshManager&     meshManager,
-        VulkanRenderResources& renderResources,
-        uint32_t               framesInFlight,
-        std::string&           errorMessage
+        const ObjectsVector& objects,
+        const VulkanDevice&  device,
+        VulkanImageManager&  imageManager,
+        VulkanMeshManager&   meshManager,
+        uint32_t             framesInFlight,
+        std::string&         errorMessage
     ) noexcept;
 
     void destroy() noexcept;
@@ -61,9 +62,8 @@ private:
         std::string&        errorMessage
     );
 
-    VulkanImageManager*    _imageManager    = nullptr;
-    VulkanMeshManager*     _meshManager     = nullptr;
-    VulkanRenderResources* _renderResources = nullptr;
+    VulkanImageManager* _imageManager = nullptr;
+    VulkanMeshManager*  _meshManager  = nullptr;
 
     VulkanDescriptorManager _descriptorManager{};
     VulkanObjectBuffer      _objectBuffer{};

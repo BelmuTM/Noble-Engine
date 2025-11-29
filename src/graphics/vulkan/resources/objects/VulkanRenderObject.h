@@ -9,9 +9,13 @@
 #include "core/entities/objects/Object.h"
 
 struct VulkanRenderSubmesh {
-    VulkanMesh*           mesh;
-    VulkanImage*          texture;
-    VulkanDescriptorSets* descriptorSets;
+    VulkanMesh* mesh = nullptr;;
+
+    VulkanImage* albedoTexture   = nullptr;
+    VulkanImage* normalTexture   = nullptr;
+    VulkanImage* specularTexture = nullptr;
+
+    VulkanDescriptorSets* descriptorSets = nullptr;
 };
 
 struct VulkanRenderObject {

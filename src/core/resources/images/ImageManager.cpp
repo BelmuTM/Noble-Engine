@@ -1,7 +1,7 @@
 #include "ImageManager.h"
 
 #include "core/common/libraries/stbUsage.h"
-#include "core/ResourceManager.h"
+#include "core/engine/ResourceManager.h"
 
 const Image* ImageManager::load(const std::string& path, std::string& errorMessage) {
     if (path.empty()) return nullptr;

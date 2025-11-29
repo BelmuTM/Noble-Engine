@@ -44,10 +44,12 @@ VSOutput vertMain(VSInput input) {
     return output;
 }
 
-layout (location = 0) out float4 albedoTexture;
-layout (location = 1) out float4 normalTexture;
+layout (location = 0) out float4 albedoBuffer;
+layout (location = 1) out float4 normalBuffer;
 
-layout (set = 1, binding = 0) Sampler2D texture;
+layout (set = 1, binding = 0) Sampler2D albedoTexture;
+layout (set = 1, binding = 1) Sampler2D normalTexture;
+layout (set = 1, binding = 2) Sampler2D specularTexture;
 
 float bayer2(float2 a) {
     a = floor(a);
@@ -67,12 +69,12 @@ float bayer2(float2 a) {
 void fragMain(VSOutput vertIn) : SV_TARGET {
     const float fadeStartDist = 0.25;
 
-    float4 albedo = texture.Sample(vertIn.texCoords);
+    float4 albedo = albedoTexture.Sample(vertIn.texCoords);
 
     if (albedo.a < 1.0) {
         discard;
     }
 
-    albedoTexture = albedo;
-    normalTexture = float4(vertIn.normal * 0.5 + 0.5, 1.0);
+    albedoBuffer = albedo;
+    normalBuffer = float4(vertIn.normal * 0.5 + 0.5, 1.0);
 }

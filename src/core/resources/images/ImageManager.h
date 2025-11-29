@@ -22,6 +22,10 @@ public:
 
     [[nodiscard]] const Image* load(const std::string& path, std::string& errorMessage);
 
+    [[nodiscard]] const Image* loadWithFallbackColor(
+        const std::string& path, const glm::vec3& color, std::string& errorMessage
+    );
+
 private:
     std::unordered_map<std::string, std::unique_ptr<Image>> _cache{};
 

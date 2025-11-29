@@ -23,6 +23,8 @@ Object* ObjectManager::createObject(
         const Material& material = mesh.getMaterial();
 
         texturePaths.push_back(material.albedoPath);
+        texturePaths.push_back(material.normalPath);
+        texturePaths.push_back(material.specularPath);
     }
 
     // Load textures and map them to their respective path
@@ -30,6 +32,7 @@ Object* ObjectManager::createObject(
 
     for (const auto& texturePath : texturePaths) {
         textures[texturePath] = _imageManager->load(texturePath, errorMessage);
+        if (!textures[texturePath]) Logger::warning(errorMessage);
     }
 
     // Create the object and push its pointer to the vector

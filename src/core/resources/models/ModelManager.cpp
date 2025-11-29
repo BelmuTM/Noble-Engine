@@ -1,9 +1,49 @@
 #include "ModelManager.h"
 
-#include "core/ResourceManager.h"
 #include "core/debug/Logger.h"
+#include "core/engine/ResourceManager.h"
 
 #include <glm/gtc/type_ptr.hpp>
+
+const Model* ModelManager::load(const std::string& path, std::string& errorMessage) {
+    {
+        // If model is already cached, return it
+        std::lock_guard lock(_mutex);
+
+        if (_cache.contains(path)) {
+            return _cache.at(path).get();
+        }
+    }
+
+    // Loading model
+    Model model{};
+
+    model.retrieveName(path);
+
+    if (path.ends_with(".obj")) {
+
+        if (!load_OBJ(model, path, errorMessage)) {
+            return nullptr;
+        }
+
+    } else if (path.ends_with(".gltf")) {
+
+        if (!load_glTF(model, path, errorMessage)) {
+            return nullptr;
+        }
+
+    } else {
+        errorMessage = "Failed to load model \"" + modelFilesPath + path + "\": unsupported format";
+        return nullptr;
+    }
+
+    // Inserting model data into cache
+    std::lock_guard lock(_mutex);
+
+    auto [it, inserted] = _cache.try_emplace(path, std::make_unique<Model>(std::move(model)));
+
+    return it->second.get();
+}
 
 /*---------------------------------------*/
 /*           .OBJ file loader            */
@@ -317,44 +357,4 @@ bool ModelManager::load_glTF(Model& model, const std::string& path, std::string&
     }
 
     return true;
-}
-
-const Model* ModelManager::load(const std::string& path, std::string& errorMessage) {
-    {
-        // If model is already cached, return it
-        std::lock_guard lock(_mutex);
-
-        if (_cache.contains(path)) {
-            return _cache.at(path).get();
-        }
-    }
-
-    // Loading model
-    Model model{};
-
-    model.retrieveName(path);
-
-    if (path.ends_with(".obj")) {
-
-        if (!load_OBJ(model, path, errorMessage)) {
-            return nullptr;
-        }
-
-    } else if (path.ends_with(".gltf")) {
-
-        if (!load_glTF(model, path, errorMessage)) {
-            return nullptr;
-        }
-
-    } else {
-        errorMessage = "Failed to load model \"" + modelFilesPath + path + "\": unsupported format";
-        return nullptr;
-    }
-
-    // Inserting model data into cache
-    std::lock_guard lock(_mutex);
-
-    auto [it, inserted] = _cache.try_emplace(path, std::make_unique<Model>(std::move(model)));
-
-    return it->second.get();
 }

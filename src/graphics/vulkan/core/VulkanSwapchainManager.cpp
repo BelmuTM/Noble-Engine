@@ -7,7 +7,7 @@
 #include <thread>
 
 bool VulkanSwapchainManager::create(
-    Platform::Window&    window,
+    Window&              window,
     const VulkanSurface& surface,
     const VulkanDevice&  device,
     VulkanSwapchain&     swapchain,
