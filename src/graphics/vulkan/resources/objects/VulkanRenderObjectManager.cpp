@@ -16,6 +16,8 @@ bool VulkanRenderObjectManager::create(
 
     _renderObjects.reserve(objects.size());
 
+    Logger::debug(std::to_string(objects.size()));
+
     TRY(_descriptorManager.create(
         device.getLogicalDevice(), objectDescriptorScheme, framesInFlight, MAX_RENDER_OBJECTS, errorMessage
     ));

@@ -13,7 +13,6 @@
 #include <atomic>
 #include <chrono>
 #include <csignal>
-#include <iostream>
 #include <thread>
 
 std::atomic running(true);
@@ -69,7 +68,6 @@ int main() {
     window.show();
 
     glfwSetWindowCloseCallback(window.handle(), [](GLFWwindow* w){
-        std::cout << "MEOWW" << std::endl;
         running = false;
     });
 
@@ -83,11 +81,12 @@ int main() {
     ImageManager imageManager{};
     ObjectManager objectManager{&modelManager, &imageManager};
 
-    objectManager.createObject("lucy.obj", {-1.0f, 1.0f, 1.47f}, {0.0f, 0.0f, -30.0f}, glm::vec3{0.0025f});
-    objectManager.createObject("stanford_dragon.obj", {3.0f, 0.7f, 0.6f}, {0.0f, 180.0f, 60.0f}, glm::vec3{0.6f});
-    objectManager.createObject("stanford_bunny.obj", {-3.0f, 1.0f, -0.25f}, {90.0f, 90.0f, 0.0f}, glm::vec3{7.0f});
-    objectManager.createObject("happy.obj", {-4.5f, -0.4f, -0.36f}, {90.0f, 120.0f, 0.0f}, glm::vec3{7.0f});
-    objectManager.createObject("sponza.gltf", {0.0f, 0.0f, 0.0f}, {90.0f, 0.0f, 0.0f}, glm::vec3{0.01f});
+    //objectManager.createObject("lucy.obj", {-1.0f, 1.0f, 1.47f}, {0.0f, 0.0f, -30.0f}, glm::vec3{0.0025f});
+    //objectManager.createObject("stanford_dragon.obj", {3.0f, 0.7f, 0.6f}, {0.0f, 180.0f, 60.0f}, glm::vec3{0.6f});
+    //objectManager.createObject("stanford_bunny.obj", {-3.0f, 1.0f, -0.25f}, {90.0f, 90.0f, 0.0f}, glm::vec3{7.0f});
+    //objectManager.createObject("happy.obj", {-4.5f, -0.4f, -0.36f}, {90.0f, 120.0f, 0.0f}, glm::vec3{7.0f});
+    //objectManager.createObject("sponza.gltf", {0.0f, 0.0f, 0.0f}, {90.0f, 0.0f, 0.0f}, glm::vec3{0.005f});
+    objectManager.createObject("scene.gltf", {0.0f, 0.0f, 0.0f}, {90.0f, 0.0f, 0.0f}, glm::vec3{1.0f});
 
     VulkanRenderer renderer(Engine::MAX_FRAMES_IN_FLIGHT);
     if (!renderer.init(window, objectManager.getObjects(), errorMessage)) {

@@ -2,8 +2,8 @@
 #ifndef NOBLEENGINE_MESH_H
 #define NOBLEENGINE_MESH_H
 
-#include "core/resources/Vertex.h"
 #include "Material.h"
+#include "core/resources/Vertex.h"
 
 #include <vector>
 
@@ -22,6 +22,11 @@ public:
     void generateSmoothNormals(size_t vertexStart, size_t vertexEnd, size_t indexStart, size_t indexEnd);
     // Generates averaged normals for the entire mesh
     void generateSmoothNormals();
+
+    // Generates tangents for a given range of vertices and indices
+    void generateTangents(size_t vertexStart, size_t vertexEnd, size_t indexStart, size_t indexEnd);
+    // Generates tangents for the entire mesh
+    void generateTangents();
 
     [[nodiscard]] const std::vector<Vertex>& getVertices() const noexcept { return _vertices; }
     [[nodiscard]] const std::vector<uint32_t>& getIndices() const noexcept { return _indices; }

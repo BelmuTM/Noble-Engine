@@ -16,6 +16,7 @@ void VulkanSurface::destroy() noexcept {
         _instance.destroySurfaceKHR(_surface);
         _surface = VK_NULL_HANDLE;
     }
+
     _window   = nullptr;
     _instance = VK_NULL_HANDLE;
 }

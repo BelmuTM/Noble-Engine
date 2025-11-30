@@ -29,7 +29,9 @@ void VulkanRenderResources::destroy() noexcept {
     _resourceWriters.clear();
 
     // Depth buffer destruction
-    _depthBuffer->destroy(*_device);
+    if (_depthBuffer && _device) {
+        _depthBuffer->destroy(*_device);
+    }
 
     _device       = nullptr;
     _swapchain    = nullptr;

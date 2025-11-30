@@ -3,23 +3,24 @@
 #define NOBLEENGINE_VULKANENTITYOWNER_H
 
 #include <functional>
-#include <string>
 #include <ranges>
+#include <string>
 
 template<typename>
 class VulkanEntityOwner {
-protected:
-    std::vector<std::function<void()>> entityDeletionQueue;
-
 public:
-    ~VulkanEntityOwner() {
+    virtual ~VulkanEntityOwner() {
         flushDeletionQueue();
     }
 
     template<typename Resource, typename... Args>
     bool createVulkanEntity(Resource* res, std::string& errorMessage, Args&&... args) {
         if (!res->create(std::forward<Args>(args)..., errorMessage)) return false;
-        entityDeletionQueue.push_back([res] { res->destroy(); });
+
+        entityDeletionQueue.push_back([res] {
+            if (!res) return;
+            res->destroy();
+        });
         return true;
     }
 
@@ -27,13 +28,14 @@ public:
         if (entityDeletionQueue.empty()) return;
 
         for (auto& destroyFunction : std::ranges::reverse_view(entityDeletionQueue)) {
-            if (destroyFunction) {
-                destroyFunction();
-                destroyFunction = nullptr;
-            }
+            if (destroyFunction) destroyFunction();
         }
+
         entityDeletionQueue.clear();
     }
+
+protected:
+    std::vector<std::function<void()>> entityDeletionQueue;
 };
 
 #endif //NOBLEENGINE_VULKANENTITYOWNER_H

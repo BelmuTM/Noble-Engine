@@ -31,8 +31,10 @@ bool VulkanFrameResources::create(
 void VulkanFrameResources::destroy() noexcept {
     _descriptorManager.destroy();
 
-    for (const auto& colorBuffer : _colorBuffers) {
-        colorBuffer->destroy(*_device);
+    if (_device) {
+        for (const auto& colorBuffer : _colorBuffers) {
+            colorBuffer->destroy(*_device);
+        }
     }
 
     _device       = nullptr;

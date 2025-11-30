@@ -13,8 +13,6 @@ void VulkanPipelineManager::destroy() noexcept {
         graphicsPipeline->destroy();
     }
 
-    _graphicsPipelines.clear();
-
     _device = VK_NULL_HANDLE;
 }
 

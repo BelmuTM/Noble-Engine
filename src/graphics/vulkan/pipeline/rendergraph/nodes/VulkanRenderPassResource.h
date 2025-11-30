@@ -28,8 +28,8 @@ struct VulkanRenderPassResource {
 
     VulkanRenderPassResource& setImage(VulkanImage* _image) noexcept { image = _image; return *this; }
 
-    VulkanRenderPassResource& setImageResolver(const std::function<VulkanImage*()>& _imageResolver) noexcept {
-        imageResolver = _imageResolver;
+    VulkanRenderPassResource& setImageResolver(std::function<VulkanImage*()> _imageResolver) noexcept {
+        imageResolver = std::move(_imageResolver);
         return *this;
     }
 };

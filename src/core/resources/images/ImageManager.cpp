@@ -1,6 +1,8 @@
 #include "ImageManager.h"
 
 #include "core/common/libraries/stbUsage.h"
+
+#include "core/debug/Logger.h"
 #include "core/engine/ResourceManager.h"
 
 const Image* ImageManager::load(const std::string& path, std::string& errorMessage) {
@@ -14,6 +16,8 @@ const Image* ImageManager::load(const std::string& path, std::string& errorMessa
             return _cache.at(path).get();
         }
     }
+
+    Logger::info("Loading texture \"" + path + "\"...");
 
     const std::string fullPath = textureFilesPath + path;
 

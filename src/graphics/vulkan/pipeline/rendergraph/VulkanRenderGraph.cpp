@@ -5,6 +5,8 @@
 
 #include "core/debug/Logger.h"
 
+#include <ranges>
+
 bool VulkanRenderGraph::create(
     const VulkanSwapchain&   swapchain,
     const VulkanMeshManager& meshManager,
@@ -23,10 +25,17 @@ bool VulkanRenderGraph::create(
 }
 
 void VulkanRenderGraph::destroy() noexcept {
+    for (const auto& pass : _passes) {
+        for (const auto& descriptorManager : pass->getDescriptorManagers() | std::views::values) {
+            descriptorManager->destroy();
+        }
+    }
+
     _swapchain   = nullptr;
     _meshManager = nullptr;
     _frame       = nullptr;
     _resources   = nullptr;
+    _queryPool   = VK_NULL_HANDLE;
 }
 
 void VulkanRenderGraph::execute(const vk::CommandBuffer commandBuffer) const {

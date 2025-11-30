@@ -28,6 +28,8 @@ bool VulkanGraphicsPipeline::create(
 }
 
 void VulkanGraphicsPipeline::destroy() noexcept {
+    if (!_device) return;
+
     if (_pipeline) {
         _device.destroyPipeline(_pipeline);
         _pipeline = VK_NULL_HANDLE;

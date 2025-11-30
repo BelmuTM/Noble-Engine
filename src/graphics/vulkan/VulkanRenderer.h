@@ -46,7 +46,7 @@ private:
 
     Window* _window = nullptr;
 
-    uint32_t _framesInFlight;
+    uint32_t _framesInFlight = 0;
 
     unsigned int currentFrame = 0;
 

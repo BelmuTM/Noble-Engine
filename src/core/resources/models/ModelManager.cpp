@@ -15,6 +15,8 @@ const Model* ModelManager::load(const std::string& path, std::string& errorMessa
         }
     }
 
+    Logger::info("Loading model \"" + path + "\"...");
+
     // Loading model
     Model model{};
 
@@ -87,11 +89,6 @@ bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& 
         return false;
     }
 
-    Logger::debug(path + " vertices: "   + std::to_string(attributes.vertices.size())
-                       + ", normals: "   + std::to_string(attributes.normals.size())
-                       + ", texcoords: " + std::to_string(attributes.texcoords.size())
-                       + ", shapes: "    + std::to_string(shapes.size()));
-
     bool hasNormals = !attributes.normals.empty();
 
     // For each shape that forms the mesh
@@ -154,6 +151,7 @@ bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& 
 
     if (!hasNormals) {
         mesh.generateSmoothNormals();
+        mesh.generateTangents();
     }
 
     model.addMesh(mesh);
@@ -279,6 +277,18 @@ bool ModelManager::load_glTF(Model& model, const std::string& path, std::string&
                 normalData = getAttributeData(normalAccessor, normalBufferView, normalBuffer);
             }
 
+            // Fetch vertex tangents
+            const bool hasTangents = attributes.contains("TANGENT");
+            AttributeData tangentData{};
+
+            if (hasTangents) {
+                const tinygltf::Accessor&   tangentAccessor   = glTFModel.accessors[attributes.at("TANGENT")];
+                const tinygltf::BufferView& tangentBufferView = glTFModel.bufferViews[tangentAccessor.bufferView];
+                const tinygltf::Buffer&     tangentBuffer     = glTFModel.buffers[tangentBufferView.buffer];
+
+                tangentData = getAttributeData(tangentAccessor, tangentBufferView, tangentBuffer);
+            }
+
             // Fetch texture coordinates if they exist
             const bool hasTextureCoords = attributes.contains("TEXCOORD_0");
             AttributeData texCoordsData{};
@@ -326,6 +336,15 @@ bool ModelManager::load_glTF(Model& model, const std::string& path, std::string&
                     vertex.normal = {normalPtr[0], normalPtr[1], normalPtr[2]};
                 }
 
+                // Define tangent attribute
+                if (hasTangents) {
+                    const auto* tangentPtr = reinterpret_cast<const float*>(
+                        tangentData.base + vertexIndex * tangentData.stride
+                    );
+
+                    vertex.tangent = {tangentPtr[0], tangentPtr[1], tangentPtr[2], tangentPtr[3]};
+                }
+
                 // Define texture coordinates attribute
                 if (hasTextureCoords) {
                     const auto* textureCoordsPtr = reinterpret_cast<const float*>(
@@ -341,6 +360,10 @@ bool ModelManager::load_glTF(Model& model, const std::string& path, std::string&
 
             if (!hasNormals) {
                 mesh.generateSmoothNormals();
+            }
+
+            if (!hasTangents) {
+                mesh.generateTangents();
             }
 
             const unsigned int materialIndex = primitive.material;

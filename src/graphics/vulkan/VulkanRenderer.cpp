@@ -75,6 +75,7 @@ bool VulkanRenderer::init(Window& window, const ObjectsVector& objects, std::str
 
 void VulkanRenderer::shutdown() {
     VK_CALL_LOG(context.getDevice().getLogicalDevice().waitIdle(), Logger::Level::ERROR);
+
     flushDeletionQueue();
 
     context.destroy();
@@ -102,6 +103,7 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
     currentFrame = (currentFrame + 1) % _framesInFlight;
 
     // Queried drawn triangles count
+    /*
     VK_CALL(context.getDevice().getLogicalDevice().getQueryPoolResults(
         context.getDevice().getQueryPool(),
         0, 1,
@@ -111,6 +113,7 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
         vk::QueryResultFlagBits::eWait |
         vk::QueryResultFlagBits::e64
     ), errorMessage);
+    */
 
     guard.release();
 }

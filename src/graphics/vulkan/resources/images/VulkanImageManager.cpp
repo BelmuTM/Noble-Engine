@@ -12,8 +12,10 @@ bool VulkanImageManager::create(
 }
 
 void VulkanImageManager::destroy() noexcept {
-    for (const auto& image : _images) {
-        image->destroy(*_device);
+    if (_device) {
+        for (const auto& image : _images) {
+            image->destroy(*_device);
+        }
     }
 
     _images.clear();

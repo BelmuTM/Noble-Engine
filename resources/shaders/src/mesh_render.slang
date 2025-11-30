@@ -1,8 +1,9 @@
 struct VSInput {
-    float3 inPosition;
-    float3 inNormal;
-    float3 inColor;
-    float2 inTexCoords;
+    float3 position  : POSITION;
+    float3 normal    : NORMAL;
+    float4 tangent   : TANGENT;
+    float3 color     : COLOR;
+    float2 texCoords : TEXCOORD0;
 };
 
 struct FrameUBO {
@@ -26,9 +27,10 @@ struct ObjectDataGPU {
 [[vk::push_constant]] ObjectDataGPU object;
 
 struct VSOutput {
-    float4 position : SV_Position;
-    float3 normal;
-    float3 color;
+    float4 position  : SV_Position;
+    float3 normal    : NORMAL;
+    float4 tangent   : TANGENT;
+    float3 color     : COLOR;
     float2 texCoords : TEXCOORD0;
     float4 worldPos  : TEXCOORD1;
 };
@@ -36,11 +38,12 @@ struct VSOutput {
 [shader("vertex")]
 VSOutput vertMain(VSInput input) {
     VSOutput output;
-    output.worldPos  = mul(object.model, float4(input.inPosition, 1.0));
+    output.worldPos  = mul(object.model, float4(input.position, 1.0));
     output.position  = mul(frameUBO.projection, mul(frameUBO.view, output.worldPos));
-    output.normal    = normalize(mul(float3x3(object.normalMatrix), input.inNormal));
-    output.color     = input.inColor;
-    output.texCoords = input.inTexCoords;
+    output.normal    = normalize(mul(float3x3(object.normalMatrix), input.normal));
+    output.tangent   = normalize(input.tangent);
+    output.color     = input.color;
+    output.texCoords = input.texCoords;
     return output;
 }
 
@@ -75,6 +78,20 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
         discard;
     }
 
+    float3 normal = normalTexture.Sample(vertIn.texCoords).rgb;
+
+    if (!normal.equals(float3(0.0f))) {
+        float3 N = vertIn.normal;
+        float3 T = vertIn.tangent.xyz;
+        float3 B = cross(N, T) * vertIn.tangent.w;
+
+        float3x3 TBN = float3x3(T, B, N);
+
+        normal = normalize(mul(TBN, normal * 2.0 - 1.0));
+    } else {
+        normal = vertIn.normal;
+    }
+
     albedoBuffer = albedo;
-    normalBuffer = float4(vertIn.normal * 0.5 + 0.5, 1.0);
+    normalBuffer = float4(normal * 0.5 + 0.5, 1.0);
 }

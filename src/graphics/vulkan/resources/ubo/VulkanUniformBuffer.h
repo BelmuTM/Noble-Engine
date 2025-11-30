@@ -54,6 +54,7 @@ public:
         for (auto& uniformBuffer : uniformBuffers) {
             uniformBuffer.destroy();
         }
+
         _device = nullptr;
     }
 

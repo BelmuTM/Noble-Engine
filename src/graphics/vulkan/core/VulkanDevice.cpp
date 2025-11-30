@@ -48,7 +48,7 @@ bool VulkanDevice::create(
 }
 
 void VulkanDevice::destroy() noexcept {
-    if (_queryPool) {
+    if (_queryPool && _logicalDevice) {
         _logicalDevice.destroyQueryPool(_queryPool);
         _queryPool = VK_NULL_HANDLE;
     }

@@ -26,6 +26,8 @@ void VulkanShaderProgram::destroy() noexcept {
 }
 
 void VulkanShaderProgram::clearShaderModules() {
+    if (!_device) return;
+
     for (const auto& module : _shaderModules) {
         _device.destroyShaderModule(module);
     }
