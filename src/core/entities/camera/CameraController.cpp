@@ -2,7 +2,6 @@
 
 #include "Camera.h"
 
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/gtc/matrix_transform.hpp>
 
 static constexpr float speedMultiplier = 3.0f;

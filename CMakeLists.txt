@@ -109,6 +109,11 @@ add_dependencies(NobleEngine ShadersModule)
 # glfw (https://github.com/glfw/glfw)
 add_subdirectory(external/glfw)
 
+# glm (https://github.com/g-truc/glm)
+add_subdirectory(external/glm)
+
+target_compile_definitions(glm INTERFACE GLM_FORCE_DEPTH_ZERO_TO_ONE)
+
 # SPIRV-Headers (https://github.com/KhronosGroup/SPIRV-Headers)
 add_subdirectory(external/spirv-headers)
 
@@ -116,16 +121,23 @@ add_subdirectory(external/spirv-headers)
 add_library(spirv-reflect STATIC external/spirv-reflect/spirv_reflect.cpp)
 
 target_include_directories(spirv-reflect PUBLIC
-    ${CMAKE_SOURCE_DIR}/external
-    ${SPIRV-Headers_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/external
+        ${SPIRV-Headers_SOURCE_DIR}/include
 )
 
 target_compile_definitions(spirv-reflect PUBLIC SPIRV_REFLECT_USE_SYSTEM_SPIRV_H)
 
+# Vulkan-Headers (https://github.com/KhronosGroup/Vulkan-Headers)
+# add_subdirectory(external/vulkan-headers)
+
+# target_include_directories(NobleEngine PRIVATE external/vulkan-headers/include)
+
 # Link compiled libraries to executable
 target_link_libraries(NobleEngine PRIVATE
     glfw
+    glm
     spirv-reflect
+    # vulkan-headers
 )
 
 # json (https://github.com/nlohmann/json)
