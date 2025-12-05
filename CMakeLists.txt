@@ -32,13 +32,15 @@ target_compile_features(NobleEngine PRIVATE cxx_std_23)
 # )
 
 ##########################################################
-#                       VULKAN SDK                       #
+#                         VULKAN                         #
 ##########################################################
 
-# Vulkan SDK setup (https://vulkan.lunarg.com/sdk/home)
-find_package(Vulkan REQUIRED)
-target_include_directories(NobleEngine PRIVATE ${Vulkan_INCLUDE_DIRS})
-target_link_libraries(NobleEngine PRIVATE ${Vulkan_LIBRARIES})
+# Vulkan-Headers (https://github.com/KhronosGroup/Vulkan-Headers)
+add_subdirectory(external/vulkan-headers)
+
+target_include_directories(NobleEngine PRIVATE external/vulkan-headers/include)
+
+target_link_libraries(NobleEngine PRIVATE vulkan)
 
 # Vulkan debug utils
 target_compile_definitions(NobleEngine PRIVATE $<$<CONFIG:Debug>:VULKAN_DEBUG_UTILS>)
@@ -121,23 +123,17 @@ add_subdirectory(external/spirv-headers)
 add_library(spirv-reflect STATIC external/spirv-reflect/spirv_reflect.cpp)
 
 target_include_directories(spirv-reflect PUBLIC
-        ${CMAKE_SOURCE_DIR}/external
-        ${SPIRV-Headers_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/external
+    ${SPIRV-Headers_SOURCE_DIR}/include
 )
 
 target_compile_definitions(spirv-reflect PUBLIC SPIRV_REFLECT_USE_SYSTEM_SPIRV_H)
-
-# Vulkan-Headers (https://github.com/KhronosGroup/Vulkan-Headers)
-# add_subdirectory(external/vulkan-headers)
-
-# target_include_directories(NobleEngine PRIVATE external/vulkan-headers/include)
 
 # Link compiled libraries to executable
 target_link_libraries(NobleEngine PRIVATE
     glfw
     glm
     spirv-reflect
-    # vulkan-headers
 )
 
 # json (https://github.com/nlohmann/json)
