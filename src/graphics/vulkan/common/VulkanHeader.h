@@ -17,7 +17,7 @@
 #endif
 
 #define VP_USE_OBJECT
-#include <vulkan/vulkan_profiles.hpp>
+#include <vulkan-profiles/vulkan_profiles.hpp>
 
 static constexpr VpProfileProperties vulkanProfile = {
     VP_KHR_ROADMAP_2024_NAME,

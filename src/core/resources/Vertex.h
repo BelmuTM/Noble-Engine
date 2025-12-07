@@ -3,8 +3,6 @@
 #define NOBLEENGINE_VERTEX_H
 
 #include <glm/glm.hpp>
-
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 
 struct alignas(16) Vertex {
@@ -23,7 +21,7 @@ template<> struct std::hash<Vertex> {
 
         size_t seed  = std::hash<glm::vec3>()(v.position);
                seed ^= std::hash<glm::vec3>()(v.normal)        + goldenRatio + (seed << 6) + (seed >> 2);
-               seed ^= std::hash<glm::vec3>()(v.tangent)       + goldenRatio + (seed << 6) + (seed >> 2);
+               seed ^= std::hash<glm::vec4>()(v.tangent)       + goldenRatio + (seed << 6) + (seed >> 2);
                seed ^= std::hash<glm::vec3>()(v.color)         + goldenRatio + (seed << 6) + (seed >> 2);
                seed ^= std::hash<glm::vec2>()(v.textureCoords) + goldenRatio + (seed << 6) + (seed >> 2);
         return seed;

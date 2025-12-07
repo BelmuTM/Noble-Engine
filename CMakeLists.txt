@@ -114,7 +114,11 @@ add_subdirectory(external/glfw)
 # glm (https://github.com/g-truc/glm)
 add_subdirectory(external/glm)
 
-target_compile_definitions(glm INTERFACE GLM_FORCE_DEPTH_ZERO_TO_ONE)
+target_compile_definitions(glm INTERFACE
+    GLM_FORCE_CXX20
+    GLM_FORCE_DEPTH_ZERO_TO_ONE
+    GLM_ENABLE_EXPERIMENTAL
+)
 
 # SPIRV-Headers (https://github.com/KhronosGroup/SPIRV-Headers)
 add_subdirectory(external/spirv-headers)
