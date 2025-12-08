@@ -20,8 +20,6 @@ bool VulkanRenderObjectManager::create(
         device.getLogicalDevice(), objectDescriptorScheme, framesInFlight, MAX_RENDER_OBJECTS, errorMessage
     ));
 
-    Logger::debug("descriptor manager OK");
-
     TRY(_objectBuffer.create(device, MAX_RENDER_OBJECTS, errorMessage));
 
     TRY(createRenderObjects(objects, errorMessage));

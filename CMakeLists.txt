@@ -1,36 +1,48 @@
-cmake_minimum_required(VERSION 3.27)
+cmake_minimum_required(VERSION 3.22)
 project(NobleEngine LANGUAGES CXX)
 
-# Set C++ standard and output directory
-set(CMAKE_CXX_STANDARD 23)
+# C++ standard and output directory
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Static linking the runtime
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libgcc")
-
-# Collect source files
-file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
+# Collect sources
+file(GLOB_RECURSE SOURCES "src/*.cpp")
 add_executable(NobleEngine ${SOURCES})
 
-# Include source headers
+# Include headers
 target_include_directories(NobleEngine PRIVATE ${CMAKE_SOURCE_DIR}/src)
-# Add macro that points to resources folder
+
+# Resources directory path preprocessor
 target_compile_definitions(NobleEngine PRIVATE RESOURCES_DIR="${CMAKE_SOURCE_DIR}/resources/")
 
-# Ensure C++ 23 features
-target_compile_features(NobleEngine PRIVATE cxx_std_23)
+# Ensure C++ 20 features
+target_compile_features(NobleEngine PRIVATE cxx_std_20)
 
-# Set compiler flags
-# target_compile_options(NobleEngine PRIVATE
-#     # MSVC
-#     $<$<CXX_COMPILER_ID:MSVC>:
-#     /W4 /permissive- /wd4100>
-#     # GCC-based compilers
-#     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:
-#     -Wall -Wextra -Wpedantic -Wno-missing-field-initializers -Wno-unused-parameter -Wno-unused-variable>
-# )
+# Static linking the runtime
+target_link_options(
+    NobleEngine
+    PUBLIC
+    -static-libgcc
+    -static-libstdc++
+)
 
+# Compiler flags
+if(MSVC)
+    target_compile_options(
+        NobleEngine
+        PRIVATE
+        /W4 /permissive- /wd4100
+    )
+else()
+    target_compile_options(
+        NobleEngine
+        PRIVATE
+        -Wall -Wextra -Wpedantic -Wno-missing-field-initializers -Wno-unused-parameter -Wno-unused-variable
+    )
+endif()
+
+# Address Sanitizers
 # target_compile_options(NobleEngine PRIVATE -fsanitize=address -fno-omit-frame-pointer)
 # target_link_options(NobleEngine PRIVATE -fsanitize=address)
 
@@ -100,9 +112,11 @@ function(add_slang_shader_target TARGET)
 endfunction()
 
 file(GLOB_RECURSE SHADERS_SOURCES ${SHADERS_DIR}/src/*.slang)
-add_slang_shader_target(ShadersModule
-    SOURCES ${SHADERS_SOURCES}
-    ENTRIES "fragMain=fragment" "vertMain=vertex"
+
+add_slang_shader_target(
+    ShadersModule
+        SOURCES ${SHADERS_SOURCES}
+        ENTRIES "fragMain=fragment" "vertMain=vertex"
 )
 
 add_dependencies(NobleEngine ShadersModule)
@@ -117,10 +131,12 @@ add_subdirectory(external/glfw)
 # glm (https://github.com/g-truc/glm)
 add_subdirectory(external/glm)
 
-target_compile_definitions(glm INTERFACE
-    GLM_FORCE_CXX20
-    GLM_FORCE_DEPTH_ZERO_TO_ONE
-    GLM_ENABLE_EXPERIMENTAL
+target_compile_definitions(
+    glm
+    INTERFACE
+        GLM_FORCE_CXX20
+        GLM_FORCE_DEPTH_ZERO_TO_ONE
+        GLM_ENABLE_EXPERIMENTAL
 )
 
 # SPIRV-Headers (https://github.com/KhronosGroup/SPIRV-Headers)
@@ -129,18 +145,22 @@ add_subdirectory(external/spirv-headers)
 # SPIRV-Reflect (https://github.com/KhronosGroup/SPIRV-Reflect)
 add_library(spirv-reflect STATIC external/spirv-reflect/spirv_reflect.cpp)
 
-target_include_directories(spirv-reflect PUBLIC
-    ${CMAKE_SOURCE_DIR}/external
-    ${SPIRV-Headers_SOURCE_DIR}/include
+target_include_directories(
+    spirv-reflect
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/external
+        ${SPIRV-Headers_SOURCE_DIR}/include
 )
 
 target_compile_definitions(spirv-reflect PUBLIC SPIRV_REFLECT_USE_SYSTEM_SPIRV_H)
 
 # Link compiled libraries to executable
-target_link_libraries(NobleEngine PRIVATE
-    glfw
-    glm
-    spirv-reflect
+target_link_libraries(
+    NobleEngine
+    PRIVATE
+        glfw
+        glm
+        spirv-reflect
 )
 
 # json (https://github.com/nlohmann/json)
@@ -148,8 +168,10 @@ target_link_libraries(NobleEngine PRIVATE
 # tinygltf (https://github.com/syoyo/tinygltf)
 # tinyobjloader (https://github.com/tinyobjloader/tinyobjloader)
 # Vulkan Memory Allocator (https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
-target_include_directories(NobleEngine PRIVATE
-    ${CMAKE_SOURCE_DIR}/external
-    ${CMAKE_SOURCE_DIR}/external/json
-    ${CMAKE_SOURCE_DIR}/external/stb
+target_include_directories(
+    NobleEngine
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/external
+        ${CMAKE_SOURCE_DIR}/external/json
+        ${CMAKE_SOURCE_DIR}/external/stb
 )
