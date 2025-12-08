@@ -30,9 +30,9 @@ Please contact Belmu to discuss potential contributions to the project.
 ### Windows System Requirements
 
 - [CMake 3.22 (or later)](https://github.com/Kitware/CMake/releases/)
-    * Check the box indicating: "Add CMake to the system `PATH`".
+    * [In the installer] Check the box indicating: "Add CMake to the system `PATH`".
 - [Git](http://git-scm.com/download/win)
-    * Check the box allowing to use Git from the command line and from 3rd-party software.
+    * [In the installer] Check the box allowing to use Git from the command line and from 3rd-party software.
 
 ### UNIX System Requirements
 
