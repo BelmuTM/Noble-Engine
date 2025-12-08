@@ -23,8 +23,6 @@ class VulkanRenderer final : public GraphicsAPI, public VulkanEntityOwner<Vulkan
 public:
     explicit VulkanRenderer(uint32_t framesInFlight = 2);
 
-    ~VulkanRenderer() override;
-
     [[nodiscard]] bool init(Window& window, const ObjectsVector& objects, std::string& errorMessage) override;
 
     void shutdown() override;

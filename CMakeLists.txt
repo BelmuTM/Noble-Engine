@@ -31,6 +31,9 @@ target_compile_features(NobleEngine PRIVATE cxx_std_23)
 #     -Wall -Wextra -Wpedantic -Wno-missing-field-initializers -Wno-unused-parameter -Wno-unused-variable>
 # )
 
+# target_compile_options(NobleEngine PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+# target_link_options(NobleEngine PRIVATE -fsanitize=address)
+
 ##########################################################
 #                         VULKAN                         #
 ##########################################################

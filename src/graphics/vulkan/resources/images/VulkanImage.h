@@ -21,10 +21,10 @@ public:
     VulkanImage(const VulkanImage&)            = delete;
     VulkanImage& operator=(const VulkanImage&) = delete;
 
-    VulkanImage(VulkanImage&&)            noexcept = default;
-    VulkanImage& operator=(VulkanImage&&) noexcept = default;
+    VulkanImage(VulkanImage&&)            = delete;
+    VulkanImage& operator=(VulkanImage&&) = delete;
 
-    void destroy(const VulkanDevice& device) noexcept;
+    void destroy() noexcept;
 
     [[nodiscard]] bool transitionLayout(
         vk::CommandBuffer commandBuffer,
@@ -145,11 +145,13 @@ public:
     }
 
 private:
+    const VulkanDevice* _device = nullptr;
+
     vk::Image     _image{};
     vk::ImageView _imageView{};
     vk::Sampler   _sampler{};
 
-    VmaAllocation _allocation;
+    VmaAllocation _allocation = VK_NULL_HANDLE;
 
     vk::Format   _format;
     vk::Extent3D _extent{};

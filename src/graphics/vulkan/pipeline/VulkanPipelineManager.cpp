@@ -26,10 +26,8 @@ bool VulkanPipelineManager::createGraphicsPipeline(
     const VulkanPipelineDescriptor& descriptor,
     const AttachmentsVector&        colorAttachments,
     std::string&                    errorMessage
-) {
+) const {
     TRY(graphicsPipeline->create(_device, descriptor, colorAttachments, errorMessage));
-
-    _graphicsPipelines.emplace_back(graphicsPipeline);
 
     return true;
 }

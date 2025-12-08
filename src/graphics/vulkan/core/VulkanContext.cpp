@@ -2,10 +2,6 @@
 
 #include "core/debug/ErrorHandling.h"
 
-VulkanContext::~VulkanContext() {
-    destroy();
-}
-
 bool VulkanContext::create(const Window& window, std::string& errorMessage) {
     ScopeGuard guard{[this] { destroy(); }};
 

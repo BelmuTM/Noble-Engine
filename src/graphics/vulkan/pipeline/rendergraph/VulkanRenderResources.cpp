@@ -29,8 +29,8 @@ void VulkanRenderResources::destroy() noexcept {
     _resourceWriters.clear();
 
     // Depth buffer destruction
-    if (_depthBuffer && _device) {
-        _depthBuffer->destroy(*_device);
+    if (_depthBuffer) {
+        _depthBuffer->destroy();
     }
 
     _device       = nullptr;
@@ -40,7 +40,7 @@ void VulkanRenderResources::destroy() noexcept {
 
 [[nodiscard]] bool VulkanRenderResources::recreate(VulkanRenderGraph& renderGraph, std::string& errorMessage) {
     // Depth buffer recreation
-    _depthBuffer->destroy(*_device);
+    _depthBuffer->destroy();
 
     TRY(_imageManager->createDepthBuffer(*_depthBuffer, _swapchain->getExtent(), errorMessage));
 

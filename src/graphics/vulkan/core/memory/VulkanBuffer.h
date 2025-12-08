@@ -79,7 +79,7 @@ private:
 
     vk::DeviceAddress _deviceAddress;
 
-    VmaAllocation _allocation;
+    VmaAllocation _allocation = VK_NULL_HANDLE;
 
     void* _mappedPointer = nullptr;
 };

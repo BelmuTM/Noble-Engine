@@ -72,6 +72,7 @@ void VulkanBuffer::destroy() noexcept {
     if (allocator && _buffer) {
         unmapMemory();
         vmaDestroyBuffer(allocator, _buffer, _allocation);
+
         _buffer     = VK_NULL_HANDLE;
         _allocation = VK_NULL_HANDLE;
     }
@@ -89,6 +90,11 @@ bool VulkanBuffer::createBuffer(
     const VulkanDevice*        device,
     std::string&               errorMessage
 ) {
+    if (size == 0) {
+        errorMessage = "Failed to create Vulkan buffer: size is 0";
+        return false;
+    }
+
     const VmaAllocator& allocator = device->getAllocator();
 
     vk::BufferCreateInfo bufferInfo{};

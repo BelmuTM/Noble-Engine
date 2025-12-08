@@ -12,10 +12,8 @@ bool VulkanImageManager::create(
 }
 
 void VulkanImageManager::destroy() noexcept {
-    if (_device) {
-        for (const auto& image : _images) {
-            image->destroy(*_device);
-        }
+    for (const auto& image : _images) {
+        image->destroy();
     }
 
     _images.clear();
@@ -32,8 +30,6 @@ bool VulkanImageManager::loadImage(
         return false;
     }
 
-    VulkanImage tempImage{};
-
     constexpr int depth = 1;
 
     const auto extent = vk::Extent3D{
@@ -47,7 +43,9 @@ bool VulkanImageManager::loadImage(
 
     const uint32_t mipLevels = useMipmaps ? getMipLevels(extent) : 1;
 
-    TRY(tempImage.createFromData(
+    auto imagePtr = std::make_unique<VulkanImage>();
+
+    TRY(imagePtr->createFromData(
         imageData->pixels.data(),
         imageData->channels,
         bytesPerChannel,
@@ -59,7 +57,7 @@ bool VulkanImageManager::loadImage(
         errorMessage
     ));
 
-    _images.push_back(std::make_unique<VulkanImage>(std::move(tempImage)));
+    _images.push_back(std::move(imagePtr));
     image = _images.back().get();
 
     return true;

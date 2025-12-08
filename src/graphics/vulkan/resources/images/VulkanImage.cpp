@@ -1,14 +1,16 @@
 #include "VulkanImage.h"
 
+#include "VulkanImageLayoutTransitions.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
 #include "graphics/vulkan/core/memory/VulkanBuffer.h"
-#include "VulkanImageLayoutTransitions.h"
 
 #include "core/debug/ErrorHandling.h"
 
-void VulkanImage::destroy(const VulkanDevice& device) noexcept {
-    const vk::Device&   logicalDevice = device.getLogicalDevice();
-    const VmaAllocator& allocator     = device.getAllocator();
+void VulkanImage::destroy() noexcept {
+    if (!_device) return;
+
+    const vk::Device&   logicalDevice = _device->getLogicalDevice();
+    const VmaAllocator& allocator     = _device->getAllocator();
 
     if (_sampler) {
         logicalDevice.destroySampler(_sampler);
@@ -113,6 +115,8 @@ bool VulkanImage::createImage(
     const VulkanDevice*       device,
     std::string&              errorMessage
 ) {
+    _device = device;
+
     const VmaAllocator& allocator = device->getAllocator();
 
     vk::ImageCreateInfo imageInfo{};
@@ -389,6 +393,13 @@ bool VulkanImage::createFromData(
     const VulkanCommandManager* commandManager,
     std::string&                errorMessage
 ) {
+    if (!pixels) {
+        errorMessage = "Failed to create Vulkan image: data is null";
+        return false;
+    }
+
+    _device = device;
+
     _format         = format;
     _extent         = extent;
     _descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -438,6 +449,8 @@ bool VulkanImage::createFromData(
 
     TRY(copyBufferToImage(stagingBuffer, extent, commandManager, errorMessage));
 
+    stagingBuffer.destroy();
+
     // Mipmaps generation
     if (hasMipmaps) {
         TRY(generateMipmaps(extent, mipLevels, commandManager, errorMessage));
@@ -460,8 +473,6 @@ bool VulkanImage::createFromData(
     ));
 
     TRY(createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, device, errorMessage));
-
-    stagingBuffer.destroy();
 
     return true;
 }

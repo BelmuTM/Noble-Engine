@@ -16,11 +16,11 @@ bool VulkanRenderObjectManager::create(
 
     _renderObjects.reserve(objects.size());
 
-    Logger::debug(std::to_string(objects.size()));
-
     TRY(_descriptorManager.create(
         device.getLogicalDevice(), objectDescriptorScheme, framesInFlight, MAX_RENDER_OBJECTS, errorMessage
     ));
+
+    Logger::debug("descriptor manager OK");
 
     TRY(_objectBuffer.create(device, MAX_RENDER_OBJECTS, errorMessage));
 
@@ -30,11 +30,11 @@ bool VulkanRenderObjectManager::create(
 }
 
 void VulkanRenderObjectManager::destroy() noexcept {
-    _imageManager = nullptr;
-    _meshManager  = nullptr;
-
     _descriptorManager.destroy();
     _objectBuffer.destroy();
+
+    _imageManager = nullptr;
+    _meshManager  = nullptr;
 }
 
 bool VulkanRenderObjectManager::createRenderObjects(const ObjectsVector& objects, std::string& errorMessage) {
@@ -129,7 +129,7 @@ bool VulkanRenderObjectManager::createRenderObject(
 void VulkanRenderObjectManager::updateObjects() const {
     std::vector<ObjectDataGPU> dataToGPU(_renderObjects.size());
 
-    for (size_t i = 0; i < _renderObjects.size(); ++i) {
+    for (size_t i = 0; i < _renderObjects.size(); i++) {
         auto& renderObject = *_renderObjects[i];
         renderObject.update();
 

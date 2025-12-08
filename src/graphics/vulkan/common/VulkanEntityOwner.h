@@ -9,10 +9,6 @@
 template<typename>
 class VulkanEntityOwner {
 public:
-    virtual ~VulkanEntityOwner() {
-        flushDeletionQueue();
-    }
-
     template<typename Resource, typename... Args>
     bool createVulkanEntity(Resource* res, std::string& errorMessage, Args&&... args) {
         if (!res->create(std::forward<Args>(args)..., errorMessage)) return false;

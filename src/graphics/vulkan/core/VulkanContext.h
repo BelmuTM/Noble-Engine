@@ -14,8 +14,8 @@
 
 class VulkanContext final : public VulkanEntityOwner<VulkanContext> {
 public:
-    VulkanContext() = default;
-    ~VulkanContext();
+    VulkanContext()  = default;
+    ~VulkanContext() = default;
 
     VulkanContext(const VulkanContext&)            = delete;
     VulkanContext& operator=(const VulkanContext&) = delete;

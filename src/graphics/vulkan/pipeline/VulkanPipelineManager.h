@@ -30,7 +30,7 @@ public:
         const VulkanPipelineDescriptor& descriptor,
         const AttachmentsVector&        colorAttachments,
         std::string&                    errorMessage
-    );
+    ) const;
 
 private:
     vk::Device _device{};

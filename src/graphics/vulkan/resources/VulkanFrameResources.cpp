@@ -31,10 +31,8 @@ bool VulkanFrameResources::create(
 void VulkanFrameResources::destroy() noexcept {
     _descriptorManager.destroy();
 
-    if (_device) {
-        for (const auto& colorBuffer : _colorBuffers) {
-            colorBuffer->destroy(*_device);
-        }
+    for (const auto& colorBuffer : _colorBuffers) {
+        colorBuffer->destroy();
     }
 
     _device       = nullptr;
@@ -53,7 +51,7 @@ void VulkanFrameResources::update(
 
 bool VulkanFrameResources::recreate(const VulkanCommandManager* commandManager, std::string& errorMessage) const {
     for (auto& colorBuffer : _colorBuffers) {
-        colorBuffer->destroy(*_device);
+        colorBuffer->destroy();
 
         TRY(_imageManager->createColorBuffer(
             *colorBuffer, colorBuffer->getFormat(), _swapchain->getExtent(), errorMessage

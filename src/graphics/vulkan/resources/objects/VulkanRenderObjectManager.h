@@ -11,7 +11,6 @@
 #include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"
 
 #include "core/common/Types.h"
-#include "core/entities/objects/Object.h"
 
 static const VulkanDescriptorScheme objectDescriptorScheme = {
     {0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment},
@@ -21,7 +20,7 @@ static const VulkanDescriptorScheme objectDescriptorScheme = {
 
 class VulkanRenderObjectManager {
 public:
-    static constexpr uint32_t MAX_RENDER_OBJECTS = 512;
+    static constexpr uint32_t MAX_RENDER_OBJECTS = 4096;
 
     using RenderObjectsVector = std::vector<std::unique_ptr<VulkanRenderObject>>;
 

@@ -10,18 +10,14 @@
 
 VulkanRenderer::VulkanRenderer(const uint32_t framesInFlight) : _framesInFlight(framesInFlight) {}
 
-VulkanRenderer::~VulkanRenderer() {
-    shutdown();
-}
-
 bool VulkanRenderer::init(Window& window, const ObjectsVector& objects, std::string& errorMessage) {
     _window = &window;
 
     errorMessage = "Failed to init Vulkan renderer: no error message provided";
     ScopeGuard guard{[this] { shutdown(); }};
 
-    // Create Vulkan context
-    TRY(context.create(window, errorMessage));
+    // Create context (instance, device, surface, swapchain)
+    TRY(createVulkanEntity(&context, errorMessage, window));
 
     const VulkanSurface& surface       = context.getSurface();
     const VulkanDevice&  device        = context.getDevice();
@@ -77,8 +73,6 @@ void VulkanRenderer::shutdown() {
     VK_CALL_LOG(context.getDevice().getLogicalDevice().waitIdle(), Logger::Level::ERROR);
 
     flushDeletionQueue();
-
-    context.destroy();
 }
 
 void VulkanRenderer::drawFrame(const Camera& camera) {
@@ -103,7 +97,6 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
     currentFrame = (currentFrame + 1) % _framesInFlight;
 
     // Queried drawn triangles count
-    /*
     VK_CALL(context.getDevice().getLogicalDevice().getQueryPoolResults(
         context.getDevice().getQueryPool(),
         0, 1,
@@ -113,7 +106,6 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
         vk::QueryResultFlagBits::eWait |
         vk::QueryResultFlagBits::e64
     ), errorMessage);
-    */
 
     guard.release();
 }

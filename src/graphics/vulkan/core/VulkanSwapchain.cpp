@@ -42,6 +42,11 @@ void VulkanSwapchain::destroy() noexcept {
 }
 
 bool VulkanSwapchain::recreate(const vk::SurfaceKHR surface, std::string& errorMessage) {
+    if (!_device) {
+        errorMessage = "Failed to recreate Vulkan swapchain: device is null";
+        return false;
+    }
+
     VK_CALL(_device->getLogicalDevice().waitIdle(), errorMessage);
 
     destroy();
@@ -84,7 +89,7 @@ vk::SurfaceFormatKHR VulkanSwapchain::chooseSurfaceFormat(const std::vector<vk::
         }
     }
 
-    Logger::warning("Failed to find a supported RGBA8 SRGB format: falling back to the first available format");
+    Logger::warning("Failed to find a supported RGBA8 sRGB format: falling back to the first available format");
 
     return availableFormats.front();
 }

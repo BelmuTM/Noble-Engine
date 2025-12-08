@@ -216,6 +216,8 @@ bool VulkanShaderProgram::reflectShaderResources(
         _pushConstants[name] = pushConstantRange;
     }
 
+    spvReflectDestroyShaderModule(&module);
+
     return true;
 }
 
