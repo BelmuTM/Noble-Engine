@@ -70,7 +70,9 @@ bool VulkanRenderer::init(Window& window, const ObjectsVector& objects, std::str
 }
 
 void VulkanRenderer::shutdown() {
-    VK_CALL_LOG(context.getDevice().getLogicalDevice().waitIdle(), Logger::Level::ERROR);
+    if (context.getDevice().getLogicalDevice()) {
+        VK_CALL_LOG(context.getDevice().getLogicalDevice().waitIdle(), Logger::Level::ERROR);
+    }
 
     flushDeletionQueue();
 }
@@ -113,7 +115,9 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
 bool VulkanRenderer::onFramebufferResize(std::string& errorMessage) {
     if (!_window || !_window->isFramebufferResized()) return true;
 
-    VK_CALL_LOG(context.getDevice().getLogicalDevice().waitIdle(), Logger::Level::ERROR);
+    if (context.getDevice().getLogicalDevice()) {
+        VK_CALL_LOG(context.getDevice().getLogicalDevice().waitIdle(), Logger::Level::ERROR);
+    }
 
     TRY(swapchainManager.recreateSwapchain(errorMessage));
     TRY(frameResources.recreate(&commandManager, errorMessage));

@@ -34,9 +34,19 @@ Please contact Belmu to discuss potential contributions to the project.
 - [Git](http://git-scm.com/download/win)
     * [In the installer] Check the box allowing to use Git from the command line and from 3rd-party software.
 
-### UNIX System Requirements
+### UNIX-Based System Requirements
 
 - [CMake 3.22 (or later)](https://github.com/Kitware/CMake/releases/)
+
+#### Ubuntu / Debian Package Dependencies
+```
+sudo apt-get install git libx11-xcb-dev libxkbcommon-dev libXi-dev libwayland-dev libxrandr-dev libxcb-randr0-dev libXinerama-dev libXcursor-dev
+```
+
+#### Arch-Based System Package Dependencies
+```
+sudo pacman -S git libx11 libxcb libxkbcommon libxkbcommon-x11 libXi libxrandr libxinerama libxcursor
+```
 
 ## Building
 

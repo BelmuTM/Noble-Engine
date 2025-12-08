@@ -140,18 +140,12 @@ target_compile_definitions(
 )
 
 # SPIRV-Headers (https://github.com/KhronosGroup/SPIRV-Headers)
-add_subdirectory(external/spirv-headers)
+set(SPIRV-HEADERS_Libraries "${CMAKE_SOURCE_DIR}/external/spirv-headers/include")
 
 # SPIRV-Reflect (https://github.com/KhronosGroup/SPIRV-Reflect)
 add_library(spirv-reflect STATIC external/spirv-reflect/spirv_reflect.cpp)
 
-target_include_directories(
-    spirv-reflect
-    SYSTEM
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/external
-        ${SPIRV-Headers_SOURCE_DIR}/include
-)
+target_include_directories(spirv-reflect SYSTEM PRIVATE ${SPIRV-HEADERS_Libraries})
 
 target_compile_definitions(spirv-reflect PUBLIC SPIRV_REFLECT_USE_SYSTEM_SPIRV_H)
 
@@ -176,4 +170,5 @@ target_include_directories(
         ${CMAKE_SOURCE_DIR}/external
         ${CMAKE_SOURCE_DIR}/external/json
         ${CMAKE_SOURCE_DIR}/external/stb
+        ${SPIRV-HEADERS_Libraries}
 )
