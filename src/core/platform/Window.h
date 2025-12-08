@@ -12,6 +12,8 @@ public:
     Window(int width, int height, const std::string& title);
     ~Window();
 
+    void close() const;
+
     void pollEvents() const;
 
     void show() const;

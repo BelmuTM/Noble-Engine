@@ -91,6 +91,7 @@ int main() {
     Camera camera{};
     camera.setController(std::make_unique<CameraController>(window.handle(), inputManager, camera));
 
+    // Main engine thread (draw, updates)
     std::thread engineThread([&] {
         using highResolutionClock = std::chrono::high_resolution_clock;
 
@@ -126,6 +127,8 @@ int main() {
 
             std::this_thread::yield();
         }
+
+        window.close(); // running == false
     });
 
     window.pollEvents();

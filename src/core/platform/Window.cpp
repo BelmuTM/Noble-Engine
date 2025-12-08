@@ -29,7 +29,13 @@ Window::~Window() {
     if (_window) glfwDestroyWindow(_window);
 }
 
+void Window::close() const {
+    if (_window) glfwSetWindowShouldClose(_window, GLFW_TRUE);
+}
+
 void Window::pollEvents() const {
+    if (!_window) return;
+
     while (!glfwWindowShouldClose(_window)) {
         glfwPollEvents();
     }
@@ -44,9 +50,9 @@ void Window::hide() const {
 }
 
 void Window::getFramebufferSize(int& width, int& height) const {
-    glfwGetFramebufferSize(_window, &width, &height);
+    if (_window) glfwGetFramebufferSize(_window, &width, &height);
 }
 
 void Window::setTitle(const std::string& title) const {
-    glfwSetWindowTitle(_window, title.c_str());
+    if (_window) glfwSetWindowTitle(_window, title.c_str());
 }
