@@ -6,7 +6,7 @@
 
 Noble Engine is a rendering engine aimed at modern hardware written in C++ with the [Vulkan API](https://www.vulkan.org/).
 Currently under active development, it provides support to desktop platforms such as Windows and Linux.
-Being able to manipulate 3D environments, render them and use them at our advantage is the goal with this project.
+Being able to manipulate 3D environments, render them and use them at our advantage is our goal with this project.
 
 ### Contact
 
@@ -44,6 +44,7 @@ Please contact Belmu to discuss potential contributions to the project.
 ```sh
 git clone https://github.com/BelmuTM/Noble-Engine.git  
 cd Noble-Engine
+git submodule update --init --recursive
 cmake -S . -B build/ -D CMAKE_BUILD_TYPE=Debug -A x64
 cmake --build ./build/ --config Debug
 ```
@@ -52,6 +53,7 @@ cmake --build ./build/ --config Debug
 ```sh
 git clone https://github.com/BelmuTM/Noble-Engine.git  
 cd Noble-Engine
+git submodule update --init --recursive
 cmake -S . -B build/ -D CMAKE_BUILD_TYPE=Debug
 cmake --build ./build/ --config Debug
 ```

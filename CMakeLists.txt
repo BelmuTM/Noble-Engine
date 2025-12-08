@@ -53,7 +53,7 @@ endif()
 # Vulkan-Headers (https://github.com/KhronosGroup/Vulkan-Headers)
 add_subdirectory(external/vulkan-headers)
 
-target_include_directories(NobleEngine PRIVATE external/vulkan-headers/include)
+target_include_directories(NobleEngine SYSTEM PRIVATE external/vulkan-headers/include)
 
 target_link_libraries(NobleEngine PRIVATE vulkan)
 
@@ -147,7 +147,8 @@ add_library(spirv-reflect STATIC external/spirv-reflect/spirv_reflect.cpp)
 
 target_include_directories(
     spirv-reflect
-    PUBLIC
+    SYSTEM
+    PRIVATE
         ${CMAKE_SOURCE_DIR}/external
         ${SPIRV-Headers_SOURCE_DIR}/include
 )
@@ -170,6 +171,7 @@ target_link_libraries(
 # Vulkan Memory Allocator (https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
 target_include_directories(
     NobleEngine
+    SYSTEM
     PRIVATE
         ${CMAKE_SOURCE_DIR}/external
         ${CMAKE_SOURCE_DIR}/external/json
