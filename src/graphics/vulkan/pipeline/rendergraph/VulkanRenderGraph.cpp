@@ -42,6 +42,8 @@ void VulkanRenderGraph::execute(const vk::CommandBuffer commandBuffer) const {
     std::string errorMessage;
     ScopeGuard guard{[&errorMessage] { Logger::error(errorMessage); }};
 
+    commandBuffer.resetQueryPool(_queryPool, 0, 1);
+
     for (const auto& pass : _passes) {
         if (!executePass(commandBuffer, pass.get(), errorMessage)) return;
     }
@@ -60,6 +62,8 @@ bool VulkanRenderGraph::executePass(
     const vk::Buffer& indexBuffer  = _meshManager->getIndexBuffer();
 
     const VulkanShaderProgram* shaderProgram = pass->getPipelineDescriptor().shaderProgram;
+
+    const bool isFullScreenPass = shaderProgram->isFullscreen();
 
     if (pass->getBindPoint() == vk::PipelineBindPoint::eGraphics) {
         /*---------------------------------------*/
@@ -131,11 +135,11 @@ bool VulkanRenderGraph::executePass(
             renderingInfo.setPDepthAttachment(&depthAttachmentInfo);
         }
 
-        commandBuffer.resetQueryPool(_queryPool, 0, 1);
-
         commandBuffer.beginRendering(renderingInfo);
 
-        commandBuffer.beginQuery(_queryPool, 0, {});
+        if (!isFullScreenPass) {
+            commandBuffer.beginQuery(_queryPool, 0, {});
+        }
 
         commandBuffer.bindPipeline(pass->getBindPoint(), *pass->getPipeline());
 
@@ -192,7 +196,9 @@ bool VulkanRenderGraph::executePass(
             }
         }
 
-        commandBuffer.endQuery(_queryPool, 0);
+        if (!isFullScreenPass) {
+            commandBuffer.endQuery(_queryPool, 0);
+        }
 
         commandBuffer.endRendering();
 
