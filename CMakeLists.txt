@@ -1,5 +1,3 @@
-include(FetchContent)
-
 cmake_minimum_required(VERSION 3.22)
 project(NobleEngine LANGUAGES CXX)
 
@@ -36,13 +34,13 @@ if (MSVC)
         PRIVATE
             /W4 /permissive- /wd4100
     )
-else ()
+else()
     target_compile_options(
         NobleEngine
         PRIVATE
             -Wall -Wextra -Wpedantic -Wno-missing-field-initializers -Wno-unused-parameter -Wno-unused-variable
     )
-endif ()
+endif()
 
 # Address Sanitizers
 # target_compile_options(NobleEngine PRIVATE -fsanitize=address -fno-omit-frame-pointer)
@@ -52,27 +50,9 @@ endif ()
 #                         VULKAN                         #
 ##########################################################
 
-# Vulkan-Headers (https://github.com/KhronosGroup/Vulkan-Headers)
-add_subdirectory(external/vulkan-headers)
+include("cmake/vulkan.cmake")
 
-target_include_directories(NobleEngine SYSTEM PRIVATE external/vulkan-headers/include)
-
-target_link_libraries(NobleEngine PRIVATE vulkan)
-
-# Determine if the Vulkan SDK is installed on the system
-message(CHECK_START "Check for Vulkan SDK")
-
-find_package(Vulkan QUIET)
-
-if (Vulkan_FOUND)
-    message(CHECK_PASS "done")
-    target_compile_definitions(NobleEngine PRIVATE VULKAN_SDK)
-else ()
-    message(CHECK_FAIL "failed (validation layers will be disabled!)")
-endif ()
-
-# Vulkan debug utils
-target_compile_definitions(NobleEngine PRIVATE $<$<CONFIG:Debug>:VULKAN_DEBUG_UTILS>)
+setup_vulkan(NobleEngine)
 
 ##########################################################
 #                         SLANG                          #
@@ -80,56 +60,13 @@ target_compile_definitions(NobleEngine PRIVATE $<$<CONFIG:Debug>:VULKAN_DEBUG_UT
 
 include("cmake/slang.cmake")
 
-add_dependencies(NobleEngine SlangShaders)
+fetch_slang(NobleEngine)
+compile_slang(NobleEngine)
 
 ##########################################################
 #             THIRD-PARTY UTILITY LIBRARIES              #
 ##########################################################
 
-# glfw (https://github.com/glfw/glfw)
-add_subdirectory(external/glfw)
+include("cmake/thirdparty.cmake")
 
-# glm (https://github.com/g-truc/glm)
-add_subdirectory(external/glm)
-
-target_compile_definitions(
-    glm
-    INTERFACE
-        GLM_FORCE_CXX20
-        GLM_FORCE_DEPTH_ZERO_TO_ONE
-        GLM_ENABLE_EXPERIMENTAL
-)
-
-# SPIRV-Headers (https://github.com/KhronosGroup/SPIRV-Headers)
-set(SPIRV-HEADERS_Libraries "${CMAKE_SOURCE_DIR}/external/spirv-headers/include")
-
-# SPIRV-Reflect (https://github.com/KhronosGroup/SPIRV-Reflect)
-add_library(spirv-reflect STATIC external/spirv-reflect/spirv_reflect.cpp)
-
-target_include_directories(spirv-reflect SYSTEM PRIVATE ${SPIRV-HEADERS_Libraries})
-
-target_compile_definitions(spirv-reflect PUBLIC SPIRV_REFLECT_USE_SYSTEM_SPIRV_H)
-
-# Link compiled libraries to executable
-target_link_libraries(
-    NobleEngine
-    PRIVATE
-        glfw
-        glm
-        spirv-reflect
-)
-
-# json (https://github.com/nlohmann/json)
-# STB (https://github.com/nothings/stb)
-# tinygltf (https://github.com/syoyo/tinygltf)
-# tinyobjloader (https://github.com/tinyobjloader/tinyobjloader)
-# Vulkan Memory Allocator (https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
-target_include_directories(
-    NobleEngine
-    SYSTEM
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/external
-        ${CMAKE_SOURCE_DIR}/external/json
-        ${CMAKE_SOURCE_DIR}/external/stb
-        ${SPIRV-HEADERS_Libraries}
-)
+setup_thirdparty(NobleEngine)

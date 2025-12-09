@@ -2,23 +2,16 @@
 #ifndef NOBLEENGINE_VULKANHEADER_H
 #define NOBLEENGINE_VULKANHEADER_H
 
+#if defined(_WIN32) || defined(_WIN64)
+#include <Windows.h>
+#undef ERROR
+#endif
+
 #if defined(VULKAN_SDK) && defined(VULKAN_DEBUG_UTILS)
 #define VULKAN_VALIDATION_LAYERS_ENABLED
 #endif
 
-#define VULKAN_HPP_NO_EXCEPTIONS
-#include <vulkan/vulkan.hpp>
-
-#if defined(_WIN32) || defined(_WIN64)
-
-#include <Windows.h>
-
-#define VK_USE_PLATFORM_WIN32_KHR
-#include <vulkan/vulkan_win32.h>
-
-#undef ERROR
-
-#endif
+#include <vulkan-headers/include/vulkan/vulkan.hpp>
 
 #define VP_USE_OBJECT
 #include <vulkan-profiles/vulkan_profiles.hpp>

@@ -3,8 +3,6 @@
 #include "passes/CompositePass.h"
 #include "passes/MeshRenderPass.h"
 
-#include <ranges>
-
 #include "core/debug/Logger.h"
 
 bool VulkanRenderGraphBuilder::build(const VulkanRenderGraphBuilderContext& context, std::string& errorMessage) {
