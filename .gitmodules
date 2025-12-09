@@ -2,8 +2,8 @@
 	path = external/glfw
 	url = https://github.com/glfw/glfw.git
 [submodule "external/glm"]
-    path = external/glm
-    url = https://github.com/g-truc/glm.git
+	path = external/glm
+	url = https://github.com/g-truc/glm.git
 [submodule "external/spirv-headers"]
 	path = external/spirv-headers
 	url = https://github.com/KhronosGroup/SPIRV-Headers.git
