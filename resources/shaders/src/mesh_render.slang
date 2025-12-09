@@ -4,7 +4,7 @@ struct VSInput {
     float4 tangent   : TANGENT;
     float3 color     : COLOR;
     float2 texCoords : TEXCOORD0;
-};
+}
 
 struct FrameUBO {
     float4x4 view;
