@@ -32,7 +32,7 @@ private:
 
     bool createInstance(std::string& errorMessage);
 
-#ifdef VULKAN_DEBUG_UTILS
+#ifdef VULKAN_VALIDATION_LAYERS_ENABLED
 
     bool setupDebugMessenger(std::string& errorMessage);
 

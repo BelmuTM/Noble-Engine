@@ -28,7 +28,9 @@ public:
     // Generates tangents for the entire mesh
     void generateTangents();
 
+    [[nodiscard]]       std::vector<Vertex>& getVertices()       noexcept { return _vertices; }
     [[nodiscard]] const std::vector<Vertex>& getVertices() const noexcept { return _vertices; }
+
     [[nodiscard]] const std::vector<uint32_t>& getIndices() const noexcept { return _indices; }
 
     [[nodiscard]] size_t getVerticesByteSize() const { return sizeof(Vertex) * _vertices.size(); }

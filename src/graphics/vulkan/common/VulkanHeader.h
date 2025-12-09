@@ -2,6 +2,10 @@
 #ifndef NOBLEENGINE_VULKANHEADER_H
 #define NOBLEENGINE_VULKANHEADER_H
 
+#if defined(VULKAN_SDK) && defined(VULKAN_DEBUG_UTILS)
+#define VULKAN_VALIDATION_LAYERS_ENABLED
+#endif
+
 #define VULKAN_HPP_NO_EXCEPTIONS
 #include <vulkan/vulkan.hpp>
 

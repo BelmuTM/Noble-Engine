@@ -51,7 +51,9 @@ const Model* ModelManager::load(const std::string& path, std::string& errorMessa
 /*           .OBJ file loader            */
 /*---------------------------------------*/
 
-void ModelManager::loadMaterial_OBJ(Mesh& mesh, const tinyobj::material_t& material) {
+// ------ Material ------
+
+void ModelManager::loadMaterial_OBJ(Mesh& mesh, const std::string& modelName, const tinyobj::material_t& material) {
     Material meshMaterial{};
 
     meshMaterial.name = material.name;
@@ -60,11 +62,11 @@ void ModelManager::loadMaterial_OBJ(Mesh& mesh, const tinyobj::material_t& mater
     meshMaterial.specular = glm::make_vec3(material.specular);
     meshMaterial.emission = glm::make_vec3(material.emission);
 
-    meshMaterial.albedoPath    = material.diffuse_texname;
-    meshMaterial.normalPath    = material.normal_texname;
-    meshMaterial.specularPath  = material.specular_texname;
-    meshMaterial.roughnessPath = material.roughness_texname;
-    meshMaterial.metallicPath  = material.metallic_texname;
+    meshMaterial.albedoPath    = TextureHelper::sanitizeTexturePath(material.diffuse_texname, modelName);
+    meshMaterial.normalPath    = TextureHelper::sanitizeTexturePath(material.normal_texname, modelName);
+    meshMaterial.specularPath  = TextureHelper::sanitizeTexturePath(material.specular_texname, modelName);
+    meshMaterial.roughnessPath = TextureHelper::sanitizeTexturePath(material.roughness_texname, modelName);
+    meshMaterial.metallicPath  = TextureHelper::sanitizeTexturePath(material.metallic_texname, modelName);
 
     meshMaterial.ior       = material.ior;
     meshMaterial.metallic  = material.metallic;
@@ -72,6 +74,8 @@ void ModelManager::loadMaterial_OBJ(Mesh& mesh, const tinyobj::material_t& mater
 
     mesh.setMaterial(meshMaterial);
 }
+
+// ------ Model ------
 
 bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& errorMessage) {
     Mesh mesh{};
@@ -130,6 +134,7 @@ bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& 
                 // Define color attribute
                 vertex.color = {1.0f, 1.0f, 1.0f};
 
+                // Add unique vertex and corresponding index to the mesh
                 if (!uniqueVertices.contains(vertex)) {
                     uniqueVertices[vertex] = static_cast<uint32_t>(mesh.getVertices().size());
                     mesh.addVertex(vertex);
@@ -138,13 +143,14 @@ bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& 
                 mesh.addIndex(uniqueVertices[vertex]);
             }
 
+            // Load material
             const unsigned int materialIndex = objMesh.material_ids[face];
 
-            // Load material if ID is valid
+            // If material ID is valid
             if (materialIndex < materials.size()) {
                 const tinyobj::material_t& material = materials[materialIndex];
 
-                loadMaterial_OBJ(mesh, material);
+                loadMaterial_OBJ(mesh, model.name, material);
             }
         }
     }
@@ -163,27 +169,7 @@ bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& 
 /*           .GLTF file loader           */
 /*---------------------------------------*/
 
-struct AttributeData {
-    const unsigned char* base;
-    size_t stride = 0;
-};
-
-static AttributeData getAttributeData(
-    const tinygltf::Accessor& accessor,
-    const tinygltf::BufferView& bufferView,
-    const tinygltf::Buffer& buffer
-) {
-    AttributeData data{};
-    data.base   = buffer.data.data() + bufferView.byteOffset + accessor.byteOffset;
-    data.stride = bufferView.byteStride;
-
-    if (data.stride == 0) {
-        data.stride = tinygltf::GetNumComponentsInType(accessor.type)
-                    * tinygltf::GetComponentSizeInBytes(accessor.componentType);
-    }
-
-    return data;
-}
+// ------ Material ------
 
 void ModelManager::loadMaterial_glTF(
     Mesh&                                 mesh,
@@ -226,6 +212,221 @@ void ModelManager::loadMaterial_glTF(
     mesh.setMaterial(meshMaterial);
 }
 
+// ------ Model ------
+
+struct AttributeData {
+    const tinygltf::Accessor* accessor;
+    const unsigned char* base;
+    size_t stride = 0;
+
+    const unsigned char* getData(const size_t index) const {
+        return base + index * stride;
+    }
+};
+
+static AttributeData getAttributeData(const tinygltf::Model& glTFModel, const int accessorIndex) {
+    const tinygltf::Accessor&   accessor   = glTFModel.accessors[accessorIndex];
+    const tinygltf::BufferView& bufferView = glTFModel.bufferViews[accessor.bufferView];
+    const tinygltf::Buffer&     buffer     = glTFModel.buffers[bufferView.buffer];
+
+    AttributeData data{};
+    data.accessor = &accessor;
+    data.base     = buffer.data.data() + bufferView.byteOffset + accessor.byteOffset;
+    data.stride   = bufferView.byteStride;
+
+    if (data.stride == 0) {
+        data.stride = tinygltf::GetNumComponentsInType(accessor.type)
+                    * tinygltf::GetComponentSizeInBytes(accessor.componentType);
+    }
+
+    return data;
+}
+
+void ModelManager::processMeshPrimitives_glTF(
+    Mesh&                      mesh,
+    const tinygltf::Model&     glTFModel,
+    const tinygltf::Primitive& primitive
+) {
+    const std::map<std::string, int> attributes = primitive.attributes;
+
+    // Fetch indices
+    const auto indexData = getAttributeData(glTFModel, primitive.indices);
+
+    // Fetch vertex positions
+    const auto positionData = getAttributeData(glTFModel, attributes.at("POSITION"));
+
+    // Fetch vertex normals
+    const bool hasNormals = attributes.contains("NORMAL");
+    AttributeData normalData{};
+
+    if (hasNormals) {
+        normalData = getAttributeData(glTFModel, attributes.at("NORMAL"));
+    }
+
+    // Fetch vertex tangents
+    const bool hasTangents = attributes.contains("TANGENT");
+    AttributeData tangentData{};
+
+    if (hasTangents) {
+        tangentData = getAttributeData(glTFModel, attributes.at("TANGENT"));
+    }
+
+    // Fetch texture coordinates if they exist
+    const bool hasTextureCoords = attributes.contains("TEXCOORD_0");
+    AttributeData texCoordsData{};
+
+    if (hasTextureCoords) {
+        texCoordsData = getAttributeData(glTFModel, attributes.at("TEXCOORD_0"));
+    }
+
+    // Process vertices
+    for (size_t i = 0; i < indexData.accessor->count; i++) {
+        uint32_t vertexIndex = 0;
+
+        switch (indexData.accessor->componentType) {
+            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+                vertexIndex = reinterpret_cast<const uint16_t*>(indexData.base)[i];
+                break;
+            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+                vertexIndex = reinterpret_cast<const uint32_t*>(indexData.base)[i];
+                break;
+            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+                vertexIndex = indexData.base[i];
+                break;
+            default: break;
+        }
+
+        Vertex vertex{};
+
+        // Define position attribute
+        const auto* positionPtr = reinterpret_cast<const float*>(positionData.getData(vertexIndex));
+
+        vertex.position = {positionPtr[0], positionPtr[1], positionPtr[2]};
+
+        // Define normal attribute
+        if (hasNormals) {
+            const auto* normalPtr = reinterpret_cast<const float*>(normalData.getData(vertexIndex));
+
+            vertex.normal = {normalPtr[0], normalPtr[1], normalPtr[2]};
+        }
+
+        // Define tangent attribute
+        if (hasTangents) {
+            const auto* tangentPtr = reinterpret_cast<const float*>(tangentData.getData(vertexIndex));
+
+            vertex.tangent = {tangentPtr[0], tangentPtr[1], tangentPtr[2], tangentPtr[3]};
+        }
+
+        // Define texture coordinates attribute
+        if (hasTextureCoords) {
+            const auto* textureCoordsPtr = reinterpret_cast<const float*>(texCoordsData.getData(vertexIndex));
+
+            vertex.textureCoords = {textureCoordsPtr[0], textureCoordsPtr[1]};
+        }
+
+        // Add vertex and corresponding index to the mesh
+        mesh.addVertex(vertex);
+        mesh.addIndex(mesh.getVertices().size() - 1);
+    }
+
+    if (!hasNormals) {
+        mesh.generateSmoothNormals();
+    }
+
+    if (!hasTangents) {
+        mesh.generateTangents();
+    }
+}
+
+Mesh ModelManager::createMesh_glTF(
+    const std::string&         modelName,
+    const tinygltf::Model&     glTFModel,
+    const tinygltf::Primitive& primitive
+) {
+    Mesh mesh{};
+
+    processMeshPrimitives_glTF(mesh, glTFModel, primitive);
+
+    // Load material
+    const unsigned int materialIndex = primitive.material;
+
+    // If material ID is valid
+    if (materialIndex < glTFModel.materials.size()) {
+        const tinygltf::Material material = glTFModel.materials[materialIndex];
+
+        loadMaterial_glTF(mesh, modelName, material, glTFModel.textures, glTFModel.images);
+    }
+
+    return mesh;
+}
+
+void ModelManager::processNode_glTF(
+    Model&                 model,
+    const tinygltf::Model& glTFModel,
+    const tinygltf::Node&  node,
+    const glm::mat4&       parentTransform
+) {
+    // Compute the node's transformation matrix to position it in the scene
+    glm::mat4 nodeTransform;
+
+    if (!node.matrix.empty()) {
+        nodeTransform = glm::make_mat4x4(node.matrix.data());
+    } else {
+        glm::vec3 translation(0.0f);
+        if (!node.translation.empty()) {
+            translation = glm::vec3(node.translation[0], node.translation[1], node.translation[2]);
+        }
+
+        glm::quat rotation(1.0, 0.0, 0.0, 0.0);
+        if (!node.rotation.empty()) {
+            rotation = glm::quat(
+                static_cast<float>(node.rotation[3]),
+                static_cast<float>(node.rotation[0]),
+                static_cast<float>(node.rotation[1]),
+                static_cast<float>(node.rotation[2])
+            );
+        }
+
+        glm::vec3 scale(1.0f);
+        if (!node.scale.empty()) {
+            scale = glm::vec3(node.scale[0], node.scale[1], node.scale[2]);
+        }
+
+        // Combine translation, rotation and scaling transforms
+        nodeTransform = glm::translate(glm::mat4(1.0f), translation)
+                      * glm::mat4_cast(rotation)
+                      * glm::scale(glm::mat4(1.0f), scale);
+    }
+
+    // Combine the node's transform with its parent's
+    const glm::mat4 worldTransform = parentTransform * nodeTransform;
+
+    // Process and add the node's mesh to the model
+    if (node.mesh >= 0) {
+        const tinygltf::Mesh& glTFMesh = glTFModel.meshes[node.mesh];
+
+        // For each primitive that forms the mesh
+        for (const auto& glTFPrimitive : glTFMesh.primitives) {
+            Mesh mesh = createMesh_glTF(model.name, glTFModel, glTFPrimitive);
+
+            // Apply the transform to the mesh's vertices
+            const auto normalMatrix = glm::transpose(glm::inverse(glm::mat3(worldTransform)));
+
+            for (auto& vertex : mesh.getVertices()) {
+                vertex.position = glm::vec3(worldTransform * glm::vec4(vertex.position, 1.0f));
+                vertex.normal   = glm::normalize(normalMatrix * vertex.normal);
+            }
+
+            model.addMesh(mesh);
+        }
+    }
+
+    // Recursively process the node's children
+    for (const int childIndex : node.children) {
+        processNode_glTF(model, glTFModel, glTFModel.nodes[childIndex], worldTransform);
+    }
+}
+
 bool ModelManager::load_glTF(Model& model, const std::string& path, std::string& errorMessage) {
     tinygltf::Model    glTFModel;
     tinygltf::TinyGLTF glTFloader;
@@ -242,138 +443,29 @@ bool ModelManager::load_glTF(Model& model, const std::string& path, std::string&
 
     if (!modelLoaded) return false;
 
+    // If the model has scenes and nodes
+
+    if (!glTFModel.scenes.empty()) {
+        const int              sceneIndex = glTFModel.defaultScene >= 0 ? glTFModel.defaultScene : 0;
+        const tinygltf::Scene& glTFScene  = glTFModel.scenes[sceneIndex];
+
+        if (!glTFScene.nodes.empty()) {
+            for (const int nodeIndex : glTFScene.nodes) {
+                processNode_glTF(model, glTFModel, glTFModel.nodes[nodeIndex], glm::mat4(1.0f));
+            }
+
+            return true;
+        }
+    }
+
+    // If the model doesn't have scenes and/or nodes
+
     // For each mesh that forms the model
     for (const auto& glTFMesh : glTFModel.meshes) {
 
         // For each primitive that forms the mesh
-        for (const auto& primitive : glTFMesh.primitives) {
-            Mesh mesh{};
-
-            std::map<std::string, int> attributes = primitive.attributes;
-
-            // Fetch indices
-            const tinygltf::Accessor&   indexAccessor   = glTFModel.accessors[primitive.indices];
-            const tinygltf::BufferView& indexBufferView = glTFModel.bufferViews[indexAccessor.bufferView];
-            const tinygltf::Buffer&     indexBuffer     = glTFModel.buffers[indexBufferView.buffer];
-
-            const auto indexData = getAttributeData(indexAccessor, indexBufferView, indexBuffer);
-
-            // Fetch vertex positions
-            const tinygltf::Accessor&   positionAccessor   = glTFModel.accessors[attributes.at("POSITION")];
-            const tinygltf::BufferView& positionBufferView = glTFModel.bufferViews[positionAccessor.bufferView];
-            const tinygltf::Buffer&     positionBuffer     = glTFModel.buffers[positionBufferView.buffer];
-
-            const auto positionData = getAttributeData(positionAccessor, positionBufferView, positionBuffer);
-
-            // Fetch vertex normals
-            const bool hasNormals = attributes.contains("NORMAL");
-            AttributeData normalData{};
-
-            if (hasNormals) {
-                const tinygltf::Accessor&   normalAccessor   = glTFModel.accessors[attributes.at("NORMAL")];
-                const tinygltf::BufferView& normalBufferView = glTFModel.bufferViews[normalAccessor.bufferView];
-                const tinygltf::Buffer&     normalBuffer     = glTFModel.buffers[normalBufferView.buffer];
-
-                normalData = getAttributeData(normalAccessor, normalBufferView, normalBuffer);
-            }
-
-            // Fetch vertex tangents
-            const bool hasTangents = attributes.contains("TANGENT");
-            AttributeData tangentData{};
-
-            if (hasTangents) {
-                const tinygltf::Accessor&   tangentAccessor   = glTFModel.accessors[attributes.at("TANGENT")];
-                const tinygltf::BufferView& tangentBufferView = glTFModel.bufferViews[tangentAccessor.bufferView];
-                const tinygltf::Buffer&     tangentBuffer     = glTFModel.buffers[tangentBufferView.buffer];
-
-                tangentData = getAttributeData(tangentAccessor, tangentBufferView, tangentBuffer);
-            }
-
-            // Fetch texture coordinates if they exist
-            const bool hasTextureCoords = attributes.contains("TEXCOORD_0");
-            AttributeData texCoordsData{};
-
-            if (hasTextureCoords) {
-                const tinygltf::Accessor&   texCoordsAccessor   = glTFModel.accessors[attributes.at("TEXCOORD_0")];
-                const tinygltf::BufferView& texCoordsBufferView = glTFModel.bufferViews[texCoordsAccessor.bufferView];
-                const tinygltf::Buffer&     texCoordsBuffer     = glTFModel.buffers[texCoordsBufferView.buffer];
-
-                texCoordsData = getAttributeData(texCoordsAccessor, texCoordsBufferView, texCoordsBuffer);
-            }
-
-            // Process vertices
-            for (size_t i = 0; i < indexAccessor.count; i++) {
-                uint32_t vertexIndex = 0;
-
-                switch (indexAccessor.componentType) {
-                    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
-                        vertexIndex = reinterpret_cast<const uint16_t*>(indexData.base)[i];
-                        break;
-                    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
-                        vertexIndex = reinterpret_cast<const uint32_t*>(indexData.base)[i];
-                        break;
-                    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
-                        vertexIndex = indexData.base[i];
-                        break;
-                    default: break;
-                }
-
-                Vertex vertex{};
-
-                // Define position attribute
-                const auto* positionPtr = reinterpret_cast<const float*>(
-                    positionData.base + vertexIndex * positionData.stride
-                );
-
-                vertex.position = {positionPtr[0], positionPtr[1], positionPtr[2]};
-
-                // Define normal attribute
-                if (hasNormals) {
-                    const auto* normalPtr = reinterpret_cast<const float*>(
-                        normalData.base + vertexIndex * normalData.stride
-                    );
-
-                    vertex.normal = {normalPtr[0], normalPtr[1], normalPtr[2]};
-                }
-
-                // Define tangent attribute
-                if (hasTangents) {
-                    const auto* tangentPtr = reinterpret_cast<const float*>(
-                        tangentData.base + vertexIndex * tangentData.stride
-                    );
-
-                    vertex.tangent = {tangentPtr[0], tangentPtr[1], tangentPtr[2], tangentPtr[3]};
-                }
-
-                // Define texture coordinates attribute
-                if (hasTextureCoords) {
-                    const auto* textureCoordsPtr = reinterpret_cast<const float*>(
-                        texCoordsData.base + vertexIndex * texCoordsData.stride
-                    );
-
-                    vertex.textureCoords = {textureCoordsPtr[0], textureCoordsPtr[1]};
-                }
-
-                mesh.addVertex(vertex);
-                mesh.addIndex(mesh.getVertices().size() - 1);
-            }
-
-            if (!hasNormals) {
-                mesh.generateSmoothNormals();
-            }
-
-            if (!hasTangents) {
-                mesh.generateTangents();
-            }
-
-            const unsigned int materialIndex = primitive.material;
-
-            // Load material if ID is valid
-            if (materialIndex < glTFModel.materials.size()) {
-                tinygltf::Material material = glTFModel.materials[materialIndex];
-
-                loadMaterial_glTF(mesh, model.name, material, glTFModel.textures, glTFModel.images);
-            }
+        for (const auto& glTFPrimitive : glTFMesh.primitives) {
+            Mesh mesh = createMesh_glTF(model.name, glTFModel, glTFPrimitive);
 
             model.addMesh(mesh);
         }

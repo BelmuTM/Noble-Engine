@@ -31,12 +31,14 @@ void Object::updateMatrices() {
     _lastScale    = _scale;
 
     const glm::mat4 translation = glm::translate(glm::mat4(1.0f), _position);
-    const glm::mat4 rotation    = glm::eulerAngleXYZ(
+
+    const glm::mat4 rotation = glm::eulerAngleXYZ(
         glm::radians(_rotation.x),
         glm::radians(_rotation.y),
         glm::radians(_rotation.z)
     );
-    const glm::mat4 scaling     = glm::scale(glm::mat4(1.0f), _scale);
+
+    const glm::mat4 scaling = glm::scale(glm::mat4(1.0f), _scale);
 
     _modelMatrix  = translation * rotation * scaling;
     _normalMatrix = glm::mat4(glm::transpose(glm::inverse(glm::mat3(_modelMatrix))));

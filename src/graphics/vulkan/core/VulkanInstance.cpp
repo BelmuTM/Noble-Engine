@@ -10,7 +10,7 @@
 
 static const std::vector<const char*> instanceExtensions = {};
 
-#ifdef VULKAN_DEBUG_UTILS
+#ifdef VULKAN_VALIDATION_LAYERS_ENABLED
 
 static const std::vector validationLayers = {
     "VK_LAYER_KHRONOS_validation"
@@ -25,7 +25,7 @@ bool VulkanInstance::create(const VulkanCapabilities& capabilities, std::string&
 
     _dldi = vk::detail::DispatchLoaderDynamic(_instance, vkGetInstanceProcAddr);
 
-#ifdef VULKAN_DEBUG_UTILS
+#ifdef VULKAN_VALIDATION_LAYERS_ENABLED
 
     if (!setupDebugMessenger(errorMessage)) return false;
 
@@ -35,7 +35,7 @@ bool VulkanInstance::create(const VulkanCapabilities& capabilities, std::string&
 }
 
 void VulkanInstance::destroy() noexcept {
-#ifdef VULKAN_DEBUG_UTILS
+#ifdef VULKAN_VALIDATION_LAYERS_ENABLED
 
     if (_debugMessenger) {
         _instance.destroyDebugUtilsMessengerEXT(_debugMessenger, nullptr, _dldi);
@@ -55,8 +55,10 @@ void VulkanInstance::destroy() noexcept {
 std::vector<const char*> VulkanInstance::getRequiredExtensions() {
     auto extensions = Platform::getVulkanExtensions();
 
-#ifdef VULKAN_DEBUG_UTILS
+#ifdef VULKAN_VALIDATION_LAYERS_ENABLED
+
     extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+
 #endif
 
     for (const auto& instanceExtension : instanceExtensions) {
@@ -111,7 +113,7 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
 
     std::vector<const char*> layers{};
 
-#ifdef VULKAN_DEBUG_UTILS
+#ifdef VULKAN_VALIDATION_LAYERS_ENABLED
 
     layers = validationLayers;
 
@@ -157,7 +159,7 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
     return true;
 }
 
-#ifdef VULKAN_DEBUG_UTILS
+#ifdef VULKAN_VALIDATION_LAYERS_ENABLED
 
 vk::Bool32 VulkanInstance::debugCallback(
     const vk::DebugUtilsMessageSeverityFlagBitsEXT severity,

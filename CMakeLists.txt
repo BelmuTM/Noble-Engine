@@ -59,6 +59,18 @@ target_include_directories(NobleEngine SYSTEM PRIVATE external/vulkan-headers/in
 
 target_link_libraries(NobleEngine PRIVATE vulkan)
 
+# Determine if the Vulkan SDK is installed on the system
+message(CHECK_START "Check for Vulkan SDK")
+
+find_package(Vulkan QUIET)
+
+if (Vulkan_FOUND)
+    message(CHECK_PASS "done")
+    target_compile_definitions(NobleEngine PRIVATE VULKAN_SDK)
+else ()
+    message(CHECK_FAIL "failed (validation layers will be disabled!)")
+endif ()
+
 # Vulkan debug utils
 target_compile_definitions(NobleEngine PRIVATE $<$<CONFIG:Debug>:VULKAN_DEBUG_UTILS>)
 

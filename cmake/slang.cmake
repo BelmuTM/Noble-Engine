@@ -2,14 +2,14 @@
 #                      INSTALLATION                      #
 ##########################################################
 
-message(STATUS "Check for working Slang compiler")
+message(CHECK_START "Check for Slang compiler")
 
 find_package(slang CONFIG QUIET)
 
 if (slang_FOUND)
-    message(STATUS "Check for working Slang compiler - done")
+    message(CHECK_PASS "done")
 else ()
-    message(STATUS "Check for working Slang compiler - failed")
+    message(CHECK_FAIL "failed")
 
     set(SLANG_RELEASE_TAG "2025.23.2")
     set(SLANG_RELEASE_URL "https://github.com/shader-slang/slang/releases/download/v${SLANG_RELEASE_TAG}")
@@ -21,7 +21,8 @@ else ()
         set(SLANG_BINARIES "slang-${SLANG_RELEASE_TAG}-linux-x86_64.tar.gz")
     else ()
         message(
-            FATAL_ERROR "No prebuilt Slang asset configured for platform ${CMAKE_SYSTEM_NAME} / ${CMAKE_SYSTEM_PROCESSOR}"
+            FATAL_ERROR
+            "No prebuilt Slang binaries configured for platform ${CMAKE_SYSTEM_NAME} / ${CMAKE_SYSTEM_PROCESSOR}"
         )
     endif ()
 
@@ -36,7 +37,22 @@ else ()
 
         set(SLANG_BINARIES_ARCHIVE "${CMAKE_BINARY_DIR}/${SLANG_BINARIES}")
 
-        file(DOWNLOAD "${SLANG_BINARIES_URL}" "${SLANG_BINARIES_ARCHIVE}" SHOW_PROGRESS)
+        file(DOWNLOAD
+            "${SLANG_BINARIES_URL}"
+            "${SLANG_BINARIES_ARCHIVE}"
+            SHOW_PROGRESS
+            STATUS DOWNLOAD_STATUS
+            LOG DOWNLOAD_LOG
+        )
+
+        # Check if the download succeeded
+        list(GET DOWNLOAD_STATUS 0 DOWNLOAD_STATUS_CODE)
+
+        if (NOT DOWNLOAD_STATUS_CODE EQUAL 0)
+            message(FATAL_ERROR "Failed downloading Slang binaries:\n${DOWNLOAD_LOG}")
+        else ()
+            message(STATUS "Finished downloading Slang binaries")
+        endif ()
 
         # Extract the downloaded binaries archive into the installation directory
         file(MAKE_DIRECTORY "${SLANG_INSTALL_DIR}")
@@ -53,6 +69,8 @@ else ()
 endif ()
 
 target_link_libraries(NobleEngine PRIVATE slang::slang)
+
+message(STATUS "Linked Slang library")
 
 ##########################################################
 #                  SHADERS COMPILATION                   #
