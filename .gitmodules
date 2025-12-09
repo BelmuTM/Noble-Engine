@@ -1,12 +1,12 @@
-[submodule "thirdparty/glfw"]
-	path = thirdparty/glfw
+[submodule "external/glfw"]
+	path = external/glfw
 	url = https://github.com/glfw/glfw.git
-[submodule "thirdparty/spirv-headers"]
-	path = thirdparty/spirv-headers
+[submodule "external/spirv-headers"]
+	path = external/spirv-headers
 	url = https://github.com/KhronosGroup/SPIRV-Headers.git
-[submodule "thirdparty/vulkan-headers"]
-	path = thirdparty/vulkan-headers
+[submodule "external/vulkan-headers"]
+	path = external/vulkan-headers
 	url = https://github.com/KhronosGroup/Vulkan-Headers.git
-[submodule "thirdparty/glm"]
-	path = thirdparty/glm
+[submodule "external/glm"]
+	path = external/glm
 	url = https://github.com/g-truc/glm.git

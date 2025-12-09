@@ -53,9 +53,9 @@ endif ()
 ##########################################################
 
 # Vulkan-Headers (https://github.com/KhronosGroup/Vulkan-Headers)
-add_subdirectory(thirdparty/vulkan-headers)
+add_subdirectory(external/vulkan-headers)
 
-target_include_directories(NobleEngine SYSTEM PRIVATE thirdparty/vulkan-headers/include)
+target_include_directories(NobleEngine SYSTEM PRIVATE external/vulkan-headers/include)
 
 target_link_libraries(NobleEngine PRIVATE vulkan)
 
@@ -87,10 +87,10 @@ add_dependencies(NobleEngine SlangShaders)
 ##########################################################
 
 # glfw (https://github.com/glfw/glfw)
-add_subdirectory(thirdparty/glfw)
+add_subdirectory(external/glfw)
 
 # glm (https://github.com/g-truc/glm)
-add_subdirectory(thirdparty/glm)
+add_subdirectory(external/glm)
 
 target_compile_definitions(
     glm
@@ -101,10 +101,10 @@ target_compile_definitions(
 )
 
 # SPIRV-Headers (https://github.com/KhronosGroup/SPIRV-Headers)
-set(SPIRV-HEADERS_Libraries "${CMAKE_SOURCE_DIR}/thirdparty/spirv-headers/include")
+set(SPIRV-HEADERS_Libraries "${CMAKE_SOURCE_DIR}/external/spirv-headers/include")
 
 # SPIRV-Reflect (https://github.com/KhronosGroup/SPIRV-Reflect)
-add_library(spirv-reflect STATIC thirdparty/spirv-reflect/spirv_reflect.cpp)
+add_library(spirv-reflect STATIC external/spirv-reflect/spirv_reflect.cpp)
 
 target_include_directories(spirv-reflect SYSTEM PRIVATE ${SPIRV-HEADERS_Libraries})
 
@@ -128,8 +128,8 @@ target_include_directories(
     NobleEngine
     SYSTEM
     PRIVATE
-        ${CMAKE_SOURCE_DIR}/thirdparty
-        ${CMAKE_SOURCE_DIR}/thirdparty/json
-        ${CMAKE_SOURCE_DIR}/thirdparty/stb
+        ${CMAKE_SOURCE_DIR}/external
+        ${CMAKE_SOURCE_DIR}/external/json
+        ${CMAKE_SOURCE_DIR}/external/stb
         ${SPIRV-HEADERS_Libraries}
 )
