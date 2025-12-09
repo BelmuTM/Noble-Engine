@@ -2,62 +2,55 @@
 #                      INSTALLATION                      #
 ##########################################################
 
+message(STATUS "Check for working Slang compiler")
+
 find_package(slang CONFIG QUIET)
 
-if (NOT slang_FOUND)
-    message(STATUS "No installed Slang version found: downloading prebuilt binaries for this system...")
+if (slang_FOUND)
+    message(STATUS "Check for working Slang compiler - done")
+else ()
+    message(STATUS "Check for working Slang compiler - failed")
 
-    set(SLANG_RELEASE_TAG "v2025.23.2")
-    set(SLANG_RELEASE_URL "https://github.com/shader-slang/slang/releases/download/${SLANG_RELEASE_TAG}")
+    set(SLANG_RELEASE_TAG "2025.23.2")
+    set(SLANG_RELEASE_URL "https://github.com/shader-slang/slang/releases/download/v${SLANG_RELEASE_TAG}")
 
     # Fetch binaries depending on the operating system
-    if(WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(SLANG_BINARIES "slang-${SLANG_VERSION}-windows-x86_64.zip")
-    elseif(APPLE AND CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(SLANG_BINARIES "slang-${SLANG_VERSION}-macos-x86_64.zip")
-    elseif(APPLE AND CMAKE_SIZEOF_VOID_P EQUAL 8 AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
-        set(SLANG_BINARIES "slang-${SLANG_VERSION}-macos-aarch64.zip")
-    elseif(UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(SLANG_BINARIES "slang-${SLANG_VERSION}-linux-x86_64.tar.xz")
-    else()
+    if (WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(SLANG_BINARIES "slang-${SLANG_RELEASE_TAG}-windows-x86_64.tar.gz")
+    elseif (UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(SLANG_BINARIES "slang-${SLANG_RELEASE_TAG}-linux-x86_64.tar.gz")
+    else ()
         message(
             FATAL_ERROR "No prebuilt Slang asset configured for platform ${CMAKE_SYSTEM_NAME} / ${CMAKE_SYSTEM_PROCESSOR}"
         )
-    endif()
+    endif ()
 
     # Set up download/install paths
     set(SLANG_BINARIES_URL "${SLANG_RELEASE_URL}/${SLANG_BINARIES}")
-    set(SLANG_INSTALL_DIR "${CMAKE_BINARY_DIR}/thirdparty/slang")
+    set(SLANG_INSTALL_DIR "${CMAKE_BINARY_DIR}/external/slang")
 
     # If compiler binary doesn't exist yet
-    if(NOT EXISTS "${SLANG_INSTALL_DIR}/bin/slangc" AND NOT EXISTS "${SLANG_INSTALL_DIR}/bin/slangc.exe")
+    if (NOT EXISTS "${SLANG_INSTALL_DIR}/bin/slangc" AND NOT EXISTS "${SLANG_INSTALL_DIR}/bin/slangc.exe")
         # Download the binaries
-        file(DOWNLOAD "${SLANG_URL}" "${CMAKE_BINARY_DIR}/${SLANG_BINARIES}" SHOW_PROGRESS)
+        message(STATUS "Downloading Slang binaries from ${SLANG_BINARIES_URL}")
 
-        # Unpack (support both .zip and .tar.xz)
-        if("${SLANG_BINARIES}" MATCHES "\\.zip$")
-            execute_process(
-                COMMAND ${CMAKE_COMMAND} -E tar xzf "${CMAKE_BINARY_DIR}/${SLANG_BINARIES}"
-                WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-            )
-        else()
-            execute_process(
-                COMMAND ${CMAKE_COMMAND} -E tar xJf "${CMAKE_BINARY_DIR}/${SLANG_BINARIES}"
-                WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-            )
-        endif()
+        set(SLANG_BINARIES_ARCHIVE "${CMAKE_BINARY_DIR}/${SLANG_BINARIES}")
 
-        # Move extracted binaries to the install directory
-        file(GLOB CHILDREN RELATIVE "${CMAKE_BINARY_DIR}" "${CMAKE_BINARY_DIR}/*slang*")
+        file(DOWNLOAD "${SLANG_BINARIES_URL}" "${SLANG_BINARIES_ARCHIVE}" SHOW_PROGRESS)
+
+        # Extract the downloaded binaries archive into the installation directory
         file(MAKE_DIRECTORY "${SLANG_INSTALL_DIR}")
 
-        file(RENAME "${CMAKE_BINARY_DIR}/${CHILDREN}" "${SLANG_INSTALL_DIR}")
-    endif()
+        file(ARCHIVE_EXTRACT INPUT "${SLANG_BINARIES_ARCHIVE}" DESTINATION "${SLANG_INSTALL_DIR}")
+
+        # Remove the binaries archive
+        file(REMOVE_RECURSE "${SLANG_BINARIES_ARCHIVE}")
+    endif ()
 
     list(APPEND CMAKE_PREFIX_PATH "${SLANG_INSTALL_DIR}")
 
     find_package(slang CONFIG REQUIRED)
-endif()
+endif ()
 
 target_link_libraries(NobleEngine PRIVATE slang::slang)
 
@@ -68,7 +61,7 @@ target_link_libraries(NobleEngine PRIVATE slang::slang)
 set(SHADERS_DIR_RELATIVE resources/shaders)
 set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/${SHADERS_DIR_RELATIVE})
 
-function(add_slang_shader_target TARGET)
+function (add_slang_shader_target TARGET)
     cmake_parse_arguments(SHADERS "" "" "SOURCES;ENTRIES" ${ARGN})
 
     set(SHADERS_SPV_DIR_RELATIVE ${SHADERS_DIR_RELATIVE}/spv)
@@ -77,10 +70,10 @@ function(add_slang_shader_target TARGET)
 
     set(SPV_OUTPUTS "")
 
-    foreach(SOURCE ${SHADERS_SOURCES})
+    foreach (SOURCE ${SHADERS_SOURCES})
         cmake_path(GET SOURCE STEM SOURCE_NAME)
 
-        foreach(ENTRY_PAIR ${SHADERS_ENTRIES})
+        foreach (ENTRY_PAIR ${SHADERS_ENTRIES})
             string(REPLACE "=" ";" ENTRY_SPLIT "${ENTRY_PAIR}")
             list(GET ENTRY_SPLIT 0 ENTRY_POINT)
             list(GET ENTRY_SPLIT 1 STAGE_NAME )
@@ -106,11 +99,11 @@ function(add_slang_shader_target TARGET)
                 COMMENT "Building SPIR-V object ${SHADERS_SPV_DIR_RELATIVE}/${SPV_FILE_NAME}"
                 VERBATIM
             )
-        endforeach()
-    endforeach()
+        endforeach ()
+    endforeach ()
 
     add_custom_target(${TARGET} DEPENDS ${SPV_OUTPUTS})
-endfunction()
+endfunction ()
 
 file(GLOB_RECURSE SHADERS_SOURCES ${SHADERS_DIR}/src/*.slang)
 

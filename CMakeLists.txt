@@ -30,19 +30,19 @@ target_link_options(
 )
 
 # Compiler flags
-if(MSVC)
+if (MSVC)
     target_compile_options(
         NobleEngine
         PRIVATE
             /W4 /permissive- /wd4100
     )
-else()
+else ()
     target_compile_options(
         NobleEngine
         PRIVATE
             -Wall -Wextra -Wpedantic -Wno-missing-field-initializers -Wno-unused-parameter -Wno-unused-variable
     )
-endif()
+endif ()
 
 # Address Sanitizers
 # target_compile_options(NobleEngine PRIVATE -fsanitize=address -fno-omit-frame-pointer)
