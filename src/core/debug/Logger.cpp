@@ -16,15 +16,6 @@
 namespace {
     constexpr size_t MAX_LOG_QUEUE_SIZE = 512;
 
-#ifdef LOG_FILE_WRITE
-    std::ofstream           logFile;
-#endif
-    std::thread             logThread;
-    std::mutex              logMutex;
-    std::condition_variable logCv;
-
-    std::atomic running{false};
-
     struct Log {
         Logger::Level                         level = Logger::Level::DEBUG;
         std::string                           message;
@@ -37,7 +28,15 @@ namespace {
         }
     };
 
-    std::queue<Log> logQueue;
+#ifdef LOG_FILE_WRITE
+    std::ofstream           logFile;
+#endif
+    std::thread             logThread;
+    std::queue<Log>         logQueue;
+    std::mutex              logMutex;
+    std::condition_variable logCv;
+
+    std::atomic running{false};
 
     constexpr std::array levelStrings = {"DEBUG", "VERBOSE", "INFO", "WARNING", "ERROR", "FATAL"};
 
@@ -128,12 +127,13 @@ namespace Logger {
 
 #endif
 
-        running   = true;
+        running.store(true);
+
         logThread = std::thread(logWorker);
     }
 
     void shutdown() {
-        running = false;
+        running.store(false);
 
         logCv.notify_all();
 
@@ -158,8 +158,7 @@ namespace Logger {
             logQueue.pop();
         }
 
-        logQueue.push(std::move(Log{level, message}));
-        lock.unlock();
+        logQueue.emplace(level, message);
         logCv.notify_one();
     }
 

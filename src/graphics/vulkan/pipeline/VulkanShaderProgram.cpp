@@ -5,7 +5,7 @@
 #include "core/debug/ErrorHandling.h"
 #include "core/debug/Logger.h"
 
-#include "core/engine/ResourceManager.h"
+#include "core/resources/ResourceManager.h"
 
 #include <fstream>
 #include <ranges>

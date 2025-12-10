@@ -21,18 +21,29 @@ public:
     ObjectManager(ObjectManager&&)            = delete;
     ObjectManager& operator=(ObjectManager&&) = delete;
 
-    Object* createObject(
+    void addObject(
         const std::string& modelPath,
-        glm::vec3          position,
-        glm::vec3          rotation,
-        glm::vec3          scale
+        glm::vec3          position = {0.0f, 0.0f, 0.0f},
+        glm::vec3          rotation = {0.0f, 0.0f, 0.0f},
+        glm::vec3          scale    = {1.0f, 1.0f, 1.0f}
     );
+
+    void createObjects();
 
     [[nodiscard]] const ObjectsVector& getObjects() const noexcept { return _objects; }
 
 private:
+    struct ObjectDescriptor {
+        std::string modelPath;
+        glm::vec3   position;
+        glm::vec3   rotation;
+        glm::vec3   scale;
+    };
+
     ModelManager* _modelManager = nullptr;
     ImageManager* _imageManager = nullptr;
+
+    std::vector<ObjectDescriptor> _objectDescriptors{};
 
     ObjectsVector _objects{};
 };

@@ -3,7 +3,7 @@
 #include "WindowContext.h"
 
 #include "core/common/libraries/stbUsage.h"
-#include "core/engine/ResourceManager.h"
+#include "core/resources/ResourceManager.h"
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
     auto context = static_cast<WindowContext*>(glfwGetWindowUserPointer(window));

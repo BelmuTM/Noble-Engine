@@ -1,7 +1,7 @@
 #include "ModelManager.h"
 
 #include "core/debug/Logger.h"
-#include "core/engine/ResourceManager.h"
+#include "core/resources/ResourceManager.h"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -219,7 +219,7 @@ struct AttributeData {
     const unsigned char* base;
     size_t stride = 0;
 
-    const unsigned char* getData(const size_t index) const {
+    [[nodiscard]] const unsigned char* getData(const size_t index) const {
         return base + index * stride;
     }
 };

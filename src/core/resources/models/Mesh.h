@@ -3,7 +3,7 @@
 #define NOBLEENGINE_MESH_H
 
 #include "Material.h"
-#include "core/resources/Vertex.h"
+#include "Vertex.h"
 
 #include <vector>
 

@@ -2,7 +2,7 @@
 #ifndef NOBLEENGINE_MATERIAL_H
 #define NOBLEENGINE_MATERIAL_H
 
-#include "core/engine/ResourceManager.h"
+#include "core/resources/ResourceManager.h"
 
 #include <filesystem>
 #include <string>
