@@ -4,6 +4,7 @@
 
 #include "Object.h"
 #include "core/common/Types.h"
+#include "core/concurrency/ThreadPool.h"
 
 #include "core/resources/images/ImageManager.h"
 #include "core/resources/models/ModelManager.h"
@@ -29,6 +30,14 @@ public:
     );
 
     void createObjects();
+
+    [[nodiscard]] std::unordered_map<std::string, const Model*> loadModelsAsync(
+        ThreadPool& threadPool, const std::vector<std::string>& modelPaths
+    ) const;
+
+    [[nodiscard]] Object::TexturesMap loadTexturesAsync(
+        ThreadPool& threadPool, const std::vector<std::string>& texturePaths
+    ) const;
 
     [[nodiscard]] const ObjectsVector& getObjects() const noexcept { return _objects; }
 

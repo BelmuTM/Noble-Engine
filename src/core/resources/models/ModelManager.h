@@ -21,7 +21,7 @@ public:
     ModelManager(ModelManager&&)            = delete;
     ModelManager& operator=(ModelManager&&) = delete;
 
-    [[nodiscard]] const Model* load(const std::string& path, std::string& errorMessage);
+    [[nodiscard]] Model* load(const std::string& path, std::string& errorMessage);
 
     static void loadMaterial_OBJ(
         Mesh&                      mesh,

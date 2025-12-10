@@ -1,9 +1,9 @@
 #include "ObjectManager.h"
 
-#include "core/concurrency/ThreadPool.h"
 #include "core/debug/Logger.h"
 
 #include <memory>
+#include <ranges>
 
 #define MULTITHREADED_OBJECTS_LOAD 1
 
@@ -27,56 +27,50 @@ void ObjectManager::createObjects() {
 
     ThreadPool threadPool{numThreads * 2};
 
-    std::vector<std::future<std::unique_ptr<Object>>> objectFutures{};
+    // Load models
+    std::vector<std::string> modelPaths{};
+    for (const auto& objectDescriptor : _objectDescriptors) {
+        modelPaths.push_back(objectDescriptor.modelPath);
+    }
+
+    const std::unordered_map<std::string, const Model*>& models = loadModelsAsync(threadPool, modelPaths);
+
+    // Load textures
+    std::vector<std::string> texturePaths{};
+    for (const auto& model : models | std::views::values) {
+        for (const auto& texturePath : model->texturePaths) {
+            if (!texturePath.empty()) {
+                texturePaths.push_back(texturePath);
+            }
+        }
+    }
+
+    const Object::TexturesMap& textures = loadTexturesAsync(threadPool, texturePaths);
+
+    // Create objects
+    std::vector<std::future<std::unique_ptr<Object>>> objectFutures;
 
     for (const auto& objectDescriptor : _objectDescriptors) {
         objectFutures.push_back(
-            threadPool.enqueue([this, &threadPool, objectDescriptor] {
-                // Load model
-                std::string errorMessageModelLoad;
+            threadPool.enqueue([objectDescriptor, &models, &textures]() -> std::unique_ptr<Object> {
+                if (!models.contains(objectDescriptor.modelPath)) return nullptr;
 
-                const Model* model = _modelManager->load(objectDescriptor.modelPath, errorMessageModelLoad);
-                if (!model) Logger::warning(errorMessageModelLoad);
+                // Retrieve previously loaded model
+                const Model* model = models.at(objectDescriptor.modelPath);
+                if (!model) return nullptr;
 
-                // Gather texture paths
-                std::vector<std::string> texturePaths{};
-
-                for (const auto& mesh : model->meshes) {
-                    const Material& material = mesh.getMaterial();
-
-                    texturePaths.push_back(material.albedoPath);
-                    texturePaths.push_back(material.normalPath);
-                    texturePaths.push_back(material.specularPath);
+                // Retrieve previously loaded textures for this model
+                Object::TexturesMap modelTextures;
+                for (const auto& texturePath : model->texturePaths) {
+                    if (textures.contains(texturePath)) {
+                        modelTextures[texturePath] = textures.at(texturePath);
+                    }
                 }
 
-                // Load textures
-                std::vector<std::future<const Image*>> textureFutures{};
-
-                for (const auto& texturePath : texturePaths) {
-                    textureFutures.push_back(
-                        threadPool.enqueue([this, texturePath] {
-                            std::string errorMessageTextureLoad;
-
-                            const Image* texture = _imageManager->load(texturePath, errorMessageTextureLoad);
-                            if (!texture) Logger::warning(errorMessageTextureLoad);
-
-                            return texture;
-                        })
-                    );
-                }
-
-                // Map textures to their respective paths
-                Object::TexturesMap textures{};
-
-                for (size_t i = 0; i < texturePaths.size(); i++) {
-                    textures[texturePaths[i]] = textureFutures[i].get();
-                }
-
-                // Create the object and push its pointer to the vector
                 auto object = std::make_unique<Object>();
 
                 object->create(
-                    model, textures, objectDescriptor.position, objectDescriptor.rotation, objectDescriptor.scale
+                    model, modelTextures, objectDescriptor.position, objectDescriptor.rotation, objectDescriptor.scale
                 );
 
                 return object;
@@ -133,4 +127,72 @@ void ObjectManager::createObjects() {
     const auto loadDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
 
     Logger::info("Loaded objects in " + std::to_string(loadDuration) + "ms");
+}
+
+std::unordered_map<std::string, const Model*> ObjectManager::loadModelsAsync(
+    ThreadPool& threadPool, const std::vector<std::string>& modelPaths
+) const {
+    std::unordered_map<std::string, std::shared_future<Model*>> modelFutures;
+
+    for (const auto& modelPath : modelPaths) {
+        if (modelPath.empty()) continue;
+
+        if (!modelFutures.contains(modelPath)) {
+            modelFutures[modelPath] = threadPool.enqueue([this, modelPath] {
+                std::string errorMessage;
+
+                Model* model = _modelManager->load(modelPath, errorMessage);
+                if (!model) Logger::warning(errorMessage);
+
+                if (model) {
+                    for (const auto& mesh : model->meshes) {
+                        const auto& material = mesh.getMaterial();
+
+                        model->texturePaths.push_back(material.albedoPath);
+                        model->texturePaths.push_back(material.normalPath);
+                        model->texturePaths.push_back(material.specularPath);
+                    }
+                }
+
+                return model;
+            }).share();
+        }
+    }
+
+    std::unordered_map<std::string, const Model*> loadedModels{};
+
+    for (auto& [modelPath, modelFuture] : modelFutures) {
+        loadedModels.emplace(modelPath, modelFuture.get());
+    }
+
+    return loadedModels;
+}
+
+std::unordered_map<std::string, const Image*> ObjectManager::loadTexturesAsync(
+    ThreadPool& threadPool, const std::vector<std::string>& texturePaths
+) const {
+    std::unordered_map<std::string, std::shared_future<const Image*>> textureFutures;
+
+    for (const auto& texturePath : texturePaths) {
+        if (texturePath.empty()) continue;
+
+        if (!textureFutures.contains(texturePath)) {
+            textureFutures[texturePath] = threadPool.enqueue([this, texturePath] {
+                std::string errorMessage;
+
+                const Image* texture = _imageManager->load(texturePath, errorMessage);
+                if (!texture) Logger::warning(errorMessage);
+
+                return texture;
+            }).share();
+        }
+    }
+
+    std::unordered_map<std::string, const Image*> loadedTextures{};
+
+    for (auto& [texturePath, textureFuture] : textureFutures) {
+        loadedTextures.emplace(texturePath, textureFuture.get());
+    }
+
+    return loadedTextures;
 }

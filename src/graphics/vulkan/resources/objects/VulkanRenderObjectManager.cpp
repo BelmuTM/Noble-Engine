@@ -67,14 +67,14 @@ bool VulkanRenderObjectManager::createRenderObject(
     renderObject.objectIndex = objectIndex;
     renderObject.object      = object;
 
-    const auto& [name, meshes] = object->getModel();
-    renderObject.submeshes.reserve(meshes.size());
+    const auto& model = object->getModel();
+    renderObject.submeshes.reserve(model.meshes.size());
 
-    for (const Mesh& mesh : meshes) {
+    for (const Mesh& mesh : model.meshes) {
         if (meshCount >= MAX_RENDER_OBJECTS) {
             Logger::warning(
                 "Reached descriptor pool capacity (" + std::to_string(MAX_RENDER_OBJECTS) +
-                "), remaining submeshes for object \"" + name + "\" will be skipped"
+                "), remaining submeshes for object \"" + model.name + "\" will be skipped"
             );
             break;
         }

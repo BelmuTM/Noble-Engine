@@ -5,7 +5,7 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
-const Model* ModelManager::load(const std::string& path, std::string& errorMessage) {
+Model* ModelManager::load(const std::string& path, std::string& errorMessage) {
     {
         // If model is already cached, return it
         std::lock_guard lock(_mutex);
