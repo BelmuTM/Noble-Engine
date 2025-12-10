@@ -45,7 +45,7 @@ sudo apt-get install git libx11-xcb-dev libxkbcommon-dev libXi-dev libwayland-de
 
 #### Arch-Based System Package Dependencies
 ```
-sudo pacman -S git libx11 libxcb libxkbcommon libxkbcommon-x11 libXi libxrandr libxinerama libxcursor
+sudo pacman -S git libx11 libxcb libxkbcommon libxkbcommon-x11 libxi libxrandr libxinerama libxcursor
 ```
 
 ## Building
