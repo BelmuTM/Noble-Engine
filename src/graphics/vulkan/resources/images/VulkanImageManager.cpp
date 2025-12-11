@@ -2,6 +2,8 @@
 
 #include "core/debug/ErrorHandling.h"
 
+#include <ranges>
+
 bool VulkanImageManager::create(
     const VulkanDevice& device, const VulkanCommandManager& commandManager, std::string& errorMessage
 ) noexcept {
@@ -12,11 +14,11 @@ bool VulkanImageManager::create(
 }
 
 void VulkanImageManager::destroy() noexcept {
-    for (const auto& image : _images) {
+    for (const auto& image : _imageCache | std::views::values) {
         image->destroy();
     }
 
-    _images.clear();
+    _imageCache.clear();
 
     _device         = nullptr;
     _commandManager = nullptr;
@@ -28,6 +30,16 @@ bool VulkanImageManager::loadImage(
     if (!imageData) {
         errorMessage = "Failed to load Vulkan image: data is null";
         return false;
+    }
+
+    {
+        // If image is already cached, return it
+        std::lock_guard lock(_mutex);
+
+        if (const auto it = _imageCache.find(imageData->path); it != _imageCache.end()) {
+            image = it->second.get();
+            return true;
+        }
     }
 
     constexpr int depth = 1;
@@ -43,9 +55,10 @@ bool VulkanImageManager::loadImage(
 
     const uint32_t mipLevels = useMipmaps ? getMipLevels(extent) : 1;
 
-    auto imagePtr = std::make_unique<VulkanImage>();
+    VulkanImage tempImage{};
 
-    TRY(imagePtr->createFromData(
+    // Create image
+    TRY(tempImage.createFromData(
         imageData->pixels.data(),
         imageData->channels,
         bytesPerChannel,
@@ -57,8 +70,18 @@ bool VulkanImageManager::loadImage(
         errorMessage
     ));
 
-    _images.push_back(std::move(imagePtr));
-    image = _images.back().get();
+    {
+        // Insert image into the cache
+        std::lock_guard lock(_mutex);
+
+        auto [it, inserted] = _imageCache.try_emplace(imageData->path, nullptr);
+
+        if (inserted) {
+            it->second = std::make_unique<VulkanImage>(std::move(tempImage));
+        }
+
+        image = it->second.get();
+    }
 
     return true;
 }

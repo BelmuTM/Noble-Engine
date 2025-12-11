@@ -3,13 +3,11 @@
 #define NOBLEENGINE_IMAGEMANAGER_H
 
 #include "Image.h"
+#include "core/resources/AsyncResourceManager.h"
 
-#include <memory>
-#include <mutex>
 #include <string>
-#include <unordered_map>
 
-class ImageManager {
+class ImageManager : public AsyncResourceManager<Image> {
 public:
     ImageManager()  = default;
     ~ImageManager() = default;
@@ -21,15 +19,6 @@ public:
     ImageManager& operator=(ImageManager&&) = delete;
 
     [[nodiscard]] const Image* load(const std::string& path, std::string& errorMessage);
-
-    [[nodiscard]] const Image* loadWithFallbackColor(
-        const std::string& path, const glm::vec3& color, std::string& errorMessage
-    );
-
-private:
-    std::unordered_map<std::string, std::unique_ptr<Image>> _cache{};
-
-    std::mutex _mutex{};
 };
 
 #endif // NOBLEENGINE_IMAGEMANAGER_H

@@ -132,7 +132,7 @@ void ObjectManager::createObjects() {
 std::unordered_map<std::string, const Model*> ObjectManager::loadModelsAsync(
     ThreadPool& threadPool, const std::vector<std::string>& modelPaths
 ) const {
-    std::unordered_map<std::string, std::shared_future<Model*>> modelFutures;
+    std::unordered_map<std::string, std::shared_future<const Model*>> modelFutures;
 
     for (const auto& modelPath : modelPaths) {
         if (modelPath.empty()) continue;
@@ -141,18 +141,8 @@ std::unordered_map<std::string, const Model*> ObjectManager::loadModelsAsync(
             modelFutures[modelPath] = threadPool.enqueue([this, modelPath] {
                 std::string errorMessage;
 
-                Model* model = _modelManager->load(modelPath, errorMessage);
+                const Model* model = _modelManager->load(modelPath, errorMessage);
                 if (!model) Logger::warning(errorMessage);
-
-                if (model) {
-                    for (const auto& mesh : model->meshes) {
-                        const auto& material = mesh.getMaterial();
-
-                        model->texturePaths.push_back(material.albedoPath);
-                        model->texturePaths.push_back(material.normalPath);
-                        model->texturePaths.push_back(material.specularPath);
-                    }
-                }
 
                 return model;
             }).share();

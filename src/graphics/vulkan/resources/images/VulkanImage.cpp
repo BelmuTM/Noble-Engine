@@ -208,15 +208,11 @@ bool VulkanImage::createSampler(
     return true;
 }
 
-bool VulkanImage::copyBufferToImage(
-    const vk::Buffer&           buffer,
-    const vk::Extent3D          extent,
-    const VulkanCommandManager* commandManager,
-    std::string&                errorMessage
+void VulkanImage::copyBufferToImage(
+    const vk::CommandBuffer commandBuffer,
+    const vk::Buffer&       buffer,
+    const vk::Extent3D      extent
 ) const {
-    vk::CommandBuffer copyCommandBuffer{};
-    TRY(commandManager->beginSingleTimeCommands(copyCommandBuffer, errorMessage));
-
     vk::BufferImageCopy2 copyRegion{};
     copyRegion
         .setBufferOffset(0)
@@ -233,23 +229,15 @@ bool VulkanImage::copyBufferToImage(
         .setDstImageLayout(vk::ImageLayout::eTransferDstOptimal)
         .setRegions({copyRegion});
 
-    copyCommandBuffer.copyBufferToImage2(copyBufferToImageInfo);
-
-    TRY(commandManager->endSingleTimeCommands(copyCommandBuffer, errorMessage));
-
-    return true;
+    commandBuffer.copyBufferToImage2(copyBufferToImageInfo);
 }
 
-bool VulkanImage::generateMipmaps(
-    const vk::Extent3D          extent,
-    const uint32_t              mipLevels,
-    const VulkanCommandManager* commandManager,
-    std::string&                errorMessage
+void VulkanImage::generateMipmaps(
+    const vk::CommandBuffer commandBuffer,
+    const vk::Extent3D      extent,
+    const uint32_t          mipLevels
 ) const {
-    if (mipLevels <= 1) return true;
-
-    vk::CommandBuffer commandBuffer{};
-    TRY(commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
+    if (mipLevels <= 1) return;
 
     // Precompute mip sizes
     std::vector<vk::Extent3D> mipExtents(mipLevels);
@@ -376,10 +364,6 @@ bool VulkanImage::generateMipmaps(
     dependencyInfo.setImageMemoryBarriers({barrier});
 
     commandBuffer.pipelineBarrier2(dependencyInfo);
-
-    TRY(commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
-
-    return true;
 }
 
 bool VulkanImage::createFromData(
@@ -429,6 +413,9 @@ bool VulkanImage::createFromData(
     std::memcpy(stagingData, pixels, imageSize);
     stagingBuffer.unmapMemory();
 
+    vk::CommandBuffer commandBuffer{};
+    TRY(commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
+
     TRY(createImage(
         vk::ImageType::e2D,
         format,
@@ -441,22 +428,21 @@ bool VulkanImage::createFromData(
     ));
 
     TRY(transitionLayout(
-        commandManager,
+        commandBuffer,
         errorMessage,
         vk::ImageLayout::eTransferDstOptimal,
         mipLevels
     ));
 
-    TRY(copyBufferToImage(stagingBuffer, extent, commandManager, errorMessage));
-
-    stagingBuffer.destroy();
+    copyBufferToImage(commandBuffer, stagingBuffer, extent);
 
     // Mipmaps generation
     if (hasMipmaps) {
-        TRY(generateMipmaps(extent, mipLevels, commandManager, errorMessage));
+        generateMipmaps(commandBuffer, extent, mipLevels);
+
     } else {
         TRY(transitionLayout(
-            commandManager,
+            commandBuffer,
             errorMessage,
             vk::ImageLayout::eShaderReadOnlyOptimal,
             mipLevels
@@ -473,6 +459,10 @@ bool VulkanImage::createFromData(
     ));
 
     TRY(createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, device, errorMessage));
+
+    TRY(commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
+
+    stagingBuffer.destroy();
 
     return true;
 }

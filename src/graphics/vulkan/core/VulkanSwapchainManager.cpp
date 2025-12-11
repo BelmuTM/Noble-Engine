@@ -52,7 +52,7 @@ bool VulkanSwapchainManager::recreateSwapchain(std::string& errorMessage) {
     return true;
 }
 
-std::optional<uint32_t> VulkanSwapchainManager::acquireNextImage(
+bool VulkanSwapchainManager::acquireNextImage(
     uint32_t& imageIndex, const uint32_t frameIndex, std::string& errorMessage, bool& discardLogging
 ) {
     if (!_device) {

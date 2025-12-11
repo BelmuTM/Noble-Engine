@@ -35,7 +35,7 @@ bool VulkanShaderProgramManager::load(
 
     TRY(tempProgram.load(path, fullscreen, _device, errorMessage));
 
-    // Inserting shader program into cache
+    // Insert shader program into cache
     std::lock_guard lock(_mutex);
 
     auto [it, inserted] = _cache.try_emplace(path, std::make_unique<VulkanShaderProgram>(std::move(tempProgram)));

@@ -23,8 +23,8 @@ namespace VulkanDebugger {
         }
     }
 
-    template<typename Func>
-    auto checkVulkanResult(const char* exprStr, Func&& func, std::string& errorMessage) {
+    template<typename Function>
+    auto checkVulkanResult(const char* exprStr, Function&& func, std::string& errorMessage) {
         auto returnValue = func();
 
         const vk::Result result = getVulkanResult(returnValue);

@@ -62,7 +62,7 @@ public:
         vk::DeviceSize              dstOffset = 0
     ) const;
 
-    // Mapping GPU allocated memory to CPU memory
+    // Map GPU allocated memory to CPU memory
     void* mapMemory(std::string& errorMessage);
 
     void unmapMemory();

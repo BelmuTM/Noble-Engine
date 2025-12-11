@@ -31,7 +31,7 @@ public:
 
     [[nodiscard]] bool recreateSwapchain(std::string& errorMessage);
 
-    std::optional<uint32_t> acquireNextImage(
+    [[nodiscard]] bool acquireNextImage(
         uint32_t& imageIndex, uint32_t frameIndex, std::string& errorMessage, bool& discardLogging
     );
 

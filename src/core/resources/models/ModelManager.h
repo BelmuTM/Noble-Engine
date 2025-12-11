@@ -3,14 +3,12 @@
 #define NOBLEENGINE_MODELMANAGER_H
 
 #include "Model.h"
+#include "core/resources/AsyncResourceManager.h"
 
 #include "core/common/libraries/tinygltfUsage.h"
 #include "core/common/libraries/tinyobjloaderUsage.h"
 
-#include <mutex>
-#include <unordered_map>
-
-class ModelManager {
+class ModelManager : public AsyncResourceManager<Model> {
 public:
     ModelManager()  = default;
     ~ModelManager() = default;
@@ -21,7 +19,7 @@ public:
     ModelManager(ModelManager&&)            = delete;
     ModelManager& operator=(ModelManager&&) = delete;
 
-    [[nodiscard]] Model* load(const std::string& path, std::string& errorMessage);
+    [[nodiscard]] const Model* load(const std::string& path, std::string& errorMessage);
 
     static void loadMaterial_OBJ(
         Mesh&                      mesh,
@@ -59,10 +57,6 @@ private:
         const tinygltf::Node&  node,
         const glm::mat4&       parentTransform
     );
-
-    std::unordered_map<std::string, std::unique_ptr<Model>> _cache{};
-
-    std::mutex _mutex{};
 };
 
 #endif // NOBLEENGINE_MODELMANAGER_H

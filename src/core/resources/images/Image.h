@@ -4,12 +4,16 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include <glm/glm.hpp>
 
 struct Image {
+    std::string path;
+
     std::vector<uint8_t> pixels{};
+
     int width    = 0;
     int height   = 0;
     int channels = 0;

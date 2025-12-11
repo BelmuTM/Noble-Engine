@@ -21,8 +21,8 @@ public:
     VulkanImage(const VulkanImage&)            = delete;
     VulkanImage& operator=(const VulkanImage&) = delete;
 
-    VulkanImage(VulkanImage&&)            = delete;
-    VulkanImage& operator=(VulkanImage&&) = delete;
+    VulkanImage(VulkanImage&&)            noexcept = default;
+    VulkanImage& operator=(VulkanImage&&) noexcept = default;
 
     void destroy() noexcept;
 
@@ -83,18 +83,16 @@ public:
         std::string&           errorMessage
     );
 
-    [[nodiscard]] bool copyBufferToImage(
-        const vk::Buffer&           buffer,
-        vk::Extent3D                extent,
-        const VulkanCommandManager* commandManager,
-        std::string&                errorMessage
+    void copyBufferToImage(
+        vk::CommandBuffer commandBuffer,
+        const vk::Buffer& buffer,
+        vk::Extent3D      extent
     ) const;
 
-    [[nodiscard]] bool generateMipmaps(
-        vk::Extent3D                extent,
-        uint32_t                    mipLevels,
-        const VulkanCommandManager* commandManager,
-        std::string&                errorMessage
+    void generateMipmaps(
+        vk::CommandBuffer commandBuffer,
+        vk::Extent3D      extent,
+        uint32_t          mipLevels
     ) const;
 
     [[nodiscard]] bool createFromData(
@@ -153,7 +151,7 @@ private:
 
     VmaAllocation _allocation = VK_NULL_HANDLE;
 
-    vk::Format   _format;
+    vk::Format   _format = vk::Format::eUndefined;
     vk::Extent3D _extent{};
 
     vk::ImageLayout _layout = vk::ImageLayout::eUndefined;

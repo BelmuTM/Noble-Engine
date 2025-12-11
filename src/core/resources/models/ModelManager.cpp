@@ -5,46 +5,42 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
-Model* ModelManager::load(const std::string& path, std::string& errorMessage) {
-    {
-        // If model is already cached, return it
-        std::lock_guard lock(_mutex);
+const Model* ModelManager::load(const std::string& path, std::string& errorMessage) {
+    return loadAsync(path, [path, &errorMessage]() -> std::unique_ptr<Model> {
 
-        if (_cache.contains(path)) {
-            return _cache.at(path).get();
-        }
-    }
+        Logger::info("Loading model \"" + path + "\"...");
 
-    Logger::info("Loading model \"" + path + "\"...");
+        // Load model
+        auto model = std::make_unique<Model>();
 
-    // Loading model
-    Model model{};
+        model->retrieveName(path);
 
-    model.retrieveName(path);
+        bool loaded = false;
 
-    if (path.ends_with(".obj")) {
+        if (path.ends_with(".obj")) {
+            loaded = load_OBJ(*model, path, errorMessage);
 
-        if (!load_OBJ(model, path, errorMessage)) {
-            return nullptr;
-        }
+        } else if (path.ends_with(".gltf")) {
+            loaded = load_glTF(*model, path, errorMessage);
 
-    } else if (path.ends_with(".gltf")) {
-
-        if (!load_glTF(model, path, errorMessage)) {
-            return nullptr;
+        } else {
+            errorMessage = "Failed to load model \"" + modelFilesPath + path + "\": unsupported format";
+            loaded = false;
         }
 
-    } else {
-        errorMessage = "Failed to load model \"" + modelFilesPath + path + "\": unsupported format";
-        return nullptr;
-    }
+        if (!loaded) return nullptr;
 
-    // Inserting model data into cache
-    std::lock_guard lock(_mutex);
+        // Add each mesh's textures to the model's texture paths (albedo, normal map, metallic)
+        for (const auto& mesh : model->meshes) {
+            const auto& material = mesh.getMaterial();
 
-    auto [it, inserted] = _cache.try_emplace(path, std::make_unique<Model>(std::move(model)));
+            model->texturePaths.insert(material.albedoPath);
+            model->texturePaths.insert(material.normalPath);
+            model->texturePaths.insert(material.specularPath);
+        }
 
-    return it->second.get();
+        return model;
+    });
 }
 
 /*---------------------------------------*/

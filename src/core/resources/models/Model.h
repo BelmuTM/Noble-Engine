@@ -5,6 +5,7 @@
 #include "Mesh.h"
 
 #include <filesystem>
+#include <unordered_set>
 #include <vector>
 
 struct Model {
@@ -12,7 +13,7 @@ struct Model {
 
     std::vector<Mesh> meshes{};
 
-    std::vector<std::string> texturePaths{};
+    std::unordered_set<std::string> texturePaths{};
 
     void retrieveName(const std::string& path) {
         name = std::filesystem::path(path).stem().string();

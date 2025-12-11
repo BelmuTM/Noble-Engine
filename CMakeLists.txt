@@ -19,7 +19,7 @@ target_compile_definitions(NobleEngine PRIVATE RESOURCES_DIR="${CMAKE_SOURCE_DIR
 # Ensure C++ 20 features
 target_compile_features(NobleEngine PRIVATE cxx_std_20)
 
-# Static linking the runtime
+# Statically linking the runtime
 target_link_options(
     NobleEngine
     PUBLIC

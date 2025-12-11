@@ -46,7 +46,9 @@ private:
     const VulkanDevice*         _device         = nullptr;
     const VulkanCommandManager* _commandManager = nullptr;
 
-    std::vector<std::unique_ptr<VulkanImage>> _images{};
+    std::mutex _mutex{};
+
+    std::unordered_map<std::string, std::unique_ptr<VulkanImage>> _imageCache{};
 };
 
 #endif //NOBLEENGINE_VULKANIMAGEMANAGER_H

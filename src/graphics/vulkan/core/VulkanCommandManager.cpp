@@ -59,7 +59,7 @@ bool VulkanCommandManager::createCommandBuffer(vk::CommandBuffer& commandBuffer,
     std::vector<vk::CommandBuffer> commandBuffers;
 
     if (!createCommandBuffers(commandBuffers, 1, errorMessage)) return false;
-    commandBuffer = std::move(commandBuffers.front());
+    commandBuffer = commandBuffers.front();
 
     return true;
 }

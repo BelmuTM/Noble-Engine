@@ -53,12 +53,12 @@ public:
         }
     }
 
-    template<typename Func, typename... Args>
-    auto enqueue(Func&& func, Args&&... args) {
-        using ReturnType = std::invoke_result_t<Func, Args...>;
+    template<typename Function, typename... Args>
+    auto enqueue(Function&& func, Args&&... args) {
+        using ReturnType = std::invoke_result_t<Function, Args...>;
 
         auto task = std::make_shared<std::packaged_task<ReturnType()>>(
-            [f = std::forward<Func>(func), ... a = std::forward<Args>(args)]() mutable {
+            [f = std::forward<Function>(func), ... a = std::forward<Args>(args)]() mutable {
                 return f(a...);
             }
         );
