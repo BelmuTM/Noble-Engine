@@ -21,9 +21,9 @@ const Image* ImageManager::load(const std::string& path, std::string& errorMessa
             return nullptr;
         }
 
-        const size_t pixelCount = width * height * STBI_rgb_alpha;
+        const size_t byteSize = width * height * STBI_rgb_alpha;
 
-        std::vector pixelsVector(pixels, pixels + pixelCount);
+        std::vector pixelsVector(pixels, pixels + byteSize);
 
         stbi_image_free(pixels);
 
@@ -34,6 +34,7 @@ const Image* ImageManager::load(const std::string& path, std::string& errorMessa
         image->width    = width;
         image->height   = height;
         image->channels = STBI_rgb_alpha;
+        image->byteSize = byteSize;
 
         return image;
     });

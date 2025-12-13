@@ -33,11 +33,11 @@ void ObjectManager::createObjects() {
         modelPaths.push_back(objectDescriptor.modelPath);
     }
 
-    const std::unordered_map<std::string, const Model*>& models = loadModelsAsync(threadPool, modelPaths);
+    loadModelsAsync(threadPool, modelPaths);
 
     // Load textures
     std::vector<std::string> texturePaths{};
-    for (const auto& model : models | std::views::values) {
+    for (const auto& model : _models | std::views::values) {
         for (const auto& texturePath : model->texturePaths) {
             if (!texturePath.empty()) {
                 texturePaths.push_back(texturePath);
@@ -45,33 +45,32 @@ void ObjectManager::createObjects() {
         }
     }
 
-    const Object::TexturesMap& textures = loadTexturesAsync(threadPool, texturePaths);
+    loadTexturesAsync(threadPool, texturePaths);
 
     // Create objects
     std::vector<std::future<std::unique_ptr<Object>>> objectFutures;
 
     for (const auto& objectDescriptor : _objectDescriptors) {
         objectFutures.push_back(
-            threadPool.enqueue([objectDescriptor, &models, &textures]() -> std::unique_ptr<Object> {
-                if (!models.contains(objectDescriptor.modelPath)) return nullptr;
+            threadPool.enqueue([this, objectDescriptor]() -> std::unique_ptr<Object> {
+                if (!_models.contains(objectDescriptor.modelPath)) return nullptr;
 
                 // Retrieve previously loaded model
-                const Model* model = models.at(objectDescriptor.modelPath);
+                const Model* model = _models.at(objectDescriptor.modelPath);
                 if (!model) return nullptr;
 
                 // Retrieve previously loaded textures for this model
-                Object::TexturesMap modelTextures;
+                TexturesMap modelTextures;
+
                 for (const auto& texturePath : model->texturePaths) {
-                    if (textures.contains(texturePath)) {
-                        modelTextures[texturePath] = textures.at(texturePath);
+                    if (_textures.contains(texturePath)) {
+                        modelTextures[texturePath] = _textures.at(texturePath);
                     }
                 }
 
                 auto object = std::make_unique<Object>();
 
-                object->create(
-                    model, modelTextures, objectDescriptor.position, objectDescriptor.rotation, objectDescriptor.scale
-                );
+                object->create(model, objectDescriptor.position, objectDescriptor.rotation, objectDescriptor.scale);
 
                 return object;
             })
@@ -93,31 +92,16 @@ void ObjectManager::createObjects() {
         const Model* model = _modelManager->load(modelPath, errorMessage);
         if (!model) Logger::warning(errorMessage);
 
-        // Gather texture paths
-        std::vector<std::string> texturePaths{};
-
-        for (const auto& mesh : model->meshes) {
-            const Material& material = mesh.getMaterial();
-
-            texturePaths.push_back(material.albedoPath);
-            texturePaths.push_back(material.normalPath);
-            texturePaths.push_back(material.specularPath);
-        }
-
         // Load textures and map them to their respective path
-        Object::TexturesMap textures{};
-
-        for (const auto& texturePath : texturePaths) {
-            textures[texturePath] = _imageManager->load(texturePath, errorMessage);
-            if (!textures[texturePath]) Logger::warning(errorMessage);
+        for (const auto& texturePath : model->texturePaths) {
+            _textures[texturePath] = _imageManager->load(texturePath, errorMessage);
+            if (!_textures[texturePath]) Logger::warning(errorMessage);
         }
 
         // Create the object and push its pointer to the vector
         _objects.push_back(std::make_unique<Object>());
 
-        _objects.back()->create(
-            model, textures, position, rotation, scale
-        );
+        _objects.back()->create(model, position, rotation, scale);
     }
 
 #endif
@@ -129,9 +113,7 @@ void ObjectManager::createObjects() {
     Logger::info("Loaded objects in " + std::to_string(loadDuration) + "ms");
 }
 
-std::unordered_map<std::string, const Model*> ObjectManager::loadModelsAsync(
-    ThreadPool& threadPool, const std::vector<std::string>& modelPaths
-) const {
+void ObjectManager::loadModelsAsync(ThreadPool& threadPool, const std::vector<std::string>& modelPaths) {
     std::unordered_map<std::string, std::shared_future<const Model*>> modelFutures;
 
     for (const auto& modelPath : modelPaths) {
@@ -149,18 +131,12 @@ std::unordered_map<std::string, const Model*> ObjectManager::loadModelsAsync(
         }
     }
 
-    std::unordered_map<std::string, const Model*> loadedModels{};
-
     for (auto& [modelPath, modelFuture] : modelFutures) {
-        loadedModels.emplace(modelPath, modelFuture.get());
+        _models.emplace(modelPath, modelFuture.get());
     }
-
-    return loadedModels;
 }
 
-std::unordered_map<std::string, const Image*> ObjectManager::loadTexturesAsync(
-    ThreadPool& threadPool, const std::vector<std::string>& texturePaths
-) const {
+void ObjectManager::loadTexturesAsync(ThreadPool& threadPool, const std::vector<std::string>& texturePaths) {
     std::unordered_map<std::string, std::shared_future<const Image*>> textureFutures;
 
     for (const auto& texturePath : texturePaths) {
@@ -178,11 +154,7 @@ std::unordered_map<std::string, const Image*> ObjectManager::loadTexturesAsync(
         }
     }
 
-    std::unordered_map<std::string, const Image*> loadedTextures{};
-
     for (auto& [texturePath, textureFuture] : textureFutures) {
-        loadedTextures.emplace(texturePath, textureFuture.get());
+        _textures.emplace(texturePath, textureFuture.get());
     }
-
-    return loadedTextures;
 }

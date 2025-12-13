@@ -9,6 +9,8 @@
 
 #include "core/resources/images/Image.h"
 
+#include <unordered_set>
+
 class VulkanImageManager {
 public:
     VulkanImageManager()  = default;
@@ -30,6 +32,10 @@ public:
         VulkanImage*& image, const Image* imageData, bool useMipmaps, std::string& errorMessage
     );
 
+    [[nodiscard]] bool loadBatchedImages(
+        const std::vector<const Image*>& images, bool useMipmaps, std::string& errorMessage
+    );
+
     [[nodiscard]] bool createColorBuffer(
         VulkanImage& colorBuffer, vk::Format format, vk::Extent2D extent, std::string& errorMessage
     ) const;
@@ -37,6 +43,10 @@ public:
     [[nodiscard]] bool createDepthBuffer(
         VulkanImage& depthBuffer, vk::Extent2D extent, std::string& errorMessage
     ) const;
+
+    [[nodiscard]] VulkanImage* getImage(const std::string& path) const {
+        return _imageCache.contains(path) ? _imageCache.at(path).get() : nullptr;
+    }
 
 private:
     [[nodiscard]] static uint32_t getMipLevels(const vk::Extent3D extent) {

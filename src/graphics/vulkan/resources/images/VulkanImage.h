@@ -86,7 +86,7 @@ public:
     void copyBufferToImage(
         vk::CommandBuffer commandBuffer,
         const vk::Buffer& buffer,
-        vk::Extent3D      extent
+        vk::DeviceSize    offset
     ) const;
 
     void generateMipmaps(

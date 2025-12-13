@@ -3,7 +3,7 @@
 #define NOBLEENGINE_OBJECTMANAGER_H
 
 #include "Object.h"
-#include "core/common/Types.h"
+
 #include "core/concurrency/ThreadPool.h"
 
 #include "core/resources/images/ImageManager.h"
@@ -11,6 +11,10 @@
 
 class ObjectManager {
 public:
+    using ObjectsVector = std::vector<std::unique_ptr<Object>>;
+    using ModelsMap     = std::unordered_map<std::string, const Model*>;
+    using TexturesMap   = std::unordered_map<std::string, const Image*>;
+
     explicit ObjectManager(ModelManager* modelManager, ImageManager* imageManager)
         : _modelManager(modelManager), _imageManager(imageManager) {}
 
@@ -31,15 +35,17 @@ public:
 
     void createObjects();
 
-    [[nodiscard]] std::unordered_map<std::string, const Model*> loadModelsAsync(
-        ThreadPool& threadPool, const std::vector<std::string>& modelPaths
-    ) const;
+    void loadModelsAsync(ThreadPool& threadPool, const std::vector<std::string>& modelPaths);
 
-    [[nodiscard]] Object::TexturesMap loadTexturesAsync(
-        ThreadPool& threadPool, const std::vector<std::string>& texturePaths
-    ) const;
+    void loadTexturesAsync(ThreadPool& threadPool, const std::vector<std::string>& texturePaths);
 
     [[nodiscard]] const ObjectsVector& getObjects() const noexcept { return _objects; }
+
+    [[nodiscard]] const TexturesMap& getTextures() const noexcept { return _textures; }
+
+    [[nodiscard]] const Image* getTexture(const std::string& path) const {
+        return _textures.contains(path) ? _textures.at(path) : nullptr;
+    }
 
 private:
     struct ObjectDescriptor {
@@ -55,6 +61,9 @@ private:
     std::vector<ObjectDescriptor> _objectDescriptors{};
 
     ObjectsVector _objects{};
+
+    ModelsMap   _models{};
+    TexturesMap _textures{};
 };
 
 #endif // NOBLEENGINE_OBJECTMANAGER_H

@@ -1,5 +1,7 @@
 #include "VulkanImageManager.h"
 
+#include "graphics/vulkan/core/memory/VulkanBuffer.h"
+
 #include "core/debug/ErrorHandling.h"
 
 #include <ranges>
@@ -82,6 +84,136 @@ bool VulkanImageManager::loadImage(
 
         image = it->second.get();
     }
+
+    return true;
+}
+
+bool VulkanImageManager::loadBatchedImages(
+    const std::vector<const Image*>& images, const bool useMipmaps, std::string& errorMessage
+) {
+    constexpr int depth = 1;
+
+    constexpr auto format = vk::Format::eR8G8B8A8Srgb;
+
+    vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+    if (useMipmaps) {
+        usageFlags |= vk::ImageUsageFlagBits::eTransferSrc;
+    }
+
+    std::vector<uint8_t> pixels{};
+
+    vk::DeviceSize totalSize = 0;
+
+    for (const auto& imageData : images) {
+        pixels.insert(pixels.end(), imageData->pixels.begin(), imageData->pixels.end());
+
+        totalSize += imageData->byteSize;
+    }
+
+    VulkanBuffer stagingBuffer;
+
+    TRY(stagingBuffer.create(
+        totalSize,
+        vk::BufferUsageFlagBits::eTransferSrc,
+        VMA_MEMORY_USAGE_CPU_TO_GPU,
+        _device,
+        errorMessage
+    ));
+
+    void* stagingData = stagingBuffer.mapMemory(errorMessage);
+    if (!stagingData) return false;
+
+    std::memcpy(stagingData, pixels.data(), totalSize);
+
+    stagingBuffer.unmapMemory();
+
+    vk::CommandBuffer commandBuffer{};
+    TRY(_commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
+
+    vk::DeviceSize offset = 0;
+
+    for (const auto& imageData : images) {
+        if (!imageData) {
+            errorMessage = "Failed to load Vulkan image: data is null";
+            return false;
+        }
+
+        if (_imageCache.contains(imageData->path)) {
+            continue;
+        }
+
+        const auto extent = vk::Extent3D{
+            static_cast<uint32_t>(imageData->width),
+            static_cast<uint32_t>(imageData->height),
+            static_cast<uint32_t>(depth)
+        };
+
+        const uint32_t mipLevels = useMipmaps ? getMipLevels(extent) : 1;
+
+        VulkanImage image{};
+
+        image.setFormat(format);
+        image.setExtent(extent);
+        image.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+
+        // Create image
+        TRY(image.createImage(
+            vk::ImageType::e2D,
+            format,
+            extent,
+            mipLevels,
+            usageFlags,
+            VMA_MEMORY_USAGE_GPU_ONLY,
+            _device,
+            errorMessage
+        ));
+
+        TRY(image.transitionLayout(
+            commandBuffer,
+            errorMessage,
+            vk::ImageLayout::eTransferDstOptimal,
+            mipLevels
+        ));
+
+        image.copyBufferToImage(commandBuffer, stagingBuffer, offset);
+
+        offset += imageData->byteSize;
+
+        // Mipmaps generation
+        if (useMipmaps) {
+            image.generateMipmaps(commandBuffer, extent, mipLevels);
+
+        } else {
+            TRY(image.transitionLayout(
+                commandBuffer,
+                errorMessage,
+                vk::ImageLayout::eShaderReadOnlyOptimal,
+                mipLevels
+            ));
+        }
+
+        TRY(image.createImageView(
+            vk::ImageViewType::e2D,
+            format,
+            vk::ImageAspectFlagBits::eColor,
+            mipLevels,
+            _device,
+            errorMessage
+        ));
+
+        TRY(image.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, _device, errorMessage));
+
+        {
+            // Insert image into the cache
+            std::lock_guard lock(_mutex);
+
+            _imageCache.emplace(imageData->path, std::make_unique<VulkanImage>(std::move(image)));
+        }
+    }
+
+    TRY(_commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
+
+    stagingBuffer.destroy();
 
     return true;
 }

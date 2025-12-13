@@ -10,7 +10,7 @@
 #include "graphics/vulkan/resources/images/VulkanImageManager.h"
 #include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"
 
-#include "core/common/Types.h"
+#include "core/entities/objects/ObjectManager.h"
 
 static const VulkanDescriptorScheme objectDescriptorScheme = {
     {0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment},
@@ -34,7 +34,7 @@ public:
     VulkanRenderObjectManager& operator=(VulkanRenderObjectManager&&) = delete;
 
     [[nodiscard]] bool create(
-        const ObjectsVector& objects,
+        const ObjectManager& objectManager,
         const VulkanDevice&  device,
         VulkanImageManager&  imageManager,
         VulkanMeshManager&   meshManager,
@@ -51,7 +51,9 @@ public:
     [[nodiscard]] const RenderObjectsVector& getRenderObjects() noexcept { return _renderObjects; }
 
 private:
-    [[nodiscard]] bool createRenderObjects(const ObjectsVector& objects, std::string& errorMessage);
+    [[nodiscard]] bool loadObjectTextures(const ObjectManager::TexturesMap& textures, std::string& errorMessage) const;
+
+    [[nodiscard]] bool createRenderObjects(const ObjectManager::ObjectsVector& objects, std::string& errorMessage);
 
     [[nodiscard]] bool createRenderObject(
         VulkanRenderObject& renderObject,

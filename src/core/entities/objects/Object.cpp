@@ -4,14 +4,12 @@
 #include <glm/gtx/euler_angles.hpp>
 
 void Object::create(
-    const Model*        model,
-    const TexturesMap& textures,
-    const glm::vec3     position,
-    const glm::vec3     rotation,
-    const glm::vec3     scale
+    const Model*    model,
+    const glm::vec3 position,
+    const glm::vec3 rotation,
+    const glm::vec3 scale
 ) {
     _model    = model;
-    _textures = textures;
     _position = position;
     _rotation = rotation;
     _scale    = scale;

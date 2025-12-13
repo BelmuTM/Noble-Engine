@@ -211,16 +211,16 @@ bool VulkanImage::createSampler(
 void VulkanImage::copyBufferToImage(
     const vk::CommandBuffer commandBuffer,
     const vk::Buffer&       buffer,
-    const vk::Extent3D      extent
+    const vk::DeviceSize    offset
 ) const {
     vk::BufferImageCopy2 copyRegion{};
     copyRegion
-        .setBufferOffset(0)
+        .setBufferOffset(offset)
         .setBufferRowLength(0)
         .setBufferImageHeight(0)
         .setImageSubresource({vk::ImageAspectFlagBits::eColor, 0, 0, 1})
         .setImageOffset({0, 0, 0})
-        .setImageExtent(extent);
+        .setImageExtent(_extent);
 
     vk::CopyBufferToImageInfo2 copyBufferToImageInfo{};
     copyBufferToImageInfo
@@ -411,6 +411,7 @@ bool VulkanImage::createFromData(
     if (!stagingData) return false;
 
     std::memcpy(stagingData, pixels, imageSize);
+
     stagingBuffer.unmapMemory();
 
     vk::CommandBuffer commandBuffer{};
@@ -434,7 +435,7 @@ bool VulkanImage::createFromData(
         mipLevels
     ));
 
-    copyBufferToImage(commandBuffer, stagingBuffer, extent);
+    copyBufferToImage(commandBuffer, stagingBuffer, 0);
 
     // Mipmaps generation
     if (hasMipmaps) {

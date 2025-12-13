@@ -5,8 +5,4 @@
 #include <memory>
 #include <vector>
 
-class Object;
-
-using ObjectsVector = std::vector<std::unique_ptr<Object>>;
-
 #endif // NOBLEENGINE_TYPES_H

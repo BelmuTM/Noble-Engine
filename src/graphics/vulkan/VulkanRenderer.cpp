@@ -3,14 +3,13 @@
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 #include "graphics/vulkan/pipeline/rendergraph/VulkanRenderGraphBuilder.h"
-#include "graphics/vulkan/resources/images/VulkanImageLayoutTransitions.h"
 
 #include "core/debug/ErrorHandling.h"
 #include "core/debug/Logger.h"
 
 VulkanRenderer::VulkanRenderer(const uint32_t framesInFlight) : _framesInFlight(framesInFlight) {}
 
-bool VulkanRenderer::init(Window& window, const ObjectsVector& objects, std::string& errorMessage) {
+bool VulkanRenderer::init(Window& window, const ObjectManager& objectManager, std::string& errorMessage) {
     _window = &window;
 
     errorMessage = "Failed to init Vulkan renderer: no error message provided";
@@ -38,7 +37,7 @@ bool VulkanRenderer::init(Window& window, const ObjectsVector& objects, std::str
     ));
 
     TRY(createVulkanEntity(
-        &renderObjectManager, errorMessage, objects, device, imageManager, meshManager, _framesInFlight
+        &renderObjectManager, errorMessage, objectManager, device, imageManager, meshManager, _framesInFlight
     ));
 
     // Pipeline managers creation
