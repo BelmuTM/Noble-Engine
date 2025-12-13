@@ -329,7 +329,7 @@ void ModelManager::processMeshPrimitives_glTF(
         mesh.generateSmoothNormals();
     }
 
-    if (!hasTangents) {
+    if (!hasTangents && hasTextureCoords) {
         mesh.generateTangents();
     }
 }

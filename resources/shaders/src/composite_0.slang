@@ -37,11 +37,15 @@ layout (location = 0) out float4 compositeBuffer;
 layout (set = 1, binding = 0) Sampler2D depthBuffer;
 layout (set = 1, binding = 1) Sampler2D albedoBuffer;
 layout (set = 1, binding = 2) Sampler2D normalBuffer;
+layout (set = 1, binding = 3) Sampler2D debugBuffer;
 
 #define TAU 2.0 * 3.14159
 
 [shader("fragment")]
 void fragMain(VSOutput vertIn) : SV_TARGET {
+    uint2 resolution = uint2(frameUBO.viewWidth, frameUBO.viewHeight);
+    uint2 coords     = uint2(round(vertIn.uv * resolution));
+
     float3 albedo = albedoBuffer.Sample(vertIn.uv).rgb;
     float3 normal = normalBuffer.Sample(vertIn.uv).rgb * 2.0 - 1.0;
 
@@ -79,5 +83,11 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
     float3 lighting = albedo * (ambient + lightColor0 * NdotL0 * attenuation0 + lightColor1 * NdotL1 * attenuation1);
 
-    compositeBuffer = float4(lighting, 1.0);
+    float4 debug = debugBuffer.Sample(vertIn.uv / 0.4);
+
+    compositeBuffer = float4(normal * 0.5 + 0.5, 1.0);
+
+    if (coords.x < resolution.x * 0.4 && coords.y < resolution.y * 0.4) {
+        compositeBuffer = debug;
+    }
 }

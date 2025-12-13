@@ -41,7 +41,7 @@ VSOutput vertMain(VSInput input) {
     output.worldPos  = mul(object.model, float4(input.position, 1.0));
     output.position  = mul(frameUBO.projection, mul(frameUBO.view, output.worldPos));
     output.normal    = normalize(mul(float3x3(object.normalMatrix), input.normal));
-    output.tangent   = normalize(input.tangent);
+    output.tangent   = input.tangent;
     output.color     = input.color;
     output.texCoords = input.texCoords;
     return output;
@@ -49,6 +49,7 @@ VSOutput vertMain(VSInput input) {
 
 layout (location = 0) out float4 albedoBuffer;
 layout (location = 1) out float4 normalBuffer;
+layout (location = 2) out float4 debugBuffer;
 
 layout (set = 1, binding = 0) Sampler2D albedoTexture;
 layout (set = 1, binding = 1) Sampler2D normalTexture;
@@ -80,9 +81,9 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
     float3 normal = normalTexture.Sample(vertIn.texCoords).rgb;
 
-    if (!normal.equals(float3(0.0f))) {
+    if (!normal.equals(float3(0.0))) {
         float3 N = vertIn.normal;
-        float3 T = vertIn.tangent.xyz;
+        float3 T = normalize(vertIn.tangent.xyz);
         float3 B = cross(N, T) * vertIn.tangent.w;
 
         float3x3 TBN = float3x3(T, B, N);
@@ -93,5 +94,6 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     }
 
     albedoBuffer = albedo;
-    normalBuffer = float4(vertIn.normal * 0.5 + 0.5, 1.0);
+    normalBuffer = float4(normal * 0.5 + 0.5, 1.0);
+    debugBuffer  = float4(max(0.0, vertIn.tangent.w), 0.0, 0.0, 1.0);
 }

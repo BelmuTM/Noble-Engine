@@ -2,6 +2,7 @@
 #ifndef NOBLEENGINE_ASYNCRESOURCEMANAGER_H
 #define NOBLEENGINE_ASYNCRESOURCEMANAGER_H
 
+#include <functional>
 #include <future>
 #include <memory>
 #include <mutex>
@@ -29,7 +30,7 @@ protected:
 
         std::unique_lock loadLock(_mutex);
 
-        // If image is already cached, return it
+        // If resource is already cached, return it
         if (auto it = _cache.find(path); it != _cache.end()) {
             return it->second;
         }
