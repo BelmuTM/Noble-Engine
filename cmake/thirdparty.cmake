@@ -64,6 +64,13 @@ function (setup_thirdparty TARGET)
 
     target_compile_definitions(spirv-reflect PUBLIC SPIRV_REFLECT_USE_SYSTEM_SPIRV_H)
 
+    # tinygltf
+    target_compile_definitions(NobleEngine PRIVATE
+        TINYGLTF_NO_EXTERNAL_IMAGE
+        TINYGLTF_NO_STB_IMAGE
+        TINYGLTF_NO_STB_IMAGE_WRITE
+    )
+
     # Link compiled libraries to executable
     target_link_libraries(
         NobleEngine

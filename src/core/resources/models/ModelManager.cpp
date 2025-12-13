@@ -1,5 +1,7 @@
 #include "ModelManager.h"
 
+#include "common/Utility.h"
+
 #include "core/debug/Logger.h"
 #include "core/resources/ResourceManager.h"
 
@@ -15,12 +17,14 @@ const Model* ModelManager::load(const std::string& path, std::string& errorMessa
 
         model->retrieveName(path);
 
+        const std::string& extension = Utility::getFileExtension(path);
+
         bool loaded = false;
 
-        if (path.ends_with(".obj")) {
+        if (extension == ".obj") {
             loaded = load_OBJ(*model, path, errorMessage);
 
-        } else if (path.ends_with(".gltf")) {
+        } else if (extension == ".gltf" || extension == ".glb") {
             loaded = load_glTF(*model, path, errorMessage);
 
         } else {
@@ -431,10 +435,18 @@ bool ModelManager::load_glTF(Model& model, const std::string& path, std::string&
 
     const std::string fullPath = modelFilesPath + path;
 
-    const bool modelLoaded = glTFloader.LoadASCIIFromFile(&glTFModel, &errorMessage, &warningMessage, fullPath);
+    const std::string& glTFExtension = Utility::getFileExtension(path);
+
+    bool modelLoaded = false;
+
+    if (glTFExtension == ".gltf") {
+        modelLoaded = glTFloader.LoadASCIIFromFile(&glTFModel, &errorMessage, &warningMessage, fullPath);
+    } else if (glTFExtension == ".glb") {
+        modelLoaded = glTFloader.LoadBinaryFromFile(&glTFModel, &errorMessage, &warningMessage, fullPath);
+    }
 
     if (!warningMessage.empty()) {
-        //Logger::warning(warningMessage);
+        Logger::warning(warningMessage);
     }
 
     if (!modelLoaded) return false;

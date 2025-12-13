@@ -36,7 +36,7 @@ function (setup_vulkan TARGET)
         # VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1
     )
 
-    # Vulkan debug utils
+    # Toggle Vulkan debug utils for Debug builds
     target_compile_definitions(${TARGET} PRIVATE $<$<CONFIG:Debug>:VULKAN_DEBUG_UTILS>)
 
 endfunction()

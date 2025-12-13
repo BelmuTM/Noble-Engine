@@ -1,6 +1,6 @@
 #include "Logger.h"
 
-#include "core/engine/Engine.h"
+#include "common/Utility.h"
 
 #include <array>
 #include <atomic>
@@ -44,7 +44,8 @@ namespace {
     void writeLogMessage(Stream& os, const Log& log) {
         const auto time = std::chrono::system_clock::to_time_t(log.timestamp);
         std::tm    tm{};
-        Engine::localtime(tm, &time);
+
+        Utility::localtime(tm, &time);
 
         std::ostringstream prefixStream;
         prefixStream << std::put_time(&tm, "[%Y-%m-%d %H:%M:%S] ")
@@ -107,7 +108,8 @@ namespace Logger {
         const auto now  = std::chrono::system_clock::now();
         const auto time = std::chrono::system_clock::to_time_t(now);
         std::tm    tm{};
-        Engine::localtime(tm, &time);
+
+        Utility::localtime(tm, &time);
 
         std::ostringstream oss;
         oss << std::put_time(&tm, "%Y-%m-%d_%H-%M-%S");

@@ -142,7 +142,7 @@ std::unordered_map<std::string, const Model*> ObjectManager::loadModelsAsync(
                 std::string errorMessage;
 
                 const Model* model = _modelManager->load(modelPath, errorMessage);
-                if (!model) Logger::warning(errorMessage);
+                if (!model) Logger::error(errorMessage);
 
                 return model;
             }).share();
