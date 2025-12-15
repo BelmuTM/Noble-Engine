@@ -99,7 +99,7 @@ namespace {
 }
 
 namespace Logger {
-    static const std::string logsDirectory = "logs";
+    static const std::string LOGS_DIRECTORY_NAME = "logs";
 
     void init() {
 
@@ -114,10 +114,10 @@ namespace Logger {
         std::ostringstream oss;
         oss << std::put_time(&tm, "%Y-%m-%d_%H-%M-%S");
 
-        const std::string logFileName = logsDirectory + "/" + oss.str() + ".log";
+        const std::string logFileName = LOGS_DIRECTORY_NAME + "/" + oss.str() + ".log";
 
-        if (!std::filesystem::exists(logsDirectory)) {
-            std::filesystem::create_directory(logsDirectory);
+        if (!std::filesystem::exists(LOGS_DIRECTORY_NAME)) {
+            std::filesystem::create_directory(LOGS_DIRECTORY_NAME);
         }
 
         logFile.open(logFileName);

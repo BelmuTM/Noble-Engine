@@ -9,6 +9,8 @@
 #include "core/resources/images/ImageManager.h"
 #include "core/resources/models/ModelManager.h"
 
+#define MULTITHREADED_OBJECTS_LOAD 1
+
 class ObjectManager {
 public:
     using ObjectsVector = std::vector<std::unique_ptr<Object>>;
@@ -35,9 +37,13 @@ public:
 
     void createObjects();
 
+#if MULTITHREADED_OBJECTS_LOAD
+
     void loadModelsAsync(ThreadPool& threadPool, const std::vector<std::string>& modelPaths);
 
     void loadTexturesAsync(ThreadPool& threadPool, const std::vector<std::string>& texturePaths);
+
+#endif
 
     [[nodiscard]] const ObjectsVector& getObjects() const noexcept { return _objects; }
 

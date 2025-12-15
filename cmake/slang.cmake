@@ -142,7 +142,7 @@ function (compile_slang TARGET)
     endfunction()
 
     # Collect shaders sources
-    file(GLOB_RECURSE SHADERS_SOURCES ${SHADERS_DIR}/src/*.slang)
+    file(GLOB_RECURSE SHADERS_SOURCES ${SHADERS_DIR}/*.slang)
 
     # Compile shaders
     add_slang_shader_target(

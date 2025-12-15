@@ -6,6 +6,7 @@
 
 #include "graphics/vulkan/core/VulkanCommandManager.h"
 #include "graphics/vulkan/core/VulkanDevice.h"
+#include "graphics/vulkan/core/memory/VulkanBuffer.h"
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorInfo.h"
 
 #include "graphics/vulkan/core/memory/VmaUsage.h"
@@ -95,16 +96,15 @@ public:
         uint32_t          mipLevels
     ) const;
 
-    [[nodiscard]] bool createFromData(
-        const void*                 pixels,
-        uint8_t                     channels,
-        uint8_t                     bytesPerChannel,
-        vk::Format                  format,
-        vk::Extent3D                extent,
-        uint32_t                    mipLevels,
-        const VulkanDevice*         device,
-        const VulkanCommandManager* commandManager,
-        std::string&                errorMessage
+    [[nodiscard]] bool createFromBuffer(
+        const VulkanBuffer& buffer,
+        vk::DeviceSize      bufferOffset,
+        vk::Format          format,
+        vk::Extent3D        extent,
+        uint32_t            mipLevels,
+        vk::CommandBuffer   commandBuffer,
+        const VulkanDevice* device,
+        std::string&        errorMessage
     );
 
     [[nodiscard]] vk::ImageView getImageView() const noexcept { return _imageView; }

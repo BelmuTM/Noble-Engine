@@ -56,7 +56,7 @@ bool VulkanRenderResources::createDepthBuffer(std::string& errorMessage) {
 
     VulkanRenderPassResource depthBufferResource{};
     depthBufferResource
-        .setName(DEPTH_BUFFER_NAME)
+        .setName(DEPTH_BUFFER_RESOURCE_NAME)
         .setType(Buffer)
         .setImage(_depthBuffer.get());
 

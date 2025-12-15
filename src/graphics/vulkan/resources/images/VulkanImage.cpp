@@ -2,7 +2,6 @@
 
 #include "VulkanImageLayoutTransitions.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
-#include "graphics/vulkan/core/memory/VulkanBuffer.h"
 
 #include "core/debug/ErrorHandling.h"
 
@@ -366,22 +365,16 @@ void VulkanImage::generateMipmaps(
     commandBuffer.pipelineBarrier2(dependencyInfo);
 }
 
-bool VulkanImage::createFromData(
-    const void*                 pixels,
-    const uint8_t               channels,
-    const uint8_t               bytesPerChannel,
-    const vk::Format            format,
-    const vk::Extent3D          extent,
-    const uint32_t              mipLevels,
-    const VulkanDevice*         device,
-    const VulkanCommandManager* commandManager,
-    std::string&                errorMessage
+bool VulkanImage::createFromBuffer(
+    const VulkanBuffer&     buffer,
+    const vk::DeviceSize    bufferOffset,
+    const vk::Format        format,
+    const vk::Extent3D      extent,
+    const uint32_t          mipLevels,
+    const vk::CommandBuffer commandBuffer,
+    const VulkanDevice*     device,
+    std::string&            errorMessage
 ) {
-    if (!pixels) {
-        errorMessage = "Failed to create Vulkan image: data is null";
-        return false;
-    }
-
     _device = device;
 
     _format         = format;
@@ -390,32 +383,10 @@ bool VulkanImage::createFromData(
 
     const bool hasMipmaps = mipLevels > 1;
 
-    const vk::DeviceSize imageSize = extent.width * extent.height * channels * bytesPerChannel;
-
     vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
     if (hasMipmaps) {
         usageFlags |= vk::ImageUsageFlagBits::eTransferSrc;
     }
-
-    VulkanBuffer stagingBuffer;
-
-    TRY(stagingBuffer.create(
-        imageSize,
-        vk::BufferUsageFlagBits::eTransferSrc,
-        VMA_MEMORY_USAGE_CPU_TO_GPU,
-        device,
-        errorMessage
-    ));
-
-    void* stagingData = stagingBuffer.mapMemory(errorMessage);
-    if (!stagingData) return false;
-
-    std::memcpy(stagingData, pixels, imageSize);
-
-    stagingBuffer.unmapMemory();
-
-    vk::CommandBuffer commandBuffer{};
-    TRY(commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
 
     TRY(createImage(
         vk::ImageType::e2D,
@@ -435,7 +406,7 @@ bool VulkanImage::createFromData(
         mipLevels
     ));
 
-    copyBufferToImage(commandBuffer, stagingBuffer, 0);
+    copyBufferToImage(commandBuffer, buffer, bufferOffset);
 
     // Mipmaps generation
     if (hasMipmaps) {
@@ -460,10 +431,6 @@ bool VulkanImage::createFromData(
     ));
 
     TRY(createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, device, errorMessage));
-
-    TRY(commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
-
-    stagingBuffer.destroy();
 
     return true;
 }

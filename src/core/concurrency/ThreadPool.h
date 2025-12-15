@@ -13,6 +13,8 @@
 class ThreadPool {
 public:
     explicit ThreadPool(const size_t threadCount) {
+        workerThreads.reserve(threadCount);
+
         running.store(true);
 
         for (size_t i = 0; i < threadCount; i++) {
@@ -27,7 +29,7 @@ public:
                         // Wait until there is at least one task in the queue or the pool is destroyed to execute tasks
                         condition.wait(lock, [this] { return !tasksQueue.empty() || !running; });
 
-                        if (tasksQueue.empty()) continue;
+                        if (!running && tasksQueue.empty()) break;
 
                         // Pop the task off the queue
                         task = std::move(tasksQueue.front());

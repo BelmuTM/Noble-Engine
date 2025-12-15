@@ -13,6 +13,8 @@ struct alignas(16) ObjectDataGPU {
 
 class Object {
 public:
+    static constexpr bool MIPMAPS_ENABLED = true;
+
     Object()  = default;
     ~Object() = default;
 

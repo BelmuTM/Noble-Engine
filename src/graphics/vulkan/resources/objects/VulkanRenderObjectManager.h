@@ -20,7 +20,7 @@ static const VulkanDescriptorScheme objectDescriptorScheme = {
 
 class VulkanRenderObjectManager {
 public:
-    static constexpr uint32_t MAX_RENDER_OBJECTS = 4096;
+    static constexpr uint32_t MAX_RENDER_OBJECTS = 2048;
 
     using RenderObjectsVector = std::vector<std::unique_ptr<VulkanRenderObject>>;
 

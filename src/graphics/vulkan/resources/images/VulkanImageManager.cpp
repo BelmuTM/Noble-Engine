@@ -26,11 +26,9 @@ void VulkanImageManager::destroy() noexcept {
     _commandManager = nullptr;
 }
 
-bool VulkanImageManager::loadImage(
-    VulkanImage*& image, const Image* imageData, const bool useMipmaps, std::string& errorMessage
-) {
+bool VulkanImageManager::loadImage(VulkanImage*& image, const Image* imageData, std::string& errorMessage) {
     if (!imageData) {
-        errorMessage = "Failed to load Vulkan image: data is null";
+        errorMessage = "Failed to load Vulkan image: image is null";
         return false;
     }
 
@@ -52,25 +50,42 @@ bool VulkanImageManager::loadImage(
         static_cast<uint32_t>(depth)
     };
 
-    constexpr auto    format          = vk::Format::eR8G8B8A8Srgb;
-    constexpr uint8_t bytesPerChannel = 1;
+    constexpr auto format  = vk::Format::eR8G8B8A8Srgb;
 
-    const uint32_t mipLevels = useMipmaps ? getMipLevels(extent) : 1;
+    const uint32_t mipLevels = imageData->hasMipmaps ? getMipLevels(extent) : 1;
 
-    VulkanImage tempImage{};
-
-    // Create image
-    TRY(tempImage.createFromData(
-        imageData->pixels.data(),
-        imageData->channels,
-        bytesPerChannel,
-        format,
-        extent,
-        mipLevels,
+    VulkanBuffer stagingBuffer;
+    // Create the staging buffer
+    TRY(stagingBuffer.create(
+        imageData->byteSize,
+        vk::BufferUsageFlagBits::eTransferSrc,
+        VMA_MEMORY_USAGE_CPU_TO_GPU,
         _device,
-        _commandManager,
         errorMessage
     ));
+
+    void* stagingData = stagingBuffer.mapMemory(errorMessage);
+
+    if (!stagingData) {
+        errorMessage = "Failed to create Vulkan image staging buffer: mapped memory pointer is null";
+        return false;
+    }
+
+    // Copy the image's bytes into the staging buffer
+    std::memcpy(stagingData, imageData->pixels.data(), imageData->byteSize);
+
+    stagingBuffer.unmapMemory();
+
+    // Create image on the GPU
+    vk::CommandBuffer commandBuffer{};
+    TRY(_commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
+
+    VulkanImage tempImage{};
+    TRY(tempImage.createFromBuffer(stagingBuffer, 0, format, extent, mipLevels, commandBuffer, _device, errorMessage));
+
+    TRY(_commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
+
+    stagingBuffer.destroy();
 
     {
         // Insert image into the cache
@@ -88,130 +103,131 @@ bool VulkanImageManager::loadImage(
     return true;
 }
 
-bool VulkanImageManager::loadBatchedImages(
-    const std::vector<const Image*>& images, const bool useMipmaps, std::string& errorMessage
+bool VulkanImageManager::loadImages(
+    const std::vector<const Image*>& images, const VulkanBuffer& stagingBuffer, std::string& errorMessage
 ) {
-    constexpr int depth = 1;
+    if (images.empty()) return true;
 
     constexpr auto format = vk::Format::eR8G8B8A8Srgb;
 
-    vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
-    if (useMipmaps) {
-        usageFlags |= vk::ImageUsageFlagBits::eTransferSrc;
-    }
-
-    std::vector<uint8_t> pixels{};
-
-    vk::DeviceSize totalSize = 0;
-
-    for (const auto& imageData : images) {
-        pixels.insert(pixels.end(), imageData->pixels.begin(), imageData->pixels.end());
-
-        totalSize += imageData->byteSize;
-    }
-
-    VulkanBuffer stagingBuffer;
-
-    TRY(stagingBuffer.create(
-        totalSize,
-        vk::BufferUsageFlagBits::eTransferSrc,
-        VMA_MEMORY_USAGE_CPU_TO_GPU,
-        _device,
-        errorMessage
-    ));
-
-    void* stagingData = stagingBuffer.mapMemory(errorMessage);
-    if (!stagingData) return false;
-
-    std::memcpy(stagingData, pixels.data(), totalSize);
-
-    stagingBuffer.unmapMemory();
+    constexpr int depth = 1;
 
     vk::CommandBuffer commandBuffer{};
     TRY(_commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
 
     vk::DeviceSize offset = 0;
 
-    for (const auto& imageData : images) {
-        if (!imageData) {
-            errorMessage = "Failed to load Vulkan image: data is null";
+    for (const Image* image : images) {
+        if (!image) {
+            errorMessage = "Failed to load Vulkan image: image is null";
             return false;
         }
 
-        if (_imageCache.contains(imageData->path)) {
+        if (_imageCache.contains(image->path)) {
             continue;
         }
 
         const auto extent = vk::Extent3D{
-            static_cast<uint32_t>(imageData->width),
-            static_cast<uint32_t>(imageData->height),
+            static_cast<uint32_t>(image->width),
+            static_cast<uint32_t>(image->height),
             static_cast<uint32_t>(depth)
         };
 
-        const uint32_t mipLevels = useMipmaps ? getMipLevels(extent) : 1;
+        const uint32_t mipLevels = image->hasMipmaps ? getMipLevels(extent) : 1;
 
-        VulkanImage image{};
+        // Ensure image data is aligned properly in memory
+        offset = (offset + STAGING_BUFFER_ALIGNMENT - 1) & ~(STAGING_BUFFER_ALIGNMENT - 1);
 
-        image.setFormat(format);
-        image.setExtent(extent);
-        image.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+        // Copy the image's bytes into the staging buffer
+        std::memcpy(static_cast<char*>(stagingBuffer.getMappedPointer()) + offset, image->pixels.data(), image->byteSize);
 
-        // Create image
-        TRY(image.createImage(
-            vk::ImageType::e2D,
-            format,
-            extent,
-            mipLevels,
-            usageFlags,
-            VMA_MEMORY_USAGE_GPU_ONLY,
-            _device,
-            errorMessage
+        // Create image on the GPU
+        VulkanImage tempImage{};
+        TRY(tempImage.createFromBuffer(
+            stagingBuffer, offset, format, extent, mipLevels, commandBuffer, _device, errorMessage
         ));
 
-        TRY(image.transitionLayout(
-            commandBuffer,
-            errorMessage,
-            vk::ImageLayout::eTransferDstOptimal,
-            mipLevels
-        ));
+        offset += image->byteSize;
 
-        image.copyBufferToImage(commandBuffer, stagingBuffer, offset);
-
-        offset += imageData->byteSize;
-
-        // Mipmaps generation
-        if (useMipmaps) {
-            image.generateMipmaps(commandBuffer, extent, mipLevels);
-
-        } else {
-            TRY(image.transitionLayout(
-                commandBuffer,
-                errorMessage,
-                vk::ImageLayout::eShaderReadOnlyOptimal,
-                mipLevels
-            ));
-        }
-
-        TRY(image.createImageView(
-            vk::ImageViewType::e2D,
-            format,
-            vk::ImageAspectFlagBits::eColor,
-            mipLevels,
-            _device,
-            errorMessage
-        ));
-
-        TRY(image.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, _device, errorMessage));
-
-        {
-            // Insert image into the cache
-            std::lock_guard lock(_mutex);
-
-            _imageCache.emplace(imageData->path, std::make_unique<VulkanImage>(std::move(image)));
-        }
+        _imageCache.emplace(image->path, std::make_unique<VulkanImage>(std::move(tempImage)));
     }
 
     TRY(_commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
+
+    return true;
+}
+
+bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& images, std::string& errorMessage) {
+    if (images.empty()) return true;
+
+    VulkanBuffer stagingBuffer;
+    // Create the staging buffer
+    TRY(stagingBuffer.create(
+        MAX_BATCH_SIZE,
+        vk::BufferUsageFlagBits::eTransferSrc,
+        VMA_MEMORY_USAGE_CPU_TO_GPU,
+        _device,
+        errorMessage
+    ));
+
+    const void* stagingData = stagingBuffer.mapMemory(errorMessage);
+
+    if (!stagingData) {
+        errorMessage = "Failed to create Vulkan image staging buffer: mapped memory pointer is null";
+        return false;
+    }
+
+    std::vector<const Image*> batch{};
+
+    size_t currentBatchSize = 0;
+
+    for (const Image* image : images) {
+        if (!image) {
+            errorMessage = "Failed to batch Vulkan image: image is null";
+            return false;
+        }
+
+        if (_imageCache.contains(image->path)) {
+            continue;
+        }
+
+        // If image alone is larger than the maximum batch size (special case, rare)
+        if (image->byteSize > MAX_BATCH_SIZE) {
+            // Flush batched images
+            if (!batch.empty()) {
+                TRY(loadImages(batch, stagingBuffer, errorMessage));
+                batch.clear();
+            }
+
+            currentBatchSize = 0;
+
+            // Load image with its own dedicated staging buffer
+            VulkanImage* _;
+            TRY(loadImage(_, image, errorMessage));
+
+            continue;
+        }
+
+        // If adding image to the batch exceeds the maximum batch size
+        if (currentBatchSize + image->byteSize > MAX_BATCH_SIZE) {
+            // Flush batched images
+            TRY(loadImages(batch, stagingBuffer, errorMessage));
+            batch.clear();
+
+            currentBatchSize = 0;
+        }
+
+        batch.push_back(image);
+
+        currentBatchSize += image->byteSize;
+    }
+
+    // Flush remaining batched images
+    if (!batch.empty()) {
+        TRY(loadImages(batch, stagingBuffer, errorMessage));
+    }
+
+    batch.clear();
 
     stagingBuffer.destroy();
 

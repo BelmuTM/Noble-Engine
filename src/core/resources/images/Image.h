@@ -20,8 +20,10 @@ struct Image {
 
     size_t byteSize = 0;
 
+    bool hasMipmaps = false;
+
     static std::vector<uint8_t> rgbColorToBytes(const glm::vec3& color) {
-        auto toByte = [](const float value) -> uint8_t {
+        static auto toByte = [](const float value) -> uint8_t {
             return static_cast<uint8_t>(std::clamp(value, 0.0f, 1.0f) * 255.0f);
         };
 
@@ -36,11 +38,14 @@ struct Image {
 
     static Image createSinglePixelImage(const glm::vec3& color) {
         Image image{};
-        image.pixels   = rgbColorToBytes(color);
-        image.width    = 1;
-        image.height   = 1;
-        image.channels = 4;
-        image.byteSize = 4;
+
+        image.pixels     = rgbColorToBytes(color);
+        image.width      = 1;
+        image.height     = 1;
+        image.channels   = 4;
+        image.byteSize   = 4;
+        image.hasMipmaps = false;
+
         return image;
     }
 };

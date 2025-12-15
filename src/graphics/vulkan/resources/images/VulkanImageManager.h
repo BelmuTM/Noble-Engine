@@ -13,6 +13,9 @@
 
 class VulkanImageManager {
 public:
+    static constexpr size_t STAGING_BUFFER_ALIGNMENT = 256ULL; // 256 bytes
+    static constexpr size_t MAX_BATCH_SIZE = 64ULL * 1024U * 1024U; // 64 MB
+
     VulkanImageManager()  = default;
     ~VulkanImageManager() = default;
 
@@ -28,13 +31,15 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] bool loadImage(
-        VulkanImage*& image, const Image* imageData, bool useMipmaps, std::string& errorMessage
+    [[nodiscard]] bool loadImage(VulkanImage*& image, const Image* imageData, std::string& errorMessage);
+
+    [[nodiscard]] bool loadImages(
+        const std::vector<const Image*>& images,
+        const VulkanBuffer&              stagingBuffer,
+        std::string&                     errorMessage
     );
 
-    [[nodiscard]] bool loadBatchedImages(
-        const std::vector<const Image*>& images, bool useMipmaps, std::string& errorMessage
-    );
+    [[nodiscard]] bool loadBatchedImages(const std::vector<const Image*>& images, std::string& errorMessage);
 
     [[nodiscard]] bool createColorBuffer(
         VulkanImage& colorBuffer, vk::Format format, vk::Extent2D extent, std::string& errorMessage
@@ -49,7 +54,7 @@ public:
     }
 
 private:
-    [[nodiscard]] static uint32_t getMipLevels(const vk::Extent3D extent) {
+    [[nodiscard]] static uint32_t getMipLevels(const vk::Extent3D extent) noexcept {
         return static_cast<uint32_t>(std::floor(std::log2(std::max({extent.width, extent.height, extent.depth})))) + 1;
     }
 

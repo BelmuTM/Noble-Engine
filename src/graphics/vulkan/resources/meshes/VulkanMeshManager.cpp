@@ -31,7 +31,8 @@ bool VulkanMeshManager::fillBuffers(std::string& errorMessage) {
     queryVertexBufferSize();
     queryIndexBufferSize();
 
-    TRY(createStagingBuffer(errorMessage));
+    TRY(createMeshStagingBuffer(errorMessage));
+
     TRY(createVertexBuffer(errorMessage));
     TRY(createIndexBuffer(errorMessage));
 
@@ -74,7 +75,7 @@ void VulkanMeshManager::copyMeshData(void* stagingData) {
     }
 }
 
-bool VulkanMeshManager::createStagingBuffer(std::string& errorMessage) {
+bool VulkanMeshManager::createMeshStagingBuffer(std::string& errorMessage) {
     const vk::DeviceSize stagingBufferSize = _vertexBufferSize + _indexBufferSize;
 
     TRY(_stagingBuffer.create(
@@ -86,7 +87,11 @@ bool VulkanMeshManager::createStagingBuffer(std::string& errorMessage) {
     ));
 
     void* stagingData = _stagingBuffer.mapMemory(errorMessage);
-    if (!stagingData) return false;
+
+    if (!stagingData) {
+        errorMessage = "Failed to create Vulkan mesh staging buffer: mapped memory pointer is null";
+        return false;
+    }
 
     copyMeshData(stagingData);
 

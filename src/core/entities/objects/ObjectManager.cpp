@@ -5,8 +5,6 @@
 #include <memory>
 #include <ranges>
 
-#define MULTITHREADED_OBJECTS_LOAD 1
-
 void ObjectManager::addObject(
     const std::string& modelPath,
     const glm::vec3    position,
@@ -19,7 +17,7 @@ void ObjectManager::addObject(
 void ObjectManager::createObjects() {
     const auto startTime = std::chrono::high_resolution_clock::now();
 
-#if MULTITHREADED_OBJECTS_LOAD == 1
+#if MULTITHREADED_OBJECTS_LOAD
 
     // Multithreaded objects loading (models, textures) using a thread pool
     unsigned int numThreads = std::thread::hardware_concurrency();
@@ -38,6 +36,7 @@ void ObjectManager::createObjects() {
     // Load textures
     std::vector<std::string> texturePaths{};
     for (const auto& model : _models | std::views::values) {
+        if (model->texturePaths.empty()) continue;
         for (const auto& texturePath : model->texturePaths) {
             if (!texturePath.empty()) {
                 texturePaths.push_back(texturePath);
@@ -60,7 +59,7 @@ void ObjectManager::createObjects() {
                 if (!model) return nullptr;
 
                 // Retrieve previously loaded textures for this model
-                TexturesMap modelTextures;
+                TexturesMap modelTextures{};
 
                 for (const auto& texturePath : model->texturePaths) {
                     if (_textures.contains(texturePath)) {
@@ -94,7 +93,7 @@ void ObjectManager::createObjects() {
 
         // Load textures and map them to their respective path
         for (const auto& texturePath : model->texturePaths) {
-            _textures[texturePath] = _imageManager->load(texturePath, errorMessage);
+            _textures[texturePath] = _imageManager->load(texturePath, errorMessage, Object::MIPMAPS_ENABLED);
             if (!_textures[texturePath]) Logger::warning(errorMessage);
         }
 
@@ -112,6 +111,8 @@ void ObjectManager::createObjects() {
 
     Logger::info("Loaded objects in " + std::to_string(loadDuration) + "ms");
 }
+
+#if MULTITHREADED_OBJECTS_LOAD
 
 void ObjectManager::loadModelsAsync(ThreadPool& threadPool, const std::vector<std::string>& modelPaths) {
     std::unordered_map<std::string, std::shared_future<const Model*>> modelFutures;
@@ -146,7 +147,7 @@ void ObjectManager::loadTexturesAsync(ThreadPool& threadPool, const std::vector<
             textureFutures[texturePath] = threadPool.enqueue([this, texturePath] {
                 std::string errorMessage;
 
-                const Image* texture = _imageManager->load(texturePath, errorMessage);
+                const Image* texture = _imageManager->load(texturePath, errorMessage, Object::MIPMAPS_ENABLED);
                 if (!texture) Logger::warning(errorMessage);
 
                 return texture;
@@ -158,3 +159,5 @@ void ObjectManager::loadTexturesAsync(ThreadPool& threadPool, const std::vector<
         _textures.emplace(texturePath, textureFuture.get());
     }
 }
+
+#endif

@@ -54,14 +54,10 @@ bool VulkanRenderObjectManager::loadObjectTextures(
 
     for (const auto& texture : textures | std::views::values) {
         if (!texture) continue;
-
         images.push_back(texture);
-
-        VulkanImage* foo;
-        //TRY(_imageManager->loadImage(foo, texture, false, errorMessage));
     }
 
-    TRY(_imageManager->loadBatchedImages(images, false, errorMessage));
+    TRY(_imageManager->loadBatchedImages(images, errorMessage));
 
     return true;
 }
@@ -126,17 +122,17 @@ bool VulkanRenderObjectManager::createRenderObject(
 
         if (!submesh.albedoTexture) {
             const Image diffuseColorImage = Image::createSinglePixelImage(material.diffuse);
-            TRY(_imageManager->loadImage(submesh.albedoTexture, &diffuseColorImage, false, errorMessage));
+            TRY(_imageManager->loadImage(submesh.albedoTexture, &diffuseColorImage, errorMessage));
         }
 
         if (!submesh.normalTexture) {
             const Image normalImage = Image::createSinglePixelImage(glm::vec3{0.0f});
-            TRY(_imageManager->loadImage(submesh.normalTexture, &normalImage, false, errorMessage));
+            TRY(_imageManager->loadImage(submesh.normalTexture, &normalImage, errorMessage));
         }
 
         if (!submesh.specularTexture) {
             const Image specularImage = Image::createSinglePixelImage(material.specular);
-            TRY(_imageManager->loadImage(submesh.specularTexture, &specularImage, false, errorMessage));
+            TRY(_imageManager->loadImage(submesh.specularTexture, &specularImage, errorMessage));
         }
 
         // Allocate and bind descriptor sets

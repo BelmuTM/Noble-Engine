@@ -5,8 +5,8 @@
 
 #include "core/debug/Logger.h"
 
-const Image* ImageManager::load(const std::string& path, std::string& errorMessage) {
-    return loadAsync(path, [path, &errorMessage]() -> std::unique_ptr<Image> {
+const Image* ImageManager::load(const std::string& path, std::string& errorMessage, const bool hasMipmaps) {
+    return loadAsync(path, [path, &errorMessage, hasMipmaps]() -> std::unique_ptr<Image> {
 
         Logger::info("Loading texture \"" + path + "\"...");
 
@@ -29,12 +29,13 @@ const Image* ImageManager::load(const std::string& path, std::string& errorMessa
 
         auto image = std::make_unique<Image>();
 
-        image->path     = path;
-        image->pixels   = std::move(pixelsVector);
-        image->width    = width;
-        image->height   = height;
-        image->channels = STBI_rgb_alpha;
-        image->byteSize = byteSize;
+        image->path       = path;
+        image->pixels     = std::move(pixelsVector);
+        image->width      = width;
+        image->height     = height;
+        image->channels   = STBI_rgb_alpha;
+        image->byteSize   = byteSize;
+        image->hasMipmaps = hasMipmaps;
 
         return image;
     });
