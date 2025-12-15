@@ -67,8 +67,8 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     const int   colorPaletteSize   = 8;
     const float quantizationPeriod = 1.0 / colorPaletteSize;
 
-    //ditherColor  (color, coords, quantizationPeriod);
-    //quantizeColor(color, quantizationPeriod);
+    ditherColor  (color, coords, quantizationPeriod);
+    quantizeColor(color, quantizationPeriod);
 
     output = float4(color, 1.0);
 }

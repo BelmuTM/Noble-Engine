@@ -1,6 +1,7 @@
 #include "ImageManager.h"
 
-#include "core/common/libraries/stbUsage.h"
+#include "libraries/stbUsage.h"
+
 #include "core/resources/ResourceManager.h"
 
 #include "core/debug/Logger.h"

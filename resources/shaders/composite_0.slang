@@ -43,7 +43,7 @@ layout (set = 1, binding = 3) Sampler2D debugBuffer;
 
 [shader("fragment")]
 void fragMain(VSOutput vertIn) : SV_TARGET {
-    uint2 resolution = uint2(frameUBO.viewWidth, frameUBO.viewHeight);
+    uint2 resolution = uint2(uint(frameUBO.viewWidth), uint(frameUBO.viewHeight));
     uint2 coords     = uint2(round(vertIn.uv * resolution));
 
     float3 albedo = albedoBuffer.Sample(vertIn.uv).rgb;
@@ -83,11 +83,12 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
     float3 lighting = albedo * (ambient + lightColor0 * NdotL0 * attenuation0 + lightColor1 * NdotL1 * attenuation1);
 
-    float4 debug = debugBuffer.Sample(vertIn.uv / 0.4);
+    compositeBuffer = float4(lighting, 1.0);
 
-    compositeBuffer = float4(albedo, 1.0);
-
+    /*
     if (coords.x < resolution.x * 0.4 && coords.y < resolution.y * 0.4) {
-        //compositeBuffer = debug;
+        float4 debug = debugBuffer.Sample(vertIn.uv / 0.4);
+        compositeBuffer = debug;
     }
+    */
 }

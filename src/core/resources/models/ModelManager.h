@@ -2,11 +2,11 @@
 #ifndef NOBLEENGINE_MODELMANAGER_H
 #define NOBLEENGINE_MODELMANAGER_H
 
+#include "libraries/tinygltfUsage.h"
+#include "libraries/tinyobjloaderUsage.h"
+
 #include "Model.h"
 #include "core/resources/AsyncResourceManager.h"
-
-#include "core/common/libraries/tinygltfUsage.h"
-#include "core/common/libraries/tinyobjloaderUsage.h"
 
 class ModelManager : public AsyncResourceManager<Model> {
 public:
