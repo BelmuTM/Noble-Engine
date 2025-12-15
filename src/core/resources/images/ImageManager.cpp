@@ -24,14 +24,12 @@ const Image* ImageManager::load(const std::string& path, std::string& errorMessa
 
         const size_t byteSize = width * height * STBI_rgb_alpha;
 
-        std::vector pixelsVector(pixels, pixels + byteSize);
-
-        stbi_image_free(pixels);
+        std::unique_ptr<uint8_t[]> pixelsPtr(pixels);
 
         auto image = std::make_unique<Image>();
 
         image->path       = path;
-        image->pixels     = std::move(pixelsVector);
+        image->pixels     = std::move(pixelsPtr);
         image->width      = width;
         image->height     = height;
         image->channels   = STBI_rgb_alpha;

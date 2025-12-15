@@ -117,7 +117,7 @@ private:
         }
     }
 
-    bool hasPendingTasks() const {
+    [[nodiscard]] bool hasPendingTasks() const {
         for (size_t i = 0; i < queues.size(); i++) {
             std::lock_guard lock(*queueMutexes[i]);
             if (!queues[i].empty()) return true;

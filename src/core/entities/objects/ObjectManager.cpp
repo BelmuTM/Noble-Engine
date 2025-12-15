@@ -15,8 +15,6 @@ void ObjectManager::addObject(
 }
 
 void ObjectManager::createObjects() {
-    const auto startTime = std::chrono::high_resolution_clock::now();
-
 #if MULTITHREADED_OBJECTS_LOAD
 
     // Multithreaded objects loading (models, textures) using a thread pool
@@ -31,7 +29,15 @@ void ObjectManager::createObjects() {
         modelPaths.push_back(objectDescriptor.modelPath);
     }
 
+    auto startTime = std::chrono::high_resolution_clock::now();
+
     loadModelsAsync(threadPool, modelPaths);
+
+    auto endTime = std::chrono::high_resolution_clock::now();
+
+    auto loadDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+
+    Logger::info("Loaded models in " + std::to_string(loadDuration) + "ms");
 
     // Load textures
     std::vector<std::string> texturePaths{};
@@ -44,7 +50,15 @@ void ObjectManager::createObjects() {
         }
     }
 
+    startTime = std::chrono::high_resolution_clock::now();
+
     loadTexturesAsync(threadPool, texturePaths);
+
+    endTime = std::chrono::high_resolution_clock::now();
+
+    loadDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+
+    Logger::info("Loaded textures in " + std::to_string(loadDuration) + "ms");
 
     // Create objects
     std::vector<std::future<std::unique_ptr<Object>>> objectFutures;
@@ -104,12 +118,6 @@ void ObjectManager::createObjects() {
     }
 
 #endif
-
-    const auto endTime = std::chrono::high_resolution_clock::now();
-
-    const auto loadDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
-
-    Logger::info("Loaded objects in " + std::to_string(loadDuration) + "ms");
 }
 
 #if MULTITHREADED_OBJECTS_LOAD

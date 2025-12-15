@@ -5,7 +5,7 @@
 #include <functional>
 #include <future>
 #include <memory>
-#include <mutex>
+#include <shared_mutex>
 #include <type_traits>
 #include <unordered_map>
 
@@ -28,9 +28,15 @@ protected:
             "loadFunc must return the same pointer type as AsyncResourceManager<...>::PointerType"
         );
 
-        std::unique_lock loadLock(_mutex);
-
         // If resource is already cached, return it
+        {
+            std::shared_lock readlock(_mutex);
+            if (auto it = _cache.find(path); it != _cache.end())
+                return it->second;
+        }
+
+        std::unique_lock writelock(_mutex);
+
         if (auto it = _cache.find(path); it != _cache.end()) {
             return it->second;
         }
@@ -41,10 +47,10 @@ protected:
         // Cache a placeholder while the resource is loading
         _cache[path] = future;
 
-        loadLock.unlock();
+        writelock.unlock();
 
         try {
-            std::unique_ptr<ResourceType> loadedResource = loadFunc();
+            PointerType<ResourceType> loadedResource = loadFunc();
 
             // Failed load
             if (!loadedResource) {
@@ -108,7 +114,7 @@ protected:
     }
 
 private:
-    std::mutex _mutex{};
+    std::shared_mutex _mutex{};
 
     std::unordered_map<std::string, std::shared_future<PointerType<ResourceType>>> _cache;
 };

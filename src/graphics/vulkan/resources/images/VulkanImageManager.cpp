@@ -72,7 +72,7 @@ bool VulkanImageManager::loadImage(VulkanImage*& image, const Image* imageData, 
     }
 
     // Copy the image's bytes into the staging buffer
-    std::memcpy(stagingData, imageData->pixels.data(), imageData->byteSize);
+    std::memcpy(stagingData, imageData->pixels.get(), imageData->byteSize);
 
     stagingBuffer.unmapMemory();
 
@@ -139,7 +139,7 @@ bool VulkanImageManager::loadImages(
         offset = (offset + STAGING_BUFFER_ALIGNMENT - 1) & ~(STAGING_BUFFER_ALIGNMENT - 1);
 
         // Copy the image's bytes into the staging buffer
-        std::memcpy(static_cast<char*>(stagingBuffer.getMappedPointer()) + offset, image->pixels.data(), image->byteSize);
+        std::memcpy(static_cast<char*>(stagingBuffer.getMappedPointer()) + offset, image->pixels.get(), image->byteSize);
 
         // Create image on the GPU
         VulkanImage tempImage{};
