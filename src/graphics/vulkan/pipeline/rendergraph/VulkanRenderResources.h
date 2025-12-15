@@ -2,8 +2,8 @@
 #ifndef NOBLEENGINE_VULKANRENDERRESOURCES_H
 #define NOBLEENGINE_VULKANRENDERRESOURCES_H
 
+#include "graphics/vulkan/core/VulkanCommandManager.h"
 #include "graphics/vulkan/resources/VulkanFrameResources.h"
-#include "graphics/vulkan/resources/images/VulkanImageManager.h"
 
 #include "nodes/VulkanRenderPass.h"
 #include "nodes/VulkanRenderPassResource.h"
@@ -32,11 +32,11 @@ public:
     VulkanRenderResources& operator=(VulkanRenderResources&&) = delete;
 
     [[nodiscard]] bool create(
-        const VulkanDevice&       device,
-        const VulkanSwapchain&    swapchain,
-        const VulkanImageManager& imageManager,
-        uint32_t                  framesInFlight,
-        std::string&              errorMessage
+        const VulkanDevice&         device,
+        const VulkanSwapchain&      swapchain,
+        const VulkanCommandManager& commandManager,
+        uint32_t                    framesInFlight,
+        std::string&                errorMessage
     ) noexcept;
 
     void destroy() noexcept;
@@ -45,12 +45,9 @@ public:
 
     [[nodiscard]] bool createDepthBuffer(std::string& errorMessage);
 
-    [[nodiscard]] bool createColorAttachments(
-    VulkanRenderPass*         pass,
-    const VulkanImageManager& imageManager,
-    VulkanFrameResources&     frameResources,
-    std::string&              errorMessage
-);
+    [[nodiscard]] bool createColorBuffers(
+        VulkanRenderPass* pass, const VulkanFrameResources& frameResources, std::string& errorMessage
+    );
 
     [[nodiscard]] bool allocateDescriptors(VulkanRenderPass* pass, std::string& errorMessage);
 
@@ -83,13 +80,21 @@ public:
     }
 
 private:
+    [[nodiscard]] bool createColorBufferImage(
+        VulkanImage& colorBuffer, vk::Format format, vk::Extent2D extent, std::string& errorMessage
+    ) const;
+
+    [[nodiscard]] bool createDepthBufferImage(
+        VulkanImage& depthBuffer, vk::Extent2D extent, std::string& errorMessage
+    ) const;
+
     void bindDescriptors(const VulkanDescriptorSets* descriptorSets, const VulkanDescriptorScheme& scheme);
 
     void rebindDescriptors(VulkanRenderGraph& renderGraph);
 
-    const VulkanDevice*       _device       = nullptr;
-    const VulkanSwapchain*    _swapchain    = nullptr;
-    const VulkanImageManager* _imageManager = nullptr;
+    const VulkanDevice*         _device         = nullptr;
+    const VulkanSwapchain*      _swapchain      = nullptr;
+    const VulkanCommandManager* _commandManager = nullptr;
 
     uint32_t _framesInFlight = 0;
 
@@ -101,6 +106,9 @@ private:
     // Depth buffer
     std::unique_ptr<VulkanImage>                _depthBuffer{};
     std::unique_ptr<VulkanRenderPassAttachment> _depthBufferAttachment{};
+
+    // Color buffers
+    std::vector<std::unique_ptr<VulkanImage>> _colorBuffers{};
 };
 
 #endif // NOBLEENGINE_VULKANRENDERRESOURCES_H

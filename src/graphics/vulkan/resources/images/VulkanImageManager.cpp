@@ -157,6 +157,7 @@ bool VulkanImageManager::loadImages(
     return true;
 }
 
+// TO-DO: Make this multithreaded
 bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& images, std::string& errorMessage) {
     if (images.empty()) return true;
 
@@ -230,80 +231,6 @@ bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& imag
     batch.clear();
 
     stagingBuffer.destroy();
-
-    return true;
-}
-
-bool VulkanImageManager::createColorBuffer(
-    VulkanImage& colorBuffer, const vk::Format format, const vk::Extent2D extent, std::string& errorMessage
-) const {
-    const auto colorExtent = vk::Extent3D{extent.width, extent.height, 1};
-
-    colorBuffer.setFormat(format);
-    colorBuffer.setExtent(colorExtent);
-    colorBuffer.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
-
-    TRY(colorBuffer.createImage(
-        vk::ImageType::e2D,
-        format,
-        colorExtent,
-        1,
-        vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
-        VMA_MEMORY_USAGE_GPU_ONLY,
-        _device,
-        errorMessage
-    ));
-
-    TRY(colorBuffer.createImageView(
-        vk::ImageViewType::e2D, format, vk::ImageAspectFlagBits::eColor, 1, _device, errorMessage
-    ));
-
-    TRY(colorBuffer.transitionLayout(
-        _commandManager, errorMessage,
-        vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eColorAttachmentOptimal
-    ));
-
-    TRY(colorBuffer.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, _device, errorMessage));
-
-    return true;
-}
-
-bool VulkanImageManager::createDepthBuffer(
-    VulkanImage& depthBuffer, const vk::Extent2D extent, std::string& errorMessage
-) const {
-    constexpr auto depthFormat = vk::Format::eD32Sfloat;
-    const     auto depthExtent = vk::Extent3D(extent.width, extent.height, 1);
-
-    depthBuffer.setFormat(depthFormat);
-    depthBuffer.setExtent(depthExtent);
-    depthBuffer.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
-
-    vk::ImageAspectFlags aspects = vk::ImageAspectFlagBits::eDepth;
-    if (VulkanImage::hasStencilComponent(depthBuffer.getFormat())) {
-        aspects |= vk::ImageAspectFlagBits::eStencil;
-    }
-
-    TRY(depthBuffer.createImage(
-        vk::ImageType::e2D,
-        depthFormat,
-        depthExtent,
-        1,
-        vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
-        VMA_MEMORY_USAGE_GPU_ONLY,
-        _device,
-        errorMessage
-    ));
-
-    TRY(depthBuffer.createImageView(vk::ImageViewType::e2D, depthFormat, aspects, 1, _device, errorMessage));
-
-    TRY(depthBuffer.transitionLayout(
-        _commandManager, errorMessage,
-        vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eDepthStencilAttachmentOptimal
-    ));
-
-    TRY(depthBuffer.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eClampToEdge, _device, errorMessage));
 
     return true;
 }

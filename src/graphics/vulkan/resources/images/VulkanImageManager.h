@@ -41,14 +41,6 @@ public:
 
     [[nodiscard]] bool loadBatchedImages(const std::vector<const Image*>& images, std::string& errorMessage);
 
-    [[nodiscard]] bool createColorBuffer(
-        VulkanImage& colorBuffer, vk::Format format, vk::Extent2D extent, std::string& errorMessage
-    ) const;
-
-    [[nodiscard]] bool createDepthBuffer(
-        VulkanImage& depthBuffer, vk::Extent2D extent, std::string& errorMessage
-    ) const;
-
     [[nodiscard]] VulkanImage* getImage(const std::string& path) const {
         return _imageCache.contains(path) ? _imageCache.at(path).get() : nullptr;
     }

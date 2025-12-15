@@ -29,7 +29,8 @@ struct VulkanRenderGraphBuilderContext {
 
 class VulkanRenderGraphBuilder {
 public:
-    VulkanRenderGraphBuilder()  = default;
+    explicit VulkanRenderGraphBuilder(const VulkanRenderGraphBuilderContext& context) : _context(context) {}
+
     ~VulkanRenderGraphBuilder() = default;
 
     VulkanRenderGraphBuilder(const VulkanRenderGraphBuilder&)            = delete;
@@ -38,44 +39,24 @@ public:
     VulkanRenderGraphBuilder(VulkanRenderGraphBuilder&&)            = delete;
     VulkanRenderGraphBuilder& operator=(VulkanRenderGraphBuilder&&) = delete;
 
-    [[nodiscard]] static bool build(const VulkanRenderGraphBuilderContext& context, std::string& errorMessage);
+    [[nodiscard]] bool build(std::string& errorMessage) const;
 
-    [[nodiscard]] static bool buildPasses(
-        VulkanRenderGraph&           renderGraph,
-        VulkanMeshManager&           meshManager,
-        const VulkanFrameResources&  frameResources,
-        const VulkanRenderResources& renderResources,
-        VulkanRenderObjectManager&   renderObjectManager,
-        VulkanShaderProgramManager&  shaderProgramManager,
-        std::string&                 errorMessage
-    );
+    [[nodiscard]] bool buildPasses(std::string& errorMessage) const;
 
-    [[nodiscard]] static bool attachSwapchainOutput(
-        const VulkanSwapchain& swapchain,
-        VulkanFrameResources&  frameResources,
-        VulkanRenderGraph&     renderGraph,
-        std::string&           errorMessage
-    );
+private:
+    const VulkanRenderGraphBuilderContext& _context;
 
-    [[nodiscard]] static bool createColorAttachments(
-        VulkanRenderResources&    renderResources,
-        const VulkanImageManager& imageManager,
-        VulkanFrameResources&     frameResources,
-        VulkanRenderGraph&        renderGraph,
-        std::string&              errorMessage
-    );
+    [[nodiscard]] bool createPass(const std::string& path, VulkanRenderPassType type, std::string& errorMessage) const;
 
-    [[nodiscard]] static bool allocateDescriptors(
-        VulkanRenderResources& renderResources, VulkanRenderGraph& renderGraph, std::string& errorMessage
-    );
+    [[nodiscard]] bool attachSwapchainOutput(std::string& errorMessage) const;
 
-    [[nodiscard]] static bool setupResourceTransitions(
-        VulkanRenderResources& renderResources, std::string& errorMessage
-    );
+    [[nodiscard]] bool createColorBuffers(std::string& errorMessage) const;
 
-    [[nodiscard]] static bool createPipelines(
-        VulkanRenderGraph& renderGraph, VulkanPipelineManager& pipelineManager, std::string& errorMessage
-    );
+    [[nodiscard]] bool allocateDescriptors(std::string& errorMessage) const;
+
+    [[nodiscard]] bool setupResourceTransitions(std::string& errorMessage) const;
+
+    [[nodiscard]] bool createPipelines(std::string& errorMessage) const;
 };
 
 #endif // NOBLEENGINE_VULKANRENDERGRAPHBUILDER_H

@@ -30,7 +30,7 @@ bool VulkanRenderer::init(Window& window, const ObjectManager& objectManager, st
     TRY(createVulkanEntity(&meshManager, errorMessage, device, commandManager));
     TRY(createVulkanEntity(&imageManager, errorMessage, device, commandManager));
     TRY(createVulkanEntity(&uniformBufferManager, errorMessage, device, _framesInFlight));
-    TRY(createVulkanEntity(&renderResources, errorMessage, device, swapchain, imageManager, _framesInFlight));
+    TRY(createVulkanEntity(&renderResources, errorMessage, device, swapchain, commandManager, _framesInFlight));
 
     TRY(createVulkanEntity(
         &frameResources, errorMessage, device, swapchain, imageManager, uniformBufferManager, _framesInFlight
@@ -47,7 +47,7 @@ bool VulkanRenderer::init(Window& window, const ObjectManager& objectManager, st
         &renderGraph, errorMessage, swapchain, meshManager, frameResources, renderResources, device.getQueryPool()
     ));
 
-    const VulkanRenderGraphBuilderContext graphBuilderContext{
+    const VulkanRenderGraphBuilderContext renderGraphBuilderContext{
         .renderGraph          = renderGraph,
         .meshManager          = meshManager,
         .imageManager         = imageManager,
@@ -59,7 +59,11 @@ bool VulkanRenderer::init(Window& window, const ObjectManager& objectManager, st
         .swapchain            = swapchain
     };
 
-    TRY(VulkanRenderGraphBuilder::build(graphBuilderContext, errorMessage));
+    const VulkanRenderGraphBuilder renderGraphBuilder(renderGraphBuilderContext);
+
+    TRY(renderGraphBuilder.build(errorMessage));
+
+    shaderProgramManager.destroy();
 
     TRY(meshManager.fillBuffers(errorMessage));
 
@@ -119,7 +123,6 @@ bool VulkanRenderer::onFramebufferResize(std::string& errorMessage) {
     }
 
     TRY(swapchainManager.recreateSwapchain(errorMessage));
-    TRY(frameResources.recreate(&commandManager, errorMessage));
     TRY(renderResources.recreate(renderGraph, errorMessage));
 
     _window->setFramebufferResized(false);

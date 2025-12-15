@@ -8,10 +8,6 @@
 #include "ubo/VulkanUniformBufferManager.h"
 #include "ubo/FrameUniformBuffer.h"
 
-#include "graphics/vulkan/pipeline/rendergraph/nodes/VulkanRenderPassAttachment.h"
-
-#include <memory>
-
 static const VulkanDescriptorScheme frameDescriptorScheme = {
     {0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eAllGraphics}
 };
@@ -40,10 +36,6 @@ public:
 
     void update(uint32_t frameIndex, uint32_t imageIndex, const Camera& camera);
 
-    [[nodiscard]] bool recreate(const VulkanCommandManager* commandManager, std::string& errorMessage) const;
-
-    VulkanImage* allocateColorBuffer();
-
     [[nodiscard]] uint32_t getFrameIndex() const noexcept { return _frameIndex; }
     [[nodiscard]] uint32_t getImageIndex() const noexcept { return _imageIndex; }
 
@@ -66,8 +58,6 @@ private:
 
     FrameUniformBuffer    _frameUBO{};
     VulkanDescriptorSets* _frameUBODescriptors = nullptr;
-
-    std::vector<std::unique_ptr<VulkanImage>> _colorBuffers{};
 };
 
 #endif // NOBLEENGINE_VULKANFRAMERESOURCES_H

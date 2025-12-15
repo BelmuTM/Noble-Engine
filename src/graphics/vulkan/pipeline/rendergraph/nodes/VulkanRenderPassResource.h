@@ -6,12 +6,12 @@
 
 #include <functional>
 
-enum VulkanRenderPassResourceType { Texture, Buffer, SwapchainOutput };
+enum class VulkanRenderPassResourceType { Buffer, SwapchainOutput };
 
 struct VulkanRenderPassResource {
     std::string name = "Undefined_Resource";
 
-    VulkanRenderPassResourceType type = Texture;
+    VulkanRenderPassResourceType type = VulkanRenderPassResourceType::Buffer;
 
     VulkanImage* image = nullptr;
 

@@ -7,15 +7,15 @@
 #include <ranges>
 
 bool VulkanRenderResources::create(
-    const VulkanDevice&       device,
-    const VulkanSwapchain&    swapchain,
-    const VulkanImageManager& imageManager,
-    const uint32_t            framesInFlight,
-    std::string&              errorMessage
+    const VulkanDevice&         device,
+    const VulkanSwapchain&      swapchain,
+    const VulkanCommandManager& commandManager,
+    const uint32_t              framesInFlight,
+    std::string&                errorMessage
 ) noexcept {
     _device         = &device;
     _swapchain      = &swapchain;
-    _imageManager   = &imageManager;
+    _commandManager = &commandManager;
     _framesInFlight = framesInFlight;
 
     TRY(createDepthBuffer(errorMessage));
@@ -33,16 +33,37 @@ void VulkanRenderResources::destroy() noexcept {
         _depthBuffer->destroy();
     }
 
-    _device       = nullptr;
-    _swapchain    = nullptr;
-    _imageManager = nullptr;
+    // Color buffers destruction
+    for (const auto& colorBuffer : _colorBuffers) {
+        if (colorBuffer) colorBuffer->destroy();
+    }
+
+    _colorBuffers.clear();
+
+    _device         = nullptr;
+    _swapchain      = nullptr;
+    _commandManager = nullptr;
 }
 
 [[nodiscard]] bool VulkanRenderResources::recreate(VulkanRenderGraph& renderGraph, std::string& errorMessage) {
     // Depth buffer recreation
     _depthBuffer->destroy();
 
-    TRY(_imageManager->createDepthBuffer(*_depthBuffer, _swapchain->getExtent(), errorMessage));
+    TRY(createDepthBufferImage(*_depthBuffer, _swapchain->getExtent(), errorMessage));
+
+    // Color buffers recreation
+    for (auto& colorBuffer : _colorBuffers) {
+        colorBuffer->destroy();
+
+        TRY(createColorBufferImage(
+            *colorBuffer, colorBuffer->getFormat(), _swapchain->getExtent(), errorMessage
+        ));
+
+        TRY(colorBuffer->transitionLayout(
+            _commandManager, errorMessage,
+            vk::ImageLayout::eShaderReadOnlyOptimal
+        ));
+    }
 
     // Re-bind descriptor sets
     rebindDescriptors(renderGraph);
@@ -52,12 +73,13 @@ void VulkanRenderResources::destroy() noexcept {
 
 bool VulkanRenderResources::createDepthBuffer(std::string& errorMessage) {
     _depthBuffer = std::make_unique<VulkanImage>();
-    TRY(_imageManager->createDepthBuffer(*_depthBuffer, _swapchain->getExtent(), errorMessage));
+
+    TRY(createDepthBufferImage(*_depthBuffer, _swapchain->getExtent(), errorMessage));
 
     VulkanRenderPassResource depthBufferResource{};
     depthBufferResource
         .setName(DEPTH_BUFFER_RESOURCE_NAME)
-        .setType(Buffer)
+        .setType(VulkanRenderPassResourceType::Buffer)
         .setImage(_depthBuffer.get());
 
     VulkanRenderPassAttachment depthBufferAttachment{};
@@ -74,23 +96,22 @@ bool VulkanRenderResources::createDepthBuffer(std::string& errorMessage) {
     return true;
 }
 
-bool VulkanRenderResources::createColorAttachments(
-    VulkanRenderPass*         pass,
-    const VulkanImageManager& imageManager,
-    VulkanFrameResources&     frameResources,
-    std::string&              errorMessage
+bool VulkanRenderResources::createColorBuffers(
+    VulkanRenderPass* pass, const VulkanFrameResources& frameResources, std::string& errorMessage
 ) {
+    static constexpr auto format = vk::Format::eB8G8R8A8Srgb;
+
     for (const auto& colorOutput : pass->getShaderProgram()->getStageOutputs()) {
-        VulkanImage* colorImage = frameResources.allocateColorBuffer();
+        _colorBuffers.push_back(std::make_unique<VulkanImage>());
 
-        constexpr auto format = vk::Format::eB8G8R8A8Srgb;
+        VulkanImage* colorImage = _colorBuffers.back().get();
 
-        TRY(imageManager.createColorBuffer(*colorImage, format, frameResources.getExtent(), errorMessage));
+        TRY(createColorBufferImage(*colorImage, format, frameResources.getExtent(), errorMessage));
 
         VulkanRenderPassResource colorBuffer{};
         colorBuffer
             .setName(colorOutput)
-            .setType(Buffer)
+            .setType(VulkanRenderPassResourceType::Buffer)
             .setImage(colorImage);
 
         VulkanRenderPassAttachment colorAttachment{};
@@ -105,6 +126,81 @@ bool VulkanRenderResources::createColorAttachments(
         addResource(colorBuffer);
         addResourceWriter(colorOutput, pass);
     }
+
+    return true;
+}
+
+bool VulkanRenderResources::createDepthBufferImage(
+    VulkanImage& depthBuffer, const vk::Extent2D extent, std::string& errorMessage
+) const {
+    static constexpr auto depthFormat = vk::Format::eD32Sfloat;
+
+    const auto depthExtent = vk::Extent3D(extent.width, extent.height, 1);
+
+    depthBuffer.setFormat(depthFormat);
+    depthBuffer.setExtent(depthExtent);
+    depthBuffer.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+
+    vk::ImageAspectFlags aspects = vk::ImageAspectFlagBits::eDepth;
+    if (VulkanImage::hasStencilComponent(depthBuffer.getFormat())) {
+        aspects |= vk::ImageAspectFlagBits::eStencil;
+    }
+
+    TRY(depthBuffer.createImage(
+        vk::ImageType::e2D,
+        depthFormat,
+        depthExtent,
+        1,
+        vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
+        VMA_MEMORY_USAGE_GPU_ONLY,
+        _device,
+        errorMessage
+    ));
+
+    TRY(depthBuffer.createImageView(vk::ImageViewType::e2D, depthFormat, aspects, 1, _device, errorMessage));
+
+    TRY(depthBuffer.transitionLayout(
+        _commandManager, errorMessage,
+        vk::ImageLayout::eUndefined,
+        vk::ImageLayout::eDepthStencilAttachmentOptimal
+    ));
+
+    TRY(depthBuffer.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eClampToEdge, _device, errorMessage));
+
+    return true;
+}
+
+bool VulkanRenderResources::createColorBufferImage(
+    VulkanImage& colorBuffer, const vk::Format format, const vk::Extent2D extent, std::string& errorMessage
+) const {
+    const auto colorExtent = vk::Extent3D{extent.width, extent.height, 1};
+
+    colorBuffer.setFormat(format);
+    colorBuffer.setExtent(colorExtent);
+    colorBuffer.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+
+    TRY(colorBuffer.createImage(
+        vk::ImageType::e2D,
+        format,
+        colorExtent,
+        1,
+        vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+        VMA_MEMORY_USAGE_GPU_ONLY,
+        _device,
+        errorMessage
+    ));
+
+    TRY(colorBuffer.createImageView(
+        vk::ImageViewType::e2D, format, vk::ImageAspectFlagBits::eColor, 1, _device, errorMessage
+    ));
+
+    TRY(colorBuffer.transitionLayout(
+        _commandManager, errorMessage,
+        vk::ImageLayout::eUndefined,
+        vk::ImageLayout::eColorAttachmentOptimal
+    ));
+
+    TRY(colorBuffer.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, _device, errorMessage));
 
     return true;
 }

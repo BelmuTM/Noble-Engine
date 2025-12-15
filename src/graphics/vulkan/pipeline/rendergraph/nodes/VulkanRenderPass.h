@@ -11,6 +11,8 @@
 #include <memory>
 #include <ranges>
 
+enum class VulkanRenderPassType { Composite, MeshRender };
+
 struct VulkanPassTransition {
     VulkanRenderPassResource* resource     = nullptr;
     vk::ImageLayout           targetLayout = vk::ImageLayout::eUndefined;
@@ -131,9 +133,9 @@ private:
 
     std::vector<std::unique_ptr<VulkanRenderPassAttachment>> _colorAttachments{};
 
-    std::vector<std::unique_ptr<VulkanDrawCall>> _drawCalls{};
-
     std::vector<VulkanPassTransition> _transitions{};
+
+    std::vector<std::unique_ptr<VulkanDrawCall>> _drawCalls{};
 };
 
 #endif // NOBLEENGINE_VULKANRENDERPASS_H

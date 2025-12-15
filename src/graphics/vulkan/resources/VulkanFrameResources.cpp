@@ -31,10 +31,6 @@ bool VulkanFrameResources::create(
 void VulkanFrameResources::destroy() noexcept {
     _descriptorManager.destroy();
 
-    for (const auto& colorBuffer : _colorBuffers) {
-        colorBuffer->destroy();
-    }
-
     _device       = nullptr;
     _swapchain    = nullptr;
     _imageManager = nullptr;
@@ -47,26 +43,4 @@ void VulkanFrameResources::update(
 
     _frameIndex = frameIndex;
     _imageIndex = imageIndex;
-}
-
-bool VulkanFrameResources::recreate(const VulkanCommandManager* commandManager, std::string& errorMessage) const {
-    for (auto& colorBuffer : _colorBuffers) {
-        colorBuffer->destroy();
-
-        TRY(_imageManager->createColorBuffer(
-            *colorBuffer, colorBuffer->getFormat(), _swapchain->getExtent(), errorMessage
-        ));
-
-        TRY(colorBuffer->transitionLayout(
-            commandManager, errorMessage,
-            vk::ImageLayout::eShaderReadOnlyOptimal
-        ));
-    }
-
-    return true;
-}
-
-VulkanImage* VulkanFrameResources::allocateColorBuffer() {
-    _colorBuffers.push_back(std::make_unique<VulkanImage>());
-    return _colorBuffers.back().get();
 }
