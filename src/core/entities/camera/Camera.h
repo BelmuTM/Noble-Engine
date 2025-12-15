@@ -70,7 +70,7 @@ private:
 
     float _fov = 70.0f;
     static constexpr float MIN_FOV = 30.0f;
-    static constexpr float MAX_FOV = 120.0f;
+    static constexpr float MAX_FOV = 140.0f;
 
     float _speed = 5.0f;
 

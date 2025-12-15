@@ -85,9 +85,9 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
     float4 debug = debugBuffer.Sample(vertIn.uv / 0.4);
 
-    compositeBuffer = float4(normal * 0.5 + 0.5, 1.0);
+    compositeBuffer = float4(albedo, 1.0);
 
     if (coords.x < resolution.x * 0.4 && coords.y < resolution.y * 0.4) {
-        compositeBuffer = debug;
+        //compositeBuffer = debug;
     }
 }

@@ -74,12 +74,14 @@ bool VulkanRenderGraphBuilder::createPass(
 }
 
 bool VulkanRenderGraphBuilder::attachSwapchainOutput(std::string& errorMessage) const {
+    static const std::string SWAPCHAIN_RESOURCE_NAME = "Swapchain_Output";
+
     const VulkanSwapchain& swapchain      = _context.swapchain;
     VulkanFrameResources&  frameResources = _context.frameResources;
 
     VulkanRenderPassResource swapchainOutput{};
     swapchainOutput
-        .setName("Swapchain_Output")
+        .setName(SWAPCHAIN_RESOURCE_NAME)
         .setType(VulkanRenderPassResourceType::SwapchainOutput)
         .setImageResolver([&swapchain, &frameResources] {
             return swapchain.getImage(frameResources.getImageIndex());

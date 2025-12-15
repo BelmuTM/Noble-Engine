@@ -13,6 +13,7 @@ bool VulkanRenderer::init(Window& window, const ObjectManager& objectManager, st
     _window = &window;
 
     errorMessage = "Failed to init Vulkan renderer: no error message provided";
+
     ScopeGuard guard{[this] { shutdown(); }};
 
     // Create context (instance, device, surface, swapchain)

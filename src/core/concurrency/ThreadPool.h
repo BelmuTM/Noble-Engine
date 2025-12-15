@@ -4,47 +4,35 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <deque>
 #include <functional>
 #include <future>
 #include <memory>
-#include <queue>
+#include <random>
 #include <thread>
+#include <vector>
 
 class ThreadPool {
 public:
     explicit ThreadPool(const size_t threadCount) {
-        workerThreads.reserve(threadCount);
-
         running.store(true);
 
+        queues.resize(threadCount);
+        queueMutexes.resize(threadCount);
+
+        for (auto& queueMutex : queueMutexes) {
+            queueMutex = std::make_unique<std::mutex>();
+        }
+
+        workerThreads.reserve(threadCount);
+
         for (size_t i = 0; i < threadCount; i++) {
-
-            workerThreads.emplace_back([this] {
-                while (running || !tasksQueue.empty()) {
-                    std::function<void()> task;
-
-                    {
-                        // Acquire the mutex to safely access the shared tasks queue
-                        std::unique_lock lock(mutex);
-                        // Wait until there is at least one task in the queue or the pool is destroyed to execute tasks
-                        condition.wait(lock, [this] { return !tasksQueue.empty() || !running; });
-
-                        if (!running && tasksQueue.empty()) break;
-
-                        // Pop the task off the queue
-                        task = std::move(tasksQueue.front());
-                        tasksQueue.pop();
-                    }
-
-                    // Execute the task
-                    task();
-                }
-            });
+            workerThreads.emplace_back([this, i] { workerLoop(i); });
         }
     }
 
     ~ThreadPool() {
-        running.store(false);
+        running.store(false, std::memory_order_release);
 
         condition.notify_all();
 
@@ -67,9 +55,12 @@ public:
 
         std::future<ReturnType> taskResult = task->get_future();
 
+        // Round-robin push to queues to reduce contention
+        const size_t queueIndex = nextQueue.fetch_add(1, std::memory_order_relaxed) % queues.size();
+
         {
-            std::unique_lock lock(mutex);
-            tasksQueue.emplace([task] { (*task)(); });
+            std::lock_guard lock(*queueMutexes[queueIndex]);
+            queues[queueIndex].emplace_back([task] { (*task)(); });
         }
 
         condition.notify_one();
@@ -78,12 +69,73 @@ public:
     }
 
 private:
-    std::vector<std::thread>          workerThreads;
-    std::queue<std::function<void()>> tasksQueue;
-    std::mutex                        mutex;
-    std::condition_variable           condition;
+    void workerLoop(const size_t queueIndex) {
+        std::mt19937 rng(std::random_device{}());
+        std::uniform_int_distribution<size_t> distribution(0, queues.size() - 1);
+
+        while (running.load(std::memory_order_acquire)) {
+            std::function<void()> task;
+
+            // Fetch tasks in current thread
+            {
+                // Acquire the mutex to safely access the thread's tasks queue
+                std::lock_guard lock(*queueMutexes[queueIndex]);
+
+                // Pop the most recent task off the queue
+                if (!queues[queueIndex].empty()) {
+                    task = std::move(queues[queueIndex].back());
+                    queues[queueIndex].pop_back();
+                }
+            }
+
+            // If the current thread has no task to process
+            if (!task) {
+                // Try to steal a task from other threads
+                for (size_t i = 0; i < queues.size(); i++) {
+                    // Randomly pick the victim to reduce contention (vs round-robin)
+                    const size_t victim = distribution(rng);
+                    if (victim == queueIndex) continue;
+
+                    std::lock_guard lock(*queueMutexes[victim]);
+
+                    // Found a valid victim, steal its oldest task
+                    if (!queues[victim].empty()) {
+                        task = std::move(queues[victim].front());
+                        queues[victim].pop_front();
+                        break;
+                    }
+                }
+            }
+
+            // Execute the task or wait
+            if (task) {
+                task();
+            } else {
+                std::unique_lock lock(waitMutex);
+                condition.wait(lock, [this] { return !running || hasPendingTasks(); });
+            }
+        }
+    }
+
+    bool hasPendingTasks() const {
+        for (size_t i = 0; i < queues.size(); i++) {
+            std::lock_guard lock(*queueMutexes[i]);
+            if (!queues[i].empty()) return true;
+        }
+        return false;
+    }
+
+    std::vector<std::thread> workerThreads;
+
+    std::vector<std::deque<std::function<void()>>> queues;
+    std::vector<std::unique_ptr<std::mutex>>       queueMutexes;
+
+    std::mutex              waitMutex;
+    std::condition_variable condition;
 
     std::atomic<bool> running{false};
+
+    std::atomic<size_t> nextQueue{0};
 };
 
 #endif // NOBLEENGINE_THREADPOOL_H
