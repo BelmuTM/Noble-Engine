@@ -22,6 +22,7 @@ struct alignas(16) FrameUBO {
     float farPlane;
 
     float frameTimeCounter;
+    float frameCounter;
 
     float viewWidth;
     float viewHeight;
@@ -29,7 +30,10 @@ struct alignas(16) FrameUBO {
 
 class FrameUniformBuffer final : public VulkanUniformBuffer<FrameUBO> {
 public:
-    void update(uint32_t frameIndex, const VulkanSwapchain& swapchain, const Camera& camera) const;
+    void update(uint32_t frameIndex, const VulkanSwapchain& swapchain, const Camera& camera);
+
+private:
+    uint32_t _frameCounter = 0;
 };
 
 #endif // NOBLEENGINE_FRAMEUNIFORMBUFFER_H

@@ -1,3 +1,5 @@
+#include "include/uniforms.slang"
+
 struct VSInput {
     float3 position  : POSITION;
     float3 normal    : NORMAL;
@@ -5,20 +7,6 @@ struct VSInput {
     float3 color     : COLOR;
     float2 texCoords : TEXCOORD0;
 }
-
-struct FrameUBO {
-    float4x4 view;
-    float4x4 viewInverse;
-    float4x4 projection;
-    float4x4 projectionInverse;
-    float3   cameraPosition;
-    float    nearPlane;
-    float    farPlane;
-    float    frameTimeCounter;
-    float    viewWidth;
-    float    viewHeight;
-};
-[[vk::binding(0, 0)]] ConstantBuffer<FrameUBO> frameUBO;
 
 struct ObjectDataGPU {
     float4x4 model;
@@ -39,7 +27,7 @@ struct VSOutput {
 VSOutput vertMain(VSInput input) {
     VSOutput output;
     output.worldPos  = mul(object.model, float4(input.position, 1.0));
-    output.position  = mul(frameUBO.projection, mul(frameUBO.view, output.worldPos));
+    output.position  = mul(uniforms.projection, mul(uniforms.view, output.worldPos));
     output.normal    = normalize(mul(float3x3(object.normalMatrix), input.normal));
     output.tangent   = input.tangent;
     output.color     = input.color;

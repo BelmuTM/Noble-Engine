@@ -1,20 +1,8 @@
+#include "include/uniforms.slang"
+
 struct VSInput {
     uint id : SV_VertexID;
 };
-
-struct FrameUBO {
-    float4x4 view;
-    float4x4 viewInverse;
-    float4x4 projection;
-    float4x4 projectionInverse;
-    float3   cameraPosition;
-    float    nearPlane;
-    float    farPlane;
-    float    frameTimeCounter;
-    float    viewWidth;
-    float    viewHeight;
-};
-[[vk::binding(0, 0)]] ConstantBuffer<FrameUBO> frameUBO;
 
 struct VSOutput {
     float4 position : SV_Position;
@@ -41,9 +29,11 @@ layout (set = 1, binding = 3) Sampler2D debugBuffer;
 
 #define TAU 2.0 * 3.14159
 
+#include "include/transforms.slang"
+
 [shader("fragment")]
 void fragMain(VSOutput vertIn) : SV_TARGET {
-    uint2 resolution = uint2(uint(frameUBO.viewWidth), uint(frameUBO.viewHeight));
+    uint2 resolution = uint2(uint(uniforms.viewWidth), uint(uniforms.viewHeight));
     uint2 coords     = uint2(round(vertIn.uv * resolution));
 
     float3 albedo = albedoBuffer.Sample(vertIn.uv).rgb;
@@ -51,30 +41,31 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
     float depth = depthBuffer.Sample(vertIn.uv).r;
 
-    float4 clipPos  = float4(float2(vertIn.uv.x * 2.0 - 1.0, 1.0 - vertIn.uv.y * 2.0), depth, 1.0);
-    float4 viewPos  = mul(frameUBO.projectionInverse, clipPos);
-           viewPos /= viewPos.w;
-    float3 worldPos = mul(frameUBO.viewInverse, float4(viewPos.xyz, 1.0)).xyz;
+    float3 screenPosition = float3(vertIn.uv, depth);
+    float3 viewPosition   = screenToView(screenPosition, uniforms.projectionInverse);
+    float3 worldPosition  = viewToWorld(viewPosition, uniforms.viewInverse);
 
-    const float3 lightPosition0 = float3(-1.5, 1.0, 5.0);
-    const float3 lightPosition1 = float3(4.5, -1.0, 1.0);
+    float3 lightPosition0 = float3(0.0, 1.0, 5.0);
+    float3 lightPosition1 = float3(4.5, -1.0, 1.0);
 
-    float3 lightDirection0 = normalize(lightPosition0 - worldPos.xyz);
-    float3 lightDirection1 = normalize(lightPosition1 - worldPos.xyz);
+    lightPosition0.x += lerp(0.0, 5.5, sin(uniforms.frameTimeCounter));
+
+    float3 lightDirection0 = normalize(lightPosition0 - worldPosition.xyz);
+    float3 lightDirection1 = normalize(lightPosition1 - worldPosition.xyz);
 
     float NdotL0 = max(0.0, dot(normalize(normal), lightDirection0));
     float NdotL1 = max(0.0, dot(normalize(normal), lightDirection1));
 
-    float dist0 = length(lightPosition0 - worldPos.xyz);
-    float dist1 = length(lightPosition1 - worldPos.xyz);
+    float dist0 = length(lightPosition0 - worldPosition.xyz);
+    float dist1 = length(lightPosition1 - worldPosition.xyz);
 
     float attenuation0 = 1.0 / (dist0 * dist0 * 0.15);
     float attenuation1 = 1.0 / (dist1 * dist1 * 0.35);
 
     float3 rainbow;
-    rainbow.r = sin(frameUBO.frameTimeCounter * TAU / 6.0 + 0.0) * 0.5 + 0.5;
-    rainbow.g = sin(frameUBO.frameTimeCounter * TAU / 6.0 + 2.0) * 0.5 + 0.5;
-    rainbow.b = sin(frameUBO.frameTimeCounter * TAU / 6.0 + 4.0) * 0.5 + 0.5;
+    rainbow.r = sin(uniforms.frameTimeCounter * TAU / 6.0 + 0.0) * 0.5 + 0.5;
+    rainbow.g = sin(uniforms.frameTimeCounter * TAU / 6.0 + 2.0) * 0.5 + 0.5;
+    rainbow.b = sin(uniforms.frameTimeCounter * TAU / 6.0 + 4.0) * 0.5 + 0.5;
 
     const float3 lightColor0 = float3(0.969, 0.549, 0.125);
     float3 lightColor1 = rainbow;

@@ -141,8 +141,11 @@ function (compile_slang TARGET)
 
     endfunction()
 
-    # Collect shaders sources
+    # Collect Slang shaders sources
     file(GLOB_RECURSE SHADERS_SOURCES ${SHADERS_DIR}/*.slang)
+
+    # Filter out Slang files inside the include folder
+    list(FILTER SHADERS_SOURCES EXCLUDE REGEX "${SHADERS_DIR}/include/.*")
 
     # Compile shaders
     add_slang_shader_target(

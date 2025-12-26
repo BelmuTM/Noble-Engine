@@ -4,7 +4,7 @@
 
 void FrameUniformBuffer::update(
     const uint32_t frameIndex, const VulkanSwapchain& swapchain, const Camera& camera
-) const {
+) {
     const vk::Extent2D swapchainExtent = swapchain.getExtent();
 
     static auto startTime = std::chrono::high_resolution_clock::now();
@@ -28,9 +28,12 @@ void FrameUniformBuffer::update(
     ubo.farPlane  = camera.getFarPlane();
 
     ubo.frameTimeCounter = frameTimeCounter;
+    ubo.frameCounter     = static_cast<float>(_frameCounter);
 
     ubo.viewWidth  = static_cast<float>(swapchainExtent.width);
     ubo.viewHeight = static_cast<float>(swapchainExtent.height);
+
+    ++_frameCounter;
 
     updateMemory(frameIndex, ubo);
 }
