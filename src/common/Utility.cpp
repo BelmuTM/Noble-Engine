@@ -12,6 +12,6 @@ namespace Utility {
     }
 
     std::string getFileExtension(const std::string& path) {
-        return std::filesystem::path(path).extension();
+        return std::filesystem::path(path).extension().string();
     }
 }
