@@ -5,6 +5,8 @@
 
 #include "core/debug/Logger.h"
 
+#include "core/render/FrustumCuller.h"
+
 #include <ranges>
 
 bool VulkanRenderGraph::create(
@@ -143,7 +145,7 @@ bool VulkanRenderGraph::executePass(
 
         commandBuffer.bindPipeline(pass->getBindPoint(), *pass->getPipeline());
 
-        for (const auto& drawCall : pass->getDrawCalls()) {
+        for (const auto& drawCall : pass->_visibleDrawCalls) {
             const auto& draw = *drawCall;
 
             const vk::PipelineLayout pipelineLayout = pass->getPipeline()->getLayout();

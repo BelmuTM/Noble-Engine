@@ -2,6 +2,8 @@
 #ifndef NOBLEENGINE_MESH_H
 #define NOBLEENGINE_MESH_H
 
+#include "common/Math.h"
+
 #include "Material.h"
 #include "Vertex.h"
 
@@ -36,7 +38,9 @@ public:
     [[nodiscard]] size_t getVerticesByteSize() const { return sizeof(Vertex) * _vertices.size(); }
     [[nodiscard]] size_t getIndicesByteSize() const { return sizeof(uint32_t) * _indices.size(); }
 
-    [[nodiscard]] Material getMaterial() const noexcept { return _material; }
+    [[nodiscard]] const Math::AABB& getAABB() const noexcept { return _aabb; }
+
+    [[nodiscard]] const Material& getMaterial() const noexcept { return _material; }
 
     void addVertex(const Vertex& vertex) { _vertices.push_back(vertex); }
     void addIndex(const uint32_t index) { _indices.push_back(index); }
@@ -46,11 +50,15 @@ public:
         _indices  = indices;
     }
 
+    void setAABB(const Math::AABB& aabb) noexcept { _aabb = aabb; }
+
     void setMaterial(const Material& material) noexcept { _material = material; }
 
 protected:
     std::vector<Vertex>   _vertices{};
     std::vector<uint32_t> _indices{};
+
+    Math::AABB _aabb{};
 
     Material _material{};
 };

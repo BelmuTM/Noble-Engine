@@ -27,8 +27,8 @@ struct VulkanRenderObject {
     uint32_t objectIndex = 0;
 
     void update() {
-        data.model  = object->getModelMatrix();
-        data.normal = object->getNormalMatrix();
+        data.modelMatrix  = object->getModelMatrix();
+        data.normalMatrix = object->getNormalMatrix();
     }
 };
 

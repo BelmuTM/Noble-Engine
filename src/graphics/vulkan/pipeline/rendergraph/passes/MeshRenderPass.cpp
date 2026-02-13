@@ -30,6 +30,7 @@ bool MeshRenderPass::create(
             auto verticesDraw = std::make_unique<VulkanDrawCallWithPushConstants>();
 
             verticesDraw->setMesh(submesh.mesh);
+            verticesDraw->setOwner(renderObject.get());
             verticesDraw->addDescriptorSets(submesh.descriptorSets);
             verticesDraw->setPushConstant("object", &renderObject->data);
 

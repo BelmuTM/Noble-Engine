@@ -27,8 +27,8 @@ public:
     using DescriptorSetsMap     = std::unordered_map<uint32_t, VulkanDescriptorSets*>;
     using DescriptorManagersMap = std::unordered_map<uint32_t, std::unique_ptr<VulkanDescriptorManager>>;
 
-    VulkanRenderPass()  = default;
-    ~VulkanRenderPass() = default;
+    VulkanRenderPass()          = default;
+    virtual ~VulkanRenderPass() = default;
 
     VulkanRenderPass(const VulkanRenderPass&)            = delete;
     VulkanRenderPass& operator=(const VulkanRenderPass&) = delete;
@@ -116,6 +116,8 @@ public:
         return *this;
     }
 
+    std::vector<const VulkanDrawCall*>           _visibleDrawCalls{};
+
 private:
     std::string _name = "Undefined_Pass";
 
@@ -136,6 +138,7 @@ private:
     std::vector<VulkanPassTransition> _transitions{};
 
     std::vector<std::unique_ptr<VulkanDrawCall>> _drawCalls{};
+
 };
 
 #endif // NOBLEENGINE_VULKANRENDERPASS_H

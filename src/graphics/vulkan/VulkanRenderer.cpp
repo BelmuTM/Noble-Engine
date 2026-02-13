@@ -6,6 +6,8 @@
 
 #include "core/debug/ErrorHandling.h"
 #include "core/debug/Logger.h"
+#include "core/render/FrustumCuller.h"
+#include "pipeline/rendergraph/passes/MeshRenderPass.h"
 
 VulkanRenderer::VulkanRenderer(const uint32_t framesInFlight) : _framesInFlight(framesInFlight) {}
 
@@ -96,6 +98,35 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
 
     frameResources.update(currentFrame, imageIndex, camera);
     renderObjectManager.updateObjects();
+
+    const FrameUniforms& uniforms = frameResources.getUniforms();
+
+    const glm::mat4 viewProjectionMatrix = uniforms.projectionMatrix * uniforms.viewMatrix;
+
+    const std::array<Math::Plane, 6>& frustumPlanes = FrustumCuller::getFrustumPlanes(viewProjectionMatrix);
+
+    for (const auto& pass : renderGraph.getPasses()) {
+        pass->_visibleDrawCalls.clear();
+        pass->_visibleDrawCalls.reserve(pass->getDrawCalls().size());
+
+        for (const auto& drawCall : pass->getDrawCalls()) {
+            bool visible = true;
+
+            if (dynamic_cast<MeshRenderPass*>(pass.get())) {
+                if (!drawCall->owner) continue;
+
+                Math::AABB worldAABB = Math::AABB::transform(
+                    drawCall->mesh->getAABB(), drawCall->owner->data.modelMatrix
+                );
+
+                visible = FrustumCuller::testVisibility(worldAABB, frustumPlanes);
+            }
+
+            if (visible) {
+                pass->_visibleDrawCalls.push_back(drawCall.get());
+            }
+        }
+    }
 
     if (!recordCurrentCommandBuffer(imageIndex, errorMessage)) return;
     if (!submitCurrentCommandBuffer(imageIndex, errorMessage, discardLogging)) return;

@@ -28,6 +28,8 @@ public:
 
     [[nodiscard]] bool isFramebufferResized() const noexcept { return _framebufferResized; }
 
+    void setContext(void* windowContext) const;
+
     void setFramebufferResized(const bool resized) noexcept { _framebufferResized = resized; }
 
     void setTitle(const std::string& title) const;

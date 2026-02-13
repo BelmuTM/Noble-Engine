@@ -70,8 +70,8 @@ int main() {
     InputManager inputManager{};
     inputManager.init(window.handle());
 
-    WindowContext ctx{&window, &inputManager};
-    glfwSetWindowUserPointer(window.handle(), &ctx);
+    WindowContext windowContext{&window, &inputManager};
+    window.setContext(&windowContext);
 
     ModelManager modelManager{};
     ImageManager imageManager{};

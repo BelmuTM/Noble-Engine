@@ -45,6 +45,8 @@ public:
 
     [[nodiscard]] const VulkanDescriptorSets* getDescriptors() const noexcept { return _frameUBODescriptors; }
 
+    [[nodiscard]] const FrameUniforms& getUniforms() const noexcept { return _frameUBO.getUniforms(); }
+
 private:
     const VulkanDevice*       _device       = nullptr;
     const VulkanSwapchain*    _swapchain    = nullptr;

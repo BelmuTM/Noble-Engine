@@ -8,11 +8,11 @@ struct VSInput {
     float2 texCoords : TEXCOORD0;
 }
 
-struct ObjectDataGPU {
+struct ObjectData {
     float4x4 model;
     float4x4 normalMatrix;
 };
-[[vk::push_constant]] ObjectDataGPU object;
+[[vk::push_constant]] ObjectData object;
 
 struct VSOutput {
     float4 position  : SV_Position;

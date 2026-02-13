@@ -1,16 +1,16 @@
 #include "Camera.h"
 
 void Camera::updateRotation() {
-    _forward.x = cos(glm::radians(_yaw)) * cos(glm::radians(_pitch));
-    _forward.y = sin(glm::radians(_yaw)) * cos(glm::radians(_pitch));
-    _forward.z = sin(glm::radians(_pitch));
+    _forward.x = static_cast<float>(cos(glm::radians(_yaw)) * cos(glm::radians(_pitch)));
+    _forward.y = static_cast<float>(sin(glm::radians(_yaw)) * cos(glm::radians(_pitch)));
+    _forward.z = static_cast<float>(sin(glm::radians(_pitch)));
     _forward   = glm::normalize(_forward);
     updateViewMatrix();
 }
 
 void Camera::update(const double deltaTime) {
     if (_controller) {
-        _controller->update(deltaTime);
+        _controller->update(static_cast<float>(deltaTime));
     }
 
     const glm::vec3 worldVelocity = toWorldSpace(_velocity);

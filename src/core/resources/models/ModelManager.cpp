@@ -95,14 +95,19 @@ bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& 
 
     bool hasNormals = !attributes.normals.empty();
 
+    Math::AABB aabb{};
+
     // For each shape that forms the mesh
     for (const auto& [name, objMesh] : shapes) {
         // For each face that forms the shape
+        size_t indexOffset = 0;
+
         for (size_t face = 0; face < objMesh.num_face_vertices.size(); face++) {
+            size_t verticesCount = objMesh.num_face_vertices[face];
 
             // For each vertex that forms the face
-            for (size_t vert = 0; vert < 3; vert++) {
-                auto [vertex_index, normal_index, texcoord_index] = objMesh.indices[3 * face + vert];
+            for (size_t vert = 0; vert < verticesCount; vert++) {
+                auto [vertex_index, normal_index, texcoord_index] = objMesh.indices[indexOffset + vert];
 
                 Vertex vertex{};
 
@@ -134,6 +139,10 @@ bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& 
                 // Define color attribute
                 vertex.color = {1.0f, 1.0f, 1.0f};
 
+                // Progressively find the bounds of the mesh
+                aabb.minBound = glm::min(aabb.minBound, vertex.position);
+                aabb.maxBound = glm::max(aabb.maxBound, vertex.position);
+
                 // Add unique vertex and corresponding index to the mesh
                 if (!uniqueVertices.contains(vertex)) {
                     uniqueVertices[vertex] = static_cast<uint32_t>(mesh.getVertices().size());
@@ -142,6 +151,8 @@ bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& 
 
                 mesh.addIndex(uniqueVertices[vertex]);
             }
+
+            indexOffset += verticesCount;
 
             // Load material
             const unsigned int materialIndex = objMesh.material_ids[face];
@@ -154,6 +165,8 @@ bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& 
             }
         }
     }
+
+    mesh.setAABB(aabb);
 
     if (!hasNormals) {
         mesh.generateSmoothNormals();
@@ -280,6 +293,8 @@ void ModelManager::processMeshPrimitives_glTF(
     }
 
     // Process vertices
+    Math::AABB aabb{};
+
     for (size_t i = 0; i < indexData.accessor->count; i++) {
         uint32_t vertexIndex = 0;
 
@@ -324,10 +339,16 @@ void ModelManager::processMeshPrimitives_glTF(
             vertex.textureCoords = {textureCoordsPtr[0], textureCoordsPtr[1]};
         }
 
+        // Progressively find the bounds of the mesh
+        aabb.minBound = glm::min(aabb.minBound, vertex.position);
+        aabb.maxBound = glm::max(aabb.maxBound, vertex.position);
+
         // Add vertex and corresponding index to the mesh
         mesh.addVertex(vertex);
         mesh.addIndex(mesh.getVertices().size() - 1);
     }
+
+    mesh.setAABB(aabb);
 
     if (!hasNormals) {
         mesh.generateSmoothNormals();

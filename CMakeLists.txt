@@ -17,7 +17,7 @@ target_include_directories(NobleEngine PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_compile_definitions(NobleEngine PRIVATE RESOURCES_DIR="${CMAKE_SOURCE_DIR}/resources/")
 
 # Toggle log file write for Debug builds
-target_compile_definitions(NobleEngine PRIVATE $<$<CONFIG:Debug>:LOG_FILE_WRITE>)
+#target_compile_definitions(NobleEngine PRIVATE $<$<CONFIG:Debug>:LOG_FILE_WRITE>)
 
 # Ensure C++ 20 features
 target_compile_features(NobleEngine PRIVATE cxx_std_20)

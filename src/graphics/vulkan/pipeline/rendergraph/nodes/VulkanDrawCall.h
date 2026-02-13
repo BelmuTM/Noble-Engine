@@ -7,11 +7,13 @@
 #include "graphics/vulkan/pipeline/VulkanShaderProgram.h"
 #include "graphics/vulkan/resources/VulkanPushConstant.h"
 #include "graphics/vulkan/resources/meshes/VulkanMesh.h"
+#include "graphics/vulkan/resources/objects/VulkanRenderObject.h"
 
 struct VulkanDrawCall {
     virtual ~VulkanDrawCall() = default;
 
-    const VulkanMesh* mesh = nullptr;
+    const VulkanMesh*         mesh  = nullptr;
+    const VulkanRenderObject* owner = nullptr;
 
     std::vector<VulkanDescriptorSets*> descriptorSets{};
 
@@ -31,6 +33,8 @@ struct VulkanDrawCall {
     }
 
     VulkanDrawCall& setMesh(const VulkanMesh* _mesh) noexcept { mesh = _mesh; return *this; }
+
+    VulkanDrawCall& setOwner(const VulkanRenderObject* _owner) noexcept { owner = _owner; return *this; }
 
     VulkanDrawCall& setDescriptorSets(const std::vector<VulkanDescriptorSets*>& _descriptorSets) noexcept {
         descriptorSets = _descriptorSets;

@@ -6,34 +6,16 @@
 #include "graphics/vulkan/core/VulkanSwapchain.h"
 
 #include "core/entities/camera/Camera.h"
+#include "core/render/FrameUniforms.h"
 
-#include <glm/glm.hpp>
-
-struct alignas(16) FrameUBO {
-    glm::mat4 view;
-    glm::mat4 viewInverse;
-
-    glm::mat4 projection;
-    glm::mat4 projectionInverse;
-
-    glm::vec3 cameraPosition;
-
-    float nearPlane;
-    float farPlane;
-
-    float frameTimeCounter;
-    float frameCounter;
-
-    float viewWidth;
-    float viewHeight;
-};
-
-class FrameUniformBuffer final : public VulkanUniformBuffer<FrameUBO> {
+class FrameUniformBuffer final : public VulkanUniformBuffer<FrameUniforms> {
 public:
     void update(uint32_t frameIndex, const VulkanSwapchain& swapchain, const Camera& camera);
 
+    [[nodiscard]] const FrameUniforms& getUniforms() const noexcept { return _uniforms; }
+
 private:
-    uint32_t _frameCounter = 0;
+    FrameUniforms _uniforms{};
 };
 
 #endif // NOBLEENGINE_FRAMEUNIFORMBUFFER_H

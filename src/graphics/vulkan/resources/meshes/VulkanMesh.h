@@ -9,11 +9,7 @@ public:
     VulkanMesh()  = default;
     ~VulkanMesh() = default;
 
-    explicit VulkanMesh(const Mesh& baseMesh) {
-        this->_vertices = baseMesh.getVertices();
-        this->_indices  = baseMesh.getIndices();
-        this->_material = baseMesh.getMaterial();
-    }
+    explicit VulkanMesh(const Mesh& baseMesh) : Mesh(baseMesh) {}
 
     VulkanMesh(const VulkanMesh&)            = delete;
     VulkanMesh& operator=(const VulkanMesh&) = delete;

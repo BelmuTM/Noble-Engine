@@ -54,6 +54,10 @@ void Window::getFramebufferSize(int& width, int& height) const {
     if (_window) glfwGetFramebufferSize(_window, &width, &height);
 }
 
+void Window::setContext(void* windowContext) const {
+    if (_window) glfwSetWindowUserPointer(_window, windowContext);
+}
+
 void Window::setTitle(const std::string& title) const {
     if (_window) glfwSetWindowTitle(_window, title.c_str());
 }

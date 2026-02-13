@@ -7,8 +7,8 @@
 #include <glm/glm.hpp>
 
 struct alignas(16) ObjectDataGPU {
-    glm::mat4 model;
-    glm::mat4 normal;
+    glm::mat4 modelMatrix;
+    glm::mat4 normalMatrix;
 };
 
 class Object {
