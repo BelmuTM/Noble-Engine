@@ -11,10 +11,15 @@
 
 VulkanRenderer::VulkanRenderer(const uint32_t framesInFlight) : _framesInFlight(framesInFlight) {}
 
-bool VulkanRenderer::init(Window& window, const ObjectManager& objectManager, std::string& errorMessage) {
+bool VulkanRenderer::init(
+    Window&              window,
+    const AssetManager&  assetManager,
+    const ObjectManager& objectManager,
+    std::string&         errorMessage
+) {
     _window = &window;
 
-    errorMessage = "Failed to init Vulkan renderer: no error message provided";
+    errorMessage = "Failed to init Vulkan renderer: no error message provided.";
 
     ScopeGuard guard{[this] { shutdown(); }};
 
@@ -40,8 +45,10 @@ bool VulkanRenderer::init(Window& window, const ObjectManager& objectManager, st
     ));
 
     TRY(createVulkanEntity(
-        &renderObjectManager, errorMessage, objectManager, device, imageManager, meshManager, _framesInFlight
+        &renderObjectManager, errorMessage, assetManager, device, imageManager, meshManager, _framesInFlight
     ));
+
+    TRY(renderObjectManager.createRenderObjects(objectManager.getObjects(), errorMessage));
 
     // Pipeline managers creation
     TRY(createVulkanEntity(&shaderProgramManager, errorMessage, logicalDevice));

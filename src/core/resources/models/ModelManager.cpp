@@ -3,7 +3,7 @@
 #include "common/Utility.h"
 
 #include "core/debug/Logger.h"
-#include "core/resources/ResourceManager.h"
+#include "core/resources/AssetPaths.h"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -18,17 +18,18 @@ const Model* ModelManager::load(const std::string& path, std::string& errorMessa
         model->retrieveName(path);
 
         const std::string& extension = Utility::getFileExtension(path);
+        const std::string  fullPath  = AssetPaths::MODELS + path;
 
         bool loaded = false;
 
         if (extension == ".obj") {
-            loaded = load_OBJ(*model, path, errorMessage);
+            loaded = load_OBJ(*model, fullPath, errorMessage);
 
         } else if (extension == ".gltf" || extension == ".glb") {
-            loaded = load_glTF(*model, path, errorMessage);
+            loaded = load_glTF(*model, fullPath, extension, errorMessage);
 
         } else {
-            errorMessage = "Failed to load model \"" + modelFilesPath + path + "\": unsupported format";
+            errorMessage = "Failed to load model \"" + fullPath + "\": unsupported format.";
             loaded = false;
         }
 
@@ -87,9 +88,9 @@ bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& 
     std::vector<tinyobj::shape_t>    shapes{};
     std::vector<tinyobj::material_t> materials{};
 
-    const std::string fullPath = modelFilesPath + path;
-
-    if (!tinyobj::LoadObj(&attributes, &shapes, &materials, &errorMessage, fullPath.c_str(), modelFilesPath.c_str())) {
+    if (!tinyobj::LoadObj(
+        &attributes, &shapes, &materials, &errorMessage, path.c_str(), AssetPaths::MODELS
+    )) {
         return false;
     }
 
@@ -448,22 +449,20 @@ void ModelManager::processNode_glTF(
     }
 }
 
-bool ModelManager::load_glTF(Model& model, const std::string& path, std::string& errorMessage) {
+bool ModelManager::load_glTF(
+    Model& model, const std::string& path, const std::string& extension, std::string& errorMessage
+) {
     tinygltf::Model    glTFModel;
     tinygltf::TinyGLTF glTFloader;
 
     std::string warningMessage;
 
-    const std::string fullPath = modelFilesPath + path;
-
-    const std::string& glTFExtension = Utility::getFileExtension(path);
-
     bool modelLoaded = false;
 
-    if (glTFExtension == ".gltf") {
-        modelLoaded = glTFloader.LoadASCIIFromFile(&glTFModel, &errorMessage, &warningMessage, fullPath);
-    } else if (glTFExtension == ".glb") {
-        modelLoaded = glTFloader.LoadBinaryFromFile(&glTFModel, &errorMessage, &warningMessage, fullPath);
+    if (extension == ".gltf") {
+        modelLoaded = glTFloader.LoadASCIIFromFile(&glTFModel, &errorMessage, &warningMessage, path);
+    } else if (extension == ".glb") {
+        modelLoaded = glTFloader.LoadBinaryFromFile(&glTFModel, &errorMessage, &warningMessage, path);
     }
 
     if (!warningMessage.empty()) {

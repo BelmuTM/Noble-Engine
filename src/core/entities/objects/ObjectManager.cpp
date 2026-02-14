@@ -41,7 +41,7 @@ void ObjectManager::createObjects() {
 
     // Load textures
     std::vector<std::string> texturePaths{};
-    for (const auto& model : _models | std::views::values) {
+    for (const auto& model : _assetManager.getModels() | std::views::values) {
         if (model->texturePaths.empty()) continue;
         for (const auto& texturePath : model->texturePaths) {
             if (!texturePath.empty()) {
@@ -65,19 +65,19 @@ void ObjectManager::createObjects() {
 
     for (const auto& objectDescriptor : _objectDescriptors) {
         objectFutures.push_back(
-            threadPool.enqueue([this, objectDescriptor]() -> std::unique_ptr<Object> {
-                if (!_models.contains(objectDescriptor.modelPath)) return nullptr;
+            threadPool.enqueue([this, &objectDescriptor]() -> std::unique_ptr<Object> {
+                if (!_assetManager.getModels().contains(objectDescriptor.modelPath)) return nullptr;
 
                 // Retrieve previously loaded model
-                const Model* model = _models.at(objectDescriptor.modelPath);
+                const Model* model = _assetManager.getModels().at(objectDescriptor.modelPath);
                 if (!model) return nullptr;
 
                 // Retrieve previously loaded textures for this model
-                TexturesMap modelTextures{};
+                AssetManager::TexturesMap modelTextures{};
 
                 for (const auto& texturePath : model->texturePaths) {
-                    if (_textures.contains(texturePath)) {
-                        modelTextures[texturePath] = _textures.at(texturePath);
+                    if (_assetManager.getTextures().contains(texturePath)) {
+                        modelTextures[texturePath] = _assetManager.getTextures().at(texturePath);
                     }
                 }
 
@@ -102,13 +102,14 @@ void ObjectManager::createObjects() {
 
     for (const auto& [modelPath, position, rotation, scale] : _objectDescriptors) {
         // Load model
-        const Model* model = _modelManager->load(modelPath, errorMessage);
+        const Model* model =  _assetManager.getModelManager().load(modelPath, errorMessage);
         if (!model) Logger::warning(errorMessage);
 
         // Load textures and map them to their respective path
         for (const auto& texturePath : model->texturePaths) {
-            _textures[texturePath] = _imageManager->load(texturePath, errorMessage, Object::MIPMAPS_ENABLED);
-            if (!_textures[texturePath]) Logger::warning(errorMessage);
+            _assetManager.getTextures()[texturePath] =
+                _assetManager.getImageManager().load(texturePath, errorMessage, Object::MIPMAPS_ENABLED);
+            if (!_assetManager.getTextures()[texturePath]) Logger::warning(errorMessage);
         }
 
         // Create the object and push its pointer to the vector
@@ -122,7 +123,7 @@ void ObjectManager::createObjects() {
 
 #if MULTITHREADED_OBJECTS_LOAD
 
-void ObjectManager::loadModelsAsync(ThreadPool& threadPool, const std::vector<std::string>& modelPaths) {
+void ObjectManager::loadModelsAsync(ThreadPool& threadPool, const std::vector<std::string>& modelPaths) const {
     std::unordered_map<std::string, std::shared_future<const Model*>> modelFutures;
 
     for (const auto& modelPath : modelPaths) {
@@ -132,7 +133,7 @@ void ObjectManager::loadModelsAsync(ThreadPool& threadPool, const std::vector<st
             modelFutures[modelPath] = threadPool.enqueue([this, modelPath] {
                 std::string errorMessage;
 
-                const Model* model = _modelManager->load(modelPath, errorMessage);
+                const Model* model = _assetManager.getModelManager().load(modelPath, errorMessage);
                 if (!model) Logger::error(errorMessage);
 
                 return model;
@@ -141,11 +142,11 @@ void ObjectManager::loadModelsAsync(ThreadPool& threadPool, const std::vector<st
     }
 
     for (auto& [modelPath, modelFuture] : modelFutures) {
-        _models.emplace(modelPath, modelFuture.get());
+        _assetManager.getModels().emplace(modelPath, modelFuture.get());
     }
 }
 
-void ObjectManager::loadTexturesAsync(ThreadPool& threadPool, const std::vector<std::string>& texturePaths) {
+void ObjectManager::loadTexturesAsync(ThreadPool& threadPool, const std::vector<std::string>& texturePaths) const {
     std::unordered_map<std::string, std::shared_future<const Image*>> textureFutures;
 
     for (const auto& texturePath : texturePaths) {
@@ -155,7 +156,8 @@ void ObjectManager::loadTexturesAsync(ThreadPool& threadPool, const std::vector<
             textureFutures[texturePath] = threadPool.enqueue([this, texturePath] {
                 std::string errorMessage;
 
-                const Image* texture = _imageManager->load(texturePath, errorMessage, Object::MIPMAPS_ENABLED);
+                const Image* texture =
+                    _assetManager.getImageManager().load(texturePath, errorMessage, Object::MIPMAPS_ENABLED);
                 if (!texture) Logger::warning(errorMessage);
 
                 return texture;
@@ -164,7 +166,7 @@ void ObjectManager::loadTexturesAsync(ThreadPool& threadPool, const std::vector<
     }
 
     for (auto& [texturePath, textureFuture] : textureFutures) {
-        _textures.emplace(texturePath, textureFuture.get());
+        _assetManager.getTextures().emplace(texturePath, textureFuture.get());
     }
 }
 

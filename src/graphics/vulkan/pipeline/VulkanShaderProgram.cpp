@@ -5,7 +5,7 @@
 #include "core/debug/ErrorHandling.h"
 #include "core/debug/Logger.h"
 
-#include "core/resources/ResourceManager.h"
+#include "core/resources/AssetPaths.h"
 
 #include <fstream>
 #include <ranges>
@@ -55,7 +55,7 @@ bool VulkanShaderProgram::loadFromFiles(
     const std::vector<std::string>& paths, const bool fullscreen, const vk::Device& device, std::string& errorMessage
 ) {
     if (paths.empty()) {
-        errorMessage = "Failed to load shader program: no paths provided";
+        errorMessage = "Failed to load shader program: no paths provided.";
         return false;
     }
 
@@ -72,15 +72,15 @@ bool VulkanShaderProgram::loadFromFiles(
         const auto it = stageData.find(stageExtension);
 
         if (stageExtension.empty() || it == stageData.end()) {
-            errorMessage += "incorrect file extension \"" + stageExtension + "\"";
+            errorMessage += "incorrect file extension \"" + stageExtension + "\".";
             return false;
         }
 
         const auto [stage, entryPoint] = it->second;
 
-        const std::vector<uint32_t>& bytecode = readShaderSPIRVBytecode(shaderFilesPath + path);
+        const std::vector<uint32_t>& bytecode = readShaderSPIRVBytecode(AssetPaths::SHADERS + path);
         if (bytecode.empty()) {
-            errorMessage += "bytecode is empty (file does not exist or is zero bytes)";
+            errorMessage += "bytecode is empty (file does not exist or is zero bytes).";
             return {};
         }
 
@@ -123,7 +123,7 @@ bool VulkanShaderProgram::reflectShaderResources(
     SpvReflectResult result = spvReflectCreateShaderModule(bytecodeSize, bytecodeData, &module);
 
     if (result != SPV_REFLECT_RESULT_SUCCESS) {
-        errorMessage = "Failed to reflect SPIR-V shaders: invalid shader bytecode";
+        errorMessage = "Failed to reflect SPIR-V shaders: invalid shader bytecode.";
         return false;
     }
 
@@ -256,7 +256,7 @@ std::vector<std::string> VulkanShaderProgram::findShaderFilePaths(const std::str
     std::vector<std::string> paths{};
     for (const auto& stageExtension : stageData | std::views::keys) {
         const std::string relativePath = path + "." + stageExtension + ".spv";
-        const std::string fullPath     = shaderFilesPath + relativePath;
+        const std::string fullPath     = AssetPaths::SHADERS + relativePath;
 
         if (FILE* file = fopen(fullPath.c_str(), "r")) {
             fclose(file);

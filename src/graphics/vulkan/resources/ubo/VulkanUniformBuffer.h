@@ -71,7 +71,7 @@ public:
 protected:
     bool createUniformBuffers(std::string& errorMessage) {
         if (!_device) {
-            errorMessage = "Failed to create Vulkan uniform buffers: device is null";
+            errorMessage = "Failed to create Vulkan uniform buffers: device is null.";
             return false;
         }
 

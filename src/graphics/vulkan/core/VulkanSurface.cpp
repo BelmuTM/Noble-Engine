@@ -23,7 +23,7 @@ void VulkanSurface::destroy() noexcept {
 
 bool VulkanSurface::createSurface(std::string& errorMessage) {
     if (!_window) {
-        errorMessage = "Failed to create Vulkan window surface: window handle is null";
+        errorMessage = "Failed to create Vulkan window surface: window handle is null.";
         return false;
     }
 

@@ -91,7 +91,7 @@ bool VulkanBuffer::createBuffer(
     std::string&               errorMessage
 ) {
     if (size == 0) {
-        errorMessage = "Failed to create Vulkan buffer: size is 0";
+        errorMessage = "Failed to create Vulkan buffer: size is 0.";
         return false;
     }
 
@@ -162,7 +162,7 @@ bool VulkanBuffer::copyFrom(
 
 void* VulkanBuffer::mapMemory(std::string& errorMessage) {
     if (!_device || !_allocation) {
-        errorMessage = "Failed to map buffer memory: device or memory not initialized";
+        errorMessage = "Failed to map buffer memory: device or memory not initialized.";
         return nullptr;
     }
 

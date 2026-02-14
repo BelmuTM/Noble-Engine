@@ -19,11 +19,16 @@
 #include "graphics/vulkan/pipeline/VulkanShaderProgramManager.h"
 #include "graphics/vulkan/pipeline/rendergraph/VulkanRenderGraph.h"
 
-class VulkanRenderer final : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {
+class VulkanRenderer : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {
 public:
     explicit VulkanRenderer(uint32_t framesInFlight = 2);
 
-    [[nodiscard]] bool init(Window& window, const ObjectManager& objectManager, std::string& errorMessage) override;
+    [[nodiscard]] bool init(
+        Window&              window,
+        const AssetManager&  assetManager,
+        const ObjectManager& objectManager,
+        std::string&         errorMessage
+    ) override;
 
     void shutdown() override;
 

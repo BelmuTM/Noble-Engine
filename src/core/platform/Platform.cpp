@@ -6,7 +6,7 @@
 namespace Platform {
     bool init(std::string& errorMessage) {
         if (!glfwInit()) {
-            errorMessage = "Failed to init GLFW context";
+            errorMessage = "Failed to init GLFW context.";
             return false;
         }
 

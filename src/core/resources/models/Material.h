@@ -2,7 +2,7 @@
 #ifndef NOBLEENGINE_MATERIAL_H
 #define NOBLEENGINE_MATERIAL_H
 
-#include "core/resources/ResourceManager.h"
+#include "core/resources/AssetPaths.h"
 
 #include <filesystem>
 #include <string>
@@ -32,7 +32,7 @@ namespace TextureHelper {
         if (texturePath.empty()) return "";
 
         // Fetch texture in textures/texturePath
-        std::filesystem::path initialPath = textureFilesPath;
+        std::filesystem::path initialPath = AssetPaths::TEXTURES;
         initialPath /= texturePath;
         // Found texture
         if (std::filesystem::exists(initialPath)) {
@@ -42,7 +42,7 @@ namespace TextureHelper {
         // Fetch texture in textures/modelName/texturePath
         const std::filesystem::path textureName = std::filesystem::path(texturePath).filename();
 
-        std::filesystem::path candidatePath = textureFilesPath;
+        std::filesystem::path candidatePath = AssetPaths::TEXTURES;
         candidatePath /= modelName;
         candidatePath /= textureName;
         // Found texture

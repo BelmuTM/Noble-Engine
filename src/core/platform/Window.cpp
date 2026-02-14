@@ -2,9 +2,9 @@
 
 #include "WindowContext.h"
 
-#include "libraries/stbUsage.h"
+#include "core/resources/AssetPaths.h"
 
-#include "core/resources/ResourceManager.h"
+#include "libraries/stbUsage.h"
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
     auto context = static_cast<WindowContext*>(glfwGetWindowUserPointer(window));
@@ -18,7 +18,7 @@ Window::Window(const int width, const int height, const std::string& title) {
     _window = glfwCreateWindow(_width, _height, title.c_str(), nullptr, nullptr);
 
     GLFWimage images[1];
-    images[0].pixels = stbi_load(iconPath.c_str(), &images[0].width, &images[0].height, nullptr, STBI_rgb_alpha);
+    images[0].pixels = stbi_load(AssetPaths::ICON, &images[0].width, &images[0].height, nullptr, STBI_rgb_alpha);
 
     glfwSetWindowIcon(_window, 1, images);
     stbi_image_free(images[0].pixels);
@@ -35,11 +35,7 @@ void Window::close() const {
 }
 
 void Window::pollEvents() const {
-    if (!_window) return;
-
-    while (!glfwWindowShouldClose(_window)) {
-        glfwPollEvents();
-    }
+    if (_window) glfwPollEvents();
 }
 
 void Window::show() const {
@@ -48,6 +44,12 @@ void Window::show() const {
 
 void Window::hide() const {
     if (_window) glfwHideWindow(_window);
+}
+
+bool Window::shouldClose() const {
+    if (!_window) return true;
+
+    return glfwWindowShouldClose(_window);
 }
 
 void Window::getFramebufferSize(int& width, int& height) const {

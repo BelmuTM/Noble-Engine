@@ -4,7 +4,7 @@
 #include "core/debug/Logger.h"
 
 bool VulkanRenderObjectManager::create(
-    const ObjectManager& objectManager,
+    const AssetManager&  assetManager,
     const VulkanDevice&  device,
     VulkanImageManager&  imageManager,
     VulkanMeshManager&   meshManager,
@@ -13,8 +13,6 @@ bool VulkanRenderObjectManager::create(
 ) noexcept {
     _imageManager = &imageManager;
     _meshManager  = &meshManager;
-
-    _renderObjects.reserve(objectManager.getObjects().size());
 
     TRY(_descriptorManager.create(
         device.getLogicalDevice(), objectDescriptorScheme, framesInFlight, MAX_RENDER_OBJECTS, errorMessage
@@ -26,15 +24,13 @@ bool VulkanRenderObjectManager::create(
 
     const auto startTime = std::chrono::high_resolution_clock::now();
 
-    TRY(loadObjectTextures(objectManager.getTextures(), errorMessage));
+    TRY(loadObjectTextures(assetManager.getTextures(), errorMessage));
 
     const auto endTime = std::chrono::high_resolution_clock::now();
 
     const auto loadDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
 
     Logger::debug("Loaded object textures in " + std::to_string(loadDuration) + " ms");
-
-    TRY(createRenderObjects(objectManager.getObjects(), errorMessage));
 
     return true;
 }
@@ -48,7 +44,7 @@ void VulkanRenderObjectManager::destroy() noexcept {
 }
 
 bool VulkanRenderObjectManager::loadObjectTextures(
-    const ObjectManager::TexturesMap& textures, std::string& errorMessage
+    const AssetManager::TexturesMap& textures, std::string& errorMessage
 ) const {
     std::vector<const Image*> images{};
 
@@ -65,6 +61,8 @@ bool VulkanRenderObjectManager::loadObjectTextures(
 bool VulkanRenderObjectManager::createRenderObjects(
     const ObjectManager::ObjectsVector& objects, std::string& errorMessage
 ) {
+    _renderObjects.reserve(objects.size());
+
     uint32_t meshCount = 0;
 
     for (uint32_t i = 0; i < objects.size(); i++) {

@@ -43,7 +43,7 @@ void VulkanSwapchain::destroy() noexcept {
 
 bool VulkanSwapchain::recreate(const vk::SurfaceKHR surface, std::string& errorMessage) {
     if (!_device) {
-        errorMessage = "Failed to recreate Vulkan swapchain: device is null";
+        errorMessage = "Failed to recreate Vulkan swapchain: device is null.";
         return false;
     }
 
@@ -126,14 +126,14 @@ bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string&
     errorMessage = "Failed to create Vulkan swapchain: ";
 
     if (!_window) {
-        errorMessage += "window is null";
+        errorMessage += "window is null.";
         return false;
     }
 
     int width, height;
     _window->getFramebufferSize(width, height);
     if (width == 0 || height == 0) {
-        errorMessage += "window size is null";
+        errorMessage += "window size is null.";
         return false;
     }
 

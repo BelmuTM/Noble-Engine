@@ -36,7 +36,7 @@ void VulkanSwapchainManager::destroy() noexcept {
 
 bool VulkanSwapchainManager::recreateSwapchain(std::string& errorMessage) {
     if (!_swapchain) {
-        errorMessage = "Failed to recreate Vulkan swapchain: swapchain is null";
+        errorMessage = "Failed to recreate Vulkan swapchain: swapchain is null.";
         return false;
     }
 
@@ -56,12 +56,12 @@ bool VulkanSwapchainManager::acquireNextImage(
     uint32_t& imageIndex, const uint32_t frameIndex, std::string& errorMessage, bool& discardLogging
 ) {
     if (!_device) {
-        errorMessage = "Failed to acquire Vulkan swapchain image: device is null";
+        errorMessage = "Failed to acquire Vulkan swapchain image: device is null.";
         return false;
     }
 
     if (!_swapchain) {
-        errorMessage = "Failed to acquire Vulkan swapchain image: swapchain is null";
+        errorMessage = "Failed to acquire Vulkan swapchain image: swapchain is null.";
         return false;
     }
 
@@ -105,7 +105,7 @@ bool VulkanSwapchainManager::acquireNextImage(
 
     if (imageIndex >= _swapchain->getImageCount()) {
         errorMessage =
-            "Failed to acquire Vulkan image: image index exceeds limit (" + std::to_string(imageIndex) + ")";
+            "Failed to acquire Vulkan image: image index exceeds limit (" + std::to_string(imageIndex) + ").";
         return false;
     }
 
@@ -122,12 +122,12 @@ bool VulkanSwapchainManager::submitCommandBuffer(
     bool&                   discardLogging
 ) {
     if (!_device) {
-        errorMessage = "Failed to submit Vulkan command buffer: device is null";
+        errorMessage = "Failed to submit Vulkan command buffer: device is null.";
         return false;
     }
 
     if (!_swapchain) {
-        errorMessage = "Failed to submit Vulkan command buffer: swapchain is null";
+        errorMessage = "Failed to submit Vulkan command buffer: swapchain is null.";
         return false;
     }
 
@@ -189,7 +189,7 @@ bool VulkanSwapchainManager::waitForImageFence(
     const uint32_t frameIndex, const uint32_t imageIndex, std::string& errorMessage
 ) {
     if (!_device) {
-        errorMessage = "Failed to wait for Vulkan image fence: device is null";
+        errorMessage = "Failed to wait for Vulkan image fence: device is null.";
         return false;
     }
 

@@ -24,6 +24,8 @@ public:
     [[nodiscard]] int getWidth () const noexcept { return _width ; }
     [[nodiscard]] int getHeight() const noexcept { return _height; }
 
+    [[nodiscard]] bool shouldClose() const;
+
     void getFramebufferSize(int& width, int& height) const;
 
     [[nodiscard]] bool isFramebufferResized() const noexcept { return _framebufferResized; }

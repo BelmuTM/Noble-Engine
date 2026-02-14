@@ -31,12 +31,12 @@ bool VulkanDevice::create(
     _queueFamilyIndices = findQueueFamilies(_physicalDevice, surface);
 
     if (_queueFamilyIndices.graphicsFamily == UINT32_MAX) {
-        errorMessage = "Failed to find a queue with graphics capabilities";
+        errorMessage = "Failed to find a queue with graphics capabilities.";
         return false;
     }
 
     if (_queueFamilyIndices.presentFamily == UINT32_MAX) {
-        errorMessage = "Failed to find a queue with presentation capabilities";
+        errorMessage = "Failed to find a queue with presentation capabilities.";
         return false;
     }
 
@@ -120,7 +120,7 @@ bool VulkanDevice::pickPhysicalDevice(std::string& errorMessage) {
     } else if (!integratedCandidates.empty()) {
         _physicalDevice = integratedCandidates.front();
     } else {
-        errorMessage = "Failed to find suitable graphics devices";
+        errorMessage = "Failed to find suitable graphics devices.";
         return false;
     }
 

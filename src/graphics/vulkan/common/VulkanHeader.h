@@ -2,7 +2,7 @@
 #ifndef NOBLEENGINE_VULKANHEADER_H
 #define NOBLEENGINE_VULKANHEADER_H
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 #include <Windows.h>
 #undef ERROR
 #endif

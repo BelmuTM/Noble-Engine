@@ -137,7 +137,7 @@ namespace VulkanImageLayoutTransitions {
         const auto transition = getLayoutTransition(oldLayout, newLayout);
 
         if (!transition) {
-            errorMessage = "Failed to transition Vulkan image layout: unsupported transition";
+            errorMessage = "Failed to transition Vulkan image layout: unsupported transition.";
             return false;
         }
 

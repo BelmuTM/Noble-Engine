@@ -28,7 +28,7 @@ void VulkanImageManager::destroy() noexcept {
 
 bool VulkanImageManager::loadImage(VulkanImage*& image, const Image* imageData, std::string& errorMessage) {
     if (!imageData) {
-        errorMessage = "Failed to load Vulkan image: image is null";
+        errorMessage = "Failed to upload Vulkan image to GPU: image is null.";
         return false;
     }
 
@@ -67,7 +67,7 @@ bool VulkanImageManager::loadImage(VulkanImage*& image, const Image* imageData, 
     void* stagingData = stagingBuffer.mapMemory(errorMessage);
 
     if (!stagingData) {
-        errorMessage = "Failed to create Vulkan image staging buffer: mapped memory pointer is null";
+        errorMessage = "Failed to create Vulkan image staging buffer: mapped memory pointer is null.";
         return false;
     }
 
@@ -119,7 +119,7 @@ bool VulkanImageManager::loadImages(
 
     for (const Image* image : images) {
         if (!image) {
-            errorMessage = "Failed to load Vulkan image: image is null";
+            errorMessage = "Failed to upload Vulkan image to GPU: image is null.";
             return false;
         }
 
@@ -174,7 +174,7 @@ bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& imag
     const void* stagingData = stagingBuffer.mapMemory(errorMessage);
 
     if (!stagingData) {
-        errorMessage = "Failed to create Vulkan image staging buffer: mapped memory pointer is null";
+        errorMessage = "Failed to create Vulkan image staging buffer: mapped memory pointer is null.";
         return false;
     }
 
@@ -184,7 +184,7 @@ bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& imag
 
     for (const Image* image : images) {
         if (!image) {
-            errorMessage = "Failed to batch Vulkan image: image is null";
+            errorMessage = "Failed to batch Vulkan image for GPU upload: image is null";
             return false;
         }
 

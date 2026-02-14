@@ -8,8 +8,8 @@ static constexpr float speedMultiplier = 3.0f;
 static constexpr float cameraSmoothing = 6.0f;
 
 CameraController::CameraController(GLFWwindow* window, InputManager& inputManager, Camera& camera)
-    :IInputListener(inputManager), _window(window), _camera(camera) {
-
+    : IInputListener(inputManager), _window(window), _camera(camera)
+{
     _actionMovementMap[InputAction::MoveForward]  = glm::vec3{ 1.0f, 0.0f, 0.0f};
     _actionMovementMap[InputAction::MoveBackward] = glm::vec3{-1.0f, 0.0f, 0.0f};
     _actionMovementMap[InputAction::MoveLeft]     = glm::vec3{ 0.0f,-1.0f, 0.0f};

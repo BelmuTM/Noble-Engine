@@ -97,7 +97,7 @@ bool VulkanRenderGraphBuilder::attachSwapchainOutput(std::string& errorMessage) 
     VulkanRenderPass* lastPass = _context.renderGraph.getPasses().back().get();
 
     if (lastPass->getColorAttachments().empty()) {
-        errorMessage = "Failed to attach Vulkan swapchain output: last executing pass has no color attachments";
+        errorMessage = "Failed to attach Vulkan swapchain output: last executing pass has no color attachments.";
         return false;
     }
 

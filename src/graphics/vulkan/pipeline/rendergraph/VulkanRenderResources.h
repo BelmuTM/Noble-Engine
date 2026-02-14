@@ -16,7 +16,7 @@ class VulkanRenderGraph;
 
 class VulkanRenderResources {
 public:
-    // WARNING: depthBufferResourceName is the case-sensitive keyword memereserved to the depth buffer resource
+    // WARNING: case-sensitive keyword reserved for the depth buffer resource
     static constexpr std::string DEPTH_BUFFER_RESOURCE_NAME = "depthBuffer";
 
     using ResourcesMap         = std::unordered_map<std::string, std::unique_ptr<VulkanRenderPassResource>>;

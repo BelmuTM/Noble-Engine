@@ -89,7 +89,7 @@ bool VulkanMeshManager::createMeshStagingBuffer(std::string& errorMessage) {
     void* stagingData = _stagingBuffer.mapMemory(errorMessage);
 
     if (!stagingData) {
-        errorMessage = "Failed to create Vulkan mesh staging buffer: mapped memory pointer is null";
+        errorMessage = "Failed to create Vulkan mesh staging buffer: mapped memory pointer is null.";
         return false;
     }
 

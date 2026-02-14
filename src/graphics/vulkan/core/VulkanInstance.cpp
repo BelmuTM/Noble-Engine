@@ -83,7 +83,7 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
     VK_TRY(vpGetInstanceProfileSupport(*_capabilities, nullptr, &vulkanProfile, &profileSupported), errorMessage);
 
     if (!profileSupported) {
-        errorMessage = "Failed to create Vulkan instance: Vulkan profile not supported";
+        errorMessage = "Failed to create Vulkan instance: Vulkan profile not supported.";
         return false;
     }
 

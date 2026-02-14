@@ -2,7 +2,7 @@
 
 bool VulkanDescriptorSets::allocate(std::string& errorMessage) {
     if (!_manager) {
-        errorMessage = "Failed to allocate Vulkan descriptor sets: descriptor manager is null";
+        errorMessage = "Failed to allocate Vulkan descriptor sets: descriptor manager is null.";
         return false;
     }
 

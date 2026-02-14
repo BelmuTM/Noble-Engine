@@ -1,146 +1,103 @@
-#include "engine/Engine.h"
-#include "debug/Logger.h"
-#include "platform/Platform.h"
-#include "platform/Window.h"
-#include "platform/WindowContext.h"
+#include "Runtime.h"
 
-#include "resources/images/ImageManager.h"
-#include "resources/models/ModelManager.h"
+#include "engine/Engine.h"
+
+#include "core/resources/AssetManager.h"
 #include "entities/objects/ObjectManager.h"
 
 #include "graphics/vulkan/VulkanRenderer.h"
 
-#include <atomic>
 #include <chrono>
-#include <csignal>
 #include <thread>
 
-std::atomic running(true);
+Runtime::Runtime(std::atomic<bool>& runningFlag)
+    : _running(runningFlag),
+      _window(1280, 720, "Noble Engine"),
+      _renderer(Engine::MAX_FRAMES_IN_FLIGHT)
+{
 
-void signalHandler(int signal) {
-    running = false;
 }
 
-void setupSignalHandlers() {
-    std::signal(SIGINT, signalHandler);
-    std::signal(SIGTERM, signalHandler);
+bool Runtime::init(std::string& errorMessage) {
+    _window.show();
+
+    _inputManager.init(_window.handle());
+
+    _windowContext = WindowContext{&_window, &_inputManager};
+    _window.setContext(&_windowContext);
+
+    _objectManager.addObject("lucy.obj", {-1.0f, 1.0f, 1.47f}, {0.0f, 0.0f, -30.0f}, glm::vec3{0.0025f});
+    _objectManager.addObject("stanford_dragon.obj", {3.0f, 0.7f, 0.6f}, {0.0f, 180.0f, 60.0f}, glm::vec3{0.6f});
+    _objectManager.addObject("stanford_bunny.obj", {-3.0f, 1.0f, -0.25f}, {90.0f, 90.0f, 0.0f}, glm::vec3{7.0f});
+    _objectManager.addObject("happy.obj", {-4.5f, -0.4f, -0.36f}, {90.0f, 120.0f, 0.0f}, glm::vec3{7.0f});
+    _objectManager.addObject("sponza_old.gltf", {0.0f, 0.0f, 0.0f}, {90.0f, 0.0f, 0.0f}, glm::vec3{1.0f});
+
+    _objectManager.createObjects();
+
+    if (!_renderer.init(_window, _assetManager, _objectManager, errorMessage)) {
+        return false;
+    }
+
+    _camera.setController(std::make_unique<CameraController>(_window.handle(), _inputManager, _camera));
+
+    return true;
 }
 
-#if defined(_WIN32) || defined(_WIN64)
+void Runtime::shutdown() {
+    _running.store(false, std::memory_order_relaxed);
 
-BOOL WINAPI ConsoleHandler(const DWORD ctrlType) {
-    switch (ctrlType) {
-        case CTRL_C_EVENT:
-        case CTRL_BREAK_EVENT:
-        case CTRL_CLOSE_EVENT:
-        case CTRL_LOGOFF_EVENT:
-        case CTRL_SHUTDOWN_EVENT:
-            running = false;
-            return TRUE;
-        default:
-            return FALSE;
+    _renderer.shutdown();
+}
+
+void Runtime::run() {
+    // Engine thread (draws, inputs, updates)
+    _engineThread = std::thread(&Runtime::engineLoop, this);
+
+    // Window events polling in the main thread
+    while (_running && !_window.shouldClose()) {
+        _window.pollEvents();
+    }
+
+    _running.store(false, std::memory_order_relaxed);
+
+    if (_engineThread.joinable()) {
+        _engineThread.join();
     }
 }
 
-void setupConsoleHandler() {
-    if (!SetConsoleCtrlHandler(ConsoleHandler, TRUE)) {
-        Logger::error("Failed to set console control handler");
-    }
-}
+void Runtime::engineLoop() {
+    using highResolutionClock = std::chrono::high_resolution_clock;
 
-#endif
+    auto previousTime  = highResolutionClock::now();
+    auto lastFpsUpdate = previousTime;
 
-int main() {
-    setupSignalHandlers();
+    int frameCount = 0;
+    int framerate  = 0;
 
-#if defined(_WIN32) || defined(_WIN64)
-    setupConsoleHandler();
-#endif
+    while (_running) {
+        auto         currentTime = highResolutionClock::now();
+        const double deltaTime   = std::chrono::duration<double>(currentTime - previousTime).count();
+        previousTime = currentTime;
 
-    std::string errorMessage;
-    Logger::Manager loggerManager;
+        _inputManager.update();
 
-    if (!Platform::init(errorMessage)) {
-        Engine::fatalExit(errorMessage);
-    }
+        _camera.update(deltaTime);
+        _renderer.drawFrame(_camera);
 
-    Window window(1280, 720, "Noble Engine");
-    window.show();
+        ++frameCount;
 
-    InputManager inputManager{};
-    inputManager.init(window.handle());
+        const double timeSinceLastUpdate = std::chrono::duration<double>(currentTime - lastFpsUpdate).count();
+        if (timeSinceLastUpdate >= 1) {
+            framerate     = static_cast<int>(frameCount / timeSinceLastUpdate);
+            frameCount    = 0;
+            lastFpsUpdate = currentTime;
 
-    WindowContext windowContext{&window, &inputManager};
-    window.setContext(&windowContext);
-
-    ModelManager modelManager{};
-    ImageManager imageManager{};
-    ObjectManager objectManager{&modelManager, &imageManager};
-
-    objectManager.addObject("lucy.obj", {-1.0f, 1.0f, 1.47f}, {0.0f, 0.0f, -30.0f}, glm::vec3{0.0025f});
-    objectManager.addObject("stanford_dragon.obj", {3.0f, 0.7f, 0.6f}, {0.0f, 180.0f, 60.0f}, glm::vec3{0.6f});
-    objectManager.addObject("stanford_bunny.obj", {-3.0f, 1.0f, -0.25f}, {90.0f, 90.0f, 0.0f}, glm::vec3{7.0f});
-    objectManager.addObject("happy.obj", {-4.5f, -0.4f, -0.36f}, {90.0f, 120.0f, 0.0f}, glm::vec3{7.0f});
-    objectManager.addObject("sponza_old.gltf", {0.0f, 0.0f, 0.0f}, {90.0f, 0.0f, 0.0f}, glm::vec3{1.0f});
-
-    objectManager.createObjects();
-
-    VulkanRenderer renderer(Engine::MAX_FRAMES_IN_FLIGHT);
-    if (!renderer.init(window, objectManager, errorMessage)) {
-        Engine::fatalExit(errorMessage);
-    }
-
-    Camera camera{};
-    camera.setController(std::make_unique<CameraController>(window.handle(), inputManager, camera));
-
-    // Main engine thread (draw, updates)
-    std::thread engineThread([&] {
-        using highResolutionClock = std::chrono::high_resolution_clock;
-
-        auto previousTime  = highResolutionClock::now();
-        auto lastFpsUpdate = previousTime;
-
-        int frameCount = 0;
-        int framerate  = 0;
-
-        while (running) {
-            auto         currentTime = highResolutionClock::now();
-            const double deltaTime   = std::chrono::duration<double>(currentTime - previousTime).count();
-            previousTime = currentTime;
-
-            inputManager.update();
-
-            camera.update(deltaTime);
-            renderer.drawFrame(camera);
-
-            ++frameCount;
-
-            const double timeSinceLastUpdate = std::chrono::duration<double>(currentTime - lastFpsUpdate).count();
-            if (timeSinceLastUpdate >= 1) {
-                framerate     = static_cast<int>(frameCount / timeSinceLastUpdate);
-                frameCount    = 0;
-                lastFpsUpdate = currentTime;
-
-                window.setTitle(
-                    "Noble Engine | " + std::to_string(framerate) + " FPS" + " | " +
-                    std::to_string(renderer.primitiveCount) + " Triangles"
-                );
-            }
-
-            std::this_thread::yield();
+            _window.setTitle(
+                "Noble Engine | " + std::to_string(framerate) + " FPS" + " | " +
+                std::to_string(_renderer.primitiveCount) + " Triangles"
+            );
         }
 
-        window.close(); // running == false
-    });
-
-    window.pollEvents();
-
-    running.store(false);
-    engineThread.join();
-
-    renderer.shutdown();
-
-    Platform::shutdown();
-
-    return 0;
+        std::this_thread::yield();
+    }
 }

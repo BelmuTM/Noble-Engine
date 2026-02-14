@@ -1,24 +1,23 @@
 #include "ImageManager.h"
 
-#include "libraries/stbUsage.h"
-
-#include "core/resources/ResourceManager.h"
-
 #include "core/debug/Logger.h"
+#include "core/resources/AssetPaths.h"
+
+#include "libraries/stbUsage.h"
 
 const Image* ImageManager::load(const std::string& path, std::string& errorMessage, const bool hasMipmaps) {
     return loadAsync(path, [path, &errorMessage, hasMipmaps]() -> std::unique_ptr<Image> {
 
         Logger::info("Loading texture \"" + path + "\"...");
 
-        const std::string fullPath = textureFilesPath + path;
+        const std::string fullPath = AssetPaths::TEXTURES + path;
 
         // Load image bytes
         int width, height, channels;
         stbi_uc* pixels = stbi_load(fullPath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
         if (!pixels) {
-            errorMessage = "Failed to load texture \"" + fullPath + "\"";
+            errorMessage = "Failed to load texture \"" + fullPath + "\".";
             return nullptr;
         }
 

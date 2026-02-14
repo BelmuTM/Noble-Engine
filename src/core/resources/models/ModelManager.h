@@ -2,11 +2,12 @@
 #ifndef NOBLEENGINE_MODELMANAGER_H
 #define NOBLEENGINE_MODELMANAGER_H
 
+#include "Model.h"
+
+#include "core/resources/AsyncResourceManager.h"
+
 #include "libraries/tinygltfUsage.h"
 #include "libraries/tinyobjloaderUsage.h"
-
-#include "Model.h"
-#include "core/resources/AsyncResourceManager.h"
 
 class ModelManager : public AsyncResourceManager<Model> {
 public:
@@ -36,7 +37,10 @@ public:
     );
 
     [[nodiscard]] static bool load_OBJ(Model& model, const std::string& path, std::string& errorMessage);
-    [[nodiscard]] static bool load_glTF(Model& model, const std::string& path, std::string& errorMessage);
+
+    [[nodiscard]] static bool load_glTF(
+        Model& model, const std::string& path, const std::string& extension, std::string& errorMessage
+    );
 
 private:
     static void processMeshPrimitives_glTF(

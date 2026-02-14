@@ -55,7 +55,7 @@ bool VulkanDescriptorManager::allocateSets(
     std::string&                         errorMessage
 ) const {
     if (!_device) {
-        errorMessage = "Failed to allocate Vulkan descriptor sets: device is null";
+        errorMessage = "Failed to allocate Vulkan descriptor sets: device is null.";
         return false;
     }
 
@@ -82,7 +82,7 @@ void VulkanDescriptorManager::buildDescriptorScheme(const VulkanDescriptorScheme
 
 bool VulkanDescriptorManager::createSetLayout(std::string& errorMessage) {
     if (!_device) {
-        errorMessage = "Failed to create Vulkan descriptor set layout: device is null";
+        errorMessage = "Failed to create Vulkan descriptor set layout: device is null.";
         return false;
     }
 
@@ -96,7 +96,7 @@ bool VulkanDescriptorManager::createSetLayout(std::string& errorMessage) {
 
 bool VulkanDescriptorManager::createPool(std::string& errorMessage) {
     if (!_device) {
-        errorMessage = "Failed to create Vulkan descriptor pool: device is null";
+        errorMessage = "Failed to create Vulkan descriptor pool: device is null.";
         return false;
     }
 
