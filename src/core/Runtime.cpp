@@ -2,20 +2,17 @@
 
 #include "engine/Engine.h"
 
-#include "core/resources/AssetManager.h"
-#include "entities/objects/ObjectManager.h"
-
 #include "graphics/vulkan/VulkanRenderer.h"
 
 #include <chrono>
 #include <thread>
 
-Runtime::Runtime(std::atomic<bool>& runningFlag)
+Runtime::Runtime(const Scene& scene, std::atomic<bool>& runningFlag)
     : _running(runningFlag),
       _window(1280, 720, "Noble Engine"),
       _renderer(Engine::MAX_FRAMES_IN_FLIGHT)
 {
-
+    _objectManager.addScene(scene);
 }
 
 bool Runtime::init(std::string& errorMessage) {
@@ -25,12 +22,6 @@ bool Runtime::init(std::string& errorMessage) {
 
     _windowContext = WindowContext{&_window, &_inputManager};
     _window.setContext(&_windowContext);
-
-    _objectManager.addObject("lucy.obj", {-1.0f, 1.0f, 1.47f}, {0.0f, 0.0f, -30.0f}, glm::vec3{0.0025f});
-    _objectManager.addObject("stanford_dragon.obj", {3.0f, 0.7f, 0.6f}, {0.0f, 180.0f, 60.0f}, glm::vec3{0.6f});
-    _objectManager.addObject("stanford_bunny.obj", {-3.0f, 1.0f, -0.25f}, {90.0f, 90.0f, 0.0f}, glm::vec3{7.0f});
-    _objectManager.addObject("happy.obj", {-4.5f, -0.4f, -0.36f}, {90.0f, 120.0f, 0.0f}, glm::vec3{7.0f});
-    _objectManager.addObject("sponza_old.gltf", {0.0f, 0.0f, 0.0f}, {90.0f, 0.0f, 0.0f}, glm::vec3{1.0f});
 
     _objectManager.createObjects();
 
@@ -82,6 +73,7 @@ void Runtime::engineLoop() {
         _inputManager.update();
 
         _camera.update(deltaTime);
+
         _renderer.drawFrame(_camera);
 
         ++frameCount;

@@ -5,6 +5,9 @@
 #include "platform/Window.h"
 #include "platform/WindowContext.h"
 
+#include "core/resources/AssetManager.h"
+#include "entities/objects/ObjectManager.h"
+
 #include "graphics/vulkan/VulkanRenderer.h"
 
 #include <atomic>
@@ -12,7 +15,7 @@
 
 class Runtime {
 public:
-    explicit Runtime(std::atomic<bool>& runningFlag);
+    explicit Runtime(const Scene& scene, std::atomic<bool>& runningFlag);
 
     ~Runtime() = default;
 

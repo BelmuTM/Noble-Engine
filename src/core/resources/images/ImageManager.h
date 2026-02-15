@@ -18,7 +18,11 @@ public:
     ImageManager(ImageManager&&)            = delete;
     ImageManager& operator=(ImageManager&&) = delete;
 
-    [[nodiscard]] const Image* load(const std::string& path, std::string& errorMessage, bool hasMipmaps = false);
+    std::shared_future<std::unique_ptr<Image>> load(
+        const std::string& path, std::string& errorMessage, bool hasMipmaps = false
+    );
+
+    const Image* loadBlocking(const std::string& path, std::string& errorMessage, bool hasMipmaps = false);
 };
 
 #endif // NOBLEENGINE_IMAGEMANAGER_H

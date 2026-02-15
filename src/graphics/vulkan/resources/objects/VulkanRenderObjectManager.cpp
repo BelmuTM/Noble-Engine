@@ -4,6 +4,7 @@
 #include "core/debug/Logger.h"
 
 bool VulkanRenderObjectManager::create(
+    const ObjectManager& objectManager,
     const AssetManager&  assetManager,
     const VulkanDevice&  device,
     VulkanImageManager&  imageManager,
@@ -31,6 +32,8 @@ bool VulkanRenderObjectManager::create(
     const auto loadDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
 
     Logger::debug("Loaded object textures in " + std::to_string(loadDuration) + " ms");
+
+    TRY(createRenderObjects(objectManager.getObjects(), errorMessage));
 
     return true;
 }
@@ -119,7 +122,7 @@ bool VulkanRenderObjectManager::createRenderObject(
         submesh.specularTexture = _imageManager->getImage(material.specularPath);
 
         if (!submesh.albedoTexture) {
-            const Image diffuseColorImage = Image::createSinglePixelImage(material.diffuse);
+            const Image diffuseColorImage = Image::createSinglePixelImage(glm::vec3{1.0f});
             TRY(_imageManager->loadImage(submesh.albedoTexture, &diffuseColorImage, errorMessage));
         }
 

@@ -7,8 +7,8 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
-const Model* ModelManager::load(const std::string& path, std::string& errorMessage) {
-    return loadAsync(path, [path, &errorMessage]() -> std::unique_ptr<Model> {
+std::shared_future<std::unique_ptr<Model>> ModelManager::load(const std::string& path, std::string& errorMessage) {
+    return loadAsyncFuture(path, [path, &errorMessage]() -> std::unique_ptr<Model> {
 
         Logger::info("Loading model \"" + path + "\"...");
 
@@ -46,6 +46,13 @@ const Model* ModelManager::load(const std::string& path, std::string& errorMessa
 
         return model;
     });
+}
+
+const Model* ModelManager::loadBlocking(const std::string& path, std::string& errorMessage) {
+    const auto& future = load(path, errorMessage);
+    if (!future.valid()) return nullptr;
+
+    return future.get().get();
 }
 
 /*---------------------------------------*/

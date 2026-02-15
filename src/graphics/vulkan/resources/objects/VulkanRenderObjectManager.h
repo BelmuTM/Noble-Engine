@@ -35,6 +35,7 @@ public:
     VulkanRenderObjectManager& operator=(VulkanRenderObjectManager&&) = delete;
 
     [[nodiscard]] bool create(
+        const ObjectManager& objectManager,
         const AssetManager&  assetManager,
         const VulkanDevice&  device,
         VulkanImageManager&  imageManager,

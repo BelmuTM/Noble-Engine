@@ -5,8 +5,10 @@
 
 #include "libraries/stbUsage.h"
 
-const Image* ImageManager::load(const std::string& path, std::string& errorMessage, const bool hasMipmaps) {
-    return loadAsync(path, [path, &errorMessage, hasMipmaps]() -> std::unique_ptr<Image> {
+std::shared_future<std::unique_ptr<Image>> ImageManager::load(
+    const std::string& path, std::string& errorMessage, const bool hasMipmaps
+) {
+    return loadAsyncFuture(path, [path, &errorMessage, hasMipmaps]() -> std::unique_ptr<Image> {
 
         Logger::info("Loading texture \"" + path + "\"...");
 
@@ -37,4 +39,11 @@ const Image* ImageManager::load(const std::string& path, std::string& errorMessa
 
         return image;
     });
+}
+
+const Image* ImageManager::loadBlocking(const std::string& path, std::string& errorMessage, const bool hasMipmaps) {
+    const auto& future = load(path, errorMessage, hasMipmaps);
+    if (!future.valid()) return nullptr;
+
+    return future.get().get();
 }

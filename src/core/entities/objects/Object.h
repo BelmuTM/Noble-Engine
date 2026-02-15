@@ -6,6 +6,13 @@
 
 #include <glm/glm.hpp>
 
+struct ObjectDescriptor {
+    std::string modelPath;
+    glm::vec3   position;
+    glm::vec3   rotation;
+    glm::vec3   scale;
+};
+
 struct alignas(16) ObjectDataGPU {
     glm::mat4 modelMatrix;
     glm::mat4 normalMatrix;
@@ -13,8 +20,6 @@ struct alignas(16) ObjectDataGPU {
 
 class Object {
 public:
-    static constexpr bool MIPMAPS_ENABLED = true;
-
     Object()  = default;
     ~Object() = default;
 

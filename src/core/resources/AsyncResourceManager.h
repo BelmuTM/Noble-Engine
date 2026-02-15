@@ -11,6 +11,45 @@
 
 template<typename ResourceType, template<typename> typename PointerType = std::unique_ptr>
 class AsyncResourceManager {
+public:
+    // Non-const version - returns non-const pointer
+    ResourceType* get(const std::string& path) {
+        auto it = _cache.find(path);
+        if (it == _cache.end()) {
+            return nullptr;
+        }
+
+        auto& future = it->second;
+
+        if (!future.valid()) {
+            return nullptr;
+        }
+
+        auto& ptr = future.get();
+        return ptr ? ptr.get() : nullptr;
+    }
+
+    // Const version - returns const pointer
+    const ResourceType* get(const std::string& path) const {
+        auto it = _cache.find(path);
+        if (it == _cache.end()) {
+            return nullptr;
+        }
+
+        const auto& future = it->second;
+
+        if (!future.valid()) {
+            return nullptr;
+        }
+
+        const auto& ptr = future.get();
+        return ptr ? ptr.get() : nullptr;
+    }
+
+    [[nodiscard]] std::unordered_map<std::string, std::shared_future<PointerType<ResourceType>>>& getCache() noexcept {
+        return _cache;
+    }
+
 protected:
     static_assert(
         std::is_same_v<PointerType<ResourceType>, std::unique_ptr<ResourceType>> ||
@@ -30,12 +69,12 @@ protected:
 
         // If resource is already cached, return it
         {
-            std::shared_lock readlock(_mutex);
+            std::shared_lock readLock(_mutex);
             if (auto it = _cache.find(path); it != _cache.end())
                 return it->second;
         }
 
-        std::unique_lock writelock(_mutex);
+        std::unique_lock writeLock(_mutex);
 
         if (auto it = _cache.find(path); it != _cache.end()) {
             return it->second;
@@ -47,7 +86,7 @@ protected:
         // Cache a placeholder while the resource is loading
         _cache[path] = future;
 
-        writelock.unlock();
+        writeLock.unlock();
 
         try {
             PointerType<ResourceType> loadedResource = loadFunc();
@@ -71,30 +110,6 @@ protected:
         }
 
         return future;
-    }
-
-    // Non-const version - returns non-const pointer
-    template<typename LoadFunction>
-    ResourceType* loadAsync(const std::string& path, LoadFunction&& loadFunc) {
-        const auto future = loadAsyncFuture(path, loadFunc);
-
-        if (!future.valid()) return nullptr;
-
-        // WARNING: .get() is blocking
-        // We might want to return the std::shared_future and let the caller handle it instead
-        return future.get().get();
-    }
-
-    // Const version - returns const pointer
-    template<typename LoadFunction>
-    const ResourceType* loadAsync(const std::string& path, LoadFunction&& loadFunc) const {
-        const auto future = loadAsyncFuture(path, loadFunc);
-
-        if (!future.valid()) return nullptr;
-
-        // WARNING: .get() is blocking
-        // We might want to return the std::shared_future and let the caller handle it instead
-        return future.get().get();
     }
 
     void cleanupCache(std::function<void(ResourceType&)> destructor) {

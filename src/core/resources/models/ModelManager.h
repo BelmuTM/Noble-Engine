@@ -20,7 +20,9 @@ public:
     ModelManager(ModelManager&&)            = delete;
     ModelManager& operator=(ModelManager&&) = delete;
 
-    [[nodiscard]] const Model* load(const std::string& path, std::string& errorMessage);
+    std::shared_future<std::unique_ptr<Model>> load(const std::string& path, std::string& errorMessage);
+
+    const Model* loadBlocking(const std::string& path, std::string& errorMessage);
 
     static void loadMaterial_OBJ(
         Mesh&                      mesh,

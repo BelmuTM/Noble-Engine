@@ -4,6 +4,8 @@
 
 #include "Object.h"
 
+#include "core/entities/scenes/Scene.h"
+
 #include "core/resources/AssetManager.h"
 
 #include "core/concurrency/ThreadPool.h"
@@ -31,31 +33,23 @@ public:
         glm::vec3          scale    = {1.0f, 1.0f, 1.0f}
     );
 
+    void addScene(const Scene& scene);
+
     void createObjects();
 
-#if MULTITHREADED_OBJECTS_LOAD
-
-    void loadModelsAsync(ThreadPool& threadPool, const std::vector<std::string>& modelPaths) const;
-
-    void loadTexturesAsync(ThreadPool& threadPool, const std::vector<std::string>& texturePaths) const;
-
-#endif
-
     [[nodiscard]] const ObjectsVector& getObjects() const noexcept { return _objects; }
+
+    [[nodiscard]] const std::vector<std::string>& getTexturePaths() const noexcept { return _texturePaths; }
 
 private:
     AssetManager& _assetManager;
 
-    struct ObjectDescriptor {
-        std::string modelPath;
-        glm::vec3   position;
-        glm::vec3   rotation;
-        glm::vec3   scale;
-    };
-
     std::vector<ObjectDescriptor> _objectDescriptors{};
 
     ObjectsVector _objects{};
+
+    std::vector<std::string> _modelPaths{};
+    std::vector<std::string> _texturePaths{};
 };
 
 #endif // NOBLEENGINE_OBJECTMANAGER_H

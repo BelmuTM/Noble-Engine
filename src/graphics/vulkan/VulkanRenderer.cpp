@@ -45,10 +45,8 @@ bool VulkanRenderer::init(
     ));
 
     TRY(createVulkanEntity(
-        &renderObjectManager, errorMessage, assetManager, device, imageManager, meshManager, _framesInFlight
+        &renderObjectManager, errorMessage, objectManager, assetManager, device, imageManager, meshManager, _framesInFlight
     ));
-
-    TRY(renderObjectManager.createRenderObjects(objectManager.getObjects(), errorMessage));
 
     // Pipeline managers creation
     TRY(createVulkanEntity(&shaderProgramManager, errorMessage, logicalDevice));
@@ -126,7 +124,7 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
                     drawCall->mesh->getAABB(), drawCall->owner->data.modelMatrix
                 );
 
-                visible = FrustumCuller::testVisibility(worldAABB, frustumPlanes);
+                //visible = FrustumCuller::testVisibility(worldAABB, frustumPlanes);
             }
 
             if (visible) {
