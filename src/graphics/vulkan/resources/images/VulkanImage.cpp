@@ -406,7 +406,7 @@ bool VulkanImage::createFromBuffer(
         mipLevels
     ));
 
-    copyBufferToImage(commandBuffer, buffer, bufferOffset);
+    copyBufferToImage(commandBuffer, buffer.handle(), bufferOffset);
 
     // Mipmaps generation
     if (hasMipmaps) {

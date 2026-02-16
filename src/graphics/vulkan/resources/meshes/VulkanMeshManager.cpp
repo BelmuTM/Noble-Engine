@@ -109,7 +109,7 @@ bool VulkanMeshManager::createVertexBuffer(std::string& errorMessage) {
         errorMessage
     ));
 
-    TRY(_vertexBuffer.copyFrom(_stagingBuffer, _commandManager, errorMessage));
+    TRY(_vertexBuffer.copyFrom(_stagingBuffer.handle(), _commandManager, errorMessage));
 
     return true;
 }
@@ -123,7 +123,9 @@ bool VulkanMeshManager::createIndexBuffer(std::string& errorMessage) {
         errorMessage
     ));
 
-    TRY(_indexBuffer.copyFrom(_stagingBuffer, _commandManager, errorMessage, _indexBufferSize, _vertexBufferSize, 0));
+    TRY(_indexBuffer.copyFrom(
+        _stagingBuffer.handle(), _commandManager, errorMessage, _indexBufferSize, _vertexBufferSize, 0
+    ));
 
     return true;
 }

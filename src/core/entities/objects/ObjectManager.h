@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_OBJECTMANAGER_H
-#define NOBLEENGINE_OBJECTMANAGER_H
 
 #include "Object.h"
 
@@ -51,5 +49,3 @@ private:
     std::vector<std::string> _modelPaths{};
     std::vector<std::string> _texturePaths{};
 };
-
-#endif // NOBLEENGINE_OBJECTMANAGER_H

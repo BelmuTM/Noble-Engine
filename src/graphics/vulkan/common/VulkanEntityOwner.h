@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANENTITYOWNER_H
-#define NOBLEENGINE_VULKANENTITYOWNER_H
 
 #include <functional>
 #include <ranges>
@@ -33,5 +31,3 @@ public:
 protected:
     std::vector<std::function<void()>> entityDeletionQueue;
 };
-
-#endif //NOBLEENGINE_VULKANENTITYOWNER_H

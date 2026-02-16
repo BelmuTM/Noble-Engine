@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_SCENE_H
-#define NOBLEENGINE_SCENE_H
 
 #include "core/entities/objects/Object.h"
 
@@ -23,5 +21,3 @@ public:
 private:
     std::vector<ObjectDescriptor> _objects{};
 };
-
-#endif // NOBLEENGINE_SCENE_H

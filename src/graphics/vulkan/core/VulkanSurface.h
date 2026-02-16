@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANSURFACE_H
-#define NOBLEENGINE_VULKANSURFACE_H
 
 #include "core/platform/Window.h"
 
@@ -13,9 +11,6 @@ public:
     VulkanSurface()  = default;
     ~VulkanSurface() = default;
 
-    // Implicit conversion operator
-    operator vk::SurfaceKHR() const noexcept { return _surface; }
-
     VulkanSurface(const VulkanSurface&)            = delete;
     VulkanSurface& operator=(const VulkanSurface&) = delete;
 
@@ -26,6 +21,8 @@ public:
 
     void destroy() noexcept;
 
+    [[nodiscard]] vk::SurfaceKHR handle() const noexcept { return _surface; }
+
 private:
     bool createSurface(std::string& errorMessage);
 
@@ -34,5 +31,3 @@ private:
     vk::Instance   _instance{};
     vk::SurfaceKHR _surface{};
 };
-
-#endif //NOBLEENGINE_VULKANSURFACE_H

@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANRENDERRESOURCES_H
-#define NOBLEENGINE_VULKANRENDERRESOURCES_H
 
 #include "graphics/vulkan/core/VulkanCommandManager.h"
 #include "graphics/vulkan/resources/VulkanFrameResources.h"
@@ -110,5 +108,3 @@ private:
     // Color buffers
     std::vector<std::unique_ptr<VulkanImage>> _colorBuffers{};
 };
-
-#endif // NOBLEENGINE_VULKANRENDERRESOURCES_H

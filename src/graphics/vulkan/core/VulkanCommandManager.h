@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANCOMMANDMANAGER_H
-#define NOBLEENGINE_VULKANCOMMANDMANAGER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -44,5 +42,3 @@ private:
     vk::CommandPool                _commandPool{};
     std::vector<vk::CommandBuffer> _commandBuffers{};
 };
-
-#endif //NOBLEENGINE_VULKANCOMMANDMANAGER_H

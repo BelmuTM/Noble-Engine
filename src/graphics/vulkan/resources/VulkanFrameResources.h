@@ -1,10 +1,10 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANFRAMERESOURCES_H
-#define NOBLEENGINE_VULKANFRAMERESOURCES_H
 
 #include "descriptors/VulkanDescriptorManager.h"
 #include "descriptors/VulkanDescriptorSets.h"
+
 #include "images/VulkanImageManager.h"
+
 #include "ubo/VulkanUniformBufferManager.h"
 #include "ubo/FrameUniformBuffer.h"
 
@@ -61,5 +61,3 @@ private:
     FrameUniformBuffer    _frameUBO{};
     VulkanDescriptorSets* _frameUBODescriptors = nullptr;
 };
-
-#endif // NOBLEENGINE_VULKANFRAMERESOURCES_H

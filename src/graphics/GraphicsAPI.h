@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_GRAPHICSAPI_H
-#define NOBLEENGINE_GRAPHICSAPI_H
 
 #include "core/platform/Window.h"
 
@@ -25,5 +23,3 @@ public:
 
     virtual void drawFrame(const Camera& camera) = 0;
 };
-
-#endif //NOBLEENGINE_GRAPHICSAPI_H

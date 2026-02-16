@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANMESHMANAGER_H
-#define NOBLEENGINE_VULKANMESHMANAGER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -64,5 +62,3 @@ private:
     size_t _vertexBufferSize = 0;
     size_t _indexBufferSize  = 0;
 };
-
-#endif // NOBLEENGINE_VULKANMESHMANAGER_H

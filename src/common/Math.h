@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_MATH_H
-#define NOBLEENGINE_MATH_H
 
 #include <glm/glm.hpp>
 
@@ -20,5 +18,3 @@ public:
 
     [[nodiscard]] static bool within(float value, float minBound, float maxBound);
 };
-
-#endif // NOBLEENGINE_MATH_H

@@ -40,7 +40,7 @@ bool VulkanSwapchainManager::recreateSwapchain(std::string& errorMessage) {
         return false;
     }
 
-    TRY(_swapchain->recreate(*_surface, errorMessage));
+    TRY(_swapchain->recreate(_surface->handle(), errorMessage));
 
     _syncObjects.backup();
 

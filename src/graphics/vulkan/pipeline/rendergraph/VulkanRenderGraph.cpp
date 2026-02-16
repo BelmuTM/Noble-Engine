@@ -9,6 +9,8 @@
 
 #include <ranges>
 
+#include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
+
 bool VulkanRenderGraph::create(
     const VulkanSwapchain&   swapchain,
     const VulkanMeshManager& meshManager,
@@ -60,12 +62,12 @@ bool VulkanRenderGraph::executePass(
 
     const vk::Extent2D extent = _swapchain->getExtent();
 
-    const vk::Buffer& vertexBuffer = _meshManager->getVertexBuffer();
-    const vk::Buffer& indexBuffer  = _meshManager->getIndexBuffer();
+    const vk::Buffer& vertexBuffer = _meshManager->getVertexBuffer().handle();
+    const vk::Buffer& indexBuffer  = _meshManager->getIndexBuffer().handle();
 
     const VulkanShaderProgram* shaderProgram = pass->getPipelineDescriptor().shaderProgram;
 
-    const bool isFullScreenPass = shaderProgram->isFullscreen();
+    const bool isMeshPass = pass->getType() == VulkanRenderPassType::MeshRender;
 
     if (pass->getBindPoint() == vk::PipelineBindPoint::eGraphics) {
         /*---------------------------------------*/
@@ -139,11 +141,11 @@ bool VulkanRenderGraph::executePass(
 
         commandBuffer.beginRendering(renderingInfo);
 
-        if (!isFullScreenPass) {
+        if (isMeshPass) {
             commandBuffer.beginQuery(_queryPool, 0, {});
         }
 
-        commandBuffer.bindPipeline(pass->getBindPoint(), *pass->getPipeline());
+        commandBuffer.bindPipeline(pass->getBindPoint(), pass->getPipeline()->handle());
 
         for (const auto& drawCall : pass->_visibleDrawCalls) {
             const auto& draw = *drawCall;
@@ -198,7 +200,7 @@ bool VulkanRenderGraph::executePass(
             }
         }
 
-        if (!isFullScreenPass) {
+        if (isMeshPass) {
             commandBuffer.endQuery(_queryPool, 0);
         }
 

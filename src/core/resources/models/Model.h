@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_MODEL_H
-#define NOBLEENGINE_MODEL_H
 
 #include "Mesh.h"
 
@@ -23,5 +21,3 @@ struct Model {
         meshes.push_back(mesh);
     }
 };
-
-#endif // NOBLEENGINE_MODEL_H

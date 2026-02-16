@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANMESH_H
-#define NOBLEENGINE_VULKANMESH_H
 
 #include "core/resources/models/Mesh.h"
 
@@ -39,5 +37,3 @@ private:
     size_t _vertexOffset = 0;
     size_t _indexOffset  = 0;
 };
-
-#endif // NOBLEENGINE_VULKANMESH_H

@@ -1,10 +1,9 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANDESCRIPTORSETS_H
-#define NOBLEENGINE_VULKANDESCRIPTORSETS_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 #include "graphics/vulkan/resources/ubo/VulkanUniformBuffer.h"
+
 #include "VulkanDescriptorManager.h"
 #include "VulkanDescriptorInfo.h"
 
@@ -41,5 +40,3 @@ private:
 
     std::vector<vk::DescriptorSet> _descriptorSets{};
 };
-
-#endif // NOBLEENGINE_VULKANDESCRIPTORSETS_H

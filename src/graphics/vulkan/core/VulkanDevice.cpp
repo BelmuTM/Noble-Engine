@@ -99,8 +99,10 @@ bool VulkanDevice::pickPhysicalDevice(std::string& errorMessage) {
 
     for (const auto& device : availableDevices.value) {
         vk::Bool32 profileSupported = vk::False;
-        VK_TRY(vpGetPhysicalDeviceProfileSupport(*_capabilities, _instance, device, &vulkanProfile, &profileSupported),
-            errorMessage);
+
+        VK_TRY(vpGetPhysicalDeviceProfileSupport(
+            _capabilities->handle(), _instance, device, &vulkanProfile, &profileSupported
+        ), errorMessage);
 
         if (!static_cast<bool>(profileSupported) || !isPhysicalDeviceSuitable(device)) {
             continue;
@@ -230,7 +232,7 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
 
     VkDevice rawDevice = VK_NULL_HANDLE;
     VK_TRY(
-        vpCreateDevice(*_capabilities, _physicalDevice, &vpCreateInfo, nullptr, &rawDevice),
+        vpCreateDevice(_capabilities->handle(), _physicalDevice, &vpCreateInfo, nullptr, &rawDevice),
         errorMessage
     );
 

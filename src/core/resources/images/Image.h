@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_IMAGE_H
-#define NOBLEENGINE_IMAGE_H
 
 #include <algorithm>
 #include <cstdint>
@@ -55,5 +53,3 @@ struct Image {
         return image;
     }
 };
-
-#endif // NOBLEENGINE_IMAGE_H

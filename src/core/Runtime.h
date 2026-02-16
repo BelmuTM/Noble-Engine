@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_RUNTIME_H
-#define NOBLEENGINE_RUNTIME_H
 
 #include "platform/Window.h"
 #include "platform/WindowContext.h"
@@ -42,5 +40,3 @@ private:
 
     std::thread _engineThread;
 };
-
-#endif // NOBLEENGINE_RUNTIME_H

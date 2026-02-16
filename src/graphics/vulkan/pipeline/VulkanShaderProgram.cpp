@@ -52,15 +52,14 @@ vk::ShaderModule VulkanShaderProgram::createShaderModule(
 }
 
 bool VulkanShaderProgram::loadFromFiles(
-    const std::vector<std::string>& paths, const bool fullscreen, const vk::Device& device, std::string& errorMessage
+    const std::vector<std::string>& paths, const vk::Device& device, std::string& errorMessage
 ) {
     if (paths.empty()) {
         errorMessage = "Failed to load shader program: no paths provided.";
         return false;
     }
 
-    _device       = device;
-    _isFullscreen = fullscreen;
+    _device = device;
 
     ScopeGuard guard{[this] { clearShaderModules(); }};
 
@@ -96,7 +95,6 @@ bool VulkanShaderProgram::loadFromFiles(
             .setPName(entryPoint);
 
         _shaderStages.push_back(stageInfo);
-        _stageFlags |= stage;
 
         Logger::debug("----- STAGE [" + path + "] -----");
         TRY(reflectShaderResources(bytecode, stage, errorMessage));
@@ -107,10 +105,8 @@ bool VulkanShaderProgram::loadFromFiles(
     return true;
 }
 
-bool VulkanShaderProgram::load(
-    const std::string& path, const bool fullscreen, const vk::Device& device, std::string& errorMessage
-) {
-    return loadFromFiles(findShaderFilePaths(path), fullscreen, device, errorMessage);
+bool VulkanShaderProgram::load(const std::string& path, const vk::Device& device, std::string& errorMessage) {
+    return loadFromFiles(findShaderFilePaths(path), device, errorMessage);
 }
 
 bool VulkanShaderProgram::reflectShaderResources(

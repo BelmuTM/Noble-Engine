@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANSHADERPROGRAMMANAGER_H
-#define NOBLEENGINE_VULKANSHADERPROGRAMMANAGER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -24,9 +22,7 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] bool load(
-        VulkanShaderProgram*& program, const std::string& path, bool fullscreen, std::string& errorMessage
-    );
+    [[nodiscard]] bool load(VulkanShaderProgram*& program, const std::string& path, std::string& errorMessage);
 
 private:
     vk::Device _device{};
@@ -35,5 +31,3 @@ private:
 
     std::mutex _mutex{};
 };
-
-#endif // NOBLEENGINE_VULKANSHADERPROGRAMMANAGER_H

@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANSHADERPROGRAM_H
-#define NOBLEENGINE_VULKANSHADERPROGRAM_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -26,20 +24,14 @@ public:
     void destroy() noexcept;
 
     [[nodiscard]] bool loadFromFiles(
-        const std::vector<std::string>& paths, bool fullscreen, const vk::Device& device, std::string& errorMessage
+        const std::vector<std::string>& paths, const vk::Device& device, std::string& errorMessage
     );
 
-    [[nodiscard]] bool load(
-        const std::string& path, bool fullscreen, const vk::Device& device, std::string& errorMessage
-    );
-
-    [[nodiscard]] bool isFullscreen() const noexcept { return _isFullscreen; }
+    [[nodiscard]] bool load(const std::string& path, const vk::Device& device, std::string& errorMessage);
 
     [[nodiscard]] const std::vector<vk::PipelineShaderStageCreateInfo>& getStages() const noexcept {
         return _shaderStages;
     }
-
-    [[nodiscard]] vk::ShaderStageFlags getStageFlags() const noexcept { return _stageFlags; }
 
     [[nodiscard]] const std::vector<std::string>& getStageOutputs() const noexcept { return _stageOutputs; }
 
@@ -68,15 +60,10 @@ private:
 
     vk::Device _device{};
 
-    bool _isFullscreen = false;
-
     std::vector<vk::ShaderModule>                  _shaderModules{};
     std::vector<vk::PipelineShaderStageCreateInfo> _shaderStages{};
-    vk::ShaderStageFlags                           _stageFlags{};
 
     std::vector<std::string> _stageOutputs{};
     DescriptorSchemeMap      _descriptorSchemes{};
     PushConstantsMap         _pushConstants{};
 };
-
-#endif //NOBLEENGINE_VULKANSHADERPROGRAM_H

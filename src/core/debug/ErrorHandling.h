@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_ERRORHANDLING_H
-#define NOBLEENGINE_ERRORHANDLING_H
 
 #include <functional>
 
@@ -16,5 +14,3 @@ struct ScopeGuard {
     do { \
         if (!(expr)) return false; \
     } while (0)
-
-#endif //NOBLEENGINE_ERRORHANDLING_H

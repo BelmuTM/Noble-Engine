@@ -1,8 +1,8 @@
 #include "VulkanShaderProgramManager.h"
 
-#include <ranges>
-
 #include "core/debug/ErrorHandling.h"
+
+#include <ranges>
 
 bool VulkanShaderProgramManager::create(const vk::Device& device, std::string& errorMessage) noexcept {
     _device = device;
@@ -19,7 +19,7 @@ void VulkanShaderProgramManager::destroy() noexcept {
 }
 
 bool VulkanShaderProgramManager::load(
-    VulkanShaderProgram*& program, const std::string& path, const bool fullscreen, std::string& errorMessage
+    VulkanShaderProgram*& program, const std::string& path, std::string& errorMessage
 ) {
     {
         // If shader program is already cached, return it
@@ -33,7 +33,7 @@ bool VulkanShaderProgramManager::load(
 
     VulkanShaderProgram tempProgram{};
 
-    TRY(tempProgram.load(path, fullscreen, _device, errorMessage));
+    TRY(tempProgram.load(path, _device, errorMessage));
 
     // Insert shader program into cache
     std::lock_guard lock(_mutex);

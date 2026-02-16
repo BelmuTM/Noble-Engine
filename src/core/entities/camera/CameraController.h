@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_CAMERACONTROLLER_H
-#define NOBLEENGINE_CAMERACONTROLLER_H
 
 #include "core/input/InputManager.h"
 
@@ -31,5 +29,3 @@ private:
 
     bool _dragging = false;
 };
-
-#endif // NOBLEENGINE_CAMERACONTROLLER_H

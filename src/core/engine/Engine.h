@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_ENGINE_H
-#define NOBLEENGINE_ENGINE_H
 
 #include <string>
 
@@ -9,5 +7,3 @@ namespace Engine {
 
     [[noreturn]] void fatalExit(const std::string& message);
 }
-
-#endif //NOBLEENGINE_ENGINE_H

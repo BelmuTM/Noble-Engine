@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANDESCRIPTORINFO_H
-#define NOBLEENGINE_VULKANDESCRIPTORINFO_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -20,5 +18,3 @@ struct VulkanDescriptorInfo {
     vk::DescriptorBufferInfo bufferInfo{};
     uint32_t                 binding;
 };
-
-#endif // NOBLEENGINE_VULKANDESCRIPTORINFO_H

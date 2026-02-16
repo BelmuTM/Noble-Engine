@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANDEBUGGER_H
-#define NOBLEENGINE_VULKANDEBUGGER_H
 
 #include <string>
 
@@ -148,5 +146,3 @@ namespace VulkanDebugger {
         } \
         var = returnValueCreateVoidLog_##__COUNTER__.value; \
     } while (0)
-
-#endif //NOBLEENGINE_VULKANDEBUGGER_H

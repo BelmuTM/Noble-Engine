@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANPUSHCONSTANT_H
-#define NOBLEENGINE_VULKANPUSHCONSTANT_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -39,5 +37,3 @@ struct VulkanPushConstant final : IVulkanPushConstant {
 };
 
 using PushConstantsMap = std::unordered_map<std::string, VulkanPushConstantRange>;
-
-#endif // NOBLEENGINE_VULKANPUSHCONSTANT_H

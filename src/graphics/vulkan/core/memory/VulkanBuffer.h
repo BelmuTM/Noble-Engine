@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANBUFFER_H
-#define NOBLEENGINE_VULKANBUFFER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -13,9 +11,6 @@ class VulkanBuffer {
 public:
     VulkanBuffer()  = default;
     ~VulkanBuffer() = default;
-
-    // Implicit conversion operators
-    operator vk::Buffer() const { return _buffer; }
 
     VulkanBuffer(const VulkanBuffer&)            = delete;
     VulkanBuffer& operator=(const VulkanBuffer&) = delete;
@@ -67,6 +62,8 @@ public:
 
     void unmapMemory();
 
+    [[nodiscard]] vk::Buffer handle() const noexcept { return _buffer; }
+
     [[nodiscard]] vk::DeviceAddress getDeviceAddress() const noexcept { return _deviceAddress; }
 
     [[nodiscard]] void* getMappedPointer() const noexcept { return _mappedPointer; }
@@ -83,5 +80,3 @@ private:
 
     void* _mappedPointer = nullptr;
 };
-
-#endif // NOBLEENGINE_VULKANBUFFER_H

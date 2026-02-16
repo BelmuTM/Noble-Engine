@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_FRUSTUMCULLER_H
-#define NOBLEENGINE_FRUSTUMCULLER_H
 
 #include "core/resources/models/Mesh.h"
 
@@ -13,5 +11,3 @@ public:
 
     [[nodiscard]] static bool testVisibility(const Math::AABB& aabb, const std::array<Math::Plane, 6>& frustumPlanes);
 };
-
-#endif // NOBLEENGINE_FRUSTUMCULLER_H

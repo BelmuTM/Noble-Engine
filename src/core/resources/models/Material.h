@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_MATERIAL_H
-#define NOBLEENGINE_MATERIAL_H
 
 #include "core/resources/AssetPaths.h"
 
@@ -53,5 +51,3 @@ namespace TextureHelper {
         return "";
     };
 }
-
-#endif // NOBLEENGINE_MATERIAL_H

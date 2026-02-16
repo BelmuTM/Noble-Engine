@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANUNIFORMBUFFERMANAGER_H
-#define NOBLEENGINE_VULKANUNIFORMBUFFERMANAGER_H
 
 #include "VulkanUniformBuffer.h"
 
@@ -32,5 +30,3 @@ private:
 
     std::vector<VulkanUniformBufferBase*> _uniformBuffers{};
 };
-
-#endif // NOBLEENGINE_VULKANUNIFORMBUFFERMANAGER_H

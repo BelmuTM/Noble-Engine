@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_FRAMEUNIFORMBUFFER_H
-#define NOBLEENGINE_FRAMEUNIFORMBUFFER_H
 
 #include "VulkanUniformBuffer.h"
 #include "graphics/vulkan/core/VulkanSwapchain.h"
@@ -17,5 +15,3 @@ public:
 private:
     FrameUniforms _uniforms{};
 };
-
-#endif // NOBLEENGINE_FRAMEUNIFORMBUFFER_H

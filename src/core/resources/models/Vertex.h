@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VERTEX_H
-#define NOBLEENGINE_VERTEX_H
 
 #include <glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
@@ -27,5 +25,3 @@ template<> struct std::hash<Vertex> {
         return seed;
     }
 };
-
-#endif // NOBLEENGINE_VERTEX_H

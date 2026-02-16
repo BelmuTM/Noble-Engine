@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_MESH_H
-#define NOBLEENGINE_MESH_H
 
 #include "common/Math.h"
 
@@ -62,5 +60,3 @@ protected:
 
     Material _material{};
 };
-
-#endif // NOBLEENGINE_MESH_H

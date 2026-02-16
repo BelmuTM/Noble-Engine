@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_THREADPOOL_H
-#define NOBLEENGINE_THREADPOOL_H
 
 #include <atomic>
 #include <condition_variable>
@@ -137,5 +135,3 @@ private:
 
     std::atomic<size_t> nextQueue{0};
 };
-
-#endif // NOBLEENGINE_THREADPOOL_H

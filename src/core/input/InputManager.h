@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_INPUTMANAGER_H
-#define NOBLEENGINE_INPUTMANAGER_H
 
 #include <unordered_map>
 #include <unordered_set>
@@ -96,5 +94,3 @@ public:
 protected:
     InputManager& _inputManager;
 };
-
-#endif // NOBLEENGINE_INPUTMANAGER_H

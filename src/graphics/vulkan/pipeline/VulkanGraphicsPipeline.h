@@ -1,25 +1,15 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANGRAPHICSPIPELINE_H
-#define NOBLEENGINE_VULKANGRAPHICSPIPELINE_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "VulkanShaderProgram.h"
-#include "rendergraph/nodes/VulkanRenderPassAttachment.h"
+#include "VulkanPipelineDescriptor.h"
 
-struct VulkanPipelineDescriptor {
-    const VulkanShaderProgram* shaderProgram = nullptr;
-
-    std::vector<vk::DescriptorSetLayout> descriptorLayouts{};
-};
+#include "rendergraph/nodes/VulkanRenderPass.h"
 
 class VulkanGraphicsPipeline {
 public:
     VulkanGraphicsPipeline()  = default;
     ~VulkanGraphicsPipeline() = default;
-
-    // Implicit conversion operator
-    operator vk::Pipeline() const { return _pipeline; }
 
     VulkanGraphicsPipeline(const VulkanGraphicsPipeline&)            = delete;
     VulkanGraphicsPipeline& operator=(const VulkanGraphicsPipeline&) = delete;
@@ -28,39 +18,34 @@ public:
     VulkanGraphicsPipeline& operator=(VulkanGraphicsPipeline&&) = delete;
 
     [[nodiscard]] bool create(
-        const vk::Device&               device,
-        const VulkanPipelineDescriptor& descriptor,
-        const AttachmentsVector&        colorAttachments,
-        std::string&                    errorMessage
+        const vk::Device&       device,
+        const VulkanRenderPass& pass,
+        std::string&            errorMessage
     ) noexcept;
 
     void destroy() noexcept;
 
-    [[nodiscard]] const vk::PipelineLayout& getLayout() const noexcept { return _pipelineLayout; }
+    [[nodiscard]] vk::Pipeline handle() const noexcept { return _pipeline; }
 
-    [[nodiscard]] vk::ShaderStageFlags getStageFlags() const noexcept { return _stageFlags; }
+    [[nodiscard]] const vk::PipelineLayout& getLayout() const noexcept { return _pipelineLayout; }
 
 private:
     [[nodiscard]] bool createPipelineLayout(
-        const vk::Device&                           device,
-        const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
-        const PushConstantsMap&                     pushConstantRanges,
-        std::string&                                errorMessage
+        const vk::Device&               device,
+        const VulkanPipelineDescriptor& descriptor,
+        std::string&                    errorMessage
     );
 
     [[nodiscard]] bool createPipeline(
-        const vk::Device&          device,
-        const VulkanShaderProgram& shaderProgram,
-        const AttachmentsVector&   colorAttachments,
-        std::string&               errorMessage
+        const vk::Device&       device,
+        const VulkanRenderPass& pass,
+        std::string&            errorMessage
     );
 
     vk::Device _device{};
 
     vk::Pipeline       _pipeline{};
     vk::PipelineLayout _pipelineLayout{};
-
-    vk::ShaderStageFlags _stageFlags{};
 
     /*---------------------------------------*/
     /*        Pipeline State Structs         */
@@ -131,5 +116,3 @@ private:
         return info;
     }();
 };
-
-#endif //NOBLEENGINE_VULKANGRAPHICSPIPELINE_H

@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANDEVICE_H
-#define NOBLEENGINE_VULKANDEVICE_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -80,5 +78,3 @@ private:
 
     vk::QueryPool _queryPool{};
 };
-
-#endif //NOBLEENGINE_VULKANDEVICE_H

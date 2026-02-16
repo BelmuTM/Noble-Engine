@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_IMAGEMANAGER_H
-#define NOBLEENGINE_IMAGEMANAGER_H
 
 #include "Image.h"
 #include "core/resources/AsyncResourceManager.h"
@@ -24,5 +22,3 @@ public:
 
     const Image* loadBlocking(const std::string& path, std::string& errorMessage, bool hasMipmaps = false);
 };
-
-#endif // NOBLEENGINE_IMAGEMANAGER_H

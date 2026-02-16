@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANRENDERGRAPH_H
-#define NOBLEENGINE_VULKANRENDERGRAPH_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -54,5 +52,3 @@ private:
 
     std::vector<std::unique_ptr<VulkanRenderPass>> _passes{};
 };
-
-#endif //NOBLEENGINE_VULKANRENDERGRAPH_H

@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANVERTEX_H
-#define NOBLEENGINE_VULKANVERTEX_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -21,5 +19,3 @@ namespace VulkanVertex {
         };
     }
 }
-
-#endif // NOBLEENGINE_VULKANVERTEX_H

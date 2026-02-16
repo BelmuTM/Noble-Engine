@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_UTILITY_H
-#define NOBLEENGINE_UTILITY_H
 
 #include <cstdint>
 #include <ctime>
@@ -11,5 +9,3 @@ namespace Utility {
 
     std::string getFileExtension(const std::string& path);
 };
-
-#endif // NOBLEENGINE_UTILITY_H

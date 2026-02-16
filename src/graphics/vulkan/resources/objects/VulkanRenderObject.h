@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANRENDEROBJECT_H
-#define NOBLEENGINE_VULKANRENDEROBJECT_H
 
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorSets.h"
 #include "graphics/vulkan/resources/images/VulkanImage.h"
@@ -31,5 +29,3 @@ struct VulkanRenderObject {
         data.normalMatrix = object->getNormalMatrix();
     }
 };
-
-#endif // NOBLEENGINE_VULKANRENDEROBJECT_H

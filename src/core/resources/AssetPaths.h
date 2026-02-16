@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_ASSETPATHS_H
-#define NOBLEENGINE_ASSETPATHS_H
 
 namespace AssetPaths {
     inline constexpr auto ICON      = RESOURCES_DIR "/icon.png";
@@ -8,5 +6,3 @@ namespace AssetPaths {
     inline constexpr auto TEXTURES  = RESOURCES_DIR "/textures/";
     inline constexpr auto SHADERS   = RESOURCES_DIR "/shaders/spv/";
 }
-
-#endif // NOBLEENGINE_ASSETPATHS_H

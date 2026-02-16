@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANIMAGELAYOUTTRANSITIONS_H
-#define NOBLEENGINE_VULKANIMAGELAYOUTTRANSITIONS_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -29,5 +27,3 @@ namespace VulkanImageLayoutTransitions {
         uint32_t          mipLevels = 1
     );
 }
-
-#endif // NOBLEENGINE_VULKANIMAGELAYOUTTRANSITIONS_H

@@ -1,6 +1,5 @@
 #include "Platform.h"
 
-#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 namespace Platform {
@@ -19,7 +18,7 @@ namespace Platform {
         glfwTerminate();
     }
 
-    std::vector<const char*> getVulkanExtensions() {
+    std::vector<const char*> getRequiredExtensions() {
         uint32_t count;
         const char** extensions = glfwGetRequiredInstanceExtensions(&count);
         if (!extensions || count == 0) return {};

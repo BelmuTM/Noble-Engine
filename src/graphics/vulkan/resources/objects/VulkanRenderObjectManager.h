@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANRENDEROBJECTMANAGER_H
-#define NOBLEENGINE_VULKANRENDEROBJECTMANAGER_H
 
 #include "VulkanObjectBuffer.h"
 #include "VulkanRenderObject.h"
@@ -73,5 +71,3 @@ private:
 
     RenderObjectsVector _renderObjects{};
 };
-
-#endif // NOBLEENGINE_VULKANRENDEROBJECTMANAGER_H

@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANSYNCOBJECTS_H
-#define NOBLEENGINE_VULKANSYNCOBJECTS_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -63,5 +61,3 @@ private:
     std::vector<vk::Semaphore> _oldImageAvailable{};
     std::vector<vk::Semaphore> _oldRenderFinished{};
 };
-
-#endif //NOBLEENGINE_VULKANSYNCOBJECTS_H

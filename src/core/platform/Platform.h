@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_PLATFORM_H
-#define NOBLEENGINE_PLATFORM_H
 
 #include <string>
 #include <vector>
@@ -10,7 +8,5 @@ namespace Platform {
 
     void shutdown();
 
-    std::vector<const char*> getVulkanExtensions();
+    std::vector<const char*> getRequiredExtensions();
 };
-
-#endif //NOBLEENGINE_PLATFORM_H

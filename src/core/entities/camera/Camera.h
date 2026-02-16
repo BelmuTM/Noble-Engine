@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_CAMERA_H
-#define NOBLEENGINE_CAMERA_H
 
 #include "CameraController.h"
 
@@ -92,5 +90,3 @@ private:
 
     glm::mat4 _viewMatrix{1.0f};
 };
-
-#endif //NOBLEENGINE_CAMERA_H

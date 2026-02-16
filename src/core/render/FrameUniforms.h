@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_FRAMEUNIFORMS_H
-#define NOBLEENGINE_FRAMEUNIFORMS_H
 
 #include "core/entities/camera/Camera.h"
 
@@ -51,5 +49,3 @@ struct alignas(16) FrameUniforms {
         ++frameCounter;
     }
 };
-
-#endif // NOBLEENGINE_FRAMEUNIFORMS_H

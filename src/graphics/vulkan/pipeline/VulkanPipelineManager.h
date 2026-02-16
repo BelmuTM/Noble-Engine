@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANPIPELINEMANAGER_H
-#define NOBLEENGINE_VULKANPIPELINEMANAGER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -26,10 +24,9 @@ public:
     [[nodiscard]] VulkanGraphicsPipeline* allocatePipeline();
 
     [[nodiscard]] bool createGraphicsPipeline(
-        VulkanGraphicsPipeline*         graphicsPipeline,
-        const VulkanPipelineDescriptor& descriptor,
-        const AttachmentsVector&        colorAttachments,
-        std::string&                    errorMessage
+        VulkanGraphicsPipeline* graphicsPipeline,
+        const VulkanRenderPass& pass,
+        std::string&            errorMessage
     ) const;
 
 private:
@@ -37,5 +34,3 @@ private:
 
     std::vector<std::unique_ptr<VulkanGraphicsPipeline>> _graphicsPipelines{};
 };
-
-#endif // NOBLEENGINE_VULKANPIPELINEMANAGER_H

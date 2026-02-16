@@ -22,12 +22,11 @@ VulkanGraphicsPipeline* VulkanPipelineManager::allocatePipeline() {
 }
 
 bool VulkanPipelineManager::createGraphicsPipeline(
-    VulkanGraphicsPipeline*         graphicsPipeline,
-    const VulkanPipelineDescriptor& descriptor,
-    const AttachmentsVector&        colorAttachments,
-    std::string&                    errorMessage
+    VulkanGraphicsPipeline* graphicsPipeline,
+    const VulkanRenderPass& pass,
+    std::string&            errorMessage
 ) const {
-    TRY(graphicsPipeline->create(_device, descriptor, colorAttachments, errorMessage));
+    TRY(graphicsPipeline->create(_device, pass, errorMessage));
 
     return true;
 }

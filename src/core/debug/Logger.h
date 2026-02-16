@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_LOGGER_H
-#define NOBLEENGINE_LOGGER_H
 
 #define ERROR_MESSAGE(func) Logger::formatErrorMessage(#func)
 #define ERROR_MESSAGE_CODE(func, errorCode) Logger::formatErrorMessage(#func, errorCode)
@@ -30,5 +28,3 @@ namespace Logger {
         ~Manager();
     };
 }
-
-#endif //NOBLEENGINE_LOGGER_H

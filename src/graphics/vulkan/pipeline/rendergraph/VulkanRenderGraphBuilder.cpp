@@ -36,14 +36,12 @@ bool VulkanRenderGraphBuilder::createPass(
         case VulkanRenderPassType::MeshRender: {
             auto meshRenderPass = std::make_unique<MeshRenderPass>();
 
-            TRY(meshRenderPass->create(
-                path,
+            TRY(meshRenderPass->create(path, MeshRenderPassCreateContext{
                 _context.frameResources,
                 _context.renderResources,
                 _context.renderObjectManager,
                 _context.shaderProgramManager,
-                errorMessage
-            ));
+            }, errorMessage));
 
             _context.renderGraph.addPass(std::move(meshRenderPass));
 
@@ -53,13 +51,11 @@ bool VulkanRenderGraphBuilder::createPass(
         case VulkanRenderPassType::Composite: {
             auto compositePass = std::make_unique<CompositePass>();
 
-            TRY(compositePass->create(
-                path,
+            TRY(compositePass->create(path, CompositePassCreateContext{
                 _context.meshManager,
                 _context.frameResources,
-                _context.shaderProgramManager,
-                errorMessage
-            ));
+                _context.shaderProgramManager
+            }, errorMessage));
 
             _context.renderGraph.addPass(std::move(compositePass));
 
@@ -143,9 +139,7 @@ bool VulkanRenderGraphBuilder::createPipelines(std::string& errorMessage) const 
     for (const auto& pass : _context.renderGraph.getPasses()) {
         VulkanGraphicsPipeline* pipeline = _context.pipelineManager.allocatePipeline();
 
-        TRY(_context.pipelineManager.createGraphicsPipeline(
-            pipeline, pass->getPipelineDescriptor(), pass->getColorAttachments(), errorMessage
-        ));
+        TRY(_context.pipelineManager.createGraphicsPipeline(pipeline, *pass, errorMessage));
 
         pass->setPipeline(pipeline);
     }

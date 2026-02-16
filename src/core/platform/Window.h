@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_WINDOW_H
-#define NOBLEENGINE_WINDOW_H
 
 #include <string>
 
@@ -44,5 +42,3 @@ private:
 
     bool _framebufferResized = false;
 };
-
-#endif // NOBLEENGINE_WINDOW_H

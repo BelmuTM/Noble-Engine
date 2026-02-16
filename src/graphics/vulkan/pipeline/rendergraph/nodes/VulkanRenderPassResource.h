@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANRENDERPASSRESOURCE_H
-#define NOBLEENGINE_VULKANRENDERPASSRESOURCE_H
 
 #include "graphics/vulkan/resources/images/VulkanImage.h"
 
@@ -33,5 +31,3 @@ struct VulkanRenderPassResource {
         return *this;
     }
 };
-
-#endif // NOBLEENGINE_VULKANRENDERPASSRESOURCE_H

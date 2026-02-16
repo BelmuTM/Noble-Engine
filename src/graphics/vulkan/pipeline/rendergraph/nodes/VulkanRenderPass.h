@@ -1,17 +1,18 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANRENDERPASS_H
-#define NOBLEENGINE_VULKANRENDERPASS_H
 
 #include "VulkanDrawCall.h"
 #include "VulkanRenderPassAttachment.h"
 
-#include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
+#include "graphics/vulkan/pipeline/VulkanPipelineDescriptor.h"
+
 #include "graphics/vulkan/resources/objects/VulkanRenderObject.h"
 
 #include <memory>
 #include <ranges>
 
-enum class VulkanRenderPassType { Composite, MeshRender };
+class VulkanGraphicsPipeline;
+
+enum class VulkanRenderPassType { MeshRender, Composite, Debug };
 
 struct VulkanPassTransition {
     VulkanRenderPassResource* resource     = nullptr;
@@ -35,6 +36,10 @@ public:
 
     VulkanRenderPass(VulkanRenderPass&&)            = delete;
     VulkanRenderPass& operator=(VulkanRenderPass&&) = delete;
+
+    // Getters
+
+    [[nodiscard]] VulkanRenderPassType getType() const noexcept { return _type; }
 
     [[nodiscard]] const std::string& getName() const noexcept { return _name; }
 
@@ -69,6 +74,10 @@ public:
 
     [[nodiscard]]       std::vector<VulkanPassTransition>& getTransitions()       noexcept { return _transitions; }
     [[nodiscard]] const std::vector<VulkanPassTransition>& getTransitions() const noexcept { return _transitions; }
+
+    // Setters
+
+    VulkanRenderPass& setType(const VulkanRenderPassType type) noexcept { _type = type; return *this; }
 
     VulkanRenderPass& setName(const std::string& name) noexcept { _name = name; return *this; }
 
@@ -116,9 +125,11 @@ public:
         return *this;
     }
 
-    std::vector<const VulkanDrawCall*>           _visibleDrawCalls{};
+    std::vector<const VulkanDrawCall*> _visibleDrawCalls{};
 
 private:
+    VulkanRenderPassType _type;
+
     std::string _name = "Undefined_Pass";
 
     VulkanShaderProgram* _shaderProgram = nullptr;
@@ -138,7 +149,4 @@ private:
     std::vector<VulkanPassTransition> _transitions{};
 
     std::vector<std::unique_ptr<VulkanDrawCall>> _drawCalls{};
-
 };
-
-#endif // NOBLEENGINE_VULKANRENDERPASS_H

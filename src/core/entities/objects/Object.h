@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_OBJECT_H
-#define NOBLEENGINE_OBJECT_H
 
 #include "core/resources/models/Model.h"
 
@@ -57,5 +55,3 @@ private:
     glm::mat4 _modelMatrix{};
     glm::mat4 _normalMatrix{};
 };
-
-#endif //NOBLEENGINE_OBJECT_H

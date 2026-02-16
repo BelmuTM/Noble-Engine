@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_ASYNCRESOURCEMANAGER_H
-#define NOBLEENGINE_ASYNCRESOURCEMANAGER_H
 
 #include <functional>
 #include <future>
@@ -133,5 +131,3 @@ private:
 
     std::unordered_map<std::string, std::shared_future<PointerType<ResourceType>>> _cache;
 };
-
-#endif // NOBLEENGINE_ASYNCRESOURCEMANAGER_H

@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANSWAPCHAIN_H
-#define NOBLEENGINE_VULKANSWAPCHAIN_H
 
 #include "core/platform/Window.h"
 
@@ -82,5 +80,3 @@ private:
 
     std::vector<std::unique_ptr<VulkanImage>> _images{};
 };
-
-#endif //NOBLEENGINE_VULKANSWAPCHAIN_H

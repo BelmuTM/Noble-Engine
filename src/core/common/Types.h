@@ -1,5 +1,1 @@
 #pragma once
-#ifndef NOBLEENGINE_TYPES_H
-#define NOBLEENGINE_TYPES_H
-
-#endif // NOBLEENGINE_TYPES_H

@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_ASSETMANAGER_H
-#define NOBLEENGINE_ASSETMANAGER_H
 
 #include "core/resources/images/ImageManager.h"
 #include "core/resources/models/ModelManager.h"
@@ -48,5 +46,3 @@ private:
     ModelsMap   _models{};
     TexturesMap _textures{};
 };
-
-#endif //NOBLEENGINE_ASSETMANAGER_H

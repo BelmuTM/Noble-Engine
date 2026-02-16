@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANRENDERPASSATTACHMENT_H
-#define NOBLEENGINE_VULKANRENDERPASSATTACHMENT_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -41,5 +39,3 @@ struct VulkanRenderPassAttachment {
 };
 
 using AttachmentsVector = std::vector<std::unique_ptr<VulkanRenderPassAttachment>>;
-
-#endif // NOBLEENGINE_VULKANRENDERPASSATTACHMENT_H

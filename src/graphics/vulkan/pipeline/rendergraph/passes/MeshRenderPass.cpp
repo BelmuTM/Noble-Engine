@@ -3,28 +3,29 @@
 #include "core/debug/ErrorHandling.h"
 
 bool MeshRenderPass::create(
-    const std::string&           path,
-    const VulkanFrameResources&  frameResources,
-    const VulkanRenderResources& renderResources,
-    VulkanRenderObjectManager&   renderObjectManager,
-    VulkanShaderProgramManager&  shaderProgramManager,
-    std::string&                 errorMessage
+    const std::string&                 path,
+    const MeshRenderPassCreateContext& context,
+    std::string&                       errorMessage
 ) {
-    TRY(shaderProgramManager.load(getShaderProgram(), path, false, errorMessage));
+    TRY(context.shaderProgramManager.load(getShaderProgram(), path, errorMessage));
 
     const std::string& passName = std::filesystem::path(path).stem().string();
 
     const VulkanPipelineDescriptor pipelineDescriptor{
         getShaderProgram(),
-        {frameResources.getDescriptorManager().getLayout(), renderObjectManager.getDescriptorManager().getLayout()}
+        {
+            context.frameResources.getDescriptorManager().getLayout(),
+            context.renderObjectManager.getDescriptorManager().getLayout()
+        }
     };
 
+    setType(VulkanRenderPassType::MeshRender);
     setName(passName + "_MeshRenderPass");
     setPipelineDescriptor(pipelineDescriptor);
     setBindPoint(vk::PipelineBindPoint::eGraphics);
-    setDepthAttachment(renderResources.getDepthBufferAttachment());
+    setDepthAttachment(context.renderResources.getDepthBufferAttachment());
 
-    for (const auto& renderObject : renderObjectManager.getRenderObjects()) {
+    for (const auto& renderObject : context.renderObjectManager.getRenderObjects()) {
         // Each submesh requires its own draw call
         for (const auto& submesh : renderObject->submeshes) {
             auto verticesDraw = std::make_unique<VulkanDrawCallWithPushConstants>();

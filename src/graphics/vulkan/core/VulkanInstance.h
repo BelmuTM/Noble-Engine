@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANINSTANCE_H
-#define NOBLEENGINE_VULKANINSTANCE_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -14,9 +12,6 @@ public:
     VulkanInstance()  = default;
     ~VulkanInstance() = default;
 
-    // Implicit conversion operator
-    operator vk::Instance() const noexcept { return _instance; }
-
     VulkanInstance(const VulkanInstance&)            = delete;
     VulkanInstance& operator=(const VulkanInstance&) = delete;
 
@@ -26,6 +21,8 @@ public:
     [[nodiscard]] bool create(const VulkanCapabilities& capabilities, std::string& errorMessage) noexcept;
 
     void destroy() noexcept;
+
+    [[nodiscard]] vk::Instance handle() const noexcept { return _instance; }
 
 private:
     static std::vector<const char*> getRequiredExtensions();
@@ -52,5 +49,3 @@ private:
 
     vk::detail::DispatchLoaderDynamic _dldi{};
 };
-
-#endif //NOBLEENGINE_VULKANINSTANCE_H

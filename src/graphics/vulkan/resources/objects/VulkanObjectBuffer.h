@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANOBJECTBUFFER_H
-#define NOBLEENGINE_VULKANOBJECTBUFFER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -33,5 +31,3 @@ private:
 
     uint32_t _maxObjects = 0;
 };
-
-#endif // NOBLEENGINE_VULKANOBJECTBUFFER_H

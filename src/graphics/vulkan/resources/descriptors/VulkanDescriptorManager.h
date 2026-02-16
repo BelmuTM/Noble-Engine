@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANDESCRIPTORMANAGER_H
-#define NOBLEENGINE_VULKANDESCRIPTORMANAGER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -65,5 +63,3 @@ private:
 
     std::vector<std::unique_ptr<VulkanDescriptorSets>> _descriptorSets{};
 };
-
-#endif //NOBLEENGINE_VULKANDESCRIPTORMANAGER_H

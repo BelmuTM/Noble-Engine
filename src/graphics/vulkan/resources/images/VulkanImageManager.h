@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANIMAGEMANAGER_H
-#define NOBLEENGINE_VULKANIMAGEMANAGER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -57,5 +55,3 @@ private:
 
     std::unordered_map<std::string, std::unique_ptr<VulkanImage>> _imageCache{};
 };
-
-#endif //NOBLEENGINE_VULKANIMAGEMANAGER_H

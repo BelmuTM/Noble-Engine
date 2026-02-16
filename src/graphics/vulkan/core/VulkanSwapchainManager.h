@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANSWAPCHAINMANAGER_H
-#define NOBLEENGINE_VULKANSWAPCHAINMANAGER_H
 
 #include "core/platform/Window.h"
 
@@ -60,5 +58,3 @@ private:
 
     bool _outOfDate = false;
 };
-
-#endif //NOBLEENGINE_VULKANSWAPCHAINMANAGER_H

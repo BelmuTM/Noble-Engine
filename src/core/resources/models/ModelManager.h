@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_MODELMANAGER_H
-#define NOBLEENGINE_MODELMANAGER_H
 
 #include "Model.h"
 
@@ -64,5 +62,3 @@ private:
         const glm::mat4&       parentTransform
     );
 };
-
-#endif // NOBLEENGINE_MODELMANAGER_H

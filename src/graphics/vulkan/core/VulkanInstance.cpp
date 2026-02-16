@@ -53,7 +53,7 @@ void VulkanInstance::destroy() noexcept {
 }
 
 std::vector<const char*> VulkanInstance::getRequiredExtensions() {
-    auto extensions = Platform::getVulkanExtensions();
+    auto extensions = Platform::getRequiredExtensions();
 
 #ifdef VULKAN_VALIDATION_LAYERS_ENABLED
 
@@ -80,7 +80,7 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
 
     // Check if profile is supported
     vk::Bool32 profileSupported = vk::False;
-    VK_TRY(vpGetInstanceProfileSupport(*_capabilities, nullptr, &vulkanProfile, &profileSupported), errorMessage);
+    VK_TRY(vpGetInstanceProfileSupport(_capabilities->handle(), nullptr, &vulkanProfile, &profileSupported), errorMessage);
 
     if (!profileSupported) {
         errorMessage = "Failed to create Vulkan instance: Vulkan profile not supported.";
@@ -152,7 +152,7 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
     };
 
     VkInstance rawInstance{};
-    VK_TRY(vpCreateInstance(*_capabilities, &vpCreateInfo, nullptr, &rawInstance), errorMessage);
+    VK_TRY(vpCreateInstance(_capabilities->handle(), &vpCreateInfo, nullptr, &rawInstance), errorMessage);
 
     _instance = vk::Instance(rawInstance);
 

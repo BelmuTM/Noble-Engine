@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANRENDERGRAPHBUILDER_H
-#define NOBLEENGINE_VULKANRENDERGRAPHBUILDER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -58,5 +56,3 @@ private:
 
     [[nodiscard]] bool createPipelines(std::string& errorMessage) const;
 };
-
-#endif // NOBLEENGINE_VULKANRENDERGRAPHBUILDER_H

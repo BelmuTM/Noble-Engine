@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANCONTEXT_H
-#define NOBLEENGINE_VULKANCONTEXT_H
 
 #include "core/platform/Window.h"
 
@@ -44,5 +42,3 @@ private:
     VulkanDevice       device{};
     VulkanSwapchain    swapchain{};
 };
-
-#endif //NOBLEENGINE_VULKANCONTEXT_H

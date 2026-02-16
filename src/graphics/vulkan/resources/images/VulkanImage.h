@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANIMAGE_H
-#define NOBLEENGINE_VULKANIMAGE_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -15,9 +13,6 @@ class VulkanImage {
 public:
     VulkanImage()  = default;
     ~VulkanImage() = default;
-
-    // Implicit conversion operator
-    operator vk::Image() const { return _image; }
 
     VulkanImage(const VulkanImage&)            = delete;
     VulkanImage& operator=(const VulkanImage&) = delete;
@@ -107,6 +102,7 @@ public:
         std::string&        errorMessage
     );
 
+    [[nodiscard]] vk::Image handle() const noexcept { return _image; }
     [[nodiscard]] vk::ImageView getImageView() const noexcept { return _imageView; }
     [[nodiscard]] vk::Sampler getSampler() const noexcept { return _sampler; }
     [[nodiscard]] vk::Format getFormat() const noexcept { return _format; }
@@ -158,5 +154,3 @@ private:
 
     vk::DescriptorType _descriptorType = vk::DescriptorType::eCombinedImageSampler;
 };
-
-#endif // NOBLEENGINE_VULKANIMAGE_H

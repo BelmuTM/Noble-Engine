@@ -9,20 +9,17 @@
 #include <ranges>
 
 bool VulkanGraphicsPipeline::create(
-    const vk::Device&               device,
-    const VulkanPipelineDescriptor& descriptor,
-    const AttachmentsVector&        colorAttachments,
-    std::string&                    errorMessage
+    const vk::Device&       device,
+    const VulkanRenderPass& pass,
+    std::string&            errorMessage
 ) noexcept {
     _device = device;
 
     TRY(createPipelineLayout(
-        device, descriptor.descriptorLayouts, descriptor.shaderProgram->getPushConstants(), errorMessage
+        device, pass.getPipelineDescriptor(), errorMessage
     ));
 
-    TRY(createPipeline(device, *descriptor.shaderProgram, colorAttachments, errorMessage));
-
-    _stageFlags = descriptor.shaderProgram->getStageFlags();
+    TRY(createPipeline(device, pass, errorMessage));
 
     return true;
 }
@@ -44,20 +41,19 @@ void VulkanGraphicsPipeline::destroy() noexcept {
 }
 
 bool VulkanGraphicsPipeline::createPipelineLayout(
-    const vk::Device&                           device,
-    const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts,
-    const PushConstantsMap&                     pushConstantRanges,
-    std::string&                                errorMessage
+    const vk::Device&               device,
+    const VulkanPipelineDescriptor& descriptor,
+    std::string&                    errorMessage
 ) {
     std::vector<vk::PushConstantRange> _pushConstantRanges{};
 
-    for (const auto& [stageFlags, offset, size] : pushConstantRanges | std::views::values) {
+    for (const auto& [stageFlags, offset, size] : descriptor.shaderProgram->getPushConstants() | std::views::values) {
         _pushConstantRanges.emplace_back(stageFlags, offset, size);
     }
 
     vk::PipelineLayoutCreateInfo layoutInfo{};
     layoutInfo
-        .setSetLayouts(descriptorSetLayouts)
+        .setSetLayouts(descriptor.descriptorLayouts)
         .setPushConstantRanges(_pushConstantRanges);
 
     VK_CREATE(device.createPipelineLayout(layoutInfo), _pipelineLayout, errorMessage);
@@ -66,15 +62,16 @@ bool VulkanGraphicsPipeline::createPipelineLayout(
 }
 
 bool VulkanGraphicsPipeline::createPipeline(
-    const vk::Device&          device,
-    const VulkanShaderProgram& shaderProgram,
-    const AttachmentsVector&   colorAttachments,
-    std::string&               errorMessage
+    const vk::Device&       device,
+    const VulkanRenderPass& pass,
+    std::string&            errorMessage
 ) {
+    const auto& shaderStages = pass.getPipelineDescriptor().shaderProgram->getStages();
+
     std::vector<vk::Format>                            colorAttachmentFormats{};
     std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments{};
 
-    for (const auto& colorAttachment : colorAttachments) {
+    for (const auto& colorAttachment : pass.getColorAttachments()) {
         colorAttachmentFormats.push_back(colorAttachment->resource.resolveImage()->getFormat());
         colorBlendAttachments.push_back(colorBlendAttachment);
     }
@@ -89,7 +86,7 @@ bool VulkanGraphicsPipeline::createPipeline(
     const auto& bindingDescription    = VulkanVertex::getBindingDescription();
     const auto& attributeDescriptions = VulkanVertex::getAttributeDescriptions();
 
-    if (!shaderProgram.isFullscreen()) {
+    if (pass.getType() == VulkanRenderPassType::MeshRender) {
         vertexInputInfo
             .setVertexBindingDescriptions(bindingDescription)
             .setVertexAttributeDescriptions(attributeDescriptions);
@@ -104,11 +101,16 @@ bool VulkanGraphicsPipeline::createPipeline(
         .setDepthBiasEnable(vk::False)
         .setLineWidth(1.0f);
 
-    if (shaderProgram.isFullscreen()) {
-        rasterizationInfo.setCullMode(vk::CullModeFlagBits::eNone);
-    } else {
+    if (pass.getType() == VulkanRenderPassType::MeshRender) {
         rasterizationInfo.setCullMode(vk::CullModeFlagBits::eBack);
-        //rasterizationInfo.setPolygonMode(vk::PolygonMode::eLine);
+
+    } else if (pass.getType() == VulkanRenderPassType::Composite) {
+        rasterizationInfo.setCullMode(vk::CullModeFlagBits::eNone);
+
+    } else if (pass.getType() == VulkanRenderPassType::Debug) {
+        rasterizationInfo
+            .setCullMode(vk::CullModeFlagBits::eBack)
+            .setPolygonMode(vk::PolygonMode::eLine);
     }
 
     vk::PipelineColorBlendStateCreateInfo colorBlendInfo{};
@@ -120,7 +122,7 @@ bool VulkanGraphicsPipeline::createPipeline(
     vk::GraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo
         .setPNext(&renderingInfo)
-        .setStages(shaderProgram.getStages())
+        .setStages(shaderStages)
         .setPVertexInputState(&vertexInputInfo)
         .setPInputAssemblyState(&inputAssemblyInfo)
         .setPViewportState(&viewportInfo)

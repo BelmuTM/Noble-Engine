@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANUNIFORMBUFFER_H
-#define NOBLEENGINE_VULKANUNIFORMBUFFER_H
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -22,7 +20,7 @@ public:
 
     virtual void destroy() noexcept = 0;
 
-    virtual VulkanDescriptorInfo getDescriptorInfo(uint32_t binding, uint32_t frameIndex) const = 0;
+    [[nodiscard]] virtual VulkanDescriptorInfo getDescriptorInfo(uint32_t binding, uint32_t frameIndex) const = 0;
 };
 
 template<typename UniformBufferType>
@@ -58,10 +56,12 @@ public:
         _device = nullptr;
     }
 
-    VulkanDescriptorInfo getDescriptorInfo(const uint32_t binding, const uint32_t frameIndex) const noexcept override {
+    [[nodiscard]] VulkanDescriptorInfo getDescriptorInfo(
+        const uint32_t binding, const uint32_t frameIndex
+    ) const noexcept override {
         return {
             .type       = vk::DescriptorType::eUniformBuffer,
-            .bufferInfo = {uniformBuffers[frameIndex], 0, BUFFER_SIZE},
+            .bufferInfo = {uniformBuffers[frameIndex].handle(), 0, BUFFER_SIZE},
             .binding    = binding
         };
     }
@@ -110,5 +110,3 @@ protected:
 
     std::vector<VulkanBuffer> uniformBuffers{};
 };
-
-#endif //NOBLEENGINE_VULKANUNIFORMBUFFER_H

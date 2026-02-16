@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NOBLEENGINE_VULKANRENDERER_H
-#define NOBLEENGINE_VULKANRENDERER_H
 
 #include "graphics/GraphicsAPI.h"
 #include "graphics/vulkan/common/VulkanEntityOwner.h"
@@ -69,5 +67,3 @@ private:
     VulkanPipelineManager      pipelineManager{};
     VulkanRenderGraph          renderGraph{};
 };
-
-#endif //NOBLEENGINE_VULKANRENDERER_H
