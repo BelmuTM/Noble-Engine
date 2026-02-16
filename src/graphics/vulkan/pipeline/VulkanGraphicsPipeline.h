@@ -4,7 +4,7 @@
 
 #include "VulkanPipelineDescriptor.h"
 
-#include "rendergraph/nodes/VulkanRenderPass.h"
+#include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
 
 class VulkanGraphicsPipeline {
 public:

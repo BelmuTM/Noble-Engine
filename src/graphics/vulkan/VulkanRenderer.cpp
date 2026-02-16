@@ -2,12 +2,12 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include "graphics/vulkan/pipeline/rendergraph/VulkanRenderGraphBuilder.h"
+#include "graphics/vulkan/rendergraph/VulkanRenderGraphBuilder.h"
 
 #include "core/debug/ErrorHandling.h"
 #include "core/debug/Logger.h"
 #include "core/render/FrustumCuller.h"
-#include "pipeline/rendergraph/passes/MeshRenderPass.h"
+#include "rendergraph/passes/MeshRenderPass.h"
 
 VulkanRenderer::VulkanRenderer(const uint32_t framesInFlight) : _framesInFlight(framesInFlight) {}
 

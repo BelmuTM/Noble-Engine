@@ -36,5 +36,6 @@ bool VulkanSurface::createSurface(std::string& errorMessage) {
     }
 
     _surface = vk::SurfaceKHR(surface);
+
     return true;
 }

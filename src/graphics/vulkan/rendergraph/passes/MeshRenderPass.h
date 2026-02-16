@@ -1,6 +1,6 @@
 #pragma once
 
-#include "graphics/vulkan/pipeline/rendergraph/nodes/VulkanRenderPass.h"
+#include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
 
 #include "graphics/vulkan/pipeline/VulkanShaderProgramManager.h"
 

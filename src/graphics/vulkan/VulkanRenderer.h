@@ -15,7 +15,7 @@
 
 #include "graphics/vulkan/pipeline/VulkanPipelineManager.h"
 #include "graphics/vulkan/pipeline/VulkanShaderProgramManager.h"
-#include "graphics/vulkan/pipeline/rendergraph/VulkanRenderGraph.h"
+#include "graphics/vulkan/rendergraph/VulkanRenderGraph.h"
 
 class VulkanRenderer : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {
 public:
