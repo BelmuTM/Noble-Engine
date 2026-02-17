@@ -47,5 +47,5 @@ private:
     vk::Instance               _instance{};
     vk::DebugUtilsMessengerEXT _debugMessenger{};
 
-    vk::detail::DispatchLoaderDynamic _dldi{};
+    vk::detail::DispatchLoaderDynamic _dispatchLoader{};
 };

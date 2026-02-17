@@ -12,7 +12,7 @@
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 
 struct VulkanRenderGraphBuilderContext {
-    VulkanRenderGraph& renderGraph;
+    VulkanRenderGraph&          renderGraph;
 
     VulkanMeshManager&          meshManager;
     const VulkanImageManager&   imageManager;
@@ -22,7 +22,7 @@ struct VulkanRenderGraphBuilderContext {
     VulkanShaderProgramManager& shaderProgramManager;
     VulkanPipelineManager&      pipelineManager;
 
-    const VulkanSwapchain& swapchain;
+    const VulkanSwapchain&      swapchain;
 };
 
 class VulkanRenderGraphBuilder {

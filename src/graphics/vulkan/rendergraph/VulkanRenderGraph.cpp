@@ -10,42 +10,30 @@
 
 #include <ranges>
 
-bool VulkanRenderGraph::create(
-    const VulkanSwapchain&   swapchain,
-    const VulkanMeshManager& meshManager,
-    VulkanFrameResources&    frame,
-    VulkanRenderResources&   resources,
-    const vk::QueryPool      queryPool,
-    std::string&             errorMessage
-) noexcept {
-    _swapchain   = &swapchain;
-    _meshManager = &meshManager;
-    _frame       = &frame;
-    _resources   = &resources;
-    _queryPool   = queryPool;
+bool VulkanRenderGraph::create(const VulkanRenderGraphCreateContext& context, std::string& errorMessage) noexcept {
+    _context = context;
+
+    _context.dispatchLoader = vk::detail::DispatchLoaderDynamic(
+        context.instance->handle(),         vkGetInstanceProcAddr,
+        context.device->getLogicalDevice(), vkGetDeviceProcAddr
+    );
 
     return true;
 }
 
-void VulkanRenderGraph::destroy() noexcept {
+void VulkanRenderGraph::destroy() const noexcept {
     for (const auto& pass : _passes) {
         for (const auto& descriptorManager : pass->getDescriptorManagers() | std::views::values) {
             descriptorManager->destroy();
         }
     }
-
-    _swapchain   = nullptr;
-    _meshManager = nullptr;
-    _frame       = nullptr;
-    _resources   = nullptr;
-    _queryPool   = VK_NULL_HANDLE;
 }
 
 void VulkanRenderGraph::execute(const vk::CommandBuffer commandBuffer) const {
     std::string errorMessage;
     ScopeGuard guard{[&errorMessage] { Logger::error(errorMessage); }};
 
-    commandBuffer.resetQueryPool(_queryPool, 0, 1);
+    commandBuffer.resetQueryPool(_context.queryPool, 0, 1);
 
     for (const auto& pass : _passes) {
         if (!executePass(commandBuffer, *pass.get(), errorMessage)) return;
@@ -125,11 +113,12 @@ bool prepareDepthAttachment(
 }
 
 void executeDrawCalls(
-    const vk::CommandBuffer     commandBuffer,
-    const VulkanRenderPass&     pass,
-    const VulkanMeshManager*    meshManager,
-    const VulkanFrameResources* frame,
-    const vk::Extent2D          extent
+    const vk::CommandBuffer                  commandBuffer,
+    const VulkanRenderPass&                  pass,
+    const VulkanMeshManager*                 meshManager,
+    const VulkanFrameResources*              frame,
+    const vk::Extent2D                       extent,
+    const vk::detail::DispatchLoaderDynamic& dispatchLoader
 ) {
     const uint32_t frameIndex = frame->getFrameIndex();
 
@@ -147,7 +136,8 @@ void executeDrawCalls(
         const auto& draw = *drawCall;
 
 #if defined(VULKAN_DEBUG_UTILS)
-        VulkanDebugger::beginLabel(commandBuffer, draw.owner->object->getModel().name);
+        std::string meshName = draw.owner ? draw.owner->object->getModel().name : "Mesh";
+        VulkanDebugger::beginLabel(commandBuffer, dispatchLoader, meshName);
 #endif
 
         /*---------------------------------------*/
@@ -199,7 +189,7 @@ void executeDrawCalls(
         }
 
 #if defined(VULKAN_DEBUG_UTILS)
-        VulkanDebugger::endLabel(commandBuffer);
+        VulkanDebugger::endLabel(commandBuffer, dispatchLoader);
 #endif
     }
 }
@@ -223,7 +213,7 @@ bool executePostPassTransitions(
 bool VulkanRenderGraph::executePass(
     const vk::CommandBuffer commandBuffer, const VulkanRenderPass& pass, std::string& errorMessage
 ) const {
-    const vk::Extent2D extent = _swapchain->getExtent();
+    const vk::Extent2D extent = _context.swapchain->getExtent();
 
     const bool isMeshPass = pass.getType() == VulkanRenderPassType::MeshRender;
 
@@ -234,7 +224,7 @@ bool VulkanRenderGraph::executePass(
 
         // Depth attachment
         vk::RenderingAttachmentInfo depthAttachment{};
-        TRY(prepareDepthAttachment(commandBuffer, pass, _resources, depthAttachment, errorMessage));
+        TRY(prepareDepthAttachment(commandBuffer, pass, _context.resources, depthAttachment, errorMessage));
 
         // Rendering info
         vk::RenderingInfo renderingInfo{};
@@ -248,25 +238,25 @@ bool VulkanRenderGraph::executePass(
 
         // Start rendering
 #if defined(VULKAN_DEBUG_UTILS)
-        VulkanDebugger::beginLabel(commandBuffer, pass.getName());
+        VulkanDebugger::beginLabel(commandBuffer, _context.dispatchLoader, pass.getName());
 #endif
 
         commandBuffer.beginRendering(renderingInfo);
 
         if (isMeshPass)
-            commandBuffer.beginQuery(_queryPool, 0, {});
+            commandBuffer.beginQuery(_context.queryPool, 0, {});
 
         // Draw calls
-        executeDrawCalls(commandBuffer, pass, _meshManager, _frame, extent);
+        executeDrawCalls(commandBuffer, pass, _context.meshManager, _context.frame, extent, _context.dispatchLoader);
 
         if (isMeshPass)
-            commandBuffer.endQuery(_queryPool, 0);
+            commandBuffer.endQuery(_context.queryPool, 0);
 
         // Stop rendering
         commandBuffer.endRendering();
 
 #if defined(VULKAN_DEBUG_UTILS)
-        VulkanDebugger::endLabel(commandBuffer);
+        VulkanDebugger::endLabel(commandBuffer, _context.dispatchLoader);
 #endif
 
         // Transition resources for next pass

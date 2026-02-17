@@ -45,17 +45,24 @@ namespace VulkanDebugger {
 #if defined(VULKAN_DEBUG_UTILS)
 
     void beginLabel(
-        vk::CommandBuffer  commandBuffer,
-        const std::string& name,
-        const glm::vec3&   color = {1.0f, 1.0f, 1.0f}
+        vk::CommandBuffer                        commandBuffer,
+        const vk::detail::DispatchLoaderDynamic& dispatchLoader,
+        const std::string&                       name,
+        const glm::vec3&                         color = {1.0f, 1.0f, 1.0f}
     );
 
-    void endLabel(vk::CommandBuffer commandBuffer);
+    void endLabel(vk::CommandBuffer commandBuffer, const vk::detail::DispatchLoaderDynamic& dispatchLoader);
 
 #else
 
-    void beginLabel(vk::CommandBuffer commandBuffer, const std::string& name, const glm::vec3& color);
-    void endLabel(vk::CommandBuffer commandBuffer);
+    void beginLabel(
+        vk::CommandBuffer                        commandBuffer,
+        const vk::detail::DispatchLoaderDynamic& dispatchLoader,
+        const std::string&                       name,
+        const glm::vec3&                         color
+    );
+
+    void endLabel(vk::CommandBuffer commandBuffer, const vk::detail::DispatchLoaderDynamic& dispatchLoader);
 
 #endif
 }

@@ -23,7 +23,7 @@ bool VulkanInstance::create(const VulkanCapabilities& capabilities, std::string&
 
     if (!createInstance(errorMessage)) return false;
 
-    _dldi = vk::detail::DispatchLoaderDynamic(_instance, vkGetInstanceProcAddr);
+    _dispatchLoader = vk::detail::DispatchLoaderDynamic(_instance, vkGetInstanceProcAddr);
 
 #ifdef VULKAN_VALIDATION_LAYERS_ENABLED
 
@@ -38,7 +38,7 @@ void VulkanInstance::destroy() noexcept {
 #ifdef VULKAN_VALIDATION_LAYERS_ENABLED
 
     if (_debugMessenger) {
-        _instance.destroyDebugUtilsMessengerEXT(_debugMessenger, nullptr, _dldi);
+        _instance.destroyDebugUtilsMessengerEXT(_debugMessenger, nullptr, _dispatchLoader);
         _debugMessenger = VK_NULL_HANDLE;
     }
 
@@ -202,8 +202,9 @@ bool VulkanInstance::setupDebugMessenger(std::string& errorMessage) {
         .setPfnUserCallback(&debugCallback)
         .setPUserData(this);
 
-    VK_CREATE(_instance.createDebugUtilsMessengerEXT(debugUtilsMessengerInfo, nullptr, _dldi), _debugMessenger,
-              errorMessage);
+    VK_CREATE(_instance.createDebugUtilsMessengerEXT(
+        debugUtilsMessengerInfo, nullptr, _dispatchLoader
+    ), _debugMessenger, errorMessage);
 
     return true;
 }

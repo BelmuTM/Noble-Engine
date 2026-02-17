@@ -10,22 +10,34 @@ namespace VulkanDebugger {
 
 #if defined(VULKAN_DEBUG_UTILS)
 
-    void beginLabel(const vk::CommandBuffer commandBuffer, const std::string& name, const glm::vec3& color) {
+    void beginLabel(
+        const vk::CommandBuffer                  commandBuffer,
+        const vk::detail::DispatchLoaderDynamic& dispatchLoader,
+        const std::string&                       name,
+        const glm::vec3&                         color
+    ) {
         vk::DebugUtilsLabelEXT label{};
         label
             .setPLabelName(name.c_str())
             .setColor({color.r, color.g, color.b, 1.0f});
-        commandBuffer.beginDebugUtilsLabelEXT(label);
+
+        commandBuffer.beginDebugUtilsLabelEXT(label, dispatchLoader);
     }
 
-    void endLabel(const vk::CommandBuffer commandBuffer) {
-        commandBuffer.endDebugUtilsLabelEXT();
+    void endLabel(const vk::CommandBuffer commandBuffer, const vk::detail::DispatchLoaderDynamic& dispatchLoader) {
+        commandBuffer.endDebugUtilsLabelEXT(dispatchLoader);
     }
 
 #else
 
-    void beginLabel(const vk::CommandBuffer commandBuffer, const std::string& name, const glm::vec3& color) {}
-    void endLabel(const vk::CommandBuffer commandBuffer) {}
+    void beginLabel(
+        vk::CommandBuffer                        commandBuffer,
+        const vk::detail::DispatchLoaderDynamic& dispatchLoader,
+        const std::string&                       name,
+        const glm::vec3&                         color
+    );
+
+    void endLabel(vk::CommandBuffer commandBuffer, const vk::detail::DispatchLoaderDynamic& dispatchLoader);
 
 #endif
 }

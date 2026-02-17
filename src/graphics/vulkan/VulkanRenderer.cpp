@@ -48,12 +48,20 @@ bool VulkanRenderer::init(
         &renderObjectManager, errorMessage, objectManager, assetManager, device, imageManager, meshManager, _framesInFlight
     ));
 
-    // Pipeline managers creation
+    // Pipeline creation
     TRY(createVulkanEntity(&shaderProgramManager, errorMessage, logicalDevice));
     TRY(createVulkanEntity(&pipelineManager, errorMessage, logicalDevice));
-    TRY(createVulkanEntity(
-        &renderGraph, errorMessage, swapchain, meshManager, frameResources, renderResources, device.getQueryPool()
-    ));
+
+    // Render graph construction
+    TRY(createVulkanEntity(&renderGraph, errorMessage, VulkanRenderGraphCreateContext{
+        &context.getInstance(),
+        &device,
+        &swapchain,
+        &meshManager,
+        &frameResources,
+        &renderResources,
+        device.getQueryPool()
+    }));
 
     const VulkanRenderGraphBuilderContext renderGraphBuilderContext{
         .renderGraph          = renderGraph,

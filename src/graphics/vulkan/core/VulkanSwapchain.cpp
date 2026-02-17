@@ -89,14 +89,14 @@ vk::SurfaceFormatKHR VulkanSwapchain::chooseSurfaceFormat(const std::vector<vk::
         }
     }
 
-    Logger::warning("Failed to find a supported RGBA8 sRGB format: falling back to the first available format");
+    Logger::warning("Failed to find a supported RGBA8 sRGB surface format: falling back to the first available format.");
 
     return availableFormats.front();
 }
 
 vk::PresentModeKHR VulkanSwapchain::choosePresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes) {
     if (availablePresentModes.empty()) {
-        Logger::error("Failed to find available Vulkan present modes");
+        Logger::error("Failed to find available Vulkan present modes.");
     }
 
     for (const auto& availableMode : availablePresentModes) {

@@ -2,12 +2,26 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
+#include "graphics/vulkan/core/VulkanInstance.h"
 #include "graphics/vulkan/resources/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"
 
 #include "nodes/VulkanRenderPass.h"
 
 class VulkanRenderResources;
+
+struct VulkanRenderGraphCreateContext {
+    const VulkanInstance*             instance    = nullptr;
+    const VulkanDevice*               device      = nullptr;
+    const VulkanSwapchain*            swapchain   = nullptr;
+    const VulkanMeshManager*          meshManager = nullptr;
+
+    VulkanFrameResources*             frame     = nullptr;
+    VulkanRenderResources*            resources = nullptr;
+
+    vk::QueryPool                     queryPool;
+    vk::detail::DispatchLoaderDynamic dispatchLoader{};
+};
 
 class VulkanRenderGraph {
 public:
@@ -20,16 +34,9 @@ public:
     VulkanRenderGraph(VulkanRenderGraph&&)            = delete;
     VulkanRenderGraph& operator=(VulkanRenderGraph&&) = delete;
 
-    [[nodiscard]] bool create(
-        const VulkanSwapchain&   swapchain,
-        const VulkanMeshManager& meshManager,
-        VulkanFrameResources&    frame,
-        VulkanRenderResources&   resources,
-        vk::QueryPool            queryPool,
-        std::string&             errorMessage
-    ) noexcept;
+    [[nodiscard]] bool create(const VulkanRenderGraphCreateContext& context, std::string& errorMessage) noexcept;
 
-    void destroy() noexcept;
+    void destroy() const noexcept;
 
     void execute(vk::CommandBuffer commandBuffer) const;
 
@@ -43,12 +50,7 @@ public:
     }
 
 private:
-    const VulkanSwapchain*   _swapchain   = nullptr;
-    const VulkanMeshManager* _meshManager = nullptr;
-    VulkanFrameResources*    _frame       = nullptr;
-    VulkanRenderResources*   _resources   = nullptr;
-
-    vk::QueryPool _queryPool{};
+    VulkanRenderGraphCreateContext _context{};
 
     std::vector<std::unique_ptr<VulkanRenderPass>> _passes{};
 };
