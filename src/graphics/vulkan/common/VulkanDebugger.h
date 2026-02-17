@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include <glm/vec3.hpp>
 #include <vulkan/vulkan.hpp>
 
 namespace VulkanDebugger {
@@ -40,6 +41,23 @@ namespace VulkanDebugger {
         }
         return result;
     }
+
+#if defined(VULKAN_DEBUG_UTILS)
+
+    void beginLabel(
+        vk::CommandBuffer  commandBuffer,
+        const std::string& name,
+        const glm::vec3&   color = {1.0f, 1.0f, 1.0f}
+    );
+
+    void endLabel(vk::CommandBuffer commandBuffer);
+
+#else
+
+    void beginLabel(vk::CommandBuffer commandBuffer, const std::string& name, const glm::vec3& color);
+    void endLabel(vk::CommandBuffer commandBuffer);
+
+#endif
 }
 
 #define VK_ERROR_MESSAGE(expr, result) \

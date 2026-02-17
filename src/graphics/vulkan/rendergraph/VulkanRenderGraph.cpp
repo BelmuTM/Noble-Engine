@@ -1,7 +1,8 @@
 #include "VulkanRenderGraph.h"
 
-#include "VulkanRenderResources.h"
+#include "graphics/vulkan/common/VulkanDebugger.h"
 #include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
+#include "graphics/vulkan/rendergraph/VulkanRenderResources.h"
 
 #include "core/debug/Logger.h"
 
@@ -145,6 +146,10 @@ void executeDrawCalls(
     for (const auto& drawCall : pass._visibleDrawCalls) {
         const auto& draw = *drawCall;
 
+#if defined(VULKAN_DEBUG_UTILS)
+        VulkanDebugger::beginLabel(commandBuffer, draw.owner->object->getModel().name);
+#endif
+
         /*---------------------------------------*/
         /*            Bind Resources             */
         /*---------------------------------------*/
@@ -192,6 +197,10 @@ void executeDrawCalls(
         } else {
             commandBuffer.draw(draw.mesh->getVertices().size(), 1, 0, 0);
         }
+
+#if defined(VULKAN_DEBUG_UTILS)
+        VulkanDebugger::endLabel(commandBuffer);
+#endif
     }
 }
 
@@ -238,6 +247,10 @@ bool VulkanRenderGraph::executePass(
             renderingInfo.setPDepthAttachment(&depthAttachment);
 
         // Start rendering
+#if defined(VULKAN_DEBUG_UTILS)
+        VulkanDebugger::beginLabel(commandBuffer, pass.getName());
+#endif
+
         commandBuffer.beginRendering(renderingInfo);
 
         if (isMeshPass)
@@ -251,6 +264,10 @@ bool VulkanRenderGraph::executePass(
 
         // Stop rendering
         commandBuffer.endRendering();
+
+#if defined(VULKAN_DEBUG_UTILS)
+        VulkanDebugger::endLabel(commandBuffer);
+#endif
 
         // Transition resources for next pass
         TRY(executePostPassTransitions(commandBuffer, pass, errorMessage));

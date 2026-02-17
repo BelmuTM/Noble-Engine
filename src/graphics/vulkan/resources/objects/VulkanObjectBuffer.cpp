@@ -31,7 +31,7 @@ void VulkanObjectBuffer::destroy() noexcept {
 }
 
 void VulkanObjectBuffer::update(const uint32_t objectIndex, const ObjectDataGPU& dataToGPU) const {
-#if VULKAN_DEBUG_UTILS
+#if defined(VULKAN_DEBUG_UTILS)
     assert(objectIndex < _maxObjects);
 #endif
 
