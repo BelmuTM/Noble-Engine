@@ -1,5 +1,12 @@
 #include "SignalHandlers.h"
 
+#include "core/debug/Logger.h"
+
+#if defined(_WIN32)
+#include <Windows.h>
+#undef ERROR
+#endif
+
 #include <csignal>
 
 namespace SignalHandlers {
@@ -23,7 +30,7 @@ BOOL WINAPI ConsoleHandler(const DWORD ctrlType) {
         case CTRL_CLOSE_EVENT:
         case CTRL_LOGOFF_EVENT:
         case CTRL_SHUTDOWN_EVENT:
-            running = false;
+            runningPtr->store(false, std::memory_order_relaxed);
             return TRUE;
         default:
             return FALSE;
