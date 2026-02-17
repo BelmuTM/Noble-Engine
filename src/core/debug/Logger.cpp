@@ -14,88 +14,90 @@
 #include <thread>
 
 namespace {
-    constexpr size_t MAX_LOG_QUEUE_SIZE = 512;
 
-    struct Log {
-        Logger::Level                         level = Logger::Level::DEBUG;
-        std::string                           message;
-        std::chrono::system_clock::time_point timestamp;
+constexpr size_t MAX_LOG_QUEUE_SIZE = 512;
 
-        Log() = default;
+struct Log {
+    Logger::Level                         level = Logger::Level::DEBUG;
+    std::string                           message;
+    std::chrono::system_clock::time_point timestamp;
 
-        Log(const Logger::Level lvl, std::string msg)
-            : level(lvl), message(std::move(msg)), timestamp(std::chrono::system_clock::now()) {
-        }
-    };
+    Log() = default;
+
+    Log(const Logger::Level lvl, std::string msg)
+        : level(lvl), message(std::move(msg)), timestamp(std::chrono::system_clock::now()) {
+    }
+};
 
 #ifdef LOG_FILE_WRITE
-    std::ofstream           logFile;
+std::ofstream           logFile;
 #endif
-    std::thread             logThread;
-    std::queue<Log>         logQueue;
-    std::mutex              logMutex;
-    std::condition_variable logCv;
+std::thread             logThread;
+std::queue<Log>         logQueue;
+std::mutex              logMutex;
+std::condition_variable logCv;
 
-    std::atomic running{false};
+std::atomic running{false};
 
-    constexpr std::array levelStrings = {"DEBUG", "VERBOSE", "INFO", "WARNING", "ERROR", "FATAL"};
+constexpr std::array levelStrings = {"DEBUG", "VERBOSE", "INFO", "WARNING", "ERROR", "FATAL"};
 
-    template<typename Stream>
-    void writeLogMessage(Stream& os, const Log& log) {
-        const auto time = std::chrono::system_clock::to_time_t(log.timestamp);
-        std::tm    tm{};
+template<typename Stream>
+void writeLogMessage(Stream& os, const Log& log) {
+    const auto time = std::chrono::system_clock::to_time_t(log.timestamp);
+    std::tm    tm{};
 
-        Utility::localtime(tm, &time);
+    Utility::localtime(tm, &time);
 
-        std::ostringstream prefixStream;
-        prefixStream << std::put_time(&tm, "[%Y-%m-%d %H:%M:%S] ")
-                     << '[' << levelStrings[static_cast<size_t>(log.level)] << "]: ";
+    std::ostringstream prefixStream;
+    prefixStream << std::put_time(&tm, "[%Y-%m-%d %H:%M:%S] ")
+                 << '[' << levelStrings[static_cast<size_t>(log.level)] << "]: ";
 
-        const std::string prefix = prefixStream.str();
+    const std::string prefix = prefixStream.str();
 
-        // Output individual lines of the log message
-        std::istringstream messageStream(log.message);
-        std::string        line;
-        bool               firstLine = true;
+    // Output individual lines of the log message
+    std::istringstream messageStream(log.message);
+    std::string        line;
+    bool               firstLine = true;
 
-        while (std::getline(messageStream, line)) {
-            // Indent multi-line messages to match the prefix's length
-            os << (firstLine ? prefix : std::string(prefix.size(), ' ')) << line << '\n';
-            firstLine = false;
+    while (std::getline(messageStream, line)) {
+        // Indent multi-line messages to match the prefix's length
+        os << (firstLine ? prefix : std::string(prefix.size(), ' ')) << line << '\n';
+        firstLine = false;
+    }
+}
+
+void logWorker() {
+    while (running || !logQueue.empty()) {
+        Log entry;
+        {
+            // Acquire the mutex to safely access the shared log queue
+            std::unique_lock lock(logMutex);
+            // Wait until there is at least one message in the queue or the logger is shutdown to log messages
+            logCv.wait(lock, [] { return !logQueue.empty() || !running; });
+
+            if (logQueue.empty()) continue;
+
+            entry = std::move(logQueue.front());
+            logQueue.pop();
+        }
+
+#ifdef LOG_FILE_WRITE
+        if (logFile.is_open()) {
+            writeLogMessage(logFile, entry);
+        }
+#endif
+        writeLogMessage(std::cout, entry);
+
+        if (entry.level >= Logger::Level::ERROR) {
+
+#ifdef LOG_FILE_WRITE
+            logFile.flush();
+#endif
+            std::cout.flush();
         }
     }
+}
 
-    void logWorker() {
-        while (running || !logQueue.empty()) {
-            Log entry;
-            {
-                // Acquire the mutex to safely access the shared log queue
-                std::unique_lock lock(logMutex);
-                // Wait until there is at least one message in the queue or the logger is shutdown to log messages
-                logCv.wait(lock, [] { return !logQueue.empty() || !running; });
-
-                if (logQueue.empty()) continue;
-
-                entry = std::move(logQueue.front());
-                logQueue.pop();
-            }
-
-#ifdef LOG_FILE_WRITE
-            if (logFile.is_open()) {
-                writeLogMessage(logFile, entry);
-            }
-#endif
-            writeLogMessage(std::cout, entry);
-
-            if (entry.level >= Logger::Level::ERROR) {
-
-#ifdef LOG_FILE_WRITE
-                logFile.flush();
-#endif
-                std::cout.flush();
-            }
-        }
-    }
 }
 
 namespace Logger {

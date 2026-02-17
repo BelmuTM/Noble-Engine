@@ -133,11 +133,9 @@ bool VulkanRenderResources::createColorBuffers(
 bool VulkanRenderResources::createDepthBufferImage(
     VulkanImage& depthBuffer, const vk::Extent2D extent, std::string& errorMessage
 ) const {
-    static constexpr auto depthFormat = vk::Format::eD32Sfloat;
-
     const auto depthExtent = vk::Extent3D(extent.width, extent.height, 1);
 
-    depthBuffer.setFormat(depthFormat);
+    depthBuffer.setFormat(DEPTH_BUFFER_FORMAT);
     depthBuffer.setExtent(depthExtent);
     depthBuffer.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
 
@@ -148,7 +146,7 @@ bool VulkanRenderResources::createDepthBufferImage(
 
     TRY(depthBuffer.createImage(
         vk::ImageType::e2D,
-        depthFormat,
+        DEPTH_BUFFER_FORMAT,
         depthExtent,
         1,
         vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
@@ -157,7 +155,7 @@ bool VulkanRenderResources::createDepthBufferImage(
         errorMessage
     ));
 
-    TRY(depthBuffer.createImageView(vk::ImageViewType::e2D, depthFormat, aspects, 1, _device, errorMessage));
+    TRY(depthBuffer.createImageView(vk::ImageViewType::e2D, DEPTH_BUFFER_FORMAT, aspects, 1, _device, errorMessage));
 
     TRY(depthBuffer.transitionLayout(
         _commandManager, errorMessage,

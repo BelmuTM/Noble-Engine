@@ -33,7 +33,7 @@ public:
 
     void execute(vk::CommandBuffer commandBuffer) const;
 
-    bool executePass(vk::CommandBuffer commandBuffer, const VulkanRenderPass* pass, std::string& errorMessage) const;
+    bool executePass(vk::CommandBuffer commandBuffer, const VulkanRenderPass& pass, std::string& errorMessage) const;
 
     [[nodiscard]]       std::vector<std::unique_ptr<VulkanRenderPass>>& getPasses()       noexcept { return _passes; }
     [[nodiscard]] const std::vector<std::unique_ptr<VulkanRenderPass>>& getPasses() const noexcept { return _passes; }
