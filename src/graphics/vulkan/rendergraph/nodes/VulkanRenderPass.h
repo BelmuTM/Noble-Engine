@@ -12,7 +12,7 @@
 
 class VulkanGraphicsPipeline;
 
-enum class VulkanRenderPassType { MeshRender, Composite, Debug };
+enum class VulkanRenderPassType : uint8_t { MeshRender, Composite, Debug };
 
 struct VulkanPassTransition {
     VulkanRenderPassResource* resource     = nullptr;

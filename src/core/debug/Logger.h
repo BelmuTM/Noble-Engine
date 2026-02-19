@@ -3,10 +3,11 @@
 #define ERROR_MESSAGE(func) Logger::formatErrorMessage(#func)
 #define ERROR_MESSAGE_CODE(func, errorCode) Logger::formatErrorMessage(#func, errorCode)
 
+#include <cstdint>
 #include <string>
 
 namespace Logger {
-    enum class Level : size_t { DEBUG, VERBOSE, INFO, WARNING, ERROR, FATAL, COUNT };
+    enum class Level : uint8_t { DEBUG, VERBOSE, INFO, WARNING, ERROR, FATAL, COUNT };
 
     void init();
     void shutdown();

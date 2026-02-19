@@ -3,68 +3,62 @@
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 #include "graphics/vulkan/pipeline/VulkanShaderProgram.h"
-#include "graphics/vulkan/resources/VulkanPushConstant.h"
 #include "graphics/vulkan/resources/meshes/VulkanMesh.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObject.h"
 
-struct VulkanDrawCall {
-    virtual ~VulkanDrawCall() = default;
+class VulkanDrawCall {
+public:
+    VulkanDrawCall()  = default;
+    ~VulkanDrawCall() = default;
 
-    const VulkanMesh*         mesh  = nullptr;
-    const VulkanRenderObject* owner = nullptr;
-
-    std::vector<VulkanDescriptorSets*> descriptorSets{};
-
-    std::optional<vk::Viewport> viewport{};
-    std::optional<vk::Rect2D>   scissor{};
-
-    [[nodiscard]] vk::Viewport resolveViewport(const vk::Extent2D extent) const {
-        if (viewport) return *viewport;
-        return vk::Viewport{
-            0.0f, 0.0f, static_cast<float>(extent.width), static_cast<float>(extent.height), 0.0f, 1.0f
-        };
-    }
-
-    [[nodiscard]] vk::Rect2D resolveScissor(const vk::Extent2D extent) const {
-        if (scissor) return *scissor;
-        return {vk::Offset2D(0, 0), extent};
-    }
-
-    VulkanDrawCall& setMesh(const VulkanMesh* _mesh) noexcept { mesh = _mesh; return *this; }
-
-    VulkanDrawCall& setOwner(const VulkanRenderObject* _owner) noexcept { owner = _owner; return *this; }
-
-    VulkanDrawCall& setDescriptorSets(const std::vector<VulkanDescriptorSets*>& _descriptorSets) noexcept {
-        descriptorSets = _descriptorSets;
-        return *this;
-    }
-
-    VulkanDrawCall& setViewport(const vk::Viewport& _viewport) noexcept { viewport = _viewport; return *this; }
-
-    VulkanDrawCall& setScissor(const vk::Rect2D _scissor) noexcept { scissor = _scissor; return *this; }
-
-    VulkanDrawCall& addDescriptorSets(VulkanDescriptorSets* _descriptorSets) {
-        descriptorSets.push_back(_descriptorSets);
-        return *this;
-    }
-};
-
-struct VulkanDrawCallWithPushConstants final : VulkanDrawCall {
-    std::unordered_map<std::string, std::unique_ptr<IVulkanPushConstant>> pushConstantData;
-
-    template <typename PushConstantType>
-    VulkanDrawCallWithPushConstants& setPushConstant(const std::string& name, const PushConstantType* data) {
-        pushConstantData[name] = std::make_unique<VulkanPushConstant<PushConstantType>>(data);
-        return *this;
-    }
+    void record(
+        vk::CommandBuffer          commandBuffer,
+        vk::Extent2D               extent,
+        vk::PipelineLayout         pipelineLayout,
+        const VulkanShaderProgram* shaderProgram
+    ) const;
 
     void pushConstants(
-        const vk::CommandBuffer commandBuffer, const vk::PipelineLayout layout, const VulkanShaderProgram* program
-    ) const {
-        for (const auto& [name, range] : program->getPushConstants()) {
-            if (auto it = pushConstantData.find(name); it != pushConstantData.end()) {
-                it->second->push(commandBuffer, layout, range);
-            }
-        }
+        vk::CommandBuffer          commandBuffer,
+        vk::PipelineLayout         pipelineLayout,
+        const VulkanShaderProgram* shaderProgram
+    ) const noexcept;
+
+    [[nodiscard]] vk::Viewport resolveViewport(vk::Extent2D extent) const;
+    [[nodiscard]] vk::Rect2D resolveScissor(vk::Extent2D extent) const;
+
+    [[nodiscard]] const VulkanMesh* getMesh() const noexcept { return _mesh; }
+    [[nodiscard]] const VulkanRenderObject* getOwner() const noexcept { return _owner; }
+    [[nodiscard]] const std::vector<VulkanDescriptorSets*>& getDescriptorSets() const noexcept {
+        return _descriptorSets;
     }
+
+    VulkanDrawCall& setMesh(const VulkanMesh* mesh) noexcept { _mesh = mesh; return *this; }
+    VulkanDrawCall& setOwner(const VulkanRenderObject* owner) noexcept { _owner = owner; return *this; }
+    VulkanDrawCall& setViewport(const vk::Viewport& viewport) noexcept { _viewport = viewport; return *this; }
+    VulkanDrawCall& setScissor(const vk::Rect2D scissor) noexcept { _scissor = scissor; return *this; }
+    VulkanDrawCall& setDescriptorSets(const std::vector<VulkanDescriptorSets*>& descriptorSets) noexcept {
+        _descriptorSets = descriptorSets;
+        return *this;
+    }
+    VulkanDrawCall& addDescriptorSets(VulkanDescriptorSets* descriptorSets) {
+        _descriptorSets.push_back(descriptorSets);
+        return *this;
+    }
+    template <typename PushConstantType>
+    VulkanDrawCall& setPushConstant(const std::string& name, const PushConstantType* data) noexcept {
+        _pushConstants[name] = std::make_unique<VulkanPushConstant<PushConstantType>>(data);
+        return *this;
+    }
+
+private:
+    const VulkanMesh*         _mesh  = nullptr;
+    const VulkanRenderObject* _owner = nullptr;
+
+    std::vector<VulkanDescriptorSets*> _descriptorSets{};
+
+    std::unordered_map<std::string, std::unique_ptr<IVulkanPushConstant>> _pushConstants;
+
+    std::optional<vk::Viewport> _viewport{};
+    std::optional<vk::Rect2D>   _scissor{};
 };

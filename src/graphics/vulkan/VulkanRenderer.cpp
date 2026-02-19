@@ -57,7 +57,6 @@ bool VulkanRenderer::init(
         &context.getInstance(),
         &device,
         &swapchain,
-        &meshManager,
         &frameResources,
         &renderResources,
         device.getQueryPool()
@@ -126,10 +125,10 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
             bool visible = true;
 
             if (dynamic_cast<MeshRenderPass*>(pass.get())) {
-                if (!drawCall->owner) continue;
+                if (!drawCall->getOwner()) continue;
 
                 Math::AABB worldAABB = Math::AABB::transform(
-                    drawCall->mesh->getAABB(), drawCall->owner->data.modelMatrix
+                    drawCall->getMesh()->getAABB(), drawCall->getOwner()->data.modelMatrix
                 );
 
                 //visible = FrustumCuller::testVisibility(worldAABB, frustumPlanes);

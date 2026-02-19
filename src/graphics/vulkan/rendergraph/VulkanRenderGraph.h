@@ -4,7 +4,6 @@
 
 #include "graphics/vulkan/core/VulkanInstance.h"
 #include "graphics/vulkan/resources/VulkanFrameResources.h"
-#include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"
 
 #include "nodes/VulkanRenderPass.h"
 
@@ -14,7 +13,6 @@ struct VulkanRenderGraphCreateContext {
     const VulkanInstance*             instance    = nullptr;
     const VulkanDevice*               device      = nullptr;
     const VulkanSwapchain*            swapchain   = nullptr;
-    const VulkanMeshManager*          meshManager = nullptr;
 
     VulkanFrameResources*             frame     = nullptr;
     VulkanRenderResources*            resources = nullptr;

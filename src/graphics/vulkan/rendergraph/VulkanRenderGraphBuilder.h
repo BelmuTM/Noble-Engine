@@ -1,7 +1,5 @@
 #pragma once
 
-#include "graphics/vulkan/common/VulkanHeader.h"
-
 #include "graphics/vulkan/core/VulkanSwapchain.h"
 
 #include "graphics/vulkan/pipeline/VulkanPipelineManager.h"

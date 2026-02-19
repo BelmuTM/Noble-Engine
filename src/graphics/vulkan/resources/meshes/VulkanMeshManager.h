@@ -42,6 +42,8 @@ private:
 
     void copyMeshData(void* stagingData);
 
+    void assignBuffersToMeshes() const;
+
     bool createMeshStagingBuffer(std::string& errorMessage);
 
     bool createVertexBuffer(std::string& errorMessage);

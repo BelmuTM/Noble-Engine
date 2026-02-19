@@ -29,7 +29,7 @@ struct VulkanPushConstant final : IVulkanPushConstant {
     void push(const vk::CommandBuffer&       commandBuffer,
               const vk::PipelineLayout&      layout,
               const VulkanPushConstantRange& range
-    ) const override {
+    ) const noexcept override {
         if(ptr) {
             commandBuffer.pushConstants(layout, range.stageFlags, range.offset, range.size, ptr);
         }

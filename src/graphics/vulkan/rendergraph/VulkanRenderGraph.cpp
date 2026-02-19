@@ -6,8 +6,6 @@
 
 #include "core/debug/Logger.h"
 
-#include "core/render/FrustumCuller.h"
-
 #include <ranges>
 
 bool VulkanRenderGraph::create(const VulkanRenderGraphCreateContext& context, std::string& errorMessage) noexcept {
@@ -115,42 +113,34 @@ bool prepareDepthAttachment(
 void executeDrawCalls(
     const vk::CommandBuffer                  commandBuffer,
     const VulkanRenderPass&                  pass,
-    const VulkanMeshManager*                 meshManager,
     const VulkanFrameResources*              frame,
     const vk::Extent2D                       extent,
     const vk::detail::DispatchLoaderDynamic& dispatchLoader
 ) {
     const uint32_t frameIndex = frame->getFrameIndex();
 
-    const vk::Buffer& vertexBuffer = meshManager->getVertexBuffer().handle();
-    const vk::Buffer& indexBuffer  = meshManager->getIndexBuffer().handle();
-
-    const VulkanShaderProgram* shaderProgram = pass.getPipelineDescriptor().shaderProgram;
-
-    const vk::PipelineLayout pipelineLayout = pass.getPipeline()->getLayout();
+    const VulkanShaderProgram* shaderProgram  = pass.getPipelineDescriptor().shaderProgram;
+    const vk::PipelineLayout   pipelineLayout = pass.getPipeline()->getLayout();
 
     // Bind pipeline
+
     commandBuffer.bindPipeline(pass.getBindPoint(), pass.getPipeline()->handle());
 
     for (const auto& drawCall : pass._visibleDrawCalls) {
         const auto& draw = *drawCall;
 
 #if defined(VULKAN_DEBUG_UTILS)
-        std::string meshName = draw.owner ? draw.owner->object->getModel().name : "Mesh";
+        std::string meshName = draw.getOwner() ? draw.getOwner()->object->getModel().name : "Mesh";
         VulkanDebugger::beginLabel(commandBuffer, dispatchLoader, meshName);
 #endif
 
-        /*---------------------------------------*/
-        /*            Bind Resources             */
-        /*---------------------------------------*/
-
-        // Descriptors
+        // Bind descriptors
 
         // TO-DO: Use a pre-allocated temporary vector + std::span for scalability (owned by VulkanFrameResources).
         std::vector<vk::DescriptorSet> descriptorSets{};
         descriptorSets.push_back(frame->getDescriptors()->getSet(frameIndex));
 
-        for (const auto& drawDescriptorSets : draw.descriptorSets) {
+        for (const auto& drawDescriptorSets : draw.getDescriptorSets()) {
             descriptorSets.push_back(drawDescriptorSets->getSet(frameIndex));
         }
 
@@ -164,29 +154,9 @@ void executeDrawCalls(
             );
         }
 
-        // Push constants
+        // Draw mesh
 
-        if (auto* drawPushConstant = dynamic_cast<const VulkanDrawCallWithPushConstants*>(&draw)) {
-            drawPushConstant->pushConstants(commandBuffer, pipelineLayout, shaderProgram);
-        }
-
-        /*---------------------------------------*/
-        /*              Draw Meshes              */
-        /*---------------------------------------*/
-
-        commandBuffer.setViewport(0, draw.resolveViewport(extent));
-        commandBuffer.setScissor(0, draw.resolveScissor(extent));
-
-        if (!draw.mesh->isBufferless()) {
-            const vk::DeviceSize vertexOffset = draw.mesh->getVertexOffset();
-            const vk::DeviceSize indexOffset  = draw.mesh->getIndexOffset();
-
-            commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &vertexOffset);
-            commandBuffer.bindIndexBuffer(indexBuffer, indexOffset, vk::IndexType::eUint32);
-            commandBuffer.drawIndexed(draw.mesh->getIndices().size(), 1, 0, 0, 0);
-        } else {
-            commandBuffer.draw(draw.mesh->getVertices().size(), 1, 0, 0);
-        }
+        draw.record(commandBuffer, extent, pipelineLayout, shaderProgram);
 
 #if defined(VULKAN_DEBUG_UTILS)
         VulkanDebugger::endLabel(commandBuffer, dispatchLoader);
@@ -247,7 +217,7 @@ bool VulkanRenderGraph::executePass(
             commandBuffer.beginQuery(_context.queryPool, 0, {});
 
         // Draw calls
-        executeDrawCalls(commandBuffer, pass, _context.meshManager, _context.frame, extent, _context.dispatchLoader);
+        executeDrawCalls(commandBuffer, pass, _context.frame, extent, _context.dispatchLoader);
 
         if (isMeshPass)
             commandBuffer.endQuery(_context.queryPool, 0);

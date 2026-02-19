@@ -36,6 +36,8 @@ bool VulkanMeshManager::fillBuffers(std::string& errorMessage) {
     TRY(createVertexBuffer(errorMessage));
     TRY(createIndexBuffer(errorMessage));
 
+    assignBuffersToMeshes();
+
     _stagingBuffer.destroy();
 
     return true;
@@ -72,6 +74,15 @@ void VulkanMeshManager::copyMeshData(void* stagingData) {
 
         _currentVertexOffset += verticesSize;
         _currentIndexOffset  += indicesSize;
+    }
+}
+
+void VulkanMeshManager::assignBuffersToMeshes() const {
+    for (const auto& mesh : _meshes) {
+        if (!mesh || mesh->isBufferless()) continue;
+
+        mesh->setVertexBuffer(&_vertexBuffer);
+        mesh->setIndexBuffer(&_indexBuffer);
     }
 }
 

@@ -4,7 +4,7 @@
 
 #include <functional>
 
-enum class VulkanRenderPassResourceType { Buffer, SwapchainOutput };
+enum class VulkanRenderPassResourceType : uint8_t { Buffer, SwapchainOutput };
 
 struct VulkanRenderPassResource {
     std::string name = "Undefined_Resource";

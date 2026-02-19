@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -9,7 +10,7 @@
 
 class IInputListener;
 
-enum class InputAction {
+enum class InputAction : uint8_t {
     None,
     MoveForward,
     MoveBackward,
