@@ -4,6 +4,7 @@
 #include "passes/MeshRenderPass.h"
 
 #include "core/debug/Logger.h"
+#include "passes/DebugPass.h"
 
 bool VulkanRenderGraphBuilder::build(std::string& errorMessage) const {
     TRY(buildPasses(errorMessage));
@@ -23,12 +24,14 @@ bool VulkanRenderGraphBuilder::build(std::string& errorMessage) const {
 
 bool VulkanRenderGraphBuilder::buildPasses(std::string& errorMessage) const {
     TRY(createPass("mesh_render", VulkanRenderPassType::MeshRender, errorMessage));
+    TRY(createPass("debug", VulkanRenderPassType::Debug, errorMessage));
     TRY(createPass("composite_0", VulkanRenderPassType::Composite, errorMessage));
     TRY(createPass("composite_1", VulkanRenderPassType::Composite, errorMessage));
 
     return true;
 }
 
+// TO-DO: Factory function to register pass types and map them to creation contexts -> polymorphism.
 bool VulkanRenderGraphBuilder::createPass(
     const std::string& path, const VulkanRenderPassType type, std::string& errorMessage
 ) const {
@@ -44,6 +47,23 @@ bool VulkanRenderGraphBuilder::createPass(
             }, errorMessage));
 
             _context.renderGraph.addPass(std::move(meshRenderPass));
+
+            break;
+        }
+
+        case VulkanRenderPassType::Debug: {
+            auto debugPass = std::make_unique<DebugPass>();
+
+            TRY(debugPass->create(path, DebugPassCreateContext{
+                _context.device,
+                _context.commandManager,
+                _context.frameResources,
+                _context.renderResources,
+                _context.renderObjectManager,
+                _context.shaderProgramManager,
+            }, errorMessage));
+
+            _context.renderGraph.addPass(std::move(debugPass));
 
             break;
         }

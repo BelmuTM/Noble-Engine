@@ -77,11 +77,5 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
     compositeBuffer = float4(lighting, 1.0);
 
-#ifdef DEBUG_GBUFFERS
-
-    if (coords.x < resolution.x * 0.4 && coords.y < resolution.y * 0.4) {
-        compositeBuffer = debugBuffer.Sample(vertIn.uv / 0.4);
-    }
-
-#endif
+    compositeBuffer += debugBuffer.Sample(vertIn.uv);
 }

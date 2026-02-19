@@ -41,7 +41,7 @@ std::atomic running{false};
 
 constexpr std::array levelStrings = {"DEBUG", "VERBOSE", "INFO", "WARNING", "ERROR", "FATAL"};
 
-template<typename Stream>
+template <typename Stream>
 void writeLogMessage(Stream& os, const Log& log) {
     const auto time = std::chrono::system_clock::to_time_t(log.timestamp);
     std::tm    tm{};

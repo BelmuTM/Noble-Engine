@@ -7,7 +7,7 @@
 #include <type_traits>
 #include <unordered_map>
 
-template<typename ResourceType, template<typename> typename PointerType = std::unique_ptr>
+template <typename ResourceType, template <typename> typename PointerType = std::unique_ptr>
 class AsyncResourceManager {
 public:
     // Non-const version - returns non-const pointer
@@ -55,7 +55,7 @@ protected:
         "PointerType must be std::unique_ptr or std::shared_ptr"
     );
 
-    template<typename LoadFunction>
+    template <typename LoadFunction>
     std::shared_future<PointerType<ResourceType>> loadAsyncFuture(const std::string& path, LoadFunction&& loadFunc) {
         if (path.empty()) return {};
 

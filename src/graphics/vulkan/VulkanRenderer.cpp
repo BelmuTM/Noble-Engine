@@ -64,14 +64,16 @@ bool VulkanRenderer::init(
 
     const VulkanRenderGraphBuilderContext renderGraphBuilderContext{
         .renderGraph          = renderGraph,
+        .device               = device,
+        .swapchain            = swapchain,
+        .commandManager       = commandManager,
         .meshManager          = meshManager,
         .imageManager         = imageManager,
         .frameResources       = frameResources,
         .renderResources      = renderResources,
         .renderObjectManager  = renderObjectManager,
         .shaderProgramManager = shaderProgramManager,
-        .pipelineManager      = pipelineManager,
-        .swapchain            = swapchain
+        .pipelineManager      = pipelineManager
     };
 
     const VulkanRenderGraphBuilder renderGraphBuilder(renderGraphBuilderContext);
@@ -127,9 +129,7 @@ void VulkanRenderer::drawFrame(const Camera& camera) {
             if (dynamic_cast<MeshRenderPass*>(pass.get())) {
                 if (!drawCall->getOwner()) continue;
 
-                Math::AABB worldAABB = Math::AABB::transform(
-                    drawCall->getMesh()->getAABB(), drawCall->getOwner()->data.modelMatrix
-                );
+                Math::AABB worldAABB = drawCall->getMesh()->getAABB().transform(drawCall->getOwner()->data.modelMatrix);
 
                 //visible = FrustumCuller::testVisibility(worldAABB, frustumPlanes);
             }

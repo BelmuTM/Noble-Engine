@@ -8,7 +8,7 @@
 namespace VulkanDebugger {
     std::string formatVulkanErrorMessage(const std::string& expression, vk::Result result);
 
-    template<typename ReturnValue>
+    template <typename ReturnValue>
     vk::Result getVulkanResult(ReturnValue returnValue) {
         if constexpr (std::is_same_v<ReturnValue, vk::Result>) {
             // HPP style
@@ -22,7 +22,7 @@ namespace VulkanDebugger {
         }
     }
 
-    template<typename Function>
+    template <typename Function>
     auto checkVulkanResult(const char* exprStr, Function&& func, std::string& errorMessage) {
         auto returnValue = func();
 
@@ -33,7 +33,7 @@ namespace VulkanDebugger {
         return returnValue;
     }
 
-    template<typename ReturnValue>
+    template <typename ReturnValue>
     vk::Result checkVulkanResultVoid(const char* exprStr, ReturnValue returnValue, std::string& errorMessage) {
         const vk::Result result = getVulkanResult(returnValue);
         if (result != vk::Result::eSuccess) {

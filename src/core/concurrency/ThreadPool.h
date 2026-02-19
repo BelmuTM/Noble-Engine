@@ -41,7 +41,7 @@ public:
         }
     }
 
-    template<typename Function, typename... Args>
+    template <typename Function, typename... Args>
     auto enqueue(Function&& func, Args&&... args) {
         using ReturnType = std::invoke_result_t<Function, Args...>;
 

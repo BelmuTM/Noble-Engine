@@ -34,7 +34,7 @@ public:
 
     [[nodiscard]] bool create(const VulkanRenderGraphCreateContext& context, std::string& errorMessage) noexcept;
 
-    void destroy() const noexcept;
+    void destroy() noexcept;
 
     void execute(vk::CommandBuffer commandBuffer) const;
 

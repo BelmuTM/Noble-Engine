@@ -446,6 +446,8 @@ void ModelManager::processNode_glTF(
                 vertex.normal   = glm::normalize(normalMatrix * vertex.normal);
             }
 
+            mesh.setAABB(mesh.getAABB().transform(worldTransform));
+
             model.addMesh(mesh);
         }
     }

@@ -23,7 +23,7 @@ public:
     [[nodiscard]] virtual VulkanDescriptorInfo getDescriptorInfo(uint32_t binding, uint32_t frameIndex) const = 0;
 };
 
-template<typename UniformBufferType>
+template <typename UniformBufferType>
 class VulkanUniformBuffer : public VulkanUniformBufferBase {
 public:
     VulkanUniformBuffer() = default;
@@ -97,7 +97,7 @@ protected:
         return true;
     }
 
-    template<typename UBOType>
+    template <typename UBOType>
     void updateMemory(const uint32_t frameIndex, UBOType ubo) const {
         std::memcpy(uniformBuffers[frameIndex].getMappedPointer(), &ubo, sizeof(ubo));
     }

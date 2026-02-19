@@ -67,14 +67,6 @@ bool VulkanGraphicsPipeline::createPipelineLayout(
 
 namespace {
 
-vk::PipelineInputAssemblyStateCreateInfo makeInputAssemblyState() noexcept {
-    vk::PipelineInputAssemblyStateCreateInfo info{};
-    info
-        .setTopology(vk::PrimitiveTopology::eTriangleList)
-        .setPrimitiveRestartEnable(vk::False);
-    return info;
-}
-
 vk::PipelineViewportStateCreateInfo makeViewportState() noexcept {
     vk::PipelineViewportStateCreateInfo info{};
     info
@@ -90,17 +82,6 @@ vk::PipelineMultisampleStateCreateInfo makeMultisampleState() noexcept {
     info
         .setRasterizationSamples(vk::SampleCountFlagBits::e1)
         .setSampleShadingEnable(vk::False);
-    return info;
-}
-
-vk::PipelineDepthStencilStateCreateInfo makeDepthStencilState() noexcept {
-    vk::PipelineDepthStencilStateCreateInfo info{};
-    info
-        .setDepthTestEnable(vk::True)
-        .setDepthWriteEnable(vk::True)
-        .setDepthCompareOp(vk::CompareOp::eLessOrEqual)
-        .setDepthBoundsTestEnable(vk::False)
-        .setStencilTestEnable(vk::False);
     return info;
 }
 
@@ -172,16 +153,26 @@ bool VulkanGraphicsPipeline::createPipeline(
     const auto& bindingDescription    = VulkanVertex::getBindingDescription();
     const auto& attributeDescriptions = VulkanVertex::getAttributeDescriptions();
 
-    if (pass.getType() == VulkanRenderPassType::MeshRender) {
+    if (pass.getType() == VulkanRenderPassType::MeshRender || pass.getType() == VulkanRenderPassType::Debug) {
         vertexInputState
             .setVertexBindingDescriptions(bindingDescription)
             .setVertexAttributeDescriptions(attributeDescriptions);
     }
 
-    // Input assembly & viewport states
+    // Input assembly state
 
-    const auto inputAssemblyState = makeInputAssemblyState();
-    const auto viewportState      = makeViewportState();
+    vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState{};
+    inputAssemblyState.setPrimitiveRestartEnable(vk::False);
+
+    if (pass.getType() == VulkanRenderPassType::Debug) {
+        inputAssemblyState.setTopology(vk::PrimitiveTopology::eLineList);
+    } else {
+        inputAssemblyState.setTopology(vk::PrimitiveTopology::eTriangleList);
+    }
+
+    // Viewport state
+
+    const auto viewportState = makeViewportState();
 
     // Rasterization state
 
@@ -211,10 +202,23 @@ bool VulkanGraphicsPipeline::createPipeline(
             return false;
     }
 
-    // Multisample and depth stencil states
+    // Multisample state
 
-    const auto multisampleState  = makeMultisampleState();
-    const auto depthStencilState = makeDepthStencilState();
+    const auto multisampleState = makeMultisampleState();
+
+    // Depth stencil state
+
+    vk::PipelineDepthStencilStateCreateInfo depthStencilState{};
+    depthStencilState
+        .setDepthTestEnable(vk::True)
+        .setDepthWriteEnable(vk::True)
+        .setDepthCompareOp(vk::CompareOp::eLessOrEqual)
+        .setDepthBoundsTestEnable(vk::False)
+        .setStencilTestEnable(vk::False);
+
+    if (pass.getType() == VulkanRenderPassType::Debug) {
+        depthStencilState.setDepthWriteEnable(vk::False);
+    }
 
     // Color blend state
 

@@ -19,12 +19,15 @@ bool VulkanRenderGraph::create(const VulkanRenderGraphCreateContext& context, st
     return true;
 }
 
-void VulkanRenderGraph::destroy() const noexcept {
+void VulkanRenderGraph::destroy() noexcept {
     for (const auto& pass : _passes) {
         for (const auto& descriptorManager : pass->getDescriptorManagers() | std::views::values) {
             descriptorManager->destroy();
         }
     }
+
+    // Needed if the pass has an order-sensitive destructor
+    _passes.clear();
 }
 
 void VulkanRenderGraph::execute(const vk::CommandBuffer commandBuffer) const {

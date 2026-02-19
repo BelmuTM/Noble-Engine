@@ -12,6 +12,10 @@
 struct VulkanRenderGraphBuilderContext {
     VulkanRenderGraph&          renderGraph;
 
+    const VulkanDevice&         device;
+    const VulkanSwapchain&      swapchain;
+    const VulkanCommandManager& commandManager;
+
     VulkanMeshManager&          meshManager;
     const VulkanImageManager&   imageManager;
     VulkanFrameResources&       frameResources;
@@ -19,8 +23,6 @@ struct VulkanRenderGraphBuilderContext {
     VulkanRenderObjectManager&  renderObjectManager;
     VulkanShaderProgramManager& shaderProgramManager;
     VulkanPipelineManager&      pipelineManager;
-
-    const VulkanSwapchain&      swapchain;
 };
 
 class VulkanRenderGraphBuilder {

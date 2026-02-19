@@ -9,7 +9,7 @@ struct VSInput {
 }
 
 struct ObjectData {
-    float4x4 model;
+    float4x4 modelMatrix;
     float4x4 normalMatrix;
 };
 [[vk::push_constant]] ObjectData object;
@@ -26,7 +26,7 @@ struct VSOutput {
 [shader("vertex")]
 VSOutput vertMain(VSInput input) {
     VSOutput output;
-    output.worldPos  = mul(object.model, float4(input.position, 1.0));
+    output.worldPos  = mul(object.modelMatrix, float4(input.position, 1.0));
     output.position  = mul(uniforms.projection, mul(uniforms.view, output.worldPos));
     output.normal    = normalize(mul(float3x3(object.normalMatrix), input.normal));
     output.tangent   = input.tangent;
@@ -83,5 +83,5 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
     albedoBuffer = albedo;
     normalBuffer = float4(vertIn.normal * 0.5 + 0.5, 1.0);
-    debugBuffer  = float4(max(0.0, vertIn.tangent.w), 0.0, 0.0, 1.0);
+    //debugBuffer  = float4(max(0.0, vertIn.tangent.w), 0.0, 0.0, 1.0);
 }

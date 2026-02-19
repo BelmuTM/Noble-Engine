@@ -13,7 +13,7 @@ struct alignas(16) Vertex {
     bool operator==(const Vertex& other) const = default;
 };
 
-template<> struct std::hash<Vertex> {
+template <> struct std::hash<Vertex> {
     size_t operator()(Vertex const& v) const noexcept {
         static constexpr size_t goldenRatio = 0x9e3779b9;
 
