@@ -26,7 +26,7 @@ void VulkanUniformBufferManager::destroy() noexcept {
 bool VulkanUniformBufferManager::createBuffer(
     VulkanUniformBufferBase& buffer, std::string& errorMessage
 ) {
-    TRY(buffer.create(*_device, _framesInFlight, errorMessage));
+    TRY_deprecated(buffer.create(*_device, _framesInFlight, errorMessage));
 
     _uniformBuffers.push_back(&buffer);
 

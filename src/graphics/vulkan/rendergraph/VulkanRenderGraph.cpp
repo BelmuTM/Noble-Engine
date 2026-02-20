@@ -2,7 +2,7 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 #include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
-#include "graphics/vulkan/rendergraph/VulkanRenderResources.h"
+#include "graphics/vulkan/rendergraph/resources/VulkanRenderResources.h"
 
 #include "core/debug/Logger.h"
 
@@ -21,12 +21,9 @@ bool VulkanRenderGraph::create(const VulkanRenderGraphCreateContext& context, st
 
 void VulkanRenderGraph::destroy() noexcept {
     for (const auto& pass : _passes) {
-        for (const auto& descriptorManager : pass->getDescriptorManagers() | std::views::values) {
-            descriptorManager->destroy();
-        }
+        pass->destroy();
     }
 
-    // Needed if the pass has an order-sensitive destructor
     _passes.clear();
 }
 
@@ -58,7 +55,7 @@ bool prepareColorAttachments(
 
         if (colorImage) {
             // Color attachment transition
-            TRY(colorImage->transitionLayout(
+            TRY_deprecated(colorImage->transitionLayout(
                 commandBuffer, errorMessage,
                 vk::ImageLayout::eColorAttachmentOptimal
             ));
@@ -99,7 +96,7 @@ bool prepareDepthAttachment(
     }
 
     // Depth image transition
-    TRY(depthImage->transitionLayout(commandBuffer, errorMessage, targetDepthLayout));
+    TRY_deprecated(depthImage->transitionLayout(commandBuffer, errorMessage, targetDepthLayout));
 
     if (depthAttachmentPtr) {
         depthAttachment
@@ -116,6 +113,7 @@ bool prepareDepthAttachment(
 void executeDrawCalls(
     const vk::CommandBuffer                  commandBuffer,
     const VulkanRenderPass&                  pass,
+    const VulkanFrameDraws*                  frameDraws,
     const VulkanFrameResources*              frame,
     const vk::Extent2D                       extent,
     const vk::detail::DispatchLoaderDynamic& dispatchLoader
@@ -129,11 +127,11 @@ void executeDrawCalls(
 
     commandBuffer.bindPipeline(pass.getBindPoint(), pass.getPipeline()->handle());
 
-    for (const auto& drawCall : pass._visibleDrawCalls) {
+    for (const auto& drawCall : frameDraws->getDrawCalls(&pass)) {
         const auto& draw = *drawCall;
 
 #if defined(VULKAN_DEBUG_UTILS)
-        std::string meshName = draw.getOwner() ? draw.getOwner()->object->getModel().name : "Mesh";
+        std::string meshName = draw.getObject() ? draw.getObject()->object->getModel().name : "Mesh";
         VulkanDebugger::beginLabel(commandBuffer, dispatchLoader, meshName);
 #endif
 
@@ -175,7 +173,7 @@ bool executePostPassTransitions(
     for (const auto& [resource, targetLayout] : pass.getTransitions()) {
         VulkanImage* resourceImage = resource->resolveImage();
 
-        TRY(resourceImage->transitionLayout(commandBuffer, errorMessage, targetLayout));
+        TRY_deprecated(resourceImage->transitionLayout(commandBuffer, errorMessage, targetLayout));
     }
 
     return true;
@@ -193,11 +191,11 @@ bool VulkanRenderGraph::executePass(
     if (pass.getBindPoint() == vk::PipelineBindPoint::eGraphics) {
         // Color attachments
         std::vector<vk::RenderingAttachmentInfo> colorAttachments{};
-        TRY(prepareColorAttachments(commandBuffer, pass, colorAttachments, errorMessage));
+        TRY_deprecated(prepareColorAttachments(commandBuffer, pass, colorAttachments, errorMessage));
 
         // Depth attachment
         vk::RenderingAttachmentInfo depthAttachment{};
-        TRY(prepareDepthAttachment(commandBuffer, pass, _context.resources, depthAttachment, errorMessage));
+        TRY_deprecated(prepareDepthAttachment(commandBuffer, pass, _context.resources, depthAttachment, errorMessage));
 
         // Rendering info
         vk::RenderingInfo renderingInfo{};
@@ -220,7 +218,7 @@ bool VulkanRenderGraph::executePass(
             commandBuffer.beginQuery(_context.queryPool, 0, {});
 
         // Draw calls
-        executeDrawCalls(commandBuffer, pass, _context.frame, extent, _context.dispatchLoader);
+        executeDrawCalls(commandBuffer, pass, _context.frameDraws, _context.frame, extent, _context.dispatchLoader);
 
         if (isMeshPass)
             commandBuffer.endQuery(_context.queryPool, 0);
@@ -233,7 +231,7 @@ bool VulkanRenderGraph::executePass(
 #endif
 
         // Transition resources for next pass
-        TRY(executePostPassTransitions(commandBuffer, pass, errorMessage));
+        TRY_deprecated(executePostPassTransitions(commandBuffer, pass, errorMessage));
     }
 
     return true;

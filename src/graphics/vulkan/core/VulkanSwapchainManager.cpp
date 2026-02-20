@@ -20,7 +20,7 @@ bool VulkanSwapchainManager::create(
     _swapchain      = &swapchain;
     _framesInFlight = framesInFlight;
 
-    TRY(_syncObjects.create(device.getLogicalDevice(), framesInFlight, swapchain.getImageCount(), errorMessage));
+    TRY_deprecated(_syncObjects.create(device.getLogicalDevice(), framesInFlight, swapchain.getImageCount(), errorMessage));
 
     return true;
 }
@@ -40,14 +40,14 @@ bool VulkanSwapchainManager::recreateSwapchain(std::string& errorMessage) {
         return false;
     }
 
-    TRY(_swapchain->recreate(_surface->handle(), errorMessage));
+    TRY_deprecated(_swapchain->recreate(_surface->handle(), errorMessage));
 
     _syncObjects.backup();
 
     const vk::Device& logicalDevice       = _device->getLogicalDevice();
     const uint32_t    swapchainImageCount = _swapchain->getImageCount();
 
-    TRY(_syncObjects.create(logicalDevice, _framesInFlight, swapchainImageCount, errorMessage));
+    TRY_deprecated(_syncObjects.create(logicalDevice, _framesInFlight, swapchainImageCount, errorMessage));
 
     return true;
 }

@@ -13,8 +13,8 @@ bool VulkanSwapchain::create(
     _window = &window;
     _device = &device;
 
-    TRY(createSwapchain(surface, errorMessage));
-    TRY(createImageViews(errorMessage));
+    TRY_deprecated(createSwapchain(surface, errorMessage));
+    TRY_deprecated(createImageViews(errorMessage));
 
     createImages();
 
@@ -51,7 +51,7 @@ bool VulkanSwapchain::recreate(const vk::SurfaceKHR surface, std::string& errorM
 
     destroy();
 
-    TRY(create(*_window, *_device, surface, errorMessage));
+    TRY_deprecated(create(*_window, *_device, surface, errorMessage));
 
     return true;
 }

@@ -1,7 +1,8 @@
 #include "VulkanGraphicsPipeline.h"
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
-#include "graphics/vulkan/rendergraph/VulkanRenderResources.h"
+
+#include "graphics/vulkan/rendergraph/resources/VulkanRenderResources.h"
 #include "graphics/vulkan/resources/meshes/VulkanVertex.h"
 
 #include "core/debug/ErrorHandling.h"
@@ -15,11 +16,11 @@ bool VulkanGraphicsPipeline::create(
 ) noexcept {
     _device = device;
 
-    TRY(createPipelineLayout(
+    TRY_deprecated(createPipelineLayout(
         device, pass.getPipelineDescriptor(), errorMessage
     ));
 
-    TRY(createPipeline(device, pass, errorMessage));
+    TRY_deprecated(createPipeline(device, pass, errorMessage));
 
     return true;
 }

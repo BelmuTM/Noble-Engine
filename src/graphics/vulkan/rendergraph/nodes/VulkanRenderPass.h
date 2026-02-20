@@ -1,10 +1,10 @@
 #pragma once
 
-#include "VulkanDrawCall.h"
 #include "VulkanRenderPassAttachment.h"
 
 #include "graphics/vulkan/pipeline/VulkanPipelineDescriptor.h"
 
+#include "graphics/vulkan/rendergraph/resources/VulkanDrawCall.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObject.h"
 
 #include <memory>
@@ -36,6 +36,8 @@ public:
 
     VulkanRenderPass(VulkanRenderPass&&)            = delete;
     VulkanRenderPass& operator=(VulkanRenderPass&&) = delete;
+
+    virtual void destroy() noexcept;
 
     // Getters
 
@@ -125,8 +127,6 @@ public:
         return *this;
     }
 
-    std::vector<const VulkanDrawCall*> _visibleDrawCalls{};
-
 private:
     VulkanRenderPassType _type;
 
@@ -145,8 +145,7 @@ private:
     VulkanRenderPassAttachment* _depthAttachment = nullptr;
 
     std::vector<std::unique_ptr<VulkanRenderPassAttachment>> _colorAttachments{};
-
-    std::vector<VulkanPassTransition> _transitions{};
+    std::vector<VulkanPassTransition>                        _transitions{};
 
     std::vector<std::unique_ptr<VulkanDrawCall>> _drawCalls{};
 };

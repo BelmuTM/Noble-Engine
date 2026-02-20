@@ -37,12 +37,23 @@ public:
     VulkanRenderGraphBuilder(VulkanRenderGraphBuilder&&)            = delete;
     VulkanRenderGraphBuilder& operator=(VulkanRenderGraphBuilder&&) = delete;
 
-    [[nodiscard]] bool build(std::string& errorMessage) const;
+    [[nodiscard]] bool build(std::string& errorMessage);
 
     [[nodiscard]] bool buildPasses(std::string& errorMessage) const;
 
 private:
-    const VulkanRenderGraphBuilderContext& _context;
+    template <typename PassType, typename PassCreateContext>
+    [[nodiscard]] static std::unique_ptr<VulkanRenderPass> createPassFactory(
+        const std::string& path, const VulkanRenderGraphBuilderContext& context, std::string& errorMessage
+    ) {
+        auto pass = std::make_unique<PassType>();
+
+        if (!pass->create(path, PassCreateContext::build(context), errorMessage)) {
+            return nullptr;
+        }
+
+        return pass;
+    }
 
     [[nodiscard]] bool createPass(const std::string& path, VulkanRenderPassType type, std::string& errorMessage) const;
 
@@ -55,4 +66,12 @@ private:
     [[nodiscard]] bool setupResourceTransitions(std::string& errorMessage) const;
 
     [[nodiscard]] bool createPipelines(std::string& errorMessage) const;
+
+    const VulkanRenderGraphBuilderContext& _context;
+
+    using PassFactoryFunction = std::unique_ptr<VulkanRenderPass>(
+        const std::string&, const VulkanRenderGraphBuilderContext&, std::string&
+    );
+
+    std::unordered_map<VulkanRenderPassType, PassFactoryFunction*> _factories{};
 };

@@ -6,6 +6,7 @@
 #include "graphics/vulkan/resources/VulkanFrameResources.h"
 
 #include "nodes/VulkanRenderPass.h"
+#include "resources/VulkanFrameDraws.h"
 
 class VulkanRenderResources;
 
@@ -16,6 +17,8 @@ struct VulkanRenderGraphCreateContext {
 
     VulkanFrameResources*             frame     = nullptr;
     VulkanRenderResources*            resources = nullptr;
+
+    const VulkanFrameDraws*           frameDraws = nullptr;
 
     vk::QueryPool                     queryPool;
     vk::detail::DispatchLoaderDynamic dispatchLoader{};

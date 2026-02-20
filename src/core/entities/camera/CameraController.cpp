@@ -22,9 +22,9 @@ void CameraController::update(const float deltaTime) {
     glm::vec3 velocity{0.0f};
 
     // Movement
-    for (auto action : _inputManager.getPressedActions()) {
-        if (_actionMovementMap.contains(action))
-            velocity += _actionMovementMap[action];
+    for (const auto& [input, movement] : _actionMovementMap) {
+        if (_inputManager.isHeld(input))
+            velocity += movement;
     }
 
     if (glm::length(velocity) > 0.0f) {
@@ -32,7 +32,7 @@ void CameraController::update(const float deltaTime) {
     }
 
     float speed = _camera.getSpeed();
-    if (_inputManager.isActionPressed(InputAction::IncreaseSpeed)) {
+    if (_inputManager.isHeld(InputAction::IncreaseSpeed)) {
         speed *= speedMultiplier;
     }
     velocity *= speed;

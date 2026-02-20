@@ -26,7 +26,7 @@ bool VulkanPipelineManager::createGraphicsPipeline(
     const VulkanRenderPass& pass,
     std::string&            errorMessage
 ) const {
-    TRY(graphicsPipeline->create(_device, pass, errorMessage));
+    TRY_deprecated(graphicsPipeline->create(_device, pass, errorMessage));
 
     return true;
 }

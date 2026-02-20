@@ -28,13 +28,13 @@ public:
     [[nodiscard]] vk::Rect2D resolveScissor(vk::Extent2D extent) const;
 
     [[nodiscard]] const VulkanMesh* getMesh() const noexcept { return _mesh; }
-    [[nodiscard]] const VulkanRenderObject* getOwner() const noexcept { return _owner; }
+    [[nodiscard]] const VulkanRenderObject* getObject() const noexcept { return _object; }
     [[nodiscard]] const std::vector<VulkanDescriptorSets*>& getDescriptorSets() const noexcept {
         return _descriptorSets;
     }
 
     VulkanDrawCall& setMesh(const VulkanMesh* mesh) noexcept { _mesh = mesh; return *this; }
-    VulkanDrawCall& setOwner(const VulkanRenderObject* owner) noexcept { _owner = owner; return *this; }
+    VulkanDrawCall& setObject(const VulkanRenderObject* object) noexcept { _object = object; return *this; }
     VulkanDrawCall& setViewport(const vk::Viewport& viewport) noexcept { _viewport = viewport; return *this; }
     VulkanDrawCall& setScissor(const vk::Rect2D scissor) noexcept { _scissor = scissor; return *this; }
     VulkanDrawCall& setDescriptorSets(const std::vector<VulkanDescriptorSets*>& descriptorSets) noexcept {
@@ -53,11 +53,11 @@ public:
 
 private:
     const VulkanMesh*         _mesh  = nullptr;
-    const VulkanRenderObject* _owner = nullptr;
+    const VulkanRenderObject* _object = nullptr;
 
     std::vector<VulkanDescriptorSets*> _descriptorSets{};
 
-    std::unordered_map<std::string, std::unique_ptr<IVulkanPushConstant>> _pushConstants;
+    std::unordered_map<std::string, std::unique_ptr<IVulkanPushConstant>> _pushConstants{};
 
     std::optional<vk::Viewport> _viewport{};
     std::optional<vk::Rect2D>   _scissor{};

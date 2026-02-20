@@ -18,11 +18,11 @@ bool VulkanFrameResources::create(
     _framesInFlight = framesInFlight;
 
     // Descriptors creation
-    TRY(_descriptorManager.create(device.getLogicalDevice(), frameDescriptorScheme, framesInFlight, 1, errorMessage));
+    TRY_deprecated(_descriptorManager.create(device.getLogicalDevice(), frameDescriptorScheme, framesInFlight, 1, errorMessage));
 
-    TRY(uniformBufferManager.createBuffer(_frameUBO, errorMessage));
+    TRY_deprecated(uniformBufferManager.createBuffer(_frameUBO, errorMessage));
 
-    TRY(_descriptorManager.allocate(_frameUBODescriptors, errorMessage));
+    TRY_deprecated(_descriptorManager.allocate(_frameUBODescriptors, errorMessage));
     _frameUBODescriptors->bindPerFrameUBO(_frameUBO, 0);
 
     return true;
@@ -37,9 +37,12 @@ void VulkanFrameResources::destroy() noexcept {
 }
 
 void VulkanFrameResources::update(
-    const uint32_t frameIndex, const uint32_t imageIndex, const Camera& camera
+    const uint32_t    frameIndex,
+    const uint32_t    imageIndex,
+    const Camera&     camera,
+    const DebugState& debugState
 ) {
-    _frameUBO.update(frameIndex, *_swapchain, camera);
+    _frameUBO.update(frameIndex, *_swapchain, camera, debugState);
 
     _frameIndex = frameIndex;
     _imageIndex = imageIndex;

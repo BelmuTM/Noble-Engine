@@ -10,5 +10,6 @@ struct FrameUBO {
     float    frameCounter;
     float    viewWidth;
     float    viewHeight;
+    int      debugMode;
 };
 [[vk::binding(0, 0)]] ConstantBuffer<FrameUBO> uniforms;

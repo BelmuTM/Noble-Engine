@@ -20,6 +20,19 @@ bool Runtime::init(std::string& errorMessage) {
 
     _inputManager.init(_window.handle());
 
+    // Keybinds
+    KeyMap keyMap{};
+    keyMap.bind(GLFW_KEY_W, InputAction::MoveForward);
+    keyMap.bind(GLFW_KEY_A, InputAction::MoveLeft);
+    keyMap.bind(GLFW_KEY_S, InputAction::MoveBackward);
+    keyMap.bind(GLFW_KEY_D, InputAction::MoveRight);
+    keyMap.bind(GLFW_KEY_SPACE, InputAction::MoveUp);
+    keyMap.bind(GLFW_KEY_LEFT_CONTROL, InputAction::MoveDown);
+    keyMap.bind(GLFW_KEY_LEFT_SHIFT, InputAction::IncreaseSpeed);
+    keyMap.bind(GLFW_KEY_TAB, InputAction::ToggleDebugView);
+
+    _inputManager.setKeyMap(keyMap);
+
     _windowContext = WindowContext{&_window, &_inputManager};
     _window.setContext(&_windowContext);
 
@@ -70,11 +83,15 @@ void Runtime::engineLoop() {
         const double deltaTime   = std::chrono::duration<double>(currentTime - previousTime).count();
         previousTime = currentTime;
 
+        if (_inputManager.isPressed(InputAction::ToggleDebugView)) {
+            _debugState.debugMode = (_debugState.debugMode + 1) % 2;
+        }
+
         _inputManager.update();
 
         _camera.update(deltaTime);
 
-        _renderer.drawFrame(_camera);
+        _renderer.drawFrame(_camera, _debugState);
 
         ++frameCount;
 

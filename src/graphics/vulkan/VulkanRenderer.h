@@ -30,7 +30,7 @@ public:
 
     void shutdown() override;
 
-    void drawFrame(const Camera& camera) override;
+    void drawFrame(const Camera& camera, const DebugState& debugState) override;
 
     uint32_t primitiveCount = 0;
 
@@ -62,6 +62,7 @@ private:
     VulkanFrameResources      frameResources{};
     VulkanRenderResources     renderResources{};
     VulkanRenderObjectManager renderObjectManager{};
+    VulkanFrameDraws          frameDraws{};
 
     VulkanShaderProgramManager shaderProgramManager{};
     VulkanPipelineManager      pipelineManager{};

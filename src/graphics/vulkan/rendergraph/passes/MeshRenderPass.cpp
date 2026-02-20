@@ -7,7 +7,7 @@ bool MeshRenderPass::create(
     const MeshRenderPassCreateContext& context,
     std::string&                       errorMessage
 ) {
-    TRY(context.shaderProgramManager.load(getShaderProgram(), path, errorMessage));
+    TRY_deprecated(context.shaderProgramManager.load(getShaderProgram(), path, errorMessage));
 
     const std::string& passName = std::filesystem::path(path).stem().string();
 
@@ -31,7 +31,7 @@ bool MeshRenderPass::create(
             auto verticesDraw = std::make_unique<VulkanDrawCall>();
             verticesDraw
                 ->setMesh(submesh.mesh)
-                .setOwner(renderObject.get())
+                .setObject(renderObject.get())
                 .addDescriptorSets(submesh.descriptorSets)
                 .setPushConstant("object", &renderObject->data);
 

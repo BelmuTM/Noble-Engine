@@ -3,8 +3,8 @@
 #include "graphics/vulkan/core/VulkanCommandManager.h"
 #include "graphics/vulkan/resources/VulkanFrameResources.h"
 
-#include "nodes/VulkanRenderPass.h"
-#include "nodes/VulkanRenderPassResource.h"
+#include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
+#include "graphics/vulkan/rendergraph/nodes/VulkanRenderPassResource.h"
 
 #include <memory>
 #include <unordered_map>

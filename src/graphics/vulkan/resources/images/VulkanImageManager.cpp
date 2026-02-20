@@ -56,7 +56,7 @@ bool VulkanImageManager::loadImage(VulkanImage*& image, const Image* imageData, 
 
     VulkanBuffer stagingBuffer;
     // Create the staging buffer
-    TRY(stagingBuffer.create(
+    TRY_deprecated(stagingBuffer.create(
         imageData->byteSize,
         vk::BufferUsageFlagBits::eTransferSrc,
         VMA_MEMORY_USAGE_CPU_TO_GPU,
@@ -78,12 +78,12 @@ bool VulkanImageManager::loadImage(VulkanImage*& image, const Image* imageData, 
 
     // Create image on the GPU
     vk::CommandBuffer commandBuffer{};
-    TRY(_commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
+    TRY_deprecated(_commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
 
     VulkanImage tempImage{};
-    TRY(tempImage.createFromBuffer(stagingBuffer, 0, format, extent, mipLevels, commandBuffer, _device, errorMessage));
+    TRY_deprecated(tempImage.createFromBuffer(stagingBuffer, 0, format, extent, mipLevels, commandBuffer, _device, errorMessage));
 
-    TRY(_commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
+    TRY_deprecated(_commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
 
     stagingBuffer.destroy();
 
@@ -113,7 +113,7 @@ bool VulkanImageManager::loadImages(
     constexpr int depth = 1;
 
     vk::CommandBuffer commandBuffer{};
-    TRY(_commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
+    TRY_deprecated(_commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
 
     vk::DeviceSize offset = 0;
 
@@ -143,7 +143,7 @@ bool VulkanImageManager::loadImages(
 
         // Create image on the GPU
         VulkanImage tempImage{};
-        TRY(tempImage.createFromBuffer(
+        TRY_deprecated(tempImage.createFromBuffer(
             stagingBuffer, offset, format, extent, mipLevels, commandBuffer, _device, errorMessage
         ));
 
@@ -152,7 +152,7 @@ bool VulkanImageManager::loadImages(
         _imageCache.emplace(image->path, std::make_unique<VulkanImage>(std::move(tempImage)));
     }
 
-    TRY(_commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
+    TRY_deprecated(_commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
 
     return true;
 }
@@ -163,7 +163,7 @@ bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& imag
 
     VulkanBuffer stagingBuffer;
     // Create the staging buffer
-    TRY(stagingBuffer.create(
+    TRY_deprecated(stagingBuffer.create(
         MAX_BATCH_SIZE,
         vk::BufferUsageFlagBits::eTransferSrc,
         VMA_MEMORY_USAGE_CPU_TO_GPU,
@@ -196,7 +196,7 @@ bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& imag
         if (image->byteSize > MAX_BATCH_SIZE) {
             // Flush batched images
             if (!batch.empty()) {
-                TRY(loadImages(batch, stagingBuffer, errorMessage));
+                TRY_deprecated(loadImages(batch, stagingBuffer, errorMessage));
                 batch.clear();
             }
 
@@ -204,7 +204,7 @@ bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& imag
 
             // Load image with its own dedicated staging buffer
             VulkanImage* _;
-            TRY(loadImage(_, image, errorMessage));
+            TRY_deprecated(loadImage(_, image, errorMessage));
 
             continue;
         }
@@ -212,7 +212,7 @@ bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& imag
         // If adding image to the batch exceeds the maximum batch size
         if (currentBatchSize + image->byteSize > MAX_BATCH_SIZE) {
             // Flush batched images
-            TRY(loadImages(batch, stagingBuffer, errorMessage));
+            TRY_deprecated(loadImages(batch, stagingBuffer, errorMessage));
             batch.clear();
 
             currentBatchSize = 0;
@@ -225,7 +225,7 @@ bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& imag
 
     // Flush remaining batched images
     if (!batch.empty()) {
-        TRY(loadImages(batch, stagingBuffer, errorMessage));
+        TRY_deprecated(loadImages(batch, stagingBuffer, errorMessage));
     }
 
     batch.clear();

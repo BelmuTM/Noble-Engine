@@ -18,8 +18,8 @@ bool VulkanDescriptorManager::create(
 
     buildDescriptorScheme(descriptorScheme);
 
-    TRY(createSetLayout(errorMessage));
-    TRY(createPool(errorMessage));
+    TRY_deprecated(createSetLayout(errorMessage));
+    TRY_deprecated(createPool(errorMessage));
 
     return true;
 }
@@ -41,7 +41,7 @@ void VulkanDescriptorManager::destroy() noexcept {
 bool VulkanDescriptorManager::allocate(VulkanDescriptorSets*& descriptorSets, std::string& errorMessage) {
     VulkanDescriptorSets tempDescriptorSets{*this};
 
-    TRY(tempDescriptorSets.allocate(errorMessage));
+    TRY_deprecated(tempDescriptorSets.allocate(errorMessage));
 
     _descriptorSets.push_back(std::make_unique<VulkanDescriptorSets>(std::move(tempDescriptorSets)));
     descriptorSets = _descriptorSets.back().get();

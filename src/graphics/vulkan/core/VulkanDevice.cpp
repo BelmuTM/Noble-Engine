@@ -26,7 +26,7 @@ bool VulkanDevice::create(
     _capabilities = &capabilities;
     _instance     = instance;
 
-    TRY(pickPhysicalDevice(errorMessage));
+    TRY_deprecated(pickPhysicalDevice(errorMessage));
 
     _queueFamilyIndices = findQueueFamilies(_physicalDevice, surface);
 
@@ -40,9 +40,9 @@ bool VulkanDevice::create(
         return false;
     }
 
-    TRY(createLogicalDevice(_queueFamilyIndices, errorMessage));
-    TRY(createAllocator(errorMessage));
-    TRY(createQueryPool(errorMessage));
+    TRY_deprecated(createLogicalDevice(_queueFamilyIndices, errorMessage));
+    TRY_deprecated(createAllocator(errorMessage));
+    TRY_deprecated(createQueryPool(errorMessage));
 
     return true;
 }

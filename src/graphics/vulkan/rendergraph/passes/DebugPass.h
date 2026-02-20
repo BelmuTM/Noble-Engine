@@ -1,5 +1,6 @@
 #pragma once
 
+#include "graphics/vulkan/rendergraph/VulkanRenderGraphBuilder.h"
 #include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
 
 #include "graphics/vulkan/pipeline/VulkanShaderProgramManager.h"
@@ -15,17 +16,28 @@ struct DebugPassCreateContext {
     const VulkanRenderResources& renderResources;
     VulkanRenderObjectManager&   renderObjectManager;
     VulkanShaderProgramManager&  shaderProgramManager;
+
+    static DebugPassCreateContext build(const VulkanRenderGraphBuilderContext& context) {
+        return {
+            context.device,
+            context.commandManager,
+            context.frameResources,
+            context.renderResources,
+            context.renderObjectManager,
+            context.shaderProgramManager
+        };
+    }
 };
 
 class DebugPass final : public VulkanRenderPass {
 public:
-     ~DebugPass() override;
-
     [[nodiscard]] bool create(
         const std::string&            path,
         const DebugPassCreateContext& context,
         std::string&                  errorMessage
     );
+
+    void destroy() noexcept override;
 
 private:
     VulkanMeshManager _meshManager{};

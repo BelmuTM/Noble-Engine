@@ -34,7 +34,12 @@ public:
 
     void destroy() noexcept;
 
-    void update(uint32_t frameIndex, uint32_t imageIndex, const Camera& camera);
+    void update(
+        uint32_t          frameIndex,
+        uint32_t          imageIndex,
+        const Camera&     camera,
+        const DebugState& debugState
+    );
 
     [[nodiscard]] uint32_t getFrameIndex() const noexcept { return _frameIndex; }
     [[nodiscard]] uint32_t getImageIndex() const noexcept { return _imageIndex; }

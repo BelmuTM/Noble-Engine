@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/engine/DebugState.h"
+
 #include "core/platform/Window.h"
 
 #include "core/entities/camera/Camera.h"
@@ -21,5 +23,5 @@ public:
 
     virtual void shutdown() = 0;
 
-    virtual void drawFrame(const Camera& camera) = 0;
+    virtual void drawFrame(const Camera& camera, const DebugState& debugState) {}
 };

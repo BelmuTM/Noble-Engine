@@ -3,7 +3,7 @@
 #include "VulkanObjectBuffer.h"
 #include "VulkanRenderObject.h"
 
-#include "graphics/vulkan/rendergraph/VulkanRenderResources.h"
+#include "graphics/vulkan/rendergraph/resources/VulkanRenderResources.h"
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorInfo.h"
 #include "graphics/vulkan/resources/images/VulkanImageManager.h"
 #include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"

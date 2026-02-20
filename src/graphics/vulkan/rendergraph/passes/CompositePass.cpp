@@ -7,7 +7,7 @@ bool CompositePass::create(
     const CompositePassCreateContext& context,
     std::string&                      errorMessage
 ) {
-    TRY(context.shaderProgramManager.load(getShaderProgram(), path, errorMessage));
+    TRY_deprecated(context.shaderProgramManager.load(getShaderProgram(), path, errorMessage));
 
     const std::string& passName = std::filesystem::path(path).stem().string();
 

@@ -22,39 +22,35 @@ void scrollCallback(GLFWwindow* _window, const double _xoffset, const double _yo
     if (self) self->inputManager->onMouseScroll(_xoffset, _yoffset);
 }
 
-void InputManager::init(GLFWwindow* window) {
+void InputManager::init(GLFWwindow* window) const {
     glfwSetKeyCallback(window, keyCallback);
     glfwSetMouseButtonCallback(window, mouseButtonCallback);
     glfwSetCursorPosCallback(window, cursorsPosCallback);
     glfwSetScrollCallback(window, scrollCallback);
-
-    initKeyBindings();
-}
-
-void InputManager::initKeyBindings() {
-    bindKey(GLFW_KEY_W, InputAction::MoveForward);
-    bindKey(GLFW_KEY_A, InputAction::MoveLeft);
-    bindKey(GLFW_KEY_S, InputAction::MoveBackward);
-    bindKey(GLFW_KEY_D, InputAction::MoveRight);
-    bindKey(GLFW_KEY_SPACE, InputAction::MoveUp);
-    bindKey(GLFW_KEY_LEFT_CONTROL, InputAction::MoveDown);
-    bindKey(GLFW_KEY_LEFT_SHIFT, InputAction::IncreaseSpeed);
 }
 
 void InputManager::update() {
+    _pressedInputs.clear();
+    _releasedInputs.clear();
+
     _mouseDelta        = _mousePosition - _lastMousePosition;
     _lastMousePosition = _mousePosition;
+    _scrollDelta       = {0.0f, 0.0f};
 }
 
 void InputManager::onKeyEvent(const int key, const int action) {
-    const InputAction act = getKeybindAction(key);
+    const InputAction input = _keyMap.getAction(key);
 
-    if (action == GLFW_PRESS) {
-        _currentKeys[key] = true;
-        _pressedActions.insert(act);
-    } else if (action == GLFW_RELEASE) {
-        _currentKeys[key] = false;
-        _pressedActions.erase(act);
+    if (input != InputAction::None) {
+        if (action == GLFW_PRESS) {
+            _heldInputs.insert(input);
+
+            _pressedInputs.insert(input);
+        } else if (action == GLFW_RELEASE) {
+            _heldInputs.erase(input);
+
+            _releasedInputs.insert(input);
+        }
     }
 
     for (auto* listener : _listeners) {
@@ -81,7 +77,9 @@ void InputManager::onMouseMove(const double x, const double y) {
     }
 }
 
-void InputManager::onMouseScroll(const double offsetX, const double offsetY) const {
+void InputManager::onMouseScroll(const double offsetX, const double offsetY) {
+    _scrollDelta += glm::vec2(offsetX, offsetY);
+
     for (auto* listener : _listeners) {
         listener->onMouseScroll(offsetX, offsetY);
     }

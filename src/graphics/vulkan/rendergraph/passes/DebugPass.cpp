@@ -1,17 +1,14 @@
 #include "DebugPass.h"
 
+#include "common/Utility.h"
 #include "core/debug/ErrorHandling.h"
-
-DebugPass::~DebugPass() {
-    _meshManager.destroy();
-}
 
 bool DebugPass::create(
     const std::string&            path,
     const DebugPassCreateContext& context,
     std::string&                  errorMessage
 ) {
-    TRY(context.shaderProgramManager.load(getShaderProgram(), path, errorMessage));
+    TRY_deprecated(context.shaderProgramManager.load(getShaderProgram(), path, errorMessage));
 
     const std::string& passName = std::filesystem::path(path).stem().string();
 
@@ -32,13 +29,14 @@ bool DebugPass::create(
         Mesh aabbMesh{};
         uint32_t vertexOffset = 0;
 
+        // Draw each mesh's AABB
         for (const auto& mesh : renderObject->object->getModel().meshes) {
             const Math::AABB& aabb = mesh.getAABB();
 
             for (const auto& corner : aabb.getCorners()) {
                 Vertex vertex{};
                 vertex.position = corner;
-                vertex.color    = glm::vec3(0.0f, 1.0f, 1.0f);
+                vertex.color    = Utility::instanceColor(&mesh);
 
                 aabbMesh.addVertex(vertex);
             }
@@ -59,8 +57,14 @@ bool DebugPass::create(
         addDrawCall(std::move(aabbDraw));
     }
 
-    TRY(_meshManager.create(context.device, context.commandManager, errorMessage));
-    TRY(_meshManager.fillBuffers(errorMessage));
+    TRY_deprecated(_meshManager.create(context.device, context.commandManager, errorMessage));
+    TRY_deprecated(_meshManager.fillBuffers(errorMessage));
 
     return true;
+}
+
+void DebugPass::destroy() noexcept {
+    VulkanRenderPass::destroy();
+
+    _meshManager.destroy();
 }

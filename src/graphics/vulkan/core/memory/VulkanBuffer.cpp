@@ -50,7 +50,7 @@ bool VulkanBuffer::create(
 ) noexcept {
     _device = device;
 
-    TRY(createBuffer(_buffer, _allocation, size, usage, memoryUsage, device, errorMessage));
+    TRY_deprecated(createBuffer(_buffer, _allocation, size, usage, memoryUsage, device, errorMessage));
 
     _bufferSize = size;
 
@@ -128,7 +128,7 @@ bool VulkanBuffer::copyBuffer(
     std::string&                errorMessage
 ) {
     vk::CommandBuffer copyCommandBuffer{};
-    TRY(commandManager->beginSingleTimeCommands(copyCommandBuffer, errorMessage));
+    TRY_deprecated(commandManager->beginSingleTimeCommands(copyCommandBuffer, errorMessage));
 
     vk::BufferCopy2 copyRegion{srcOffset, dstOffset, size};
 
@@ -140,7 +140,7 @@ bool VulkanBuffer::copyBuffer(
 
     copyCommandBuffer.copyBuffer2(copyBufferInfo);
 
-    TRY(commandManager->endSingleTimeCommands(copyCommandBuffer, errorMessage));
+    TRY_deprecated(commandManager->endSingleTimeCommands(copyCommandBuffer, errorMessage));
 
     return true;
 }
@@ -155,7 +155,7 @@ bool VulkanBuffer::copyFrom(
 ) const {
     if (size == VK_WHOLE_SIZE) size = _bufferSize;
 
-    TRY(copyBuffer(srcBuffer, _buffer, size, srcOffset, dstOffset, commandManager, errorMessage));
+    TRY_deprecated(copyBuffer(srcBuffer, _buffer, size, srcOffset, dstOffset, commandManager, errorMessage));
 
     return true;
 }

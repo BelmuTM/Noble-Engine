@@ -15,17 +15,17 @@ bool VulkanRenderObjectManager::create(
     _imageManager = &imageManager;
     _meshManager  = &meshManager;
 
-    TRY(_descriptorManager.create(
+    TRY_deprecated(_descriptorManager.create(
         device.getLogicalDevice(), objectDescriptorScheme, framesInFlight, MAX_RENDER_OBJECTS, errorMessage
     ));
 
-    TRY(_objectBuffer.create(device, MAX_RENDER_OBJECTS, errorMessage));
+    TRY_deprecated(_objectBuffer.create(device, MAX_RENDER_OBJECTS, errorMessage));
 
     Logger::debug("Loading object textures");
 
     const auto startTime = std::chrono::high_resolution_clock::now();
 
-    TRY(loadObjectTextures(assetManager.getTextures(), errorMessage));
+    TRY_deprecated(loadObjectTextures(assetManager.getTextures(), errorMessage));
 
     const auto endTime = std::chrono::high_resolution_clock::now();
 
@@ -33,7 +33,7 @@ bool VulkanRenderObjectManager::create(
 
     Logger::debug("Loaded object textures in " + std::to_string(loadDuration) + " ms");
 
-    TRY(createRenderObjects(objectManager.getObjects(), errorMessage));
+    TRY_deprecated(createRenderObjects(objectManager.getObjects(), errorMessage));
 
     return true;
 }
@@ -56,7 +56,7 @@ bool VulkanRenderObjectManager::loadObjectTextures(
         images.push_back(texture);
     }
 
-    TRY(_imageManager->loadBatchedImages(images, errorMessage));
+    TRY_deprecated(_imageManager->loadBatchedImages(images, errorMessage));
 
     return true;
 }
@@ -79,7 +79,7 @@ bool VulkanRenderObjectManager::createRenderObjects(
 
         auto renderObject = std::make_unique<VulkanRenderObject>();
 
-        TRY(createRenderObject(*renderObject, i, objects[i].get(), meshCount, errorMessage));
+        TRY_deprecated(createRenderObject(*renderObject, i, objects[i].get(), meshCount, errorMessage));
 
         _renderObjects.push_back(std::move(renderObject));
     }
@@ -123,21 +123,21 @@ bool VulkanRenderObjectManager::createRenderObject(
 
         if (!submesh.albedoTexture) {
             const Image diffuseColorImage = Image::createSinglePixelImage(glm::vec3{1.0f});
-            TRY(_imageManager->loadImage(submesh.albedoTexture, &diffuseColorImage, errorMessage));
+            TRY_deprecated(_imageManager->loadImage(submesh.albedoTexture, &diffuseColorImage, errorMessage));
         }
 
         if (!submesh.normalTexture) {
             const Image normalImage = Image::createSinglePixelImage(glm::vec3{0.0f});
-            TRY(_imageManager->loadImage(submesh.normalTexture, &normalImage, errorMessage));
+            TRY_deprecated(_imageManager->loadImage(submesh.normalTexture, &normalImage, errorMessage));
         }
 
         if (!submesh.specularTexture) {
             const Image specularImage = Image::createSinglePixelImage(material.specular);
-            TRY(_imageManager->loadImage(submesh.specularTexture, &specularImage, errorMessage));
+            TRY_deprecated(_imageManager->loadImage(submesh.specularTexture, &specularImage, errorMessage));
         }
 
         // Allocate and bind descriptor sets
-        TRY(_descriptorManager.allocate(submesh.descriptorSets, errorMessage));
+        TRY_deprecated(_descriptorManager.allocate(submesh.descriptorSets, errorMessage));
 
         submesh.descriptorSets->bindPerFrameResource(submesh.albedoTexture->getDescriptorInfo(0));
         submesh.descriptorSets->bindPerFrameResource(submesh.normalTexture->getDescriptorInfo(1));

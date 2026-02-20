@@ -1,6 +1,6 @@
 #include "VulkanRenderResources.h"
 
-#include "VulkanRenderGraph.h"
+#include "graphics/vulkan/rendergraph/VulkanRenderGraph.h"
 
 #include "core/debug/ErrorHandling.h"
 
@@ -18,7 +18,7 @@ bool VulkanRenderResources::create(
     _commandManager = &commandManager;
     _framesInFlight = framesInFlight;
 
-    TRY(createDepthBuffer(errorMessage));
+    TRY_deprecated(createDepthBuffer(errorMessage));
 
     return true;
 }
@@ -49,17 +49,17 @@ void VulkanRenderResources::destroy() noexcept {
     // Depth buffer recreation
     _depthBuffer->destroy();
 
-    TRY(createDepthBufferImage(*_depthBuffer, _swapchain->getExtent(), errorMessage));
+    TRY_deprecated(createDepthBufferImage(*_depthBuffer, _swapchain->getExtent(), errorMessage));
 
     // Color buffers recreation
     for (auto& colorBuffer : _colorBuffers) {
         colorBuffer->destroy();
 
-        TRY(createColorBufferImage(
+        TRY_deprecated(createColorBufferImage(
             *colorBuffer, colorBuffer->getFormat(), _swapchain->getExtent(), errorMessage
         ));
 
-        TRY(colorBuffer->transitionLayout(
+        TRY_deprecated(colorBuffer->transitionLayout(
             _commandManager, errorMessage,
             vk::ImageLayout::eShaderReadOnlyOptimal
         ));
@@ -74,7 +74,7 @@ void VulkanRenderResources::destroy() noexcept {
 bool VulkanRenderResources::createDepthBuffer(std::string& errorMessage) {
     _depthBuffer = std::make_unique<VulkanImage>();
 
-    TRY(createDepthBufferImage(*_depthBuffer, _swapchain->getExtent(), errorMessage));
+    TRY_deprecated(createDepthBufferImage(*_depthBuffer, _swapchain->getExtent(), errorMessage));
 
     VulkanRenderPassResource depthBufferResource{};
     depthBufferResource
@@ -106,7 +106,7 @@ bool VulkanRenderResources::createColorBuffers(
 
         VulkanImage* colorImage = _colorBuffers.back().get();
 
-        TRY(createColorBufferImage(*colorImage, format, frameResources.getExtent(), errorMessage));
+        TRY_deprecated(createColorBufferImage(*colorImage, format, frameResources.getExtent(), errorMessage));
 
         VulkanRenderPassResource colorBuffer{};
         colorBuffer
@@ -144,7 +144,7 @@ bool VulkanRenderResources::createDepthBufferImage(
         aspects |= vk::ImageAspectFlagBits::eStencil;
     }
 
-    TRY(depthBuffer.createImage(
+    TRY_deprecated(depthBuffer.createImage(
         vk::ImageType::e2D,
         DEPTH_BUFFER_FORMAT,
         depthExtent,
@@ -155,15 +155,15 @@ bool VulkanRenderResources::createDepthBufferImage(
         errorMessage
     ));
 
-    TRY(depthBuffer.createImageView(vk::ImageViewType::e2D, DEPTH_BUFFER_FORMAT, aspects, 1, _device, errorMessage));
+    TRY_deprecated(depthBuffer.createImageView(vk::ImageViewType::e2D, DEPTH_BUFFER_FORMAT, aspects, 1, _device, errorMessage));
 
-    TRY(depthBuffer.transitionLayout(
+    TRY_deprecated(depthBuffer.transitionLayout(
         _commandManager, errorMessage,
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eDepthStencilAttachmentOptimal
     ));
 
-    TRY(depthBuffer.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eClampToEdge, _device, errorMessage));
+    TRY_deprecated(depthBuffer.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eClampToEdge, _device, errorMessage));
 
     return true;
 }
@@ -177,7 +177,7 @@ bool VulkanRenderResources::createColorBufferImage(
     colorBuffer.setExtent(colorExtent);
     colorBuffer.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
 
-    TRY(colorBuffer.createImage(
+    TRY_deprecated(colorBuffer.createImage(
         vk::ImageType::e2D,
         format,
         colorExtent,
@@ -188,17 +188,17 @@ bool VulkanRenderResources::createColorBufferImage(
         errorMessage
     ));
 
-    TRY(colorBuffer.createImageView(
+    TRY_deprecated(colorBuffer.createImageView(
         vk::ImageViewType::e2D, format, vk::ImageAspectFlagBits::eColor, 1, _device, errorMessage
     ));
 
-    TRY(colorBuffer.transitionLayout(
+    TRY_deprecated(colorBuffer.transitionLayout(
         _commandManager, errorMessage,
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eColorAttachmentOptimal
     ));
 
-    TRY(colorBuffer.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, _device, errorMessage));
+    TRY_deprecated(colorBuffer.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, _device, errorMessage));
 
     return true;
 }
@@ -217,10 +217,10 @@ bool VulkanRenderResources::allocateDescriptors(VulkanRenderPass* pass, std::str
     for (const auto& [set, scheme] : pass->getShaderProgram()->getDescriptorSchemes()) {
         // Create one manager (pool, layout) per descriptor scheme
         auto descriptorManager = std::make_unique<VulkanDescriptorManager>();
-        TRY(descriptorManager->create(_device->getLogicalDevice(), scheme, _framesInFlight, 1, errorMessage));
+        TRY_deprecated(descriptorManager->create(_device->getLogicalDevice(), scheme, _framesInFlight, 1, errorMessage));
 
         VulkanDescriptorSets* descriptorSets = nullptr;
-        TRY(descriptorManager->allocate(descriptorSets, errorMessage));
+        TRY_deprecated(descriptorManager->allocate(descriptorSets, errorMessage));
 
         // Store descriptor manager and sets keyed by set index
         pass->getDescriptorManagers()[set] = std::move(descriptorManager);

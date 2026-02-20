@@ -28,6 +28,8 @@ private:
 
     std::atomic<bool>& _running;
 
+    DebugState _debugState{};
+
     Window        _window;
     InputManager  _inputManager{};
     WindowContext _windowContext{};

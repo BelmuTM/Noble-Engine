@@ -1,5 +1,6 @@
 #pragma once
 
+#include "graphics/vulkan/rendergraph/VulkanRenderGraphBuilder.h"
 #include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
 
 #include "graphics/vulkan/pipeline/VulkanShaderProgramManager.h"
@@ -12,6 +13,15 @@ struct MeshRenderPassCreateContext {
     const VulkanRenderResources& renderResources;
     VulkanRenderObjectManager&   renderObjectManager;
     VulkanShaderProgramManager&  shaderProgramManager;
+
+    static MeshRenderPassCreateContext build(const VulkanRenderGraphBuilderContext& context) {
+        return {
+            context.frameResources,
+            context.renderResources,
+            context.renderObjectManager,
+            context.shaderProgramManager
+        };
+    }
 };
 
 class MeshRenderPass final : public VulkanRenderPass {

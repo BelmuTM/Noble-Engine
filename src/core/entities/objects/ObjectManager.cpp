@@ -94,6 +94,8 @@ void ObjectManager::createObjects() {
         }
     }
 
+    Logger::debug("Created objects");
+
 #else
 
     std::string errorMessage;
