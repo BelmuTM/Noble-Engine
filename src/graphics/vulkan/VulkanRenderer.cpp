@@ -77,11 +77,18 @@ bool VulkanRenderer::init(
         .pipelineManager      = pipelineManager
     };
 
-    VulkanRenderGraphBuilder renderGraphBuilder(renderGraphBuilderContext);
+    const std::vector<VulkanRenderPassDescriptor> passes = {
+        {"debug",       VulkanRenderPassType::Debug     },
+        {"mesh_render", VulkanRenderPassType::MeshRender},
+        {"composite_0", VulkanRenderPassType::Composite },
+        {"composite_1", VulkanRenderPassType::Composite }
+    };
 
-    TRY_deprecated(renderGraphBuilder.build(errorMessage));
+    VulkanRenderPassFactory passFactory{};
+    passFactory.registerPassTypes();
 
-    shaderProgramManager.destroy();
+    const VulkanRenderGraphBuilder renderGraphBuilder(renderGraphBuilderContext, passFactory);
+    TRY_deprecated(renderGraphBuilder.build(passes, errorMessage));
 
     TRY_deprecated(meshManager.fillBuffers(errorMessage));
 

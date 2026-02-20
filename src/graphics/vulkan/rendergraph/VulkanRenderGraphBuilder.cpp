@@ -1,17 +1,11 @@
 #include "VulkanRenderGraphBuilder.h"
 
-#include "passes/CompositePass.h"
-#include "passes/DebugPass.h"
-#include "passes/MeshRenderPass.h"
-
 #include "core/debug/Logger.h"
 
-bool VulkanRenderGraphBuilder::build(std::string& errorMessage) {
-    _factories[VulkanRenderPassType::MeshRender] = &createPassFactory<MeshRenderPass, MeshRenderPassCreateContext>;
-    _factories[VulkanRenderPassType::Debug]      = &createPassFactory<DebugPass,      DebugPassCreateContext>;
-    _factories[VulkanRenderPassType::Composite]  = &createPassFactory<CompositePass,  CompositePassCreateContext>;
-
-    TRY_deprecated(buildPasses(errorMessage));
+bool VulkanRenderGraphBuilder::build(
+    const std::vector<VulkanRenderPassDescriptor>& passDescriptors, std::string& errorMessage
+) const {
+    TRY_deprecated(createPasses(passDescriptors, errorMessage));
 
     TRY_deprecated(createColorBuffers(errorMessage));
 
@@ -19,35 +13,39 @@ bool VulkanRenderGraphBuilder::build(std::string& errorMessage) {
 
     TRY_deprecated(allocateDescriptors(errorMessage));
 
-    TRY_deprecated(setupResourceTransitions(errorMessage));
-
     TRY_deprecated(createPipelines(errorMessage));
 
-    return true;
-}
-
-bool VulkanRenderGraphBuilder::buildPasses(std::string& errorMessage) const {
-    TRY_deprecated(createPass("debug", VulkanRenderPassType::Debug, errorMessage));
-    TRY_deprecated(createPass("mesh_render", VulkanRenderPassType::MeshRender, errorMessage));
-    TRY_deprecated(createPass("composite_0", VulkanRenderPassType::Composite, errorMessage));
-    TRY_deprecated(createPass("composite_1", VulkanRenderPassType::Composite, errorMessage));
+    _context.renderResources.scheduleResourceTransitions();
 
     return true;
 }
 
-bool VulkanRenderGraphBuilder::createPass(
-    const std::string& path, const VulkanRenderPassType type, std::string& errorMessage
+bool VulkanRenderGraphBuilder::createPasses(
+    const std::vector<VulkanRenderPassDescriptor>& passDescriptors, std::string& errorMessage
 ) const {
-    const auto it = _factories.find(type);
-    if (it == _factories.end()) {
-        errorMessage = "Failed to create Vulkan render pass: no factory registered for pass type.";
-        return false;
+    for (const auto& [path, type] : passDescriptors) {
+        Logger::debug(path);
+        auto pass = _passFactory.createPass(path, type, _context, errorMessage);
+        if (!pass) return false;
+
+        _context.renderGraph.addPass(std::move(pass));
     }
 
-    auto pass = it->second(path, _context, errorMessage);
-    if (!pass) return false;
+    return true;
+}
 
-    _context.renderGraph.addPass(std::move(pass));
+bool VulkanRenderGraphBuilder::createColorBuffers(std::string& errorMessage) const {
+    for (auto& pass : _context.renderGraph.getPasses()) {
+        TRY_deprecated(_context.renderResources.createColorBuffers(pass.get(), _context.frameResources, errorMessage));
+    }
+
+    return true;
+}
+
+bool VulkanRenderGraphBuilder::allocateDescriptors(std::string& errorMessage) const {
+    for (const auto& pass : _context.renderGraph.getPasses()) {
+        TRY_deprecated(_context.renderResources.allocateDescriptors(pass.get(), errorMessage));
+    }
 
     return true;
 }
@@ -82,38 +80,6 @@ bool VulkanRenderGraphBuilder::attachSwapchainOutput(std::string& errorMessage) 
 
     // Attach the swapchain output to the first declared color attachment of the last executing pass
     lastPass->getColorAttachments().at(0) = std::make_unique<VulkanRenderPassAttachment>(swapchainAttachment);
-
-    return true;
-}
-
-bool VulkanRenderGraphBuilder::createColorBuffers(std::string& errorMessage) const {
-    for (auto& pass : _context.renderGraph.getPasses()) {
-        TRY_deprecated(_context.renderResources.createColorBuffers(pass.get(), _context.frameResources, errorMessage));
-    }
-
-    return true;
-}
-
-bool VulkanRenderGraphBuilder::allocateDescriptors(std::string& errorMessage) const {
-    for (const auto& pass : _context.renderGraph.getPasses()) {
-        TRY_deprecated(_context.renderResources.allocateDescriptors(pass.get(), errorMessage));
-    }
-
-    return true;
-}
-
-bool VulkanRenderGraphBuilder::setupResourceTransitions(std::string& errorMessage) const {
-    for (const auto& [resourceName, writerPasses] : _context.renderResources.getResourceWriters()) {
-        auto it = _context.renderResources.getResources().find(resourceName);
-        if (it == _context.renderResources.getResources().end()) continue;
-
-        VulkanRenderPassResource* resource = it->second.get();
-
-        for (VulkanRenderPass* writerPass : writerPasses) {
-            if (!writerPass) continue;
-            writerPass->addTransition({resource, vk::ImageLayout::eShaderReadOnlyOptimal});
-        }
-    }
 
     return true;
 }

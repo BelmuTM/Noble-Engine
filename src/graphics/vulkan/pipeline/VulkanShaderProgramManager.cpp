@@ -2,6 +2,8 @@
 
 #include "core/debug/ErrorHandling.h"
 
+#include "core/resources/AssetPaths.h"
+
 #include <ranges>
 
 bool VulkanShaderProgramManager::create(const vk::Device& device, std::string& errorMessage) noexcept {
@@ -31,9 +33,11 @@ bool VulkanShaderProgramManager::load(
         }
     }
 
+    const std::string fullPath = AssetPaths::SHADERS + path;
+
     VulkanShaderProgram tempProgram{};
 
-    TRY_deprecated(tempProgram.load(path, _device, errorMessage));
+    TRY_deprecated(tempProgram.load(fullPath, _device, errorMessage));
 
     // Insert shader program into cache
     std::lock_guard lock(_mutex);

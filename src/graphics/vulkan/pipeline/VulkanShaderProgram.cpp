@@ -5,8 +5,6 @@
 #include "core/debug/ErrorHandling.h"
 #include "core/debug/Logger.h"
 
-#include "core/resources/AssetPaths.h"
-
 #include <fstream>
 #include <ranges>
 #include <unordered_map>
@@ -55,7 +53,7 @@ bool VulkanShaderProgram::loadFromFiles(
     const std::vector<std::string>& paths, const vk::Device& device, std::string& errorMessage
 ) {
     if (paths.empty()) {
-        errorMessage = "Failed to load shader program: no paths provided.";
+        errorMessage = "Failed to load shader program: no paths found.";
         return false;
     }
 
@@ -77,7 +75,7 @@ bool VulkanShaderProgram::loadFromFiles(
 
         const auto [stage, entryPoint] = it->second;
 
-        const std::vector<uint32_t>& bytecode = readShaderSPIRVBytecode(AssetPaths::SHADERS + path);
+        const std::vector<uint32_t>& bytecode = readShaderSPIRVBytecode(path);
         if (bytecode.empty()) {
             errorMessage += "bytecode is empty (file does not exist or is zero bytes).";
             return {};
@@ -252,7 +250,7 @@ std::vector<std::string> VulkanShaderProgram::findShaderFilePaths(const std::str
     std::vector<std::string> paths{};
     for (const auto& stageExtension : stageData | std::views::keys) {
         const std::string relativePath = path + "." + stageExtension + ".spv";
-        const std::string fullPath     = AssetPaths::SHADERS + relativePath;
+        const std::string fullPath     = relativePath;
 
         if (FILE* file = fopen(fullPath.c_str(), "r")) {
             fclose(file);

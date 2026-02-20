@@ -10,9 +10,9 @@
 #include <memory>
 #include <ranges>
 
-class VulkanGraphicsPipeline;
+// TO-DO: Separate into VulkanRenderPassDescription (immutable) and VulkanRenderPassState (mutable) for hot reloading.
 
-enum class VulkanRenderPassType : uint8_t { MeshRender, Composite, Debug };
+class VulkanGraphicsPipeline;
 
 struct VulkanPassTransition {
     VulkanRenderPassResource* resource     = nullptr;
@@ -21,6 +21,13 @@ struct VulkanPassTransition {
     bool operator==(const VulkanPassTransition& other) const {
         return resource == other.resource && targetLayout == other.targetLayout;
     }
+};
+
+enum class VulkanRenderPassType : uint8_t { MeshRender, Composite, Debug };
+
+struct VulkanRenderPassDescriptor {
+    std::string          path;
+    VulkanRenderPassType type;
 };
 
 class VulkanRenderPass {

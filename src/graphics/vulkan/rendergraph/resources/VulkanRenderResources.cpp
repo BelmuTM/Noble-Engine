@@ -47,16 +47,20 @@ void VulkanRenderResources::destroy() noexcept {
 
 [[nodiscard]] bool VulkanRenderResources::recreate(VulkanRenderGraph& renderGraph, std::string& errorMessage) {
     // Depth buffer recreation
-    _depthBuffer->destroy();
+    if (_depthBuffer) {
+        _depthBuffer->destroy();
 
-    TRY_deprecated(createDepthBufferImage(*_depthBuffer, _swapchain->getExtent(), errorMessage));
+        TRY_deprecated(_bufferFactory.createDepthBufferImage(
+            *_depthBuffer, DEPTH_BUFFER_FORMAT, _swapchain->getExtent(), _device, _commandManager, errorMessage
+        ));
+    }
 
     // Color buffers recreation
     for (auto& colorBuffer : _colorBuffers) {
         colorBuffer->destroy();
 
-        TRY_deprecated(createColorBufferImage(
-            *colorBuffer, colorBuffer->getFormat(), _swapchain->getExtent(), errorMessage
+        TRY_deprecated(_bufferFactory.createColorBufferImage(
+            *colorBuffer, colorBuffer->getFormat(), _swapchain->getExtent(), _device, _commandManager, errorMessage
         ));
 
         TRY_deprecated(colorBuffer->transitionLayout(
@@ -74,7 +78,9 @@ void VulkanRenderResources::destroy() noexcept {
 bool VulkanRenderResources::createDepthBuffer(std::string& errorMessage) {
     _depthBuffer = std::make_unique<VulkanImage>();
 
-    TRY_deprecated(createDepthBufferImage(*_depthBuffer, _swapchain->getExtent(), errorMessage));
+    TRY_deprecated(_bufferFactory.createDepthBufferImage(
+        *_depthBuffer, DEPTH_BUFFER_FORMAT, _swapchain->getExtent(), _device, _commandManager, errorMessage
+    ));
 
     VulkanRenderPassResource depthBufferResource{};
     depthBufferResource
@@ -106,7 +112,9 @@ bool VulkanRenderResources::createColorBuffers(
 
         VulkanImage* colorImage = _colorBuffers.back().get();
 
-        TRY_deprecated(createColorBufferImage(*colorImage, format, frameResources.getExtent(), errorMessage));
+        TRY_deprecated(_bufferFactory.createColorBufferImage(
+            *colorImage, format, frameResources.getExtent(), _device, _commandManager, errorMessage
+        ));
 
         VulkanRenderPassResource colorBuffer{};
         colorBuffer
@@ -126,79 +134,6 @@ bool VulkanRenderResources::createColorBuffers(
         addResource(colorBuffer);
         addResourceWriter(colorOutput, pass);
     }
-
-    return true;
-}
-
-bool VulkanRenderResources::createDepthBufferImage(
-    VulkanImage& depthBuffer, const vk::Extent2D extent, std::string& errorMessage
-) const {
-    const auto depthExtent = vk::Extent3D(extent.width, extent.height, 1);
-
-    depthBuffer.setFormat(DEPTH_BUFFER_FORMAT);
-    depthBuffer.setExtent(depthExtent);
-    depthBuffer.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
-
-    vk::ImageAspectFlags aspects = vk::ImageAspectFlagBits::eDepth;
-    if (VulkanImage::hasStencilComponent(depthBuffer.getFormat())) {
-        aspects |= vk::ImageAspectFlagBits::eStencil;
-    }
-
-    TRY_deprecated(depthBuffer.createImage(
-        vk::ImageType::e2D,
-        DEPTH_BUFFER_FORMAT,
-        depthExtent,
-        1,
-        vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
-        VMA_MEMORY_USAGE_GPU_ONLY,
-        _device,
-        errorMessage
-    ));
-
-    TRY_deprecated(depthBuffer.createImageView(vk::ImageViewType::e2D, DEPTH_BUFFER_FORMAT, aspects, 1, _device, errorMessage));
-
-    TRY_deprecated(depthBuffer.transitionLayout(
-        _commandManager, errorMessage,
-        vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eDepthStencilAttachmentOptimal
-    ));
-
-    TRY_deprecated(depthBuffer.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eClampToEdge, _device, errorMessage));
-
-    return true;
-}
-
-bool VulkanRenderResources::createColorBufferImage(
-    VulkanImage& colorBuffer, const vk::Format format, const vk::Extent2D extent, std::string& errorMessage
-) const {
-    const auto colorExtent = vk::Extent3D{extent.width, extent.height, 1};
-
-    colorBuffer.setFormat(format);
-    colorBuffer.setExtent(colorExtent);
-    colorBuffer.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
-
-    TRY_deprecated(colorBuffer.createImage(
-        vk::ImageType::e2D,
-        format,
-        colorExtent,
-        1,
-        vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
-        VMA_MEMORY_USAGE_GPU_ONLY,
-        _device,
-        errorMessage
-    ));
-
-    TRY_deprecated(colorBuffer.createImageView(
-        vk::ImageViewType::e2D, format, vk::ImageAspectFlagBits::eColor, 1, _device, errorMessage
-    ));
-
-    TRY_deprecated(colorBuffer.transitionLayout(
-        _commandManager, errorMessage,
-        vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eColorAttachmentOptimal
-    ));
-
-    TRY_deprecated(colorBuffer.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, _device, errorMessage));
 
     return true;
 }
@@ -271,5 +206,19 @@ void VulkanRenderResources::rebindDescriptors(VulkanRenderGraph& renderGraph) {
             bindDescriptors(descriptorSets, scheme);
         }
 
+    }
+}
+
+void VulkanRenderResources::scheduleResourceTransitions() const {
+    for (const auto& [resourceName, writerPasses] : _resourceWriters) {
+        auto it = _resources.find(resourceName);
+        if (it == _resources.end()) continue;
+
+        VulkanRenderPassResource* resource = it->second.get();
+
+        for (VulkanRenderPass* writerPass : writerPasses) {
+            if (!writerPass) continue;
+            writerPass->addTransition({resource, vk::ImageLayout::eShaderReadOnlyOptimal});
+        }
     }
 }

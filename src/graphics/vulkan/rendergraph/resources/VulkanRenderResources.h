@@ -6,6 +6,8 @@
 #include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
 #include "graphics/vulkan/rendergraph/nodes/VulkanRenderPassResource.h"
 
+#include "VulkanRenderPassBufferFactory.h"
+
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -50,6 +52,8 @@ public:
 
     [[nodiscard]] bool allocateDescriptors(VulkanRenderPass* pass, std::string& errorMessage);
 
+    void scheduleResourceTransitions() const;
+
     [[nodiscard]] const ResourcesMap& getResources() const noexcept {
         return _resources;
     }
@@ -79,14 +83,6 @@ public:
     }
 
 private:
-    [[nodiscard]] bool createColorBufferImage(
-        VulkanImage& colorBuffer, vk::Format format, vk::Extent2D extent, std::string& errorMessage
-    ) const;
-
-    [[nodiscard]] bool createDepthBufferImage(
-        VulkanImage& depthBuffer, vk::Extent2D extent, std::string& errorMessage
-    ) const;
-
     void bindDescriptors(const VulkanDescriptorSets* descriptorSets, const VulkanDescriptorScheme& scheme);
 
     void rebindDescriptors(VulkanRenderGraph& renderGraph);
@@ -94,6 +90,8 @@ private:
     const VulkanDevice*         _device         = nullptr;
     const VulkanSwapchain*      _swapchain      = nullptr;
     const VulkanCommandManager* _commandManager = nullptr;
+
+    VulkanRenderPassBufferFactory _bufferFactory{};
 
     uint32_t _framesInFlight = 0;
 
