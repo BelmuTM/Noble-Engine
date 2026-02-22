@@ -79,12 +79,12 @@ private:
 
     glm::vec3 _position = {3.0f, 0.0f, 3.0f};
     glm::vec3 _target   = {0.0f, 0.0f, 0.0f};
-    glm::vec3 _up       = {0.0f, 0.0f, 1.0f};
+    glm::vec3 _up       = {0.0f, 1.0f, 0.0f};
 
     glm::vec3 _forward = glm::normalize(_target - _position);
 
-    double _yaw   = glm::degrees(atan2(_forward.y, _forward.x));
-    double _pitch = glm::degrees(asin(_forward.z));
+    double _yaw   = glm::degrees(atan2(_forward.x, _forward.z));
+    double _pitch = glm::degrees(asin(_forward.y));
 
     float _rotationSensitivity = 0.2f;
 

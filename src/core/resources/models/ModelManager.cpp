@@ -353,7 +353,7 @@ void ModelManager::processMeshPrimitives_glTF(
 
         // Add vertex and corresponding index to the mesh
         mesh.addVertex(vertex);
-        mesh.addIndex(mesh.getVertices().size() - 1);
+        mesh.addIndex(i);
     }
 
     mesh.setAABB(aabb);
@@ -444,6 +444,7 @@ void ModelManager::processNode_glTF(
             for (auto& vertex : mesh.getVertices()) {
                 vertex.position = glm::vec3(worldTransform * glm::vec4(vertex.position, 1.0f));
                 vertex.normal   = glm::normalize(normalMatrix * vertex.normal);
+                vertex.tangent  = glm::vec4(glm::normalize(normalMatrix * glm::vec3(vertex.tangent)), vertex.tangent.w);
             }
 
             mesh.setAABB(mesh.getAABB().transform(worldTransform));

@@ -7,6 +7,8 @@
 #include <chrono>
 #include <thread>
 
+#include "debug/Logger.h"
+
 Runtime::Runtime(const Scene& scene, std::atomic<bool>& runningFlag)
     : _running(runningFlag),
       _window(1280, 720, "Noble Engine"),

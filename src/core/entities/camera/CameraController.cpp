@@ -12,10 +12,10 @@ CameraController::CameraController(GLFWwindow* window, InputManager& inputManage
 {
     _actionMovementMap[InputAction::MoveForward]  = glm::vec3{ 1.0f, 0.0f, 0.0f};
     _actionMovementMap[InputAction::MoveBackward] = glm::vec3{-1.0f, 0.0f, 0.0f};
-    _actionMovementMap[InputAction::MoveLeft]     = glm::vec3{ 0.0f,-1.0f, 0.0f};
-    _actionMovementMap[InputAction::MoveRight]    = glm::vec3{ 0.0f, 1.0f, 0.0f};
-    _actionMovementMap[InputAction::MoveUp]       = glm::vec3{ 0.0f, 0.0f, 1.0f};
-    _actionMovementMap[InputAction::MoveDown]     = glm::vec3{ 0.0f, 0.0f,-1.0f};
+    _actionMovementMap[InputAction::MoveLeft]     = glm::vec3{ 0.0f,0.0f, -1.0f};
+    _actionMovementMap[InputAction::MoveRight]    = glm::vec3{ 0.0f, 0.0f, 1.0f};
+    _actionMovementMap[InputAction::MoveUp]       = glm::vec3{ 0.0f, 1.0f, 0.0f};
+    _actionMovementMap[InputAction::MoveDown]     = glm::vec3{ 0.0f, -1.0f,0.0f};
 }
 
 void CameraController::update(const float deltaTime) {

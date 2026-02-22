@@ -25,13 +25,17 @@ struct VSOutput {
 
 [shader("vertex")]
 VSOutput vertMain(VSInput input) {
+    float3 worldNormal  = normalize(mul(float3x3(object.normalMatrix), input.normal));
+    float3 worldTangent = normalize(mul(float3x3(object.normalMatrix), input.tangent.xyz));
+
     VSOutput output;
     output.worldPos  = mul(object.modelMatrix, float4(input.position, 1.0));
     output.position  = mul(uniforms.projection, mul(uniforms.view, output.worldPos));
-    output.normal    = normalize(mul(float3x3(object.normalMatrix), input.normal));
-    output.tangent   = input.tangent;
+    output.normal    = worldNormal;
+    output.tangent   = float4(worldTangent, input.tangent.w);
     output.color     = input.color;
     output.texCoords = input.texCoords;
+
     return output;
 }
 
@@ -70,18 +74,21 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     float3 normal = normalTexture.Sample(vertIn.texCoords).rgb;
 
     if (!normal.equals(float3(0.0))) {
-        float3 N = vertIn.normal;
+
+        float3 N = normalize(vertIn.normal);
+
         float3 T = normalize(vertIn.tangent.xyz);
-        float3 B = cross(N, T) * vertIn.tangent.w;
+        float3 B = vertIn.tangent.w * cross(N, T);
 
         float3x3 TBN = float3x3(T, B, N);
 
-        normal = normalize(mul(TBN, normal * 2.0 - 1.0));
+        normal = normalize(mul(normal * 2.0 - 1.0, TBN));
+
     } else {
-        normal = vertIn.normal;
+        normal = normalize(vertIn.normal);
     }
 
     albedoBuffer = albedo;
-    normalBuffer = float4(vertIn.normal * 0.5 + 0.5, 1.0);
+    normalBuffer = float4(normal * 0.5 + 0.5, 1.0);
     //debugBuffer  = float4(max(0.0, vertIn.tangent.w), 0.0, 0.0, 1.0);
 }
