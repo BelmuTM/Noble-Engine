@@ -178,8 +178,9 @@ bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& 
 
     if (!hasNormals) {
         mesh.generateSmoothNormals();
-        mesh.generateTangents();
     }
+
+    mesh.generateTangents();
 
     model.addMesh(mesh);
 
@@ -278,27 +279,18 @@ void ModelManager::processMeshPrimitives_glTF(
 
     // Fetch vertex normals
     const bool hasNormals = attributes.contains("NORMAL");
-    AttributeData normalData{};
-
-    if (hasNormals) {
-        normalData = getAttributeData(glTFModel, attributes.at("NORMAL"));
-    }
+    AttributeData normalData =
+        hasNormals ? getAttributeData(glTFModel, attributes.at("NORMAL")) : AttributeData{};
 
     // Fetch vertex tangents
     const bool hasTangents = attributes.contains("TANGENT");
-    AttributeData tangentData{};
-
-    if (hasTangents) {
-        tangentData = getAttributeData(glTFModel, attributes.at("TANGENT"));
-    }
+    AttributeData tangentData =
+        hasTangents ? getAttributeData(glTFModel, attributes.at("TANGENT")) : AttributeData{};
 
     // Fetch texture coordinates if they exist
     const bool hasTextureCoords = attributes.contains("TEXCOORD_0");
-    AttributeData texCoordsData{};
-
-    if (hasTextureCoords) {
-        texCoordsData = getAttributeData(glTFModel, attributes.at("TEXCOORD_0"));
-    }
+    AttributeData texCoordsData =
+        hasTextureCoords ? getAttributeData(glTFModel, attributes.at("TEXCOORD_0")) : AttributeData{};
 
     // Process vertices
     Math::AABB aabb{};
@@ -306,17 +298,22 @@ void ModelManager::processMeshPrimitives_glTF(
     for (size_t i = 0; i < indexData.accessor->count; i++) {
         uint32_t vertexIndex = 0;
 
+        const unsigned char* indexPtr = indexData.getData(i);
+
         switch (indexData.accessor->componentType) {
             case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
-                vertexIndex = reinterpret_cast<const uint16_t*>(indexData.base)[i];
+                vertexIndex = *reinterpret_cast<const uint16_t*>(indexPtr);
                 break;
+
             case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
-                vertexIndex = reinterpret_cast<const uint32_t*>(indexData.base)[i];
+                vertexIndex = *reinterpret_cast<const uint32_t*>(indexPtr);
                 break;
+
             case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
-                vertexIndex = indexData.base[i];
+                vertexIndex = *indexPtr;
                 break;
-            default: break;
+            default:
+                break;
         }
 
         Vertex vertex{};
@@ -362,7 +359,7 @@ void ModelManager::processMeshPrimitives_glTF(
         mesh.generateSmoothNormals();
     }
 
-    if (!hasTangents && hasTextureCoords) {
+    if (!hasTangents) {
         mesh.generateTangents();
     }
 }
@@ -429,6 +426,7 @@ void ModelManager::processNode_glTF(
 
     // Combine the node's transform with its parent's
     const glm::mat4 worldTransform = parentTransform * nodeTransform;
+    const glm::mat3 normalMatrix   = glm::transpose(glm::inverse(glm::mat3(worldTransform)));
 
     // Process and add the node's mesh to the model
     if (node.mesh >= 0) {
@@ -439,12 +437,10 @@ void ModelManager::processNode_glTF(
             Mesh mesh = createMesh_glTF(model.name, glTFModel, glTFPrimitive);
 
             // Apply the transform to the mesh's vertices
-            const auto normalMatrix = glm::transpose(glm::inverse(glm::mat3(worldTransform)));
-
             for (auto& vertex : mesh.getVertices()) {
                 vertex.position = glm::vec3(worldTransform * glm::vec4(vertex.position, 1.0f));
                 vertex.normal   = glm::normalize(normalMatrix * vertex.normal);
-                vertex.tangent  = glm::vec4(glm::normalize(normalMatrix * glm::vec3(vertex.tangent)), vertex.tangent.w);
+                vertex.tangent  = glm::vec4(glm::normalize(glm::mat3(normalMatrix) * glm::vec3(vertex.tangent)), vertex.tangent.w);
             }
 
             mesh.setAABB(mesh.getAABB().transform(worldTransform));

@@ -23,8 +23,6 @@ public:
     // Generates averaged normals for the entire mesh
     void generateSmoothNormals();
 
-    // Generates tangents for a given range of vertices and indices
-    void generateTangents(size_t vertexStart, size_t vertexEnd, size_t indexStart, size_t indexEnd);
     // Generates tangents for the entire mesh
     void generateTangents();
 

@@ -15,6 +15,10 @@
         * Upstream: https://github.com/nlohmann/json
         * License: MIT
 
+    mikktspace
+        * Upstream: https://github.com/mmikk/MikkTSpace
+        * License: ARR
+
     SPIRV-Headers
         * Upstream: https://github.com/KhronosGroup/SPIRV-Headers
 
@@ -53,6 +57,11 @@ function (setup_thirdparty TARGET)
         GLM_FORCE_CXX20
         GLM_FORCE_DEPTH_ZERO_TO_ONE
         GLM_ENABLE_EXPERIMENTAL
+    )
+
+    # mikktspace
+    target_sources(NobleEngine PRIVATE
+        external/mikktspace/mikktspace.c
     )
 
     # SPIRV

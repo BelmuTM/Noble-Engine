@@ -18,9 +18,9 @@ void Object::create(
 }
 
 void Object::updateMatrices() {
-    if (_lastPosition == _position &&
-        _lastRotation == _rotation &&
-        _lastScale    == _scale) {
+    if (glm::all(glm::epsilonEqual(_lastPosition, _position, Math::EPSILON)) &&
+        glm::all(glm::epsilonEqual(_lastRotation, _rotation, Math::EPSILON)) &&
+        glm::all(glm::epsilonEqual(_lastScale, _scale, Math::EPSILON))) {
         return;
     }
 

@@ -1,7 +1,6 @@
 #include "VulkanMeshManager.h"
 
 #include "core/debug/ErrorHandling.h"
-#include "core/debug/Logger.h"
 
 bool VulkanMeshManager::create(
     const VulkanDevice&         device,

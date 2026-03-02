@@ -15,7 +15,7 @@ struct alignas(16) Vertex {
 
 template <> struct std::hash<Vertex> {
     size_t operator()(Vertex const& v) const noexcept {
-        static constexpr size_t goldenRatio = 0x9e3779b9;
+        static constexpr size_t goldenRatio = 0x9E3779B9;
 
         size_t seed  = std::hash<glm::vec3>()(v.position);
                seed ^= std::hash<glm::vec3>()(v.normal)        + goldenRatio + (seed << 6) + (seed >> 2);

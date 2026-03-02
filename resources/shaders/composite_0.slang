@@ -75,7 +75,8 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
     float3 lighting = albedo * (ambient + lightColor0 * NdotL0 * attenuation0 + lightColor1 * NdotL1 * attenuation1);
 
-    compositeBuffer = float4(normal * 0.5 + 0.5, 1.0);
+    compositeBuffer = float4(lighting, 1.0);
 
-    compositeBuffer += debugBuffer.Sample(vertIn.uv);
+    //if (vertIn.uv.x < 0.5) compositeBuffer = debugBuffer.Sample(vertIn.uv);
+    compositeBuffer = debugBuffer.Sample(vertIn.uv);
 }

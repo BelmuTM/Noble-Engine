@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(NobleEngine LANGUAGES CXX)
+project(NobleEngine LANGUAGES CXX C)
 
 # C++ standard and output directory
 set(CMAKE_CXX_STANDARD 20)
