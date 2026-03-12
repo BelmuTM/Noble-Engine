@@ -10,8 +10,6 @@
 
 class VulkanMeshManager {
 public:
-    using MeshesVector = std::vector<std::unique_ptr<VulkanMesh>>;
-
     VulkanMeshManager()  = default;
     ~VulkanMeshManager() = default;
 
@@ -40,7 +38,7 @@ private:
     void queryVertexBufferSize();
     void queryIndexBufferSize();
 
-    void copyMeshData(void* stagingData);
+    void uploadMeshData(void* stagingData);
 
     void assignBuffersToMeshes() const;
 
@@ -56,7 +54,7 @@ private:
     VulkanBuffer _vertexBuffer{};
     VulkanBuffer _indexBuffer{};
 
-    MeshesVector _meshes{};
+    std::vector<std::unique_ptr<VulkanMesh>> _meshes{};
 
     size_t _currentVertexOffset = 0;
     size_t _currentIndexOffset  = 0;

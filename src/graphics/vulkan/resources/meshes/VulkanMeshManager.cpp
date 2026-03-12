@@ -2,6 +2,8 @@
 
 #include "core/debug/ErrorHandling.h"
 
+#include <cstring>
+
 bool VulkanMeshManager::create(
     const VulkanDevice&         device,
     const VulkanCommandManager& commandManager,
@@ -56,7 +58,7 @@ void VulkanMeshManager::queryIndexBufferSize() {
     }
 }
 
-void VulkanMeshManager::copyMeshData(void* stagingData) {
+void VulkanMeshManager::uploadMeshData(void* stagingData) {
     _currentIndexOffset = _vertexBufferSize;
 
     for (const auto& mesh : _meshes) {
@@ -103,7 +105,7 @@ bool VulkanMeshManager::createMeshStagingBuffer(std::string& errorMessage) {
         return false;
     }
 
-    copyMeshData(stagingData);
+    uploadMeshData(stagingData);
 
     _stagingBuffer.unmapMemory();
 

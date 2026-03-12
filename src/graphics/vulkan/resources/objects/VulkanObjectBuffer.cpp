@@ -2,6 +2,8 @@
 
 #include "core/debug/ErrorHandling.h"
 
+#include <cstring>
+
 bool VulkanObjectBuffer::create(
     const VulkanDevice& device, const uint32_t maxObjects, std::string& errorMessage
 ) noexcept {
