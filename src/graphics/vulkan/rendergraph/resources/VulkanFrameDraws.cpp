@@ -32,13 +32,13 @@ void VulkanFrameDraws::cullDraws(const std::vector<std::unique_ptr<VulkanRenderP
             bool visible = true;
 
             if (pass->getType() == VulkanRenderPassType::MeshRender) {
-                Math::AABB worldAABB = drawCall->getMesh()->getAABB().transform(drawCall->getObject()->data.modelMatrix);
+                Math::AABB worldAABB = drawCall.getMesh()->getAABB().transform(drawCall.getObject()->data.modelMatrix);
 
                 visible = FrustumCuller::testVisibility(worldAABB, frustumPlanes);
             }
 
             if (visible) {
-                visibleDraws.push_back(drawCall.get());
+                visibleDraws.push_back(&drawCall);
             }
         }
     }

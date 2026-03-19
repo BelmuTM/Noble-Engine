@@ -28,14 +28,11 @@ bool MeshRenderPass::create(
     for (const auto& renderObject : context.renderObjectManager.getRenderObjects()) {
         // Each submesh requires its own draw call
         for (const auto& submesh : renderObject->submeshes) {
-            auto verticesDraw = std::make_unique<VulkanDrawCall>();
-            verticesDraw
-                ->setMesh(submesh.mesh)
+            emplaceDrawCall()
+                .setMesh(submesh.mesh)
                 .setObject(renderObject.get())
                 .addDescriptorSets(submesh.descriptorSets)
                 .setPushConstant("object", &renderObject->data);
-
-            addDrawCall(std::move(verticesDraw));
         }
     }
 

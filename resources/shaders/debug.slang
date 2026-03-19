@@ -27,11 +27,11 @@ VSOutput vertMain(VSInput input) {
     return output;
 }
 
-//layout (location = 0) out float4 debugBuffer;
+layout (location = 0) out float4 debugBuffer;
 
 [shader("fragment")]
 void fragMain(VSOutput vertIn) : SV_TARGET {
     if (uniforms.debugMode == 0) discard;
 
-    //debugBuffer = float4(vertIn.color, 1.0);
+    debugBuffer = float4(vertIn.color, 1.0);
 }

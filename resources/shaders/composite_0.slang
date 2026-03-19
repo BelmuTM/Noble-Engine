@@ -27,6 +27,7 @@ layout (set = 1, binding = 0) Sampler2D depthBuffer;
 layout (set = 1, binding = 1) Sampler2D albedoBuffer;
 layout (set = 1, binding = 2) Sampler2D normalBuffer;
 layout (set = 1, binding = 3) Sampler2D debugBuffer;
+layout (set = 1, binding = 4) Sampler2D debugBuffer2;
 
 #define TAU 2.0 * 3.14159
 
@@ -38,7 +39,7 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     uint2 coords     = uint2(round(vertIn.uv * resolution));
 
     float3 albedo = albedoBuffer.Sample(vertIn.uv).rgb;
-    float3 normal = normalBuffer.Sample(vertIn.uv).rgb * 2.0 - 1.0;
+    float3 normal = normalize(normalBuffer.Sample(vertIn.uv).rgb * 2.0 - 1.0);
 
     float depth = depthBuffer.Sample(vertIn.uv).r;
 
@@ -77,6 +78,7 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
     compositeBuffer = float4(lighting, 1.0);
 
-    //if (vertIn.uv.x < 0.5) compositeBuffer = debugBuffer.Sample(vertIn.uv);
-    compositeBuffer = debugBuffer.Sample(vertIn.uv);
+    //if (vertIn.uv.x < 0.5) compositeBuffer = debugBuffer2.Sample(vertIn.uv);
+
+    compositeBuffer += debugBuffer.Sample(vertIn.uv);
 }

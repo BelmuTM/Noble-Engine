@@ -11,6 +11,12 @@ public:
     VulkanDrawCall()  = default;
     ~VulkanDrawCall() = default;
 
+    VulkanDrawCall(const VulkanDrawCall&)            = delete;
+    VulkanDrawCall& operator=(const VulkanDrawCall&) = delete;
+
+    VulkanDrawCall(VulkanDrawCall&&)            noexcept = default;
+    VulkanDrawCall& operator=(VulkanDrawCall&&) noexcept = default;
+
     void record(
         vk::CommandBuffer          commandBuffer,
         vk::Extent2D               extent,

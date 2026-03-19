@@ -78,8 +78,8 @@ bool VulkanRenderer::init(
     };
 
     const std::vector<VulkanRenderPassDescriptor> passes = {
-        {"debug",       VulkanRenderPassType::Debug     },
         {"mesh_render", VulkanRenderPassType::MeshRender},
+        {"debug",       VulkanRenderPassType::Debug     },
         {"composite_0", VulkanRenderPassType::Composite },
         {"composite_1", VulkanRenderPassType::Composite }
     };

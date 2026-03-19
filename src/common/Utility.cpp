@@ -15,12 +15,10 @@ namespace Utility {
         return std::filesystem::path(path).extension().string();
     }
 
-    glm::vec3 instanceColor(const void* instancePtr) {
-        const auto hash = reinterpret_cast<std::size_t>(instancePtr);
-
-        const float r = static_cast<float>(hash >> 0  & 0xFF) / 255.0f;
-        const float g = static_cast<float>(hash >> 8  & 0xFF) / 255.0f;
-        const float b = static_cast<float>(hash >> 16 & 0xFF) / 255.0f;
+    glm::vec3 instanceColor(const uint64_t seed) {
+        const float r = static_cast<float>(seed >> 0  & 0xFF) / 255.0f;
+        const float g = static_cast<float>(seed >> 8  & 0xFF) / 255.0f;
+        const float b = static_cast<float>(seed >> 16 & 0xFF) / 255.0f;
 
         return {r, g, b};
     }

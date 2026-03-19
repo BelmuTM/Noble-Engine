@@ -23,7 +23,7 @@ struct VulkanPassTransition {
     }
 };
 
-enum class VulkanRenderPassType : uint8_t { MeshRender, Composite, Debug };
+enum class VulkanRenderPassType : uint8_t { None, MeshRender, Composite, Debug };
 
 struct VulkanRenderPassDescriptor {
     std::string          path;
@@ -77,7 +77,7 @@ public:
         return _colorAttachments;
     }
 
-    [[nodiscard]] const std::vector<std::unique_ptr<VulkanDrawCall>>& getDrawCalls() const noexcept {
+    [[nodiscard]] const std::vector<VulkanDrawCall>& getDrawCalls() const noexcept {
         return _drawCalls;
     }
 
@@ -122,9 +122,8 @@ public:
         return *this;
     }
 
-    VulkanRenderPass& addDrawCall(std::unique_ptr<VulkanDrawCall> drawCall) noexcept {
-        _drawCalls.push_back(std::move(drawCall));
-        return *this;
+    VulkanDrawCall& emplaceDrawCall() noexcept {
+        return _drawCalls.emplace_back();
     }
 
     VulkanRenderPass& addTransition(const VulkanPassTransition& transition) {
@@ -135,7 +134,7 @@ public:
     }
 
 private:
-    VulkanRenderPassType _type;
+    VulkanRenderPassType _type = VulkanRenderPassType::None;
 
     std::string _name = "Undefined_Pass";
 
@@ -154,5 +153,5 @@ private:
     std::vector<std::unique_ptr<VulkanRenderPassAttachment>> _colorAttachments{};
     std::vector<VulkanPassTransition>                        _transitions{};
 
-    std::vector<std::unique_ptr<VulkanDrawCall>> _drawCalls{};
+    std::vector<VulkanDrawCall> _drawCalls{};
 };

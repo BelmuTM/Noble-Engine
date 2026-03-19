@@ -53,10 +53,10 @@ public:
 
         std::future<ReturnType> taskResult = task->get_future();
 
-        // Round-robin push to queues to reduce contention
-        const size_t queueIndex = nextQueue.fetch_add(1, std::memory_order_relaxed) % queues.size();
-
         {
+            // Round-robin push to queues to reduce contention
+            const size_t queueIndex = nextQueue.fetch_add(1, std::memory_order_relaxed) % queues.size();
+
             std::lock_guard lock(*queueMutexes[queueIndex]);
             queues[queueIndex].emplace_back([task] { (*task)(); });
         }

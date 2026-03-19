@@ -23,9 +23,7 @@ bool CompositePass::create(
 
     const VulkanMesh* fullscreenMesh = context.meshManager.allocateMesh(VulkanMesh::makeFullscreenTriangle());
 
-    auto fullscreenDraw = std::make_unique<VulkanDrawCall>();
-    fullscreenDraw->setMesh(fullscreenMesh);
-    addDrawCall(std::move(fullscreenDraw));
+    emplaceDrawCall().setMesh(fullscreenMesh);
 
     return true;
 }

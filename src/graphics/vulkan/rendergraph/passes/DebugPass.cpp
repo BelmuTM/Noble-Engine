@@ -25,18 +25,21 @@ bool DebugPass::create(
     setPipelineDescriptor(pipelineDescriptor);
     setBindPoint(vk::PipelineBindPoint::eGraphics);
 
+    uint64_t meshSeed = INT64_MAX;
+
     for (const auto& renderObject : context.renderObjectManager.getRenderObjects()) {
         Mesh aabbMesh{};
         uint32_t vertexOffset = 0;
 
         // Draw each mesh's AABB
         for (const auto& mesh : renderObject->object->getModel().meshes) {
-            const Math::AABB& aabb = mesh.getAABB();
 
-            for (const auto& corner : aabb.getCorners()) {
+            meshSeed ^= reinterpret_cast<uint64_t>(&mesh);
+
+            for (const auto& corner : mesh.getAABB().getCorners()) {
                 Vertex vertex{};
                 vertex.position = corner;
-                vertex.color    = Utility::instanceColor(&mesh);
+                vertex.color    = Utility::instanceColor(meshSeed);
 
                 aabbMesh.addVertex(vertex);
             }
@@ -49,12 +52,9 @@ bool DebugPass::create(
 
         VulkanMesh* aabbMeshPtr = _meshManager.allocateMesh(aabbMesh);
 
-        auto aabbDraw = std::make_unique<VulkanDrawCall>();
-        aabbDraw
-            ->setMesh(aabbMeshPtr)
+        emplaceDrawCall()
+            .setMesh(aabbMeshPtr)
             .setPushConstant("object", &renderObject->data);
-
-        addDrawCall(std::move(aabbDraw));
     }
 
     TRY_deprecated(_meshManager.create(context.device, context.commandManager, errorMessage));

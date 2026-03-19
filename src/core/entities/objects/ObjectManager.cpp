@@ -27,7 +27,7 @@ void ObjectManager::createObjects() {
     unsigned int numThreads = std::thread::hardware_concurrency();
     if (numThreads == 0) numThreads = 4; // Fail-safe
 
-    ThreadPool threadPool{numThreads * 2};
+    ThreadPool threadPool{numThreads};
 
     // Load models
     _modelPaths.clear();
@@ -74,7 +74,7 @@ void ObjectManager::createObjects() {
 
     for (const auto& objectDescriptor : _objectDescriptors) {
         objectFutures.push_back(
-            threadPool.enqueue([this, &objectDescriptor]() -> std::unique_ptr<Object> {
+            threadPool.enqueue([this, objectDescriptor]() -> std::unique_ptr<Object> {
                 // Retrieve previously loaded model
                 const Model* model = _assetManager.getModelManager().get(objectDescriptor.modelPath);
                 if (!model) return nullptr;
@@ -93,8 +93,6 @@ void ObjectManager::createObjects() {
             _objects.push_back(std::move(object));
         }
     }
-
-    Logger::debug("Created objects");
 
 #else
 
