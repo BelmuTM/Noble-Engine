@@ -93,7 +93,7 @@ bool VulkanRenderResources::createDepthBuffer(std::string& errorMessage) {
         .setResource(depthBufferResource)
         .setLoadOp(vk::AttachmentLoadOp::eClear)
         .setStoreOp(vk::AttachmentStoreOp::eStore)
-        .setClearValue(vk::ClearDepthStencilValue{1.0f, 0});
+        .setClearValue(vk::ClearDepthStencilValue{0.0f, 0});
 
     _depthBufferAttachment = std::make_unique<VulkanRenderPassAttachment>(depthBufferAttachment);
 

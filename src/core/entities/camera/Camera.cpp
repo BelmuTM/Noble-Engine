@@ -23,14 +23,14 @@ const glm::mat4& Camera::getViewInverseMatrix() noexcept {
 
 const glm::mat4& Camera::getProjectionMatrix() noexcept {
     if (_projectionMatrixDirty) {
-        const float f = 1.0f / std::tan(glm::radians(_fov) * 0.5f);
+        const float f_stops = 1.0f / std::tan(glm::radians(_fov) * 0.5f);
 
-        _projectionMatrix[0][0] = f / _aspectRatio;
-        _projectionMatrix[1][1] = f;
+        _projectionMatrix[0][0] = f_stops / _aspectRatio;
+        _projectionMatrix[1][1] = f_stops;
 
-        _projectionMatrix[2][2] = _farPlane / (_nearPlane - _farPlane);
+        _projectionMatrix[2][2] = 0.0f;
         _projectionMatrix[2][3] = -1.0f;
-        _projectionMatrix[3][2] = _nearPlane * _farPlane / (_nearPlane - _farPlane);
+        _projectionMatrix[3][2] = _nearPlane;
 
         _projectionMatrixDirty  = false;
         _projectionInverseValid = false;
