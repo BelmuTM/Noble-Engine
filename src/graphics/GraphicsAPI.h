@@ -1,13 +1,12 @@
 #pragma once
 
-#include "core/engine/DebugState.h"
-
 #include "core/platform/Window.h"
 
-#include "core/entities/camera/Camera.h"
+#include "core/entities/objects/ObjectManager.h"
+
+#include "core/render/FrameUniforms.h"
 
 #include "core/resources/AssetManager.h"
-#include "core/entities/objects/ObjectManager.h"
 
 class GraphicsAPI {
 public:
@@ -23,5 +22,5 @@ public:
 
     virtual void shutdown() = 0;
 
-    virtual void drawFrame(const Camera& camera, const DebugState& debugState) {}
+    virtual void drawFrame(const FrameUniforms& uniforms) {}
 };

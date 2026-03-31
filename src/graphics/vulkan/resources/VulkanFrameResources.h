@@ -5,8 +5,8 @@
 
 #include "images/VulkanImageManager.h"
 
+#include "ubo/VulkanFrameUniformBuffer.h"
 #include "ubo/VulkanUniformBufferManager.h"
-#include "ubo/FrameUniformBuffer.h"
 
 static const VulkanDescriptorScheme frameDescriptorScheme = {
     {0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eAllGraphics}
@@ -25,7 +25,6 @@ public:
 
     [[nodiscard]] bool create(
         const VulkanDevice&         device,
-        const VulkanSwapchain&      swapchain,
         const VulkanImageManager&   imageManager,
         VulkanUniformBufferManager& uniformBufferManager,
         uint32_t                    framesInFlight,
@@ -34,27 +33,17 @@ public:
 
     void destroy() noexcept;
 
-    void update(
-        uint32_t          frameIndex,
-        uint32_t          imageIndex,
-        const Camera&     camera,
-        const DebugState& debugState
-    );
+    void update(uint32_t frameIndex, uint32_t imageIndex, const FrameUniforms& uniforms);
 
     [[nodiscard]] uint32_t getFrameIndex() const noexcept { return _frameIndex; }
     [[nodiscard]] uint32_t getImageIndex() const noexcept { return _imageIndex; }
-
-    [[nodiscard]] vk::Extent2D getExtent() const { return _swapchain->getExtent(); }
 
     [[nodiscard]] const VulkanDescriptorManager& getDescriptorManager() const noexcept { return _descriptorManager; }
 
     [[nodiscard]] const VulkanDescriptorSets* getDescriptors() const noexcept { return _frameUBODescriptors; }
 
-    [[nodiscard]] const FrameUniforms& getUniforms() const noexcept { return _frameUBO.getUniforms(); }
-
 private:
     const VulkanDevice*       _device       = nullptr;
-    const VulkanSwapchain*    _swapchain    = nullptr;
     const VulkanImageManager* _imageManager = nullptr;
 
     uint32_t _framesInFlight = 0;
@@ -63,6 +52,6 @@ private:
 
     VulkanDescriptorManager _descriptorManager{};
 
-    FrameUniformBuffer    _frameUBO{};
+    VulkanFrameUniformBuffer    _frameUBO{};
     VulkanDescriptorSets* _frameUBODescriptors = nullptr;
 };

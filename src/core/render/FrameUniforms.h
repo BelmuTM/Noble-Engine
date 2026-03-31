@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/engine/DebugState.h"
 #include "core/entities/camera/Camera.h"
 
 #include <chrono>
@@ -26,19 +27,17 @@ struct alignas(16) FrameUniforms {
 
     int debugMode = 0;
 
-    void update(const Camera& camera, const uint32_t width, const uint32_t height) {
+    void update(Camera& camera, const uint32_t width, const uint32_t height, const DebugState& debugState) {
         static auto startTime   = std::chrono::high_resolution_clock::now();
         const  auto currentTime = std::chrono::high_resolution_clock::now();
 
-        viewWidth  = static_cast<float>(width);
-        viewHeight = static_cast<float>(height);
-
         viewMatrix        = camera.getViewMatrix();
-        viewInverseMatrix = glm::inverse(viewMatrix);
+        viewInverseMatrix = camera.getViewInverseMatrix();
 
-        projectionMatrix        = camera.getProjectionMatrix(viewWidth / viewHeight);
-        projectionInverseMatrix = glm::inverse(projectionMatrix);
+        projectionMatrix        = camera.getProjectionMatrix();
+        projectionInverseMatrix = camera.getProjectionInverseMatrix();
 
+        // Vulkan NDC projection matrix flip
         projectionMatrix[1][1] *= -1;
 
         cameraPosition = camera.getPosition();
@@ -49,5 +48,10 @@ struct alignas(16) FrameUniforms {
         frameTimeCounter = std::chrono::duration<float>(currentTime - startTime).count();
 
         ++frameCounter;
+
+        viewWidth  = static_cast<float>(width);
+        viewHeight = static_cast<float>(height);
+
+        debugMode = debugState.debugMode;
     }
 };

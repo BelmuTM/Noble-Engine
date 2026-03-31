@@ -6,14 +6,12 @@
 
 bool VulkanFrameResources::create(
     const VulkanDevice&         device,
-    const VulkanSwapchain&      swapchain,
     const VulkanImageManager&   imageManager,
     VulkanUniformBufferManager& uniformBufferManager,
     const uint32_t              framesInFlight,
     std::string&                errorMessage
 ) noexcept {
     _device         = &device;
-    _swapchain      = &swapchain;
     _imageManager   = &imageManager;
     _framesInFlight = framesInFlight;
 
@@ -32,17 +30,13 @@ void VulkanFrameResources::destroy() noexcept {
     _descriptorManager.destroy();
 
     _device       = nullptr;
-    _swapchain    = nullptr;
     _imageManager = nullptr;
 }
 
 void VulkanFrameResources::update(
-    const uint32_t    frameIndex,
-    const uint32_t    imageIndex,
-    const Camera&     camera,
-    const DebugState& debugState
+    const uint32_t frameIndex, const uint32_t imageIndex, const FrameUniforms& uniforms
 ) {
-    _frameUBO.update(frameIndex, *_swapchain, camera, debugState);
+    _frameUBO.update(frameIndex, uniforms);
 
     _frameIndex = frameIndex;
     _imageIndex = imageIndex;

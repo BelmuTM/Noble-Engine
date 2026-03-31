@@ -14,18 +14,12 @@ public:
     VulkanFrameDraws(VulkanFrameDraws&&)            = delete;
     VulkanFrameDraws& operator=(VulkanFrameDraws&&) = delete;
 
-    [[nodiscard]] bool create(const VulkanFrameResources& frameResources, std::string& errorMessage) noexcept;
-
-    void destroy() noexcept;
-
-    void cullDraws(const std::vector<std::unique_ptr<VulkanRenderPass>>& passes);
+    void cullDraws(const std::vector<std::unique_ptr<VulkanRenderPass>>& passes, const FrameUniforms& uniforms);
 
     [[nodiscard]] const std::vector<const VulkanDrawCall*>& getDrawCalls(const VulkanRenderPass* pass) const {
         return _visibleDrawCalls.at(pass);
     }
 
 private:
-    const VulkanFrameResources* _frameResources = nullptr;
-
     std::unordered_map<const VulkanRenderPass*, std::vector<const VulkanDrawCall*>> _visibleDrawCalls{};
 };

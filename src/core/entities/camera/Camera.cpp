@@ -1,11 +1,60 @@
 #include "Camera.h"
 
+#include <cmath>
+
+const glm::mat4& Camera::getViewMatrix() noexcept {
+    if (_viewMatrixDirty) {
+        _viewMatrix       = glm::lookAt(_position, _position + _forward, _up);
+        _viewMatrixDirty  = false;
+        _viewInverseValid = false;
+    }
+
+    return _viewMatrix;
+}
+
+const glm::mat4& Camera::getViewInverseMatrix() noexcept {
+    if (!_viewInverseValid) {
+        _viewInverseMatrix = glm::inverse(getViewMatrix());
+        _viewInverseValid  = true;
+    }
+
+    return _viewInverseMatrix;
+}
+
+const glm::mat4& Camera::getProjectionMatrix() noexcept {
+    if (_projectionMatrixDirty) {
+        const float f = 1.0f / std::tan(glm::radians(_fov) * 0.5f);
+
+        _projectionMatrix[0][0] = f / _aspectRatio;
+        _projectionMatrix[1][1] = f;
+
+        _projectionMatrix[2][2] = _farPlane / (_nearPlane - _farPlane);
+        _projectionMatrix[2][3] = -1.0f;
+        _projectionMatrix[3][2] = _nearPlane * _farPlane / (_nearPlane - _farPlane);
+
+        _projectionMatrixDirty  = false;
+        _projectionInverseValid = false;
+    }
+
+    return _projectionMatrix;
+}
+
+const glm::mat4& Camera::getProjectionInverseMatrix() noexcept {
+    if (!_projectionInverseValid) {
+        _projectionInverseMatrix = glm::inverse(getProjectionMatrix());
+        _projectionInverseValid  = true;
+    }
+
+    return _projectionInverseMatrix;
+}
+
 void Camera::updateRotation() {
     _forward.x = static_cast<float>(cos(glm::radians(_yaw)) * cos(glm::radians(_pitch)));
     _forward.y = static_cast<float>(sin(glm::radians(_yaw)) * cos(glm::radians(_pitch)));
     _forward.z = static_cast<float>(sin(glm::radians(_pitch)));
     _forward   = glm::normalize(_forward);
-    updateViewMatrix();
+
+    _viewMatrixDirty = true;
 }
 
 void Camera::update(const double deltaTime) {
@@ -14,13 +63,8 @@ void Camera::update(const double deltaTime) {
     }
 
     const glm::vec3 worldVelocity = toWorldSpace(_velocity);
+
     move(worldVelocity * static_cast<float>(deltaTime));
-
-    updateViewMatrix();
-}
-
-void Camera::updateViewMatrix() {
-    _viewMatrix = glm::lookAt(_position, _position + _forward, _up);
 }
 
 glm::vec3 Camera::toWorldSpace(const glm::vec3 vector) const {

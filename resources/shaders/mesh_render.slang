@@ -80,11 +80,11 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
         float3x3 TBN = float3x3(T, B, N);
 
-        //normal = normalize(mul(normal * 2.0 - 1.0, TBN));
+        normal = normalize(mul(normal * 2.0 - 1.0, TBN));
 
 
     albedoBuffer = albedo;
-    normalBuffer = float4(vertIn.normal * 0.5 + 0.5, 1.0);
+    normalBuffer = float4(normal * 0.5 + 0.5, 1.0);
 
     debugBuffer2 = float4(T * 0.5 + 0.5, 1.0);
 }

@@ -2,21 +2,10 @@
 
 #include "core/render/FrustumCuller.h"
 
-bool VulkanFrameDraws::create(const VulkanFrameResources& frameResources, std::string& errorMessage) noexcept {
-    _frameResources = &frameResources;
-
-    return true;
-}
-
-void VulkanFrameDraws::destroy() noexcept {
-    _visibleDrawCalls.clear();
-
-    _frameResources = nullptr;
-}
-
-void VulkanFrameDraws::cullDraws(const std::vector<std::unique_ptr<VulkanRenderPass>>& passes) {
-    const FrameUniforms& uniforms             = _frameResources->getUniforms();
-    const glm::mat4      viewProjectionMatrix = uniforms.projectionMatrix * uniforms.viewMatrix;
+void VulkanFrameDraws::cullDraws(
+    const std::vector<std::unique_ptr<VulkanRenderPass>>& passes, const FrameUniforms& uniforms
+) {
+    const glm::mat4& viewProjectionMatrix = uniforms.projectionMatrix * uniforms.viewMatrix;
 
     const std::array<Math::Plane, 6>& frustumPlanes = FrustumCuller::getFrustumPlanes(viewProjectionMatrix);
 

@@ -102,9 +102,7 @@ bool VulkanRenderResources::createDepthBuffer(std::string& errorMessage) {
     return true;
 }
 
-bool VulkanRenderResources::createColorBuffers(
-    VulkanRenderPass* pass, const VulkanFrameResources& frameResources, std::string& errorMessage
-) {
+bool VulkanRenderResources::createColorBuffers(VulkanRenderPass* pass, std::string& errorMessage) {
     static constexpr auto format = vk::Format::eB8G8R8A8Srgb;
 
     for (const auto& colorOutput : pass->getShaderProgram()->getStageOutputs()) {
@@ -113,7 +111,7 @@ bool VulkanRenderResources::createColorBuffers(
         VulkanImage* colorImage = _colorBuffers.back().get();
 
         TRY_deprecated(_bufferFactory.createColorBufferImage(
-            *colorImage, format, frameResources.getExtent(), _device, _commandManager, errorMessage
+            *colorImage, format, _swapchain->getExtent(), _device, _commandManager, errorMessage
         ));
 
         VulkanRenderPassResource colorBuffer{};

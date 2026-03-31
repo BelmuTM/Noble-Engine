@@ -39,14 +39,12 @@ bool VulkanRenderer::init(
     TRY_deprecated(createVulkanEntity(&renderResources, errorMessage, device, swapchain, commandManager, _framesInFlight));
 
     TRY_deprecated(createVulkanEntity(
-        &frameResources, errorMessage, device, swapchain, imageManager, uniformBufferManager, _framesInFlight
+        &frameResources, errorMessage, device, imageManager, uniformBufferManager, _framesInFlight
     ));
 
     TRY_deprecated(createVulkanEntity(
         &renderObjectManager, errorMessage, objectManager, assetManager, device, imageManager, meshManager, _framesInFlight
     ));
-
-    TRY_deprecated(createVulkanEntity(&frameDraws, errorMessage, frameResources));
 
     // Pipeline creation
     TRY_deprecated(createVulkanEntity(&shaderProgramManager, errorMessage, logicalDevice));
@@ -105,7 +103,7 @@ void VulkanRenderer::shutdown() {
     flushDeletionQueue();
 }
 
-void VulkanRenderer::drawFrame(const Camera& camera, const DebugState& debugState) {
+void VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
     bool discardLogging = swapchainManager.isOutOfDate();
     std::string errorMessage;
 
@@ -119,11 +117,11 @@ void VulkanRenderer::drawFrame(const Camera& camera, const DebugState& debugStat
     if (!swapchainManager.acquireNextImage(imageIndex, currentFrame, errorMessage, discardLogging)) return;
 
     // Frame data update
-    frameResources.update(currentFrame, imageIndex, camera, debugState);
+    frameResources.update(currentFrame, imageIndex, uniforms);
     // Render objects update
     renderObjectManager.updateObjects();
     // Frustum culling
-    frameDraws.cullDraws(renderGraph.getPasses());
+    frameDraws.cullDraws(renderGraph.getPasses(), uniforms);
 
     if (!recordCurrentCommandBuffer(imageIndex, errorMessage)) return;
     if (!submitCurrentCommandBuffer(imageIndex, errorMessage, discardLogging)) return;

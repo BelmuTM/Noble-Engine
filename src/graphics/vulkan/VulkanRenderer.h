@@ -30,7 +30,7 @@ public:
 
     void shutdown() override;
 
-    void drawFrame(const Camera& camera, const DebugState& debugState) override;
+    void drawFrame(const FrameUniforms& uniforms) override;
 
     uint32_t primitiveCount = 0;
 

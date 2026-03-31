@@ -35,6 +35,7 @@ private:
     WindowContext _windowContext{};
 
     Camera         _camera{};
+    FrameUniforms  _uniforms{};
     VulkanRenderer _renderer{};
 
     AssetManager  _assetManager{};

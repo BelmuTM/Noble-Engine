@@ -91,9 +91,13 @@ void Runtime::engineLoop() {
 
         _inputManager.update();
 
-        _camera.update(deltaTime);
+        int windowWidth, windowHeight;
+        _window.getFramebufferSize(windowWidth, windowHeight);
 
-        _renderer.drawFrame(_camera, _debugState);
+        _camera.update(deltaTime);
+        _camera.setAspectRatio(static_cast<float>(windowWidth) / static_cast<float>(windowHeight));
+        _uniforms.update(_camera, windowWidth, windowHeight, _debugState);
+        _renderer.drawFrame(_uniforms);
 
         ++frameCount;
 

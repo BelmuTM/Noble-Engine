@@ -35,9 +35,6 @@ layout (set = 1, binding = 4) Sampler2D debugBuffer2;
 
 [shader("fragment")]
 void fragMain(VSOutput vertIn) : SV_TARGET {
-    uint2 resolution = uint2(uint(uniforms.viewWidth), uint(uniforms.viewHeight));
-    uint2 coords     = uint2(round(vertIn.uv * resolution));
-
     float3 albedo = albedoBuffer.Sample(vertIn.uv).rgb;
     float3 normal = normalize(normalBuffer.Sample(vertIn.uv).rgb * 2.0 - 1.0);
 

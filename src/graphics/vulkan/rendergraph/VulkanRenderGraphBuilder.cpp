@@ -36,7 +36,7 @@ bool VulkanRenderGraphBuilder::createPasses(
 
 bool VulkanRenderGraphBuilder::createColorBuffers(std::string& errorMessage) const {
     for (auto& pass : _context.renderGraph.getPasses()) {
-        TRY_deprecated(_context.renderResources.createColorBuffers(pass.get(), _context.frameResources, errorMessage));
+        TRY_deprecated(_context.renderResources.createColorBuffers(pass.get(), errorMessage));
     }
 
     return true;

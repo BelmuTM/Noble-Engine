@@ -1,6 +1,8 @@
 #pragma once
 
 #include "graphics/vulkan/core/VulkanCommandManager.h"
+#include "graphics/vulkan/core/VulkanSwapchain.h"
+
 #include "graphics/vulkan/resources/VulkanFrameResources.h"
 
 #include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
@@ -46,9 +48,7 @@ public:
 
     [[nodiscard]] bool createDepthBuffer(std::string& errorMessage);
 
-    [[nodiscard]] bool createColorBuffers(
-        VulkanRenderPass* pass, const VulkanFrameResources& frameResources, std::string& errorMessage
-    );
+    [[nodiscard]] bool createColorBuffers(VulkanRenderPass* pass, std::string& errorMessage);
 
     [[nodiscard]] bool allocateDescriptors(VulkanRenderPass* pass, std::string& errorMessage);
 
