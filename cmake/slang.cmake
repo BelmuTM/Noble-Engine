@@ -88,17 +88,18 @@ endfunction()
 
 function (compile_slang TARGET)
     # Set shaders directory
-    set(SHADERS_DIR_RELATIVE resources/shaders)
-    set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/${SHADERS_DIR_RELATIVE})
+    set(SHADERS_SOURCE_DIR_RELATIVE resources/shaders)
+    set(SHADERS_SOURCE_DIR ${CMAKE_SOURCE_DIR}/${SHADERS_SOURCE_DIR_RELATIVE})
+
+    set(SHADERS_OUTPUT_DIR_RELATIVE resources/shaders)
+    set(SHADERS_OUTPUT_DIR ${CMAKE_BINARY_DIR}/${SHADERS_OUTPUT_DIR_RELATIVE})
+    file(MAKE_DIRECTORY ${SHADERS_OUTPUT_DIR})
+
+    target_compile_definitions(${TARGET} PRIVATE SHADERS_SPV_DIR="${SHADERS_OUTPUT_DIR}/")
 
     function (add_slang_shader_target SHADER_TARGET)
 
         cmake_parse_arguments(SHADERS "" "" "SOURCES;ENTRIES" ${ARGN})
-
-        # Set compiled SPIR-V outptut directory
-        set(SHADERS_SPV_DIR_RELATIVE ${SHADERS_DIR_RELATIVE}/spv)
-        set(SHADERS_SPV_DIR ${SHADERS_DIR}/spv)
-        file(MAKE_DIRECTORY ${SHADERS_SPV_DIR})
 
         set(SPV_OUTPUTS "")
 
@@ -116,7 +117,7 @@ function (compile_slang TARGET)
                 string(SUBSTRING "${STAGE_NAME}" 0 4 STAGE_NAME_SHORT)
 
                 set(SPV_FILE_NAME ${SOURCE_NAME}.${STAGE_NAME_SHORT}.spv)
-                set(SPV_FILE ${SHADERS_SPV_DIR}/${SPV_FILE_NAME})
+                set(SPV_FILE ${SHADERS_OUTPUT_DIR}/${SPV_FILE_NAME})
                 list(APPEND SPV_OUTPUTS ${SPV_FILE})
 
                 # Run Slangc command to compile shaders to SPIR-V
@@ -131,7 +132,7 @@ function (compile_slang TARGET)
                     -fvk-use-entrypoint-name
                     -o ${SPV_FILE}
                     DEPENDS ${SOURCE}
-                    COMMENT "Building SPIR-V object ${SHADERS_SPV_DIR_RELATIVE}/${SPV_FILE_NAME}"
+                    COMMENT "Building SPIR-V object ${SHADERS_OUTPUT_DIR_RELATIVE}/${SPV_FILE_NAME}"
                     VERBATIM
                 )
             endforeach()
@@ -142,10 +143,10 @@ function (compile_slang TARGET)
     endfunction()
 
     # Collect Slang shaders sources
-    file(GLOB_RECURSE SHADERS_SOURCES ${SHADERS_DIR}/*.slang)
+    file(GLOB_RECURSE SHADERS_SOURCES ${SHADERS_SOURCE_DIR}/*.slang)
 
     # Filter out Slang files inside the include folder
-    list(FILTER SHADERS_SOURCES EXCLUDE REGEX "${SHADERS_DIR}/include/.*")
+    list(FILTER SHADERS_SOURCES EXCLUDE REGEX "${SHADERS_SOURCE_DIR}/include/.*")
 
     # Compile shaders
     add_slang_shader_target(
