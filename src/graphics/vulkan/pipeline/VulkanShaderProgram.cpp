@@ -95,7 +95,7 @@ bool VulkanShaderProgram::loadFromFiles(
         _shaderStages.push_back(stageInfo);
 
         Logger::debug("----- STAGE [" + path + "] -----");
-        TRY_deprecated(reflectShaderResources(bytecode, stage, errorMessage));
+        TRY_BOOL(reflectShaderResources(bytecode, stage, errorMessage));
     }
 
     guard.release();

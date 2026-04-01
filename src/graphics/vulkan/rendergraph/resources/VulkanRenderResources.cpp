@@ -18,7 +18,7 @@ bool VulkanRenderResources::create(
     _commandManager = &commandManager;
     _framesInFlight = framesInFlight;
 
-    TRY_deprecated(createDepthBuffer(errorMessage));
+    TRY_BOOL(createDepthBuffer(errorMessage));
 
     return true;
 }
@@ -50,7 +50,7 @@ void VulkanRenderResources::destroy() noexcept {
     if (_depthBuffer) {
         _depthBuffer->destroy();
 
-        TRY_deprecated(_bufferFactory.createDepthBufferImage(
+        TRY_BOOL(_bufferFactory.createDepthBufferImage(
             *_depthBuffer, DEPTH_BUFFER_FORMAT, _swapchain->getExtent(), _device, _commandManager, errorMessage
         ));
     }
@@ -59,11 +59,11 @@ void VulkanRenderResources::destroy() noexcept {
     for (auto& colorBuffer : _colorBuffers) {
         colorBuffer->destroy();
 
-        TRY_deprecated(_bufferFactory.createColorBufferImage(
+        TRY_BOOL(_bufferFactory.createColorBufferImage(
             *colorBuffer, colorBuffer->getFormat(), _swapchain->getExtent(), _device, _commandManager, errorMessage
         ));
 
-        TRY_deprecated(colorBuffer->transitionLayout(
+        TRY_BOOL(colorBuffer->transitionLayout(
             _commandManager, errorMessage,
             vk::ImageLayout::eShaderReadOnlyOptimal
         ));
@@ -78,7 +78,7 @@ void VulkanRenderResources::destroy() noexcept {
 bool VulkanRenderResources::createDepthBuffer(std::string& errorMessage) {
     _depthBuffer = std::make_unique<VulkanImage>();
 
-    TRY_deprecated(_bufferFactory.createDepthBufferImage(
+    TRY_BOOL(_bufferFactory.createDepthBufferImage(
         *_depthBuffer, DEPTH_BUFFER_FORMAT, _swapchain->getExtent(), _device, _commandManager, errorMessage
     ));
 
@@ -110,7 +110,7 @@ bool VulkanRenderResources::createColorBuffers(VulkanRenderPass* pass, std::stri
 
         VulkanImage* colorImage = _colorBuffers.back().get();
 
-        TRY_deprecated(_bufferFactory.createColorBufferImage(
+        TRY_BOOL(_bufferFactory.createColorBufferImage(
             *colorImage, format, _swapchain->getExtent(), _device, _commandManager, errorMessage
         ));
 
@@ -150,10 +150,10 @@ bool VulkanRenderResources::allocateDescriptors(VulkanRenderPass* pass, std::str
     for (const auto& [set, scheme] : pass->getShaderProgram()->getDescriptorSchemes()) {
         // Create one manager (pool, layout) per descriptor scheme
         auto descriptorManager = std::make_unique<VulkanDescriptorManager>();
-        TRY_deprecated(descriptorManager->create(_device->getLogicalDevice(), scheme, _framesInFlight, 1, errorMessage));
+        TRY_BOOL(descriptorManager->create(_device->getLogicalDevice(), scheme, _framesInFlight, 1, errorMessage));
 
         VulkanDescriptorSets* descriptorSets = nullptr;
-        TRY_deprecated(descriptorManager->allocate(descriptorSets, errorMessage));
+        TRY_BOOL(descriptorManager->allocate(descriptorSets, errorMessage));
 
         // Store descriptor manager and sets keyed by set index
         pass->getDescriptorManagers()[set] = std::move(descriptorManager);
@@ -187,7 +187,7 @@ void VulkanRenderResources::bindDescriptors(
         if (!resource->image) continue;
 
         // Bind resource for each frame in flight
-        descriptorSets->bindPerFrameResource(resource->image->getDescriptorInfo(descriptor.binding));
+        descriptorSets->updatePerFrameDescriptorSets(resource->image->getDescriptorInfo(descriptor.binding));
     }
 }
 

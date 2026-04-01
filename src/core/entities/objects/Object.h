@@ -38,8 +38,8 @@ public:
 
     [[nodiscard]] const Model& getModel() const noexcept { return *_model; }
 
-    [[nodiscard]] glm::mat4 getModelMatrix() const noexcept { return _modelMatrix; }
-    [[nodiscard]] glm::mat4 getNormalMatrix() const noexcept { return _normalMatrix; }
+    [[nodiscard]] const glm::mat4& getModelMatrix() const noexcept { return _modelMatrix; }
+    [[nodiscard]] const glm::mat4& getNormalMatrix() const noexcept { return _normalMatrix; }
 
 private:
     const Model* _model =  nullptr;

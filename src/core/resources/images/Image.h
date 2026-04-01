@@ -38,6 +38,8 @@ struct Image {
     static Image createSinglePixelImage(const glm::vec3& color) {
         Image image{};
 
+        image.path = std::to_string(color.r) + '_' + std::to_string(color.g) + '_' + std::to_string(color.b) + "_image";
+
         image.pixels    = std::make_unique<uint8_t[]>(4);
         image.pixels[0] = toByte(color.r);
         image.pixels[1] = toByte(color.g);

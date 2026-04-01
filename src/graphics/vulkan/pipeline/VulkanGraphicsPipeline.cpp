@@ -16,11 +16,11 @@ bool VulkanGraphicsPipeline::create(
 ) noexcept {
     _device = device;
 
-    TRY_deprecated(createPipelineLayout(
+    TRY_BOOL(createPipelineLayout(
         device, pass.getPipelineDescriptor(), errorMessage
     ));
 
-    TRY_deprecated(createPipeline(device, pass, errorMessage));
+    TRY_BOOL(createPipeline(device, pass, errorMessage));
 
     return true;
 }

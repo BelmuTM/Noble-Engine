@@ -1,4 +1,4 @@
-#include "CameraController.h"
+#include "CameraFreeFly.h"
 
 #include "Camera.h"
 
@@ -7,8 +7,8 @@
 static constexpr float speedMultiplier = 3.0f;
 static constexpr float cameraSmoothing = 6.0f;
 
-CameraController::CameraController(GLFWwindow* window, InputManager& inputManager, Camera& camera)
-    : IInputListener(inputManager), _window(window), _camera(camera)
+CameraFreeFly::CameraFreeFly(Camera& camera, InputManager& inputManager, GLFWwindow* window)
+    : ICameraBehavior(camera), IInputListener(inputManager), _window(window)
 {
     _actionMovementMap[InputAction::MoveForward]  = glm::vec3{ 1.0f, 0.0f, 0.0f};
     _actionMovementMap[InputAction::MoveBackward] = glm::vec3{-1.0f, 0.0f, 0.0f};
@@ -18,7 +18,7 @@ CameraController::CameraController(GLFWwindow* window, InputManager& inputManage
     _actionMovementMap[InputAction::MoveDown]     = glm::vec3{ 0.0f, 0.0f,-1.0f};
 }
 
-void CameraController::update(const float deltaTime) {
+void CameraFreeFly::update(const float deltaTime) {
     glm::vec3 velocity{0.0f};
 
     // Movement
@@ -53,12 +53,15 @@ void CameraController::update(const float deltaTime) {
         _camera.addPitch(-delta.y * sensitivity);
         _camera.updateRotation();
     }
+
+    // Update camera data
+    _camera.update(deltaTime);
 }
 
-void CameraController::onKeyEvent(const int key, const int action) {
+void CameraFreeFly::onKeyEvent(const int key, const int action) {
 }
 
-void CameraController::onMouseClick(int button, int action) {
+void CameraFreeFly::onMouseClick(int button, int action) {
     _dragging = _inputManager.isMouseRightButtonPressed();
 
     const int cursorMode = _dragging ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL;
@@ -66,9 +69,9 @@ void CameraController::onMouseClick(int button, int action) {
     glfwSetInputMode(_window, GLFW_CURSOR, cursorMode);
 }
 
-void CameraController::onMouseMove(double x, double y) {
+void CameraFreeFly::onMouseMove(double x, double y) {
 }
 
-void CameraController::onMouseScroll(const double, const double offsetY) {
+void CameraFreeFly::onMouseScroll(const double, const double offsetY) {
     _camera.addFOV(static_cast<float>(offsetY));
 }

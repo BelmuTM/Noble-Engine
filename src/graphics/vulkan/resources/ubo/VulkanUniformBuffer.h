@@ -43,7 +43,7 @@ public:
         _device         = &device;
         _framesInFlight = framesInFlight;
 
-        TRY_deprecated(createUniformBuffers(errorMessage));
+        TRY_BOOL(createUniformBuffers(errorMessage));
 
         return true;
     }
@@ -81,7 +81,7 @@ protected:
         for (uint32_t i = 0; i < _framesInFlight; i++) {
             VulkanBuffer uniformBuffer;
 
-            TRY_deprecated(uniformBuffer.create(
+            TRY_BOOL(uniformBuffer.create(
                 BUFFER_SIZE,
                 vk::BufferUsageFlagBits::eUniformBuffer,
                 VMA_MEMORY_USAGE_CPU_TO_GPU,
@@ -89,7 +89,7 @@ protected:
                 errorMessage
             ));
 
-            TRY_deprecated(uniformBuffer.mapMemory(errorMessage));
+            TRY_BOOL(uniformBuffer.mapMemory(errorMessage));
 
             uniformBuffers.emplace_back(std::move(uniformBuffer));
         }

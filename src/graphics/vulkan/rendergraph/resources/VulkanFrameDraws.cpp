@@ -20,8 +20,8 @@ void VulkanFrameDraws::cullDraws(
 
             bool visible = true;
 
-            if (pass->getType() == VulkanRenderPassType::MeshRender) {
-                Math::AABB worldAABB = drawCall.getMesh()->getAABB().transform(drawCall.getObject()->data.modelMatrix);
+            if (drawCall.getModelMatrix()) {
+                Math::AABB worldAABB = drawCall.getMesh()->getAABB().transform(*drawCall.getModelMatrix());
 
                 visible = FrustumCuller::testVisibility(worldAABB, frustumPlanes);
             }

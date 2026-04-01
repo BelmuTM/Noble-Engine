@@ -82,15 +82,15 @@ private:
     Error _error;
 };
 
-#define TRY_deprecated(expr) \
-    do { \
+#define TRY_BOOL(expr)             \
+    do {                           \
         if (!(expr)) return false; \
     } while (0)
 
 #define TRY_EXPECT(expr)                                       \
     do {                                                       \
         auto _result = (expr);                                 \
-        if (!_result) {                                      \
+        if (!_result) {                                        \
             return std::move(_result).propagate(__FUNCTION__); \
         }                                                      \
     } while (0)

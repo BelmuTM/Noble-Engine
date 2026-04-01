@@ -1,20 +1,18 @@
 #pragma once
 
+#include "ICameraBehavior.h"
+
 #include "core/input/InputManager.h"
 
 #include <unordered_map>
 
 #include <glm/vec3.hpp>
 
-// TO-DO: Write controller interface ICameraController for different possible camera types
-
-class Camera;
-
-class CameraController final : public IInputListener {
+class CameraFreeFly final : public ICameraBehavior, public IInputListener {
 public:
-    explicit CameraController(GLFWwindow* window, InputManager& inputManager, Camera& camera);
+    explicit CameraFreeFly(Camera& camera, InputManager& inputManager, GLFWwindow* window);
 
-    void update(float deltaTime);
+    void update(float deltaTime) override;
 
     void onKeyEvent(int key, int action) override;
     void onMouseClick(int button, int action) override;
@@ -23,7 +21,6 @@ public:
 
 private:
     GLFWwindow* _window = nullptr;
-    Camera&     _camera;
 
     std::unordered_map<InputAction, glm::vec3> _actionMovementMap{};
 

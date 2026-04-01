@@ -60,7 +60,6 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
     float3 color = compositeBuffer.Sample(vertIn.uv).rgb;
 
-    /*
     float3 normal = mul(float3x3(uniforms.view), normalBuffer.Sample(vertIn.uv).rgb * 2.0 - 1.0).xyz;
 
     float depth = depthBuffer.Sample(vertIn.uv).r;
@@ -68,16 +67,17 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     float3 screenPosition = float3(vertIn.uv, depth);
     float3 viewPosition   = screenToView(screenPosition, uniforms.projectionInverse);
 
+    /*
     float3 hitPosition;
 
-    if (normalBuffer.Sample(vertIn.uv).z >= 0.99) {
+    if (normalBuffer.Sample(vertIn.uv).z >= 0.9) {
         bool hit = raytrace(
             depthBuffer,
             uniforms.projection,
             uniforms.projectionInverse,
             viewPosition + normal * 1e-3,
             normalize(reflect(normalize(viewPosition), normal)),
-            16.0,
+            1.0,
             bayer128(coords),
             resolution,
             hitPosition

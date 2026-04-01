@@ -21,7 +21,9 @@ void AssetManager::loadModelsAsync(ThreadPool& threadPool, const std::vector<std
     }
 
     for (auto& [modelPath, modelFuture] : modelFutures) {
-        _models.emplace(modelPath, modelFuture.get());
+        if (modelFuture.valid()) {
+            _models.emplace(modelPath, modelFuture.get());
+        }
     }
 }
 
@@ -44,6 +46,8 @@ void AssetManager::loadTexturesAsync(ThreadPool& threadPool, const std::vector<s
     }
 
     for (auto& [texturePath, textureFuture] : textureFutures) {
-        _textures.emplace(texturePath, textureFuture.get());
+        if (textureFuture.valid()) {
+            _textures.emplace(texturePath, textureFuture.get());
+        }
     }
 }

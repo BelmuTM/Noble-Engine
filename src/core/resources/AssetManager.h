@@ -3,7 +3,7 @@
 #include "core/resources/images/ImageManager.h"
 #include "core/resources/models/ModelManager.h"
 
-#include "core/concurrency/ThreadPool.h"
+#include "core/multithreading/ThreadPool.h"
 
 #include <string>
 

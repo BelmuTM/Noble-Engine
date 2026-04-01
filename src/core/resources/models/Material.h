@@ -7,6 +7,13 @@
 
 #include <glm/glm.hpp>
 
+enum class TextureType {
+    Albedo,
+    Normal,
+    Specular,
+    Count
+};
+
 struct Material {
     std::string name = "Undefined_Material";
 

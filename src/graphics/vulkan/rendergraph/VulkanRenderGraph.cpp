@@ -8,7 +8,7 @@
 
 #include <ranges>
 
-bool VulkanRenderGraph::create(const VulkanRenderGraphCreateContext& context, std::string& errorMessage) noexcept {
+bool VulkanRenderGraph::create(const VulkanRenderGraphCreateContext& context, std::string&) noexcept {
     _context = context;
 
     _context.dispatchLoader = vk::detail::DispatchLoaderDynamic(
@@ -51,11 +51,9 @@ bool prepareColorAttachments(
     for (const auto& colorAttachment : pass.getColorAttachments()) {
         auto& colorResource = colorAttachment->resource;
 
-        VulkanImage* colorImage = colorResource.resolveImage();
-
-        if (colorImage) {
+        if (VulkanImage* colorImage = colorResource.resolveImage()) {
             // Color attachment transition
-            TRY_deprecated(colorImage->transitionLayout(
+            TRY_BOOL(colorImage->transitionLayout(
                 commandBuffer, errorMessage,
                 vk::ImageLayout::eColorAttachmentOptimal
             ));
@@ -96,7 +94,7 @@ bool prepareDepthAttachment(
     }
 
     // Depth image transition
-    TRY_deprecated(depthImage->transitionLayout(commandBuffer, errorMessage, targetDepthLayout));
+    TRY_BOOL(depthImage->transitionLayout(commandBuffer, errorMessage, targetDepthLayout));
 
     if (depthAttachmentPtr) {
         depthAttachment
@@ -131,8 +129,7 @@ void executeDrawCalls(
         const auto& draw = *drawCall;
 
 #if defined(VULKAN_DEBUG_UTILS)
-        std::string meshName = draw.getObject() ? draw.getObject()->object->getModel().name : "Mesh";
-        VulkanDebugger::beginLabel(commandBuffer, dispatchLoader, meshName);
+        VulkanDebugger::beginLabel(commandBuffer, dispatchLoader, draw.getName());
 #endif
 
         // Bind descriptors
@@ -173,7 +170,7 @@ bool executePostPassTransitions(
     for (const auto& [resource, targetLayout] : pass.getTransitions()) {
         VulkanImage* resourceImage = resource->resolveImage();
 
-        TRY_deprecated(resourceImage->transitionLayout(commandBuffer, errorMessage, targetLayout));
+        TRY_BOOL(resourceImage->transitionLayout(commandBuffer, errorMessage, targetLayout));
     }
 
     return true;
@@ -191,11 +188,11 @@ bool VulkanRenderGraph::executePass(
     if (pass.getBindPoint() == vk::PipelineBindPoint::eGraphics) {
         // Color attachments
         std::vector<vk::RenderingAttachmentInfo> colorAttachments{};
-        TRY_deprecated(prepareColorAttachments(commandBuffer, pass, colorAttachments, errorMessage));
+        TRY_BOOL(prepareColorAttachments(commandBuffer, pass, colorAttachments, errorMessage));
 
         // Depth attachment
         vk::RenderingAttachmentInfo depthAttachment{};
-        TRY_deprecated(prepareDepthAttachment(commandBuffer, pass, _context.resources, depthAttachment, errorMessage));
+        TRY_BOOL(prepareDepthAttachment(commandBuffer, pass, _context.resources, depthAttachment, errorMessage));
 
         // Rendering info
         vk::RenderingInfo renderingInfo{};
@@ -231,7 +228,7 @@ bool VulkanRenderGraph::executePass(
 #endif
 
         // Transition resources for next pass
-        TRY_deprecated(executePostPassTransitions(commandBuffer, pass, errorMessage));
+        TRY_BOOL(executePostPassTransitions(commandBuffer, pass, errorMessage));
     }
 
     return true;

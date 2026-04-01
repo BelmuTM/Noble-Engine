@@ -45,7 +45,7 @@ bool raytrace(
 
     // Upper screen-space bounds are XY = resolution - 1.0 and Z = 1.0
     float3 startPosition = rayPosition;
-    float3 endPosition   = step(0.0, rayDirection) * float3(resolution - 1.0, 1.0);
+    float3 endPosition   = step(0.0, rayDirection) * float3(resolution - 1.0, 100.0);
 
     // Compute the minimal amount of steps to reach an upper bound on any axis
     float3 stepsToEndPosition    = (endPosition - startPosition) / rayDirection;
@@ -54,7 +54,7 @@ bool raytrace(
 
     // Clamp to the resolution to avoid marching forever
     float tMax = min(minOf(stepsToEndPosition), maxOf(resolution));
-    float t    = jitter;
+    float t    = 0.0;
 
     /*
         Thicken each depth sample by a factor to prevent false positives during
@@ -69,7 +69,7 @@ bool raytrace(
     while (t < tMax && !intersected) {
         rayPosition = startPosition + rayDirection * t;
 
-        float stepT = (t == jitter ? jitter : stride);
+        float stepT = (t == 0.0 ? 0.0 : stride);
         float maxZ  = rayPosition.z;
         float minZ  = rayPosition.z - stepT * abs(rayDirection.z);
 
@@ -80,7 +80,7 @@ bool raytrace(
             Intersection check, take account of the depth sample's thickness, and avoid
             player hand fragments and sky fragments
         */
-        if (maxZ >= depth && minZ <= thickDepth) {
+        if (maxZ >= depth && minZ <= depth) {
             intersected = true;
             break;
         }

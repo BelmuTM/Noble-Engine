@@ -3,6 +3,11 @@
 #include "platform/Window.h"
 #include "platform/WindowContext.h"
 
+#include "input/InputManager.h"
+
+#include "entities/camera/Camera.h"
+#include "entities/camera/ICameraBehavior.h"
+
 #include "core/resources/AssetManager.h"
 #include "entities/objects/ObjectManager.h"
 
@@ -34,7 +39,9 @@ private:
     InputManager  _inputManager{};
     WindowContext _windowContext{};
 
-    Camera         _camera{};
+    Camera                           _camera{};
+    std::unique_ptr<ICameraBehavior> _cameraBehavior{};
+
     FrameUniforms  _uniforms{};
     VulkanRenderer _renderer{};
 

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "CameraController.h"
-
 #include "common/Math.h"
 
 #include <algorithm>
@@ -27,13 +25,9 @@ public:
         _viewMatrixDirty = true;
     }
 
+    void update(float deltaTime);
+
     void updateRotation();
-
-    void update(double deltaTime);
-
-    void setController(std::unique_ptr<CameraController> controller) {
-        _controller = std::move(controller);
-    }
 
     [[nodiscard]] float getNearPlane() const noexcept { return _nearPlane; }
     [[nodiscard]] float getFarPlane() const noexcept { return _farPlane; }
@@ -43,8 +37,8 @@ public:
     [[nodiscard]] float getRotationSensitivity() const noexcept { return _rotationSensitivity; }
 
     [[nodiscard]] float getSpeed() const noexcept { return _speed; }
-    [[nodiscard]] glm::vec3 getVelocity() const noexcept { return _velocity; }
-    [[nodiscard]] glm::vec3 getPosition() const noexcept { return _position; }
+    [[nodiscard]] const glm::vec3& getVelocity() const noexcept { return _velocity; }
+    [[nodiscard]] const glm::vec3& getPosition() const noexcept { return _position; }
 
     [[nodiscard]] const glm::mat4& getViewMatrix() noexcept;
     [[nodiscard]] const glm::mat4& getViewInverseMatrix() noexcept;
@@ -85,8 +79,6 @@ public:
 
 private:
     [[nodiscard]] glm::vec3 toWorldSpace(glm::vec3 vector) const;
-
-    std::unique_ptr<CameraController> _controller{};
 
     float _aspectRatio = 1.0f;
 

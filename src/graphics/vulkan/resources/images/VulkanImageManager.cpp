@@ -7,7 +7,7 @@
 #include <ranges>
 
 bool VulkanImageManager::create(
-    const VulkanDevice& device, const VulkanCommandManager& commandManager, std::string& errorMessage
+    const VulkanDevice& device, const VulkanCommandManager& commandManager, std::string&
 ) noexcept {
     _device         = &device;
     _commandManager = &commandManager;
@@ -56,7 +56,7 @@ bool VulkanImageManager::loadImage(VulkanImage*& image, const Image* imageData, 
 
     VulkanBuffer stagingBuffer;
     // Create the staging buffer
-    TRY_deprecated(stagingBuffer.create(
+    TRY_BOOL(stagingBuffer.create(
         imageData->byteSize,
         vk::BufferUsageFlagBits::eTransferSrc,
         VMA_MEMORY_USAGE_CPU_TO_GPU,
@@ -78,12 +78,12 @@ bool VulkanImageManager::loadImage(VulkanImage*& image, const Image* imageData, 
 
     // Create image on the GPU
     vk::CommandBuffer commandBuffer{};
-    TRY_deprecated(_commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
+    TRY_BOOL(_commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
 
     VulkanImage tempImage{};
-    TRY_deprecated(tempImage.createFromBuffer(stagingBuffer, 0, format, extent, mipLevels, commandBuffer, _device, errorMessage));
+    TRY_BOOL(tempImage.createFromBuffer(stagingBuffer, 0, format, extent, mipLevels, commandBuffer, _device, errorMessage));
 
-    TRY_deprecated(_commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
+    TRY_BOOL(_commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
 
     stagingBuffer.destroy();
 
@@ -113,7 +113,7 @@ bool VulkanImageManager::loadImages(
     constexpr int depth = 1;
 
     vk::CommandBuffer commandBuffer{};
-    TRY_deprecated(_commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
+    TRY_BOOL(_commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
 
     vk::DeviceSize offset = 0;
 
@@ -143,7 +143,7 @@ bool VulkanImageManager::loadImages(
 
         // Create image on the GPU
         VulkanImage tempImage{};
-        TRY_deprecated(tempImage.createFromBuffer(
+        TRY_BOOL(tempImage.createFromBuffer(
             stagingBuffer, offset, format, extent, mipLevels, commandBuffer, _device, errorMessage
         ));
 
@@ -152,7 +152,7 @@ bool VulkanImageManager::loadImages(
         _imageCache.emplace(image->path, std::make_unique<VulkanImage>(std::move(tempImage)));
     }
 
-    TRY_deprecated(_commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
+    TRY_BOOL(_commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
 
     return true;
 }
@@ -163,7 +163,7 @@ bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& imag
 
     VulkanBuffer stagingBuffer;
     // Create the staging buffer
-    TRY_deprecated(stagingBuffer.create(
+    TRY_BOOL(stagingBuffer.create(
         MAX_BATCH_SIZE,
         vk::BufferUsageFlagBits::eTransferSrc,
         VMA_MEMORY_USAGE_CPU_TO_GPU,
@@ -196,15 +196,15 @@ bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& imag
         if (image->byteSize > MAX_BATCH_SIZE) {
             // Flush batched images
             if (!batch.empty()) {
-                TRY_deprecated(loadImages(batch, stagingBuffer, errorMessage));
+                TRY_BOOL(loadImages(batch, stagingBuffer, errorMessage));
                 batch.clear();
             }
 
             currentBatchSize = 0;
 
             // Load image with its own dedicated staging buffer
-            VulkanImage* _;
-            TRY_deprecated(loadImage(_, image, errorMessage));
+            VulkanImage* _ = nullptr;
+            TRY_BOOL(loadImage(_, image, errorMessage));
 
             continue;
         }
@@ -212,7 +212,7 @@ bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& imag
         // If adding image to the batch exceeds the maximum batch size
         if (currentBatchSize + image->byteSize > MAX_BATCH_SIZE) {
             // Flush batched images
-            TRY_deprecated(loadImages(batch, stagingBuffer, errorMessage));
+            TRY_BOOL(loadImages(batch, stagingBuffer, errorMessage));
             batch.clear();
 
             currentBatchSize = 0;
@@ -225,7 +225,7 @@ bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& imag
 
     // Flush remaining batched images
     if (!batch.empty()) {
-        TRY_deprecated(loadImages(batch, stagingBuffer, errorMessage));
+        TRY_BOOL(loadImages(batch, stagingBuffer, errorMessage));
     }
 
     batch.clear();

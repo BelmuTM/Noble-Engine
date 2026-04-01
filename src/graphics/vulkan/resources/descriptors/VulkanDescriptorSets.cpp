@@ -19,7 +19,7 @@ bool VulkanDescriptorSets::allocate(std::string& errorMessage) {
     return _manager->allocateSets(_descriptorSets, descriptorSetInfo, errorMessage);
 }
 
-void VulkanDescriptorSets::bindResource(const VulkanDescriptorInfo& info, const uint32_t frameIndex) const {
+void VulkanDescriptorSets::updateDescriptorSets(const VulkanDescriptorInfo& info, const uint32_t frameIndex) const {
     if (!_manager) return;
 
     vk::WriteDescriptorSet descriptorSetWrite{};
@@ -38,14 +38,14 @@ void VulkanDescriptorSets::bindResource(const VulkanDescriptorInfo& info, const 
     _manager->updateSets(descriptorSetWrite);
 }
 
-void VulkanDescriptorSets::bindPerFrameResource(const VulkanDescriptorInfo& info) const {
+void VulkanDescriptorSets::updatePerFrameDescriptorSets(const VulkanDescriptorInfo& info) const {
     for (uint32_t i = 0; i < _manager->getFramesInFlight(); i++) {
-        bindResource(info, i);
+        updateDescriptorSets(info, i);
     }
 }
 
-void VulkanDescriptorSets::bindPerFrameUBO(const VulkanUniformBufferBase& ubo, const uint32_t binding) const {
+void VulkanDescriptorSets::updatePerFrameUBODescriptorSets(const VulkanUniformBufferBase& ubo, const uint32_t binding) const {
     for (uint32_t i = 0; i < _manager->getFramesInFlight(); i++) {
-        bindResource(ubo.getDescriptorInfo(binding, i), i);
+        updateDescriptorSets(ubo.getDescriptorInfo(binding, i), i);
     }
 }

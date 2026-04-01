@@ -84,7 +84,7 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
 
     albedoBuffer = albedo;
-    normalBuffer = float4(normal * 0.5 + 0.5, 1.0);
+    normalBuffer = float4(vertIn.normal * 0.5 + 0.5, 1.0);
 
     debugBuffer2 = float4(T * 0.5 + 0.5, 1.0);
 }

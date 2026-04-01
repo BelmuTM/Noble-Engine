@@ -8,6 +8,7 @@
 #include <thread>
 
 #include "debug/Logger.h"
+#include "entities/camera/CameraFreeFly.h"
 
 Runtime::Runtime(const Scene& scene, std::atomic<bool>& runningFlag)
     : _running(runningFlag),
@@ -44,7 +45,7 @@ bool Runtime::init(std::string& errorMessage) {
         return false;
     }
 
-    _camera.setController(std::make_unique<CameraController>(_window.handle(), _inputManager, _camera));
+    _cameraBehavior = std::make_unique<CameraFreeFly>(_camera, _inputManager, _window.handle());
 
     return true;
 }
@@ -94,7 +95,7 @@ void Runtime::engineLoop() {
         int windowWidth, windowHeight;
         _window.getFramebufferSize(windowWidth, windowHeight);
 
-        _camera.update(deltaTime);
+        _cameraBehavior->update(deltaTime);
         _camera.setAspectRatio(static_cast<float>(windowWidth) / static_cast<float>(windowHeight));
         _uniforms.update(_camera, windowWidth, windowHeight, _debugState);
         _renderer.drawFrame(_uniforms);

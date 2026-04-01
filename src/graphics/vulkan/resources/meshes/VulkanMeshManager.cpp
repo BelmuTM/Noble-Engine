@@ -32,10 +32,10 @@ bool VulkanMeshManager::fillBuffers(std::string& errorMessage) {
     queryVertexBufferSize();
     queryIndexBufferSize();
 
-    TRY_deprecated(createMeshStagingBuffer(errorMessage));
+    TRY_BOOL(createMeshStagingBuffer(errorMessage));
 
-    TRY_deprecated(createVertexBuffer(errorMessage));
-    TRY_deprecated(createIndexBuffer(errorMessage));
+    TRY_BOOL(createVertexBuffer(errorMessage));
+    TRY_BOOL(createIndexBuffer(errorMessage));
 
     assignBuffersToMeshes();
 
@@ -90,7 +90,7 @@ void VulkanMeshManager::assignBuffersToMeshes() const {
 bool VulkanMeshManager::createMeshStagingBuffer(std::string& errorMessage) {
     const vk::DeviceSize stagingBufferSize = _vertexBufferSize + _indexBufferSize;
 
-    TRY_deprecated(_stagingBuffer.create(
+    TRY_BOOL(_stagingBuffer.create(
         stagingBufferSize,
         vk::BufferUsageFlagBits::eTransferSrc,
         VMA_MEMORY_USAGE_CPU_TO_GPU,
@@ -113,7 +113,7 @@ bool VulkanMeshManager::createMeshStagingBuffer(std::string& errorMessage) {
 }
 
 bool VulkanMeshManager::createVertexBuffer(std::string& errorMessage) {
-    TRY_deprecated(_vertexBuffer.create(
+    TRY_BOOL(_vertexBuffer.create(
         _vertexBufferSize,
         vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
         VMA_MEMORY_USAGE_GPU_ONLY,
@@ -121,13 +121,13 @@ bool VulkanMeshManager::createVertexBuffer(std::string& errorMessage) {
         errorMessage
     ));
 
-    TRY_deprecated(_vertexBuffer.copyFrom(_stagingBuffer.handle(), _commandManager, errorMessage));
+    TRY_BOOL(_vertexBuffer.copyFrom(_stagingBuffer.handle(), _commandManager, errorMessage));
 
     return true;
 }
 
 bool VulkanMeshManager::createIndexBuffer(std::string& errorMessage) {
-    TRY_deprecated(_indexBuffer.create(
+    TRY_BOOL(_indexBuffer.create(
         _indexBufferSize,
         vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
         VMA_MEMORY_USAGE_GPU_ONLY,
@@ -135,7 +135,7 @@ bool VulkanMeshManager::createIndexBuffer(std::string& errorMessage) {
         errorMessage
     ));
 
-    TRY_deprecated(_indexBuffer.copyFrom(
+    TRY_BOOL(_indexBuffer.copyFrom(
         _stagingBuffer.handle(), _commandManager, errorMessage, _indexBufferSize, _vertexBufferSize, 0
     ));
 

@@ -12,7 +12,7 @@ bool VulkanObjectBuffer::create(
 
     const vk::DeviceSize objectBufferSize = sizeof(ObjectDataGPU) * maxObjects;
 
-    TRY_deprecated(VulkanBuffer::create(
+    TRY_BOOL(VulkanBuffer::create(
         objectBufferSize,
         vk::BufferUsageFlagBits::eStorageBuffer |
         vk::BufferUsageFlagBits::eShaderDeviceAddress,
@@ -21,7 +21,7 @@ bool VulkanObjectBuffer::create(
         errorMessage
     ));
 
-    TRY_deprecated(mapMemory(errorMessage));
+    TRY_BOOL(mapMemory(errorMessage));
 
     return true;
 }

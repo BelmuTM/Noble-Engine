@@ -9,8 +9,8 @@ bool VulkanCommandManager::create(
 ) noexcept {
     _device = &device;
 
-    TRY_deprecated(createCommandPool(errorMessage));
-    TRY_deprecated(createCommandBuffers(_commandBuffers, commandBufferCount, errorMessage));
+    TRY_BOOL(createCommandPool(errorMessage));
+    TRY_BOOL(createCommandBuffers(_commandBuffers, commandBufferCount, errorMessage));
 
     return true;
 }
@@ -65,7 +65,7 @@ bool VulkanCommandManager::createCommandBuffer(vk::CommandBuffer& commandBuffer,
 }
 
 bool VulkanCommandManager::beginSingleTimeCommands(vk::CommandBuffer& commandBuffer, std::string& errorMessage) const {
-    TRY_deprecated(createCommandBuffer(commandBuffer, errorMessage));
+    TRY_BOOL(createCommandBuffer(commandBuffer, errorMessage));
 
     constexpr vk::CommandBufferBeginInfo beginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
     VK_TRY(commandBuffer.begin(beginInfo), errorMessage);

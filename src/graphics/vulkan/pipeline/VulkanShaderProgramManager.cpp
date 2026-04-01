@@ -37,7 +37,7 @@ bool VulkanShaderProgramManager::load(
 
     VulkanShaderProgram tempProgram{};
 
-    TRY_deprecated(tempProgram.load(fullPath, _device, errorMessage));
+    TRY_BOOL(tempProgram.load(fullPath, _device, errorMessage));
 
     // Insert shader program into cache
     std::lock_guard lock(_mutex);

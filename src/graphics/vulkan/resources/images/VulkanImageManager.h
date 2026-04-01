@@ -40,7 +40,8 @@ public:
     [[nodiscard]] bool loadBatchedImages(const std::vector<const Image*>& images, std::string& errorMessage);
 
     [[nodiscard]] VulkanImage* getImage(const std::string& path) const {
-        return _imageCache.contains(path) ? _imageCache.at(path).get() : nullptr;
+        const auto it = _imageCache.find(path);
+        return it != _imageCache.end() ? it->second.get() : nullptr;
     }
 
 private:

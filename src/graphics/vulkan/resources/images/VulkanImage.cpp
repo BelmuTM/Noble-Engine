@@ -35,7 +35,7 @@ bool VulkanImage::transitionLayout(
     const vk::ImageLayout   newLayout,
     const uint32_t          mipLevels
 ) {
-    TRY_deprecated(VulkanImageLayoutTransitions::transitionImageLayout(
+    TRY_BOOL(VulkanImageLayoutTransitions::transitionImageLayout(
         commandBuffer,
         errorMessage,
         _image,
@@ -58,11 +58,11 @@ bool VulkanImage::transitionLayout(
     const uint32_t              mipLevels
 ) {
     vk::CommandBuffer commandBuffer{};
-    TRY_deprecated(commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
+    TRY_BOOL(commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
 
-    TRY_deprecated(transitionLayout(commandBuffer, errorMessage, oldLayout, newLayout, mipLevels));
+    TRY_BOOL(transitionLayout(commandBuffer, errorMessage, oldLayout, newLayout, mipLevels));
 
-    TRY_deprecated(commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
+    TRY_BOOL(commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
 
     return true;
 }
@@ -73,7 +73,7 @@ bool VulkanImage::transitionLayout(
     const vk::ImageLayout   newLayout,
     const uint32_t          mipLevels
 ) {
-    TRY_deprecated(VulkanImageLayoutTransitions::transitionImageLayout(
+    TRY_BOOL(VulkanImageLayoutTransitions::transitionImageLayout(
         commandBuffer,
         errorMessage,
         _image,
@@ -95,11 +95,11 @@ bool VulkanImage::transitionLayout(
     const uint32_t              mipLevels
 ) {
     vk::CommandBuffer commandBuffer{};
-    TRY_deprecated(commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
+    TRY_BOOL(commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
 
-    TRY_deprecated(transitionLayout(commandBuffer, errorMessage, newLayout, mipLevels));
+    TRY_BOOL(transitionLayout(commandBuffer, errorMessage, newLayout, mipLevels));
 
-    TRY_deprecated(commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
+    TRY_BOOL(commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
 
     return true;
 }
@@ -388,7 +388,7 @@ bool VulkanImage::createFromBuffer(
         usageFlags |= vk::ImageUsageFlagBits::eTransferSrc;
     }
 
-    TRY_deprecated(createImage(
+    TRY_BOOL(createImage(
         vk::ImageType::e2D,
         format,
         extent,
@@ -399,7 +399,7 @@ bool VulkanImage::createFromBuffer(
         errorMessage
     ));
 
-    TRY_deprecated(transitionLayout(
+    TRY_BOOL(transitionLayout(
         commandBuffer,
         errorMessage,
         vk::ImageLayout::eTransferDstOptimal,
@@ -413,7 +413,7 @@ bool VulkanImage::createFromBuffer(
         generateMipmaps(commandBuffer, extent, mipLevels);
 
     } else {
-        TRY_deprecated(transitionLayout(
+        TRY_BOOL(transitionLayout(
             commandBuffer,
             errorMessage,
             vk::ImageLayout::eShaderReadOnlyOptimal,
@@ -421,7 +421,7 @@ bool VulkanImage::createFromBuffer(
         ));
     }
 
-    TRY_deprecated(createImageView(
+    TRY_BOOL(createImageView(
         vk::ImageViewType::e2D,
         format,
         vk::ImageAspectFlagBits::eColor,
@@ -430,7 +430,7 @@ bool VulkanImage::createFromBuffer(
         errorMessage
     ));
 
-    TRY_deprecated(createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, device, errorMessage));
+    TRY_BOOL(createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, device, errorMessage));
 
     return true;
 }

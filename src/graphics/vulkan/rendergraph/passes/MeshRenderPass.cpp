@@ -7,7 +7,7 @@ bool MeshRenderPass::create(
     const MeshRenderPassCreateContext& context,
     std::string&                       errorMessage
 ) {
-    TRY_deprecated(context.shaderProgramManager.load(getShaderProgram(), path, errorMessage));
+    TRY_BOOL(context.shaderProgramManager.load(getShaderProgram(), path, errorMessage));
 
     const std::string& passName = std::filesystem::path(path).stem().string();
 
@@ -27,11 +27,12 @@ bool MeshRenderPass::create(
 
     for (const auto& renderObject : context.renderObjectManager.getRenderObjects()) {
         // Each submesh requires its own draw call
-        for (const auto& submesh : renderObject->submeshes) {
+        for (const auto& [mesh, material] : renderObject->meshes) {
             emplaceDrawCall()
-                .setMesh(submesh.mesh)
-                .setObject(renderObject.get())
-                .addDescriptorSets(submesh.descriptorSets)
+                .setName(renderObject->object->getModel().name)
+                .setMesh(mesh)
+                .setModelMatrix(renderObject->object->getModelMatrix())
+                .addDescriptorSets(material.getDescriptorSets())
                 .setPushConstant("object", &renderObject->data);
         }
     }

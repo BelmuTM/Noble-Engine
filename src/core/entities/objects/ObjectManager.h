@@ -6,7 +6,7 @@
 
 #include "core/resources/AssetManager.h"
 
-#include "core/concurrency/ThreadPool.h"
+#include "core/multithreading/ThreadPool.h"
 
 #define MULTITHREADED_OBJECTS_LOAD 1
 

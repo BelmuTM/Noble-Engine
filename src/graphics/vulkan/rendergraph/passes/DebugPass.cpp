@@ -8,7 +8,7 @@ bool DebugPass::create(
     const DebugPassCreateContext& context,
     std::string&                  errorMessage
 ) {
-    TRY_deprecated(context.shaderProgramManager.load(getShaderProgram(), path, errorMessage));
+    TRY_BOOL(context.shaderProgramManager.load(getShaderProgram(), path, errorMessage));
 
     const std::string& passName = std::filesystem::path(path).stem().string();
 
@@ -53,12 +53,14 @@ bool DebugPass::create(
         VulkanMesh* aabbMeshPtr = _meshManager.allocateMesh(aabbMesh);
 
         emplaceDrawCall()
+            .setName(renderObject->object->getModel().name + "_Debug")
             .setMesh(aabbMeshPtr)
+            .setModelMatrix(renderObject->object->getModelMatrix())
             .setPushConstant("object", &renderObject->data);
     }
 
-    TRY_deprecated(_meshManager.create(context.device, context.commandManager, errorMessage));
-    TRY_deprecated(_meshManager.fillBuffers(errorMessage));
+    TRY_BOOL(_meshManager.create(context.device, context.commandManager, errorMessage));
+    TRY_BOOL(_meshManager.fillBuffers(errorMessage));
 
     return true;
 }

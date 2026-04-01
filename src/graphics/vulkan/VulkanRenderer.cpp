@@ -22,7 +22,7 @@ bool VulkanRenderer::init(
     ScopeGuard guard{[this] { shutdown(); }};
 
     // Create context (instance, device, surface, swapchain)
-    TRY_deprecated(createVulkanEntity(&context, errorMessage, window));
+    TRY_BOOL(createVulkanEntity(&context, errorMessage, window));
 
     const VulkanSurface& surface       = context.getSurface();
     const VulkanDevice&  device        = context.getDevice();
@@ -31,27 +31,29 @@ bool VulkanRenderer::init(
     VulkanSwapchain& swapchain = context.getSwapchain();
 
     // Resource managers creation
-    TRY_deprecated(createVulkanEntity(&swapchainManager, errorMessage, window, surface, device, swapchain, _framesInFlight));
-    TRY_deprecated(createVulkanEntity(&commandManager, errorMessage, device, _framesInFlight));
-    TRY_deprecated(createVulkanEntity(&meshManager, errorMessage, device, commandManager));
-    TRY_deprecated(createVulkanEntity(&imageManager, errorMessage, device, commandManager));
-    TRY_deprecated(createVulkanEntity(&uniformBufferManager, errorMessage, device, _framesInFlight));
-    TRY_deprecated(createVulkanEntity(&renderResources, errorMessage, device, swapchain, commandManager, _framesInFlight));
+    TRY_BOOL(createVulkanEntity(&swapchainManager, errorMessage, window, surface, device, swapchain, _framesInFlight));
+    TRY_BOOL(createVulkanEntity(&commandManager, errorMessage, device, _framesInFlight));
+    TRY_BOOL(createVulkanEntity(&meshManager, errorMessage, device, commandManager));
+    TRY_BOOL(createVulkanEntity(&imageManager, errorMessage, device, commandManager));
+    TRY_BOOL(createVulkanEntity(&uniformBufferManager, errorMessage, device, _framesInFlight));
+    TRY_BOOL(createVulkanEntity(&renderResources, errorMessage, device, swapchain, commandManager, _framesInFlight));
 
-    TRY_deprecated(createVulkanEntity(
+    TRY_BOOL(createVulkanEntity(
         &frameResources, errorMessage, device, imageManager, uniformBufferManager, _framesInFlight
     ));
 
-    TRY_deprecated(createVulkanEntity(
-        &renderObjectManager, errorMessage, objectManager, assetManager, device, imageManager, meshManager, _framesInFlight
+    TRY_BOOL(createVulkanEntity(
+        &renderObjectManager, errorMessage, VulkanRenderObjectCreateContext{
+            &objectManager, &assetManager, &device, &meshManager, &imageManager, _framesInFlight
+        }
     ));
 
     // Pipeline creation
-    TRY_deprecated(createVulkanEntity(&shaderProgramManager, errorMessage, logicalDevice));
-    TRY_deprecated(createVulkanEntity(&pipelineManager, errorMessage, logicalDevice));
+    TRY_BOOL(createVulkanEntity(&shaderProgramManager, errorMessage, logicalDevice));
+    TRY_BOOL(createVulkanEntity(&pipelineManager, errorMessage, logicalDevice));
 
     // Render graph construction
-    TRY_deprecated(createVulkanEntity(&renderGraph, errorMessage, VulkanRenderGraphCreateContext{
+    TRY_BOOL(createVulkanEntity(&renderGraph, errorMessage, VulkanRenderGraphCreateContext{
         &context.getInstance(),
         &device,
         &swapchain,
@@ -60,20 +62,6 @@ bool VulkanRenderer::init(
         &frameDraws,
         device.getQueryPool()
     }));
-
-    const VulkanRenderGraphBuilderContext renderGraphBuilderContext{
-        .renderGraph          = renderGraph,
-        .device               = device,
-        .swapchain            = swapchain,
-        .commandManager       = commandManager,
-        .meshManager          = meshManager,
-        .imageManager         = imageManager,
-        .frameResources       = frameResources,
-        .renderResources      = renderResources,
-        .renderObjectManager  = renderObjectManager,
-        .shaderProgramManager = shaderProgramManager,
-        .pipelineManager      = pipelineManager
-    };
 
     const std::vector<VulkanRenderPassDescriptor> passes = {
         {"mesh_render", VulkanRenderPassType::MeshRender},
@@ -85,10 +73,26 @@ bool VulkanRenderer::init(
     VulkanRenderPassFactory passFactory{};
     passFactory.registerPassTypes();
 
-    const VulkanRenderGraphBuilder renderGraphBuilder(renderGraphBuilderContext, passFactory);
-    TRY_deprecated(renderGraphBuilder.build(passes, errorMessage));
+    const VulkanRenderGraphBuilder renderGraphBuilder(
+        VulkanRenderGraphBuilderContext{
+            renderGraph,
+            device,
+            swapchain,
+            commandManager,
+            meshManager,
+            imageManager,
+            frameResources,
+            renderResources,
+            renderObjectManager,
+            shaderProgramManager,
+            pipelineManager
+        },
+        passFactory
+     );
 
-    TRY_deprecated(meshManager.fillBuffers(errorMessage));
+    TRY_BOOL(renderGraphBuilder.build(passes, errorMessage));
+
+    TRY_BOOL(meshManager.fillBuffers(errorMessage));
 
     guard.release();
 
@@ -105,6 +109,7 @@ void VulkanRenderer::shutdown() {
 
 void VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
     bool discardLogging = swapchainManager.isOutOfDate();
+
     std::string errorMessage;
 
     ScopeGuard guard{[&discardLogging, &errorMessage] {
@@ -149,8 +154,8 @@ bool VulkanRenderer::onFramebufferResize(std::string& errorMessage) {
         VK_CALL_LOG(context.getDevice().getLogicalDevice().waitIdle(), Logger::Level::ERROR);
     }
 
-    TRY_deprecated(swapchainManager.recreateSwapchain(errorMessage));
-    TRY_deprecated(renderResources.recreate(renderGraph, errorMessage));
+    TRY_BOOL(swapchainManager.recreateSwapchain(errorMessage));
+    TRY_BOOL(renderResources.recreate(renderGraph, errorMessage));
 
     _window->setFramebufferResized(false);
 
@@ -165,7 +170,7 @@ bool VulkanRenderer::recordCommandBuffer(
 
     VulkanImage* swapchainImage = context.getSwapchain().getImage(imageIndex);
 
-    TRY_deprecated(swapchainImage->transitionLayout(
+    TRY_BOOL(swapchainImage->transitionLayout(
         commandBuffer, errorMessage,
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eColorAttachmentOptimal
@@ -173,7 +178,7 @@ bool VulkanRenderer::recordCommandBuffer(
 
     renderGraph.execute(commandBuffer);
 
-    TRY_deprecated(swapchainImage->transitionLayout(
+    TRY_BOOL(swapchainImage->transitionLayout(
         commandBuffer, errorMessage,
         vk::ImageLayout::eColorAttachmentOptimal,
         vk::ImageLayout::ePresentSrcKHR
@@ -188,7 +193,7 @@ bool VulkanRenderer::recordCurrentCommandBuffer(const uint32_t imageIndex, std::
     const vk::CommandBuffer& currentBuffer = commandManager.getCommandBuffers()[currentFrame];
     VK_CALL_LOG(currentBuffer.reset(), Logger::Level::ERROR);
 
-    TRY_deprecated(recordCommandBuffer(currentBuffer, imageIndex, errorMessage));
+    TRY_BOOL(recordCommandBuffer(currentBuffer, imageIndex, errorMessage));
 
     return true;
 }
@@ -198,7 +203,7 @@ bool VulkanRenderer::submitCurrentCommandBuffer(
 ) {
     const vk::CommandBuffer& currentBuffer = commandManager.getCommandBuffers()[currentFrame];
 
-    TRY_deprecated(swapchainManager.submitCommandBuffer(currentBuffer, currentFrame, imageIndex, errorMessage, discardLogging));
+    TRY_BOOL(swapchainManager.submitCommandBuffer(currentBuffer, currentFrame, imageIndex, errorMessage, discardLogging));
 
     return true;
 }

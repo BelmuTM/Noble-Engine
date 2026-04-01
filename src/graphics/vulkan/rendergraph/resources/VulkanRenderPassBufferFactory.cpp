@@ -21,7 +21,7 @@ bool VulkanRenderPassBufferFactory::createDepthBufferImage(
         aspects |= vk::ImageAspectFlagBits::eStencil;
     }
 
-    TRY_deprecated(depthBuffer.createImage(
+    TRY_BOOL(depthBuffer.createImage(
         vk::ImageType::e2D,
         format,
         depthExtent,
@@ -32,15 +32,15 @@ bool VulkanRenderPassBufferFactory::createDepthBufferImage(
         errorMessage
     ));
 
-    TRY_deprecated(depthBuffer.createImageView(vk::ImageViewType::e2D, format, aspects, 1, device, errorMessage));
+    TRY_BOOL(depthBuffer.createImageView(vk::ImageViewType::e2D, format, aspects, 1, device, errorMessage));
 
-    TRY_deprecated(depthBuffer.transitionLayout(
+    TRY_BOOL(depthBuffer.transitionLayout(
         commandManager, errorMessage,
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eDepthStencilAttachmentOptimal
     ));
 
-    TRY_deprecated(depthBuffer.createSampler(
+    TRY_BOOL(depthBuffer.createSampler(
         vk::Filter::eLinear, vk::SamplerAddressMode::eClampToEdge, device, errorMessage
     ));
 
@@ -61,7 +61,7 @@ bool VulkanRenderPassBufferFactory::createColorBufferImage(
     colorBuffer.setExtent(colorExtent);
     colorBuffer.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
 
-    TRY_deprecated(colorBuffer.createImage(
+    TRY_BOOL(colorBuffer.createImage(
         vk::ImageType::e2D,
         format,
         colorExtent,
@@ -72,17 +72,17 @@ bool VulkanRenderPassBufferFactory::createColorBufferImage(
         errorMessage
     ));
 
-    TRY_deprecated(colorBuffer.createImageView(
+    TRY_BOOL(colorBuffer.createImageView(
         vk::ImageViewType::e2D, format, vk::ImageAspectFlagBits::eColor, 1, device, errorMessage
     ));
 
-    TRY_deprecated(colorBuffer.transitionLayout(
+    TRY_BOOL(colorBuffer.transitionLayout(
         commandManager, errorMessage,
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eColorAttachmentOptimal
     ));
 
-    TRY_deprecated(colorBuffer.createSampler(
+    TRY_BOOL(colorBuffer.createSampler(
         vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, device, errorMessage
     ));
 

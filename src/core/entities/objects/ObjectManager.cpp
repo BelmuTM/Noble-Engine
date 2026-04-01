@@ -72,6 +72,8 @@ void ObjectManager::createObjects() {
     // Create objects
     std::vector<std::future<std::unique_ptr<Object>>> objectFutures;
 
+    Logger::info("Creating objects");
+
     for (const auto& objectDescriptor : _objectDescriptors) {
         objectFutures.push_back(
             threadPool.enqueue([this, objectDescriptor]() -> std::unique_ptr<Object> {
@@ -89,10 +91,12 @@ void ObjectManager::createObjects() {
     }
 
     for (auto& objectFuture : objectFutures) {
-        if (auto object = objectFuture.get()) {
-            _objects.push_back(std::move(object));
+        if (objectFuture.valid()) {
+            _objects.push_back(objectFuture.get());
         }
     }
+
+    Logger::info("Created objects");
 
 #else
 

@@ -16,12 +16,12 @@ bool VulkanFrameResources::create(
     _framesInFlight = framesInFlight;
 
     // Descriptors creation
-    TRY_deprecated(_descriptorManager.create(device.getLogicalDevice(), frameDescriptorScheme, framesInFlight, 1, errorMessage));
+    TRY_BOOL(_descriptorManager.create(device.getLogicalDevice(), frameDescriptorScheme, framesInFlight, 1, errorMessage));
 
-    TRY_deprecated(uniformBufferManager.createBuffer(_frameUBO, errorMessage));
+    TRY_BOOL(uniformBufferManager.createBuffer(_frameUBO, errorMessage));
 
-    TRY_deprecated(_descriptorManager.allocate(_frameUBODescriptors, errorMessage));
-    _frameUBODescriptors->bindPerFrameUBO(_frameUBO, 0);
+    TRY_BOOL(_descriptorManager.allocate(_frameUBODescriptors, errorMessage));
+    _frameUBODescriptors->updatePerFrameUBODescriptorSets(_frameUBO, 0);
 
     return true;
 }

@@ -5,15 +5,15 @@
 bool VulkanRenderGraphBuilder::build(
     const std::vector<VulkanRenderPassDescriptor>& passDescriptors, std::string& errorMessage
 ) const {
-    TRY_deprecated(createPasses(passDescriptors, errorMessage));
+    TRY_BOOL(createPasses(passDescriptors, errorMessage));
 
-    TRY_deprecated(createColorBuffers(errorMessage));
+    TRY_BOOL(createColorBuffers(errorMessage));
 
-    TRY_deprecated(attachSwapchainOutput(errorMessage));
+    TRY_BOOL(attachSwapchainOutput(errorMessage));
 
-    TRY_deprecated(allocateDescriptors(errorMessage));
+    TRY_BOOL(allocateDescriptors(errorMessage));
 
-    TRY_deprecated(createPipelines(errorMessage));
+    TRY_BOOL(createPipelines(errorMessage));
 
     _context.renderResources.scheduleResourceTransitions();
 
@@ -36,7 +36,7 @@ bool VulkanRenderGraphBuilder::createPasses(
 
 bool VulkanRenderGraphBuilder::createColorBuffers(std::string& errorMessage) const {
     for (auto& pass : _context.renderGraph.getPasses()) {
-        TRY_deprecated(_context.renderResources.createColorBuffers(pass.get(), errorMessage));
+        TRY_BOOL(_context.renderResources.createColorBuffers(pass.get(), errorMessage));
     }
 
     return true;
@@ -44,7 +44,7 @@ bool VulkanRenderGraphBuilder::createColorBuffers(std::string& errorMessage) con
 
 bool VulkanRenderGraphBuilder::allocateDescriptors(std::string& errorMessage) const {
     for (const auto& pass : _context.renderGraph.getPasses()) {
-        TRY_deprecated(_context.renderResources.allocateDescriptors(pass.get(), errorMessage));
+        TRY_BOOL(_context.renderResources.allocateDescriptors(pass.get(), errorMessage));
     }
 
     return true;
@@ -88,7 +88,7 @@ bool VulkanRenderGraphBuilder::createPipelines(std::string& errorMessage) const 
     for (const auto& pass : _context.renderGraph.getPasses()) {
         VulkanGraphicsPipeline* pipeline = _context.pipelineManager.allocatePipeline();
 
-        TRY_deprecated(_context.pipelineManager.createGraphicsPipeline(pipeline, *pass, errorMessage));
+        TRY_BOOL(_context.pipelineManager.createGraphicsPipeline(pipeline, *pass, errorMessage));
 
         pass->setPipeline(pipeline);
     }

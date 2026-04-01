@@ -2,9 +2,10 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
+#include "VulkanMesh.h"
+
 #include "graphics/vulkan/core/VulkanCommandManager.h"
 #include "graphics/vulkan/core/memory/VulkanBuffer.h"
-#include "VulkanMesh.h"
 
 #include <vector>
 
