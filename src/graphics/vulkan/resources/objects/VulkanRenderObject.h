@@ -15,23 +15,24 @@ struct VulkanRenderMesh {
 };
 
 struct VulkanRenderObject {
+    uint32_t instanceIndex = 0;
+
     Object* object = nullptr;
 
     std::vector<VulkanRenderMesh> meshes{};
 
     ObjectDataGPU data;
-    uint32_t objectIndex = 0;
 
     bool create(
-        const uint32_t           _objectIndex,
-        Object*                  _object,
+        const uint32_t           objectIndex,
+        Object*                  sourceObject,
         VulkanMeshManager*       meshManager,
         VulkanImageManager*      imageManager,
         VulkanDescriptorManager& descriptorManager,
         std::string&             errorMessage
     ) {
-        objectIndex = _objectIndex;
-        object      = _object;
+        instanceIndex = objectIndex;
+        object        = sourceObject;
 
         meshes.reserve(object->getModel().meshes.size());
 

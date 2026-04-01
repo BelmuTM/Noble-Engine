@@ -85,48 +85,48 @@ void ModelManager::loadMaterial_OBJ(Mesh& mesh, const std::string& modelName, co
 
 // ------ Model ------
 
-bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& errorMessage) {
+Mesh ModelManager::processMesh_OBJ(
+    const std::string&                   modelName,
+    const tinyobj::attrib_t&             attributes,
+    const std::vector<tinyobj::shape_t>& shapes,
+    const tinyobj::material_t&           material,
+    const int                            targetMaterialIndex
+) {
     Mesh mesh{};
 
     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-    tinyobj::attrib_t attributes;
-
-    std::vector<tinyobj::shape_t>    shapes{};
-    std::vector<tinyobj::material_t> materials{};
-
-    if (!tinyobj::LoadObj(
-        &attributes, &shapes, &materials, &errorMessage, path.c_str(), AssetPaths::MODELS
-    )) {
-        return false;
-    }
-
-    bool hasNormals = !attributes.normals.empty();
-
     Math::AABB aabb{};
 
-    // For each shape that forms the mesh
+    const bool hasNormals = !attributes.normals.empty();
+
     for (const auto& [name, objMesh] : shapes) {
-        // For each face that forms the shape
         size_t indexOffset = 0;
 
         for (size_t face = 0; face < objMesh.num_face_vertices.size(); face++) {
+            const int materialIndex = objMesh.material_ids[face];
+
+            // Skip faces that are not using this material
+            if (materialIndex != targetMaterialIndex) {
+                indexOffset += objMesh.num_face_vertices[face];
+                continue;
+            }
+
             size_t verticesCount = objMesh.num_face_vertices[face];
 
-            // For each vertex that forms the face
             for (size_t vert = 0; vert < verticesCount; vert++) {
-                auto [vertex_index, normal_index, texcoord_index] = objMesh.indices[indexOffset + vert];
+                auto [vertex_index, normal_index, texcoord_index] =
+                    objMesh.indices[indexOffset + vert];
 
                 Vertex vertex{};
 
-                // Define position attribute
+                // Position
                 vertex.position = {
                     attributes.vertices[3 * vertex_index + 0],
                     attributes.vertices[3 * vertex_index + 1],
                     attributes.vertices[3 * vertex_index + 2]
                 };
 
-                // Define normal attribute
+                // Normal
                 if (hasNormals && normal_index >= 0) {
                     vertex.normal = {
                         attributes.normals[3 * normal_index + 0],
@@ -135,25 +135,24 @@ bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& 
                     };
                 }
 
-                // Define texture coordinates attribute
+                // UV
                 if (!attributes.texcoords.empty() && texcoord_index >= 0) {
-                    // Y coordinate of the texture must be flipped to match coordinate space
                     vertex.textureCoords = {
-                               attributes.texcoords[2 * texcoord_index + 0],
+                        attributes.texcoords[2 * texcoord_index + 0],
                         1.0f - attributes.texcoords[2 * texcoord_index + 1]
                     };
                 }
 
-                // Define color attribute
+                // Color
                 vertex.color = {1.0f, 1.0f, 1.0f};
 
-                // Progressively find the bounds of the mesh
+                // AABB
                 aabb.minBound = glm::min(aabb.minBound, vertex.position);
                 aabb.maxBound = glm::max(aabb.maxBound, vertex.position);
 
-                // Add unique vertex and corresponding index to the mesh
                 if (!uniqueVertices.contains(vertex)) {
                     uniqueVertices[vertex] = static_cast<uint32_t>(mesh.getVertices().size());
+
                     mesh.addVertex(vertex);
                 }
 
@@ -161,18 +160,10 @@ bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& 
             }
 
             indexOffset += verticesCount;
-
-            // Load material
-            const unsigned int materialIndex = objMesh.material_ids[face];
-
-            // If material ID is valid
-            if (materialIndex < materials.size()) {
-                const tinyobj::material_t& material = materials[materialIndex];
-
-                loadMaterial_OBJ(mesh, model.name, material);
-            }
         }
     }
+
+    loadMaterial_OBJ(mesh, modelName, material);
 
     mesh.setAABB(aabb);
 
@@ -182,7 +173,37 @@ bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& 
 
     mesh.generateTangents();
 
-    model.addMesh(mesh);
+    return mesh;
+}
+
+bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& errorMessage) {
+    tinyobj::attrib_t                attributes;
+    std::vector<tinyobj::shape_t>    shapes;
+    std::vector<tinyobj::material_t> materials;
+
+    if (!tinyobj::LoadObj(
+        &attributes, &shapes, &materials, &errorMessage, path.c_str(), AssetPaths::MODELS
+    )) {
+        return false;
+    }
+
+    if (materials.empty()) {
+        materials.emplace_back();
+    }
+
+    for (size_t materialIndex = 0; materialIndex < materials.size(); materialIndex++) {
+        Mesh mesh = processMesh_OBJ(
+            model.name,
+            attributes,
+            shapes,
+            materials[materialIndex],
+            static_cast<int>(materialIndex)
+        );
+
+        if (!mesh.getVertices().empty()) {
+            model.addMesh(mesh);
+        }
+    }
 
     return true;
 }
@@ -440,7 +461,13 @@ void ModelManager::processNode_glTF(
             for (auto& vertex : mesh.getVertices()) {
                 vertex.position = glm::vec3(worldTransform * glm::vec4(vertex.position, 1.0f));
                 vertex.normal   = glm::normalize(normalMatrix * vertex.normal);
-                vertex.tangent  = glm::vec4(glm::normalize(glm::mat3(normalMatrix) * glm::vec3(vertex.tangent)), vertex.tangent.w);
+                // The determinant sign tells you if the transform contains a reflection
+                const float handedness = glm::determinant(glm::mat3(worldTransform)) < 0.0f ? -1.0f : 1.0f;
+
+                vertex.tangent = glm::vec4(
+                    glm::normalize(glm::mat3(worldTransform) * glm::vec3(vertex.tangent)),
+                    vertex.tangent.w * handedness  // <-- flip if reflected
+                );
             }
 
             mesh.setAABB(mesh.getAABB().transform(worldTransform));

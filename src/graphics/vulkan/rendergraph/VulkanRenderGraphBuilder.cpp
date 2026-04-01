@@ -24,7 +24,6 @@ bool VulkanRenderGraphBuilder::createPasses(
     const std::vector<VulkanRenderPassDescriptor>& passDescriptors, std::string& errorMessage
 ) const {
     for (const auto& [path, type] : passDescriptors) {
-        Logger::debug(path);
         auto pass = _passFactory.createPass(path, type, _context, errorMessage);
         if (!pass) return false;
 

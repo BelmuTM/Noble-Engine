@@ -43,6 +43,14 @@ public:
     );
 
 private:
+    static Mesh processMesh_OBJ(
+        const std::string&                   modelName,
+        const tinyobj::attrib_t&             attributes,
+        const std::vector<tinyobj::shape_t>& shapes,
+        const tinyobj::material_t&           material,
+        int                                  targetMaterialIndex
+    );
+
     static void processMeshPrimitives_glTF(
         Mesh&                      mesh,
         const tinygltf::Model&     glTFModel,

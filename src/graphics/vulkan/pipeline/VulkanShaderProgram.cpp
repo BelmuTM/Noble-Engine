@@ -94,7 +94,7 @@ bool VulkanShaderProgram::loadFromFiles(
 
         _shaderStages.push_back(stageInfo);
 
-        Logger::debug("----- STAGE [" + path + "] -----");
+        //Logger::debug("----- STAGE [" + path + "] -----");
         TRY_BOOL(reflectShaderResources(bytecode, stage, errorMessage));
     }
 
@@ -124,7 +124,7 @@ bool VulkanShaderProgram::reflectShaderResources(
     constexpr SpvReflectTypeFlags floatVectorFlags = SPV_REFLECT_TYPE_FLAG_VECTOR | SPV_REFLECT_TYPE_FLAG_FLOAT;
 
     // Stage outputs
-    Logger::debug("--> Stage Outputs <--");
+    //Logger::debug("--> Stage Outputs <--");
 
     uint32_t outputCount = 0;
     result = spvReflectEnumerateOutputVariables(&module, &outputCount, nullptr);
@@ -147,14 +147,14 @@ bool VulkanShaderProgram::reflectShaderResources(
 
         if (stage & vk::ShaderStageFlagBits::eFragment) {
             if (output->type_description->type_flags == floatVectorFlags) {
-                Logger::debug("location=" + std::to_string(output->location) + " : " + cleanName);
+                //Logger::debug("location=" + std::to_string(output->location) + " : " + cleanName);
                 _stageOutputs.emplace_back(cleanName);
             }
         }
     }
 
     // Descriptors
-    Logger::debug("--> Descriptors <--");
+    //Logger::debug("--> Descriptors <--");
 
     uint32_t descriptorSetCount = 0;
     result = spvReflectEnumerateDescriptorSets(&module, &descriptorSetCount, nullptr);
@@ -170,10 +170,12 @@ bool VulkanShaderProgram::reflectShaderResources(
             const SpvReflectDescriptorBinding* descriptorBinding = descriptorSet->bindings[binding];
 
             if (descriptorBinding->type_description->type_flags & SPV_REFLECT_TYPE_FLAG_EXTERNAL_SAMPLED_IMAGE) {
+                /*
                 Logger::debug(
                     "set=" + std::to_string(descriptorSet->set) + "(" + std::to_string(set) + "), " + "binding=" +
                     std::to_string(descriptorBinding->binding) + " : " + descriptorBinding->name
                 );
+                */
 
                 const VulkanDescriptorBindingInfo info{
                     .binding    = descriptorBinding->binding,
@@ -188,7 +190,7 @@ bool VulkanShaderProgram::reflectShaderResources(
     }
 
     // Push constants
-    Logger::debug("--> Push Constants <--");
+    //Logger::debug("--> Push Constants <--");
 
     uint32_t pushConstantCount = 0;
     result = spvReflectEnumeratePushConstantBlocks(&module, &pushConstantCount, nullptr);
@@ -206,7 +208,6 @@ bool VulkanShaderProgram::reflectShaderResources(
             .size       = pushConstant->size
         };
 
-        Logger::debug(name);
         _pushConstants[name] = pushConstantRange;
     }
 

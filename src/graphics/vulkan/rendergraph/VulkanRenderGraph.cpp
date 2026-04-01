@@ -34,7 +34,7 @@ void VulkanRenderGraph::execute(const vk::CommandBuffer commandBuffer) const {
     commandBuffer.resetQueryPool(_context.queryPool, 0, 1);
 
     for (const auto& pass : _passes) {
-        if (!executePass(commandBuffer, *pass.get(), errorMessage)) return;
+        if (!executePass(commandBuffer, *pass, errorMessage)) return;
     }
 
     guard.release();
