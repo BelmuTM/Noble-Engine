@@ -4,7 +4,7 @@
 
 bool VulkanUniformBufferManager::create(
     const VulkanDevice& device,
-    const uint32_t      framesInFlight,
+    const std::uint32_t framesInFlight,
     std::string&        errorMessage
 ) noexcept {
     _device         = &device;

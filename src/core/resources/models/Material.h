@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common/HashUtils.h"
+
 #include "core/resources/AssetPaths.h"
 
 #include <filesystem>
@@ -30,6 +32,32 @@ struct Material {
     double ior       = 1.0;
     double metallic  = 0.0;
     double roughness = 0.0;
+
+    bool operator==(const Material& other) const noexcept = default;
+};
+
+struct MaterialHash {
+    std::size_t operator()(const Material& m) const noexcept {
+        std::size_t hash = 0;
+
+        HashUtils::combine(hash, m.name);
+        HashUtils::combine(hash, m.albedoPath);
+        HashUtils::combine(hash, m.normalPath);
+        HashUtils::combine(hash, m.specularPath);
+        HashUtils::combine(hash, m.roughnessPath);
+        HashUtils::combine(hash, m.metallicPath);
+
+
+        HashUtils::combine(hash, m.diffuse);
+        HashUtils::combine(hash, m.specular);
+        HashUtils::combine(hash, m.emission);
+
+        HashUtils::combine(hash, m.ior);
+        HashUtils::combine(hash, m.metallic);
+        HashUtils::combine(hash, m.roughness);
+
+        return hash;
+    }
 };
 
 namespace TextureHelper {

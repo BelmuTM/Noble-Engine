@@ -8,8 +8,8 @@
 bool VulkanDescriptorManager::create(
     const vk::Device&             device,
     const VulkanDescriptorScheme& descriptorScheme,
-    const uint32_t                framesInFlight,
-    const uint32_t                maxSets,
+    const std::uint32_t           framesInFlight,
+    const std::uint32_t           maxSets,
     std::string&                  errorMessage
 ) noexcept {
     _device         = device;

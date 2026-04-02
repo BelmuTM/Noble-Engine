@@ -11,13 +11,16 @@
 struct MeshRenderPassCreateContext {
     const VulkanFrameResources&  frameResources;
     const VulkanRenderResources& renderResources;
+    VulkanMaterialManager&       materialManager;
     VulkanRenderObjectManager&   renderObjectManager;
+
     VulkanShaderProgramManager&  shaderProgramManager;
 
     static MeshRenderPassCreateContext build(const VulkanRenderGraphBuilderContext& context) {
         return {
             context.frameResources,
             context.renderResources,
+            context.materialManager,
             context.renderObjectManager,
             context.shaderProgramManager
         };

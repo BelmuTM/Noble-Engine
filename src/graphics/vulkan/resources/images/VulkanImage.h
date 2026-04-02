@@ -27,7 +27,7 @@ public:
         std::string&      errorMessage,
         vk::ImageLayout   oldLayout,
         vk::ImageLayout   newLayout,
-        uint32_t          mipLevels = 1
+        std::uint32_t     mipLevels = 1
     );
 
     [[nodiscard]] bool transitionLayout(
@@ -35,28 +35,28 @@ public:
         std::string&                errorMessage,
         vk::ImageLayout             oldLayout,
         vk::ImageLayout             newLayout,
-        uint32_t                    mipLevels = 1
+        std::uint32_t               mipLevels = 1
     );
 
     [[nodiscard]] bool transitionLayout(
         vk::CommandBuffer commandBuffer,
         std::string&      errorMessage,
         vk::ImageLayout   newLayout,
-        uint32_t          mipLevels = 1
+        std::uint32_t     mipLevels = 1
     );
 
     [[nodiscard]] bool transitionLayout(
         const VulkanCommandManager* commandManager,
         std::string&                errorMessage,
         vk::ImageLayout             newLayout,
-        uint32_t                    mipLevels = 1
+        std::uint32_t               mipLevels = 1
     );
 
     [[nodiscard]] bool createImage(
         vk::ImageType       type,
         vk::Format          format,
         vk::Extent3D        extent,
-        uint32_t            mipLevels,
+        std::uint32_t       mipLevels,
         vk::ImageUsageFlags usage,
         VmaMemoryUsage      memoryUsage,
         const VulkanDevice* device,
@@ -67,7 +67,7 @@ public:
         vk::ImageViewType    type,
         vk::Format           format,
         vk::ImageAspectFlags aspectFlags,
-        uint32_t             mipLevels,
+        std::uint32_t        mipLevels,
         const VulkanDevice*  device,
         std::string&         errorMessage
     );
@@ -88,7 +88,7 @@ public:
     void generateMipmaps(
         vk::CommandBuffer commandBuffer,
         vk::Extent3D      extent,
-        uint32_t          mipLevels
+        std::uint32_t     mipLevels
     ) const;
 
     [[nodiscard]] bool createFromBuffer(
@@ -96,7 +96,7 @@ public:
         vk::DeviceSize      bufferOffset,
         vk::Format          format,
         vk::Extent3D        extent,
-        uint32_t            mipLevels,
+        std::uint32_t       mipLevels,
         vk::CommandBuffer   commandBuffer,
         const VulkanDevice* device,
         std::string&        errorMessage
@@ -130,7 +130,7 @@ public:
             || format == vk::Format::eD32SfloatS8Uint;
     }
 
-    [[nodiscard]] VulkanDescriptorInfo getDescriptorInfo(const uint32_t binding) const noexcept {
+    [[nodiscard]] VulkanDescriptorInfo getDescriptorInfo(const std::uint32_t binding) const noexcept {
         return {
             .type      = _descriptorType,
             .imageInfo = {_sampler, _imageView, vk::ImageLayout::eShaderReadOnlyOptimal},

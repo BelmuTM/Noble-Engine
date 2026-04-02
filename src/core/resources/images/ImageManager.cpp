@@ -23,9 +23,9 @@ std::shared_future<std::unique_ptr<Image>> ImageManager::load(
             return nullptr;
         }
 
-        const size_t byteSize = width * height * STBI_rgb_alpha;
+        const std::size_t byteSize = width * height * STBI_rgb_alpha;
 
-        std::unique_ptr<uint8_t[]> pixelsPtr(pixels);
+        std::unique_ptr<std::uint8_t[]> pixelsPtr(pixels);
 
         auto image = std::make_unique<Image>();
 

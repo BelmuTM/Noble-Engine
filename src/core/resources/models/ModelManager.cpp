@@ -94,15 +94,15 @@ Mesh ModelManager::processMesh_OBJ(
 ) {
     Mesh mesh{};
 
-    std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+    std::unordered_map<Vertex, std::uint32_t> uniqueVertices{};
     Math::AABB aabb{};
 
     const bool hasNormals = !attributes.normals.empty();
 
     for (const auto& [name, objMesh] : shapes) {
-        size_t indexOffset = 0;
+        std::size_t indexOffset = 0;
 
-        for (size_t face = 0; face < objMesh.num_face_vertices.size(); face++) {
+        for (std::size_t face = 0; face < objMesh.num_face_vertices.size(); face++) {
             const int materialIndex = objMesh.material_ids[face];
 
             // Skip faces that are not using this material
@@ -111,9 +111,9 @@ Mesh ModelManager::processMesh_OBJ(
                 continue;
             }
 
-            size_t verticesCount = objMesh.num_face_vertices[face];
+            std::size_t verticesCount = objMesh.num_face_vertices[face];
 
-            for (size_t vert = 0; vert < verticesCount; vert++) {
+            for (std::size_t vert = 0; vert < verticesCount; vert++) {
                 auto [vertex_index, normal_index, texcoord_index] =
                     objMesh.indices[indexOffset + vert];
 
@@ -151,7 +151,7 @@ Mesh ModelManager::processMesh_OBJ(
                 aabb.maxBound = glm::max(aabb.maxBound, vertex.position);
 
                 if (!uniqueVertices.contains(vertex)) {
-                    uniqueVertices[vertex] = static_cast<uint32_t>(mesh.getVertices().size());
+                    uniqueVertices[vertex] = static_cast<std::uint32_t>(mesh.getVertices().size());
 
                     mesh.addVertex(vertex);
                 }
@@ -264,9 +264,9 @@ void ModelManager::loadMaterial_glTF(
 struct AttributeData {
     const tinygltf::Accessor* accessor;
     const unsigned char* base;
-    size_t stride = 0;
+    std::size_t stride = 0;
 
-    [[nodiscard]] const unsigned char* getData(const size_t index) const {
+    [[nodiscard]] const unsigned char* getData(const std::size_t index) const {
         return base + index * stride;
     }
 };
@@ -320,18 +320,18 @@ void ModelManager::processMeshPrimitives_glTF(
     // Process vertices
     Math::AABB aabb{};
 
-    for (size_t i = 0; i < indexData.accessor->count; i++) {
-        uint32_t vertexIndex = 0;
+    for (std::size_t i = 0; i < indexData.accessor->count; i++) {
+        std::uint32_t vertexIndex = 0;
 
         const unsigned char* indexPtr = indexData.getData(i);
 
         switch (indexData.accessor->componentType) {
             case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
-                vertexIndex = *reinterpret_cast<const uint16_t*>(indexPtr);
+                vertexIndex = *reinterpret_cast<const std::uint16_t*>(indexPtr);
                 break;
 
             case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
-                vertexIndex = *reinterpret_cast<const uint32_t*>(indexPtr);
+                vertexIndex = *reinterpret_cast<const std::uint32_t*>(indexPtr);
                 break;
 
             case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:

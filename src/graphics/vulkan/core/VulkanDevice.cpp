@@ -138,7 +138,7 @@ VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
     const auto& properties = device.getQueueFamilyProperties2();
 
     // Find a queue family with graphics capabilities
-    for (size_t i = 0; i < properties.size(); i++) {
+    for (std::size_t i = 0; i < properties.size(); i++) {
         if (properties[i].queueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics) {
             indices.graphicsFamily = i;
             break;
@@ -151,7 +151,7 @@ VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
     // If not found, find a queue family that supports present
     if (!presentSupport) {
         // Find another queue family that support both graphics and present
-        for (size_t i = 0; i < properties.size(); i++) {
+        for (std::size_t i = 0; i < properties.size(); i++) {
             presentSupport = device.getSurfaceSupportKHR(i, surface).value;
 
             if (properties[i].queueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics && presentSupport) {
@@ -162,7 +162,7 @@ VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
         }
         // If not found, find a queue family that only supports present
         if (indices.presentFamily == UINT32_MAX) {
-            for (size_t i = 0; i < properties.size(); i++) {
+            for (std::size_t i = 0; i < properties.size(); i++) {
                 presentSupport = device.getSurfaceSupportKHR(i, surface).value;
 
                 if (presentSupport) {
@@ -219,7 +219,7 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
         .pNext                   = &deviceDynamicRenderingFeatures,
         .queueCreateInfoCount    = 1,
         .pQueueCreateInfos       = &deviceQueueInfo,
-        .enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size()),
+        .enabledExtensionCount   = static_cast<std::uint32_t>(deviceExtensions.size()),
         .ppEnabledExtensionNames = deviceExtensions.data(),
         .pEnabledFeatures        = &deviceFeatures
     };

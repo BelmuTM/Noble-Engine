@@ -20,8 +20,8 @@ public:
     [[nodiscard]] bool create(
         const vk::Device&             device,
         const VulkanDescriptorScheme& descriptorScheme,
-        uint32_t                      framesInFlight,
-        uint32_t                      maxSets,
+        std::uint32_t                 framesInFlight,
+        std::uint32_t                 maxSets,
         std::string&                  errorMessage
     ) noexcept;
 
@@ -37,7 +37,7 @@ public:
 
     void updateSets(const vk::WriteDescriptorSet& descriptorSetWrite) const;
 
-    [[nodiscard]] uint32_t getFramesInFlight() const noexcept { return _framesInFlight; }
+    [[nodiscard]] std::uint32_t getFramesInFlight() const noexcept { return _framesInFlight; }
 
     [[nodiscard]] vk::DescriptorSetLayout getLayout() const noexcept { return _descriptorSetLayout; }
 
@@ -52,8 +52,8 @@ private:
 
     vk::Device _device{};
 
-    uint32_t _framesInFlight = 0;
-    uint32_t _maxSets        = 0;
+    std::uint32_t _framesInFlight = 0;
+    std::uint32_t _maxSets        = 0;
 
     std::vector<vk::DescriptorSetLayoutBinding> _bindings{};
     std::vector<vk::DescriptorPoolSize>         _poolSizes{};

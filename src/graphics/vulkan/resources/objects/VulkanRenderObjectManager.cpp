@@ -9,7 +9,7 @@ bool VulkanRenderObjectManager::create(
     _context = context;
 
     TRY_BOOL(_descriptorManager.create(
-        context.device->getLogicalDevice(), objectDescriptorScheme, context.framesInFlight, MAX_RENDER_OBJECTS, errorMessage
+        context.device->getLogicalDevice(), getDescriptorScheme(), context.framesInFlight, MAX_RENDER_OBJECTS, errorMessage
     ));
 
     TRY_BOOL(_objectBuffer.create(*context.device, MAX_RENDER_OBJECTS, errorMessage));
@@ -18,7 +18,7 @@ bool VulkanRenderObjectManager::create(
 
     auto startTime = std::chrono::high_resolution_clock::now();
 
-    TRY_BOOL(loadObjectTextures(context.assetManager->getTextures(), errorMessage));
+    TRY_BOOL(context.materialManager->loadTextures(context.assetManager->getTextures(), errorMessage));
 
     auto endTime = std::chrono::high_resolution_clock::now();
 
@@ -46,29 +46,14 @@ void VulkanRenderObjectManager::destroy() noexcept {
     _objectBuffer.destroy();
 }
 
-bool VulkanRenderObjectManager::loadObjectTextures(
-    const AssetManager::TexturesMap& textures, std::string& errorMessage
-) const {
-    std::vector<const Image*> images{};
-
-    for (const auto& texture : textures | std::views::values) {
-        if (!texture) continue;
-        images.push_back(texture);
-    }
-
-    TRY_BOOL(_context.imageManager->loadBatchedImages(images, errorMessage));
-
-    return true;
-}
-
 bool VulkanRenderObjectManager::createRenderObjects(
     const ObjectManager::ObjectsVector& objects, std::string& errorMessage
 ) {
     _renderObjects.reserve(objects.size());
 
-    uint32_t meshCount = 0;
+    std::uint32_t meshCount = 0;
 
-    for (uint32_t i = 0; i < objects.size(); i++) {
+    for (std::uint32_t i = 0; i < objects.size(); i++) {
         meshCount += objects[i]->getModel().meshes.size();
 
         if (meshCount >= MAX_RENDER_OBJECTS) {
@@ -82,7 +67,7 @@ bool VulkanRenderObjectManager::createRenderObjects(
         _renderObjects.emplace_back(std::make_unique<VulkanRenderObject>());
 
         TRY_BOOL(_renderObjects.back()->create(
-            i, objects[i].get(), _context.meshManager, _context.imageManager, _descriptorManager, errorMessage
+            i, objects[i].get(), _context.meshManager, _context.materialManager, errorMessage
         ));
     }
 
@@ -92,7 +77,7 @@ bool VulkanRenderObjectManager::createRenderObjects(
 void VulkanRenderObjectManager::updateObjects() const {
     std::vector<ObjectDataGPU> dataToGPU(_renderObjects.size());
 
-    for (size_t i = 0; i < _renderObjects.size(); i++) {
+    for (std::size_t i = 0; i < _renderObjects.size(); i++) {
         auto& renderObject = *_renderObjects[i];
 
         renderObject.update();

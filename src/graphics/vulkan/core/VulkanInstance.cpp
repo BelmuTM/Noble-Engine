@@ -139,9 +139,9 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
     VkInstanceCreateInfo instanceInfo{
         .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         .pApplicationInfo        = &applicationInfo,
-        .enabledLayerCount       = static_cast<uint32_t>(layers.size()),
+        .enabledLayerCount       = static_cast<std::uint32_t>(layers.size()),
         .ppEnabledLayerNames     = layers.data(),
-        .enabledExtensionCount   = static_cast<uint32_t>(extensions.size()),
+        .enabledExtensionCount   = static_cast<std::uint32_t>(extensions.size()),
         .ppEnabledExtensionNames = extensions.data()
     };
 

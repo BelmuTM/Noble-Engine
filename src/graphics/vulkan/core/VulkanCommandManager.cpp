@@ -5,7 +5,7 @@
 #include "core/debug/ErrorHandling.h"
 
 bool VulkanCommandManager::create(
-    const VulkanDevice& device, const uint32_t commandBufferCount, std::string& errorMessage
+    const VulkanDevice& device, const std::uint32_t commandBufferCount, std::string& errorMessage
 ) noexcept {
     _device = &device;
 
@@ -40,7 +40,7 @@ bool VulkanCommandManager::createCommandPool(std::string& errorMessage) {
 }
 
 bool VulkanCommandManager::createCommandBuffers(
-    std::vector<vk::CommandBuffer>& commandBuffers, const uint32_t commandBufferCount, std::string& errorMessage
+    std::vector<vk::CommandBuffer>& commandBuffers, const std::uint32_t commandBufferCount, std::string& errorMessage
 ) const {
     vk::CommandBufferAllocateInfo allocateInfo{};
     allocateInfo

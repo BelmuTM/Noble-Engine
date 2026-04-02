@@ -59,7 +59,7 @@ bool VulkanSwapchain::recreate(const vk::SurfaceKHR surface, std::string& errorM
 void VulkanSwapchain::createImages() {
     _images.resize(_imageHandles.size());
 
-    for (uint32_t i = 0; i < _imageHandles.size(); i++) {
+    for (std::uint32_t i = 0; i < _imageHandles.size(); i++) {
         if (!_images[i]) {
             _images[i] = std::make_unique<VulkanImage>();
         }
@@ -109,7 +109,7 @@ vk::PresentModeKHR VulkanSwapchain::choosePresentMode(const std::vector<vk::Pres
 }
 
 vk::Extent2D VulkanSwapchain::chooseExtent(const vk::SurfaceCapabilitiesKHR& capabilities) const {
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+    if (capabilities.currentExtent.width != std::numeric_limits<std::uint32_t>::max()) {
         return capabilities.currentExtent;
     }
 
@@ -117,8 +117,8 @@ vk::Extent2D VulkanSwapchain::chooseExtent(const vk::SurfaceCapabilitiesKHR& cap
     _window->getFramebufferSize(width, height);
 
     return {
-        std::clamp<uint32_t>(width , capabilities.minImageExtent.width , capabilities.maxImageExtent.width),
-        std::clamp<uint32_t>(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height)
+        std::clamp<std::uint32_t>(width , capabilities.minImageExtent.width , capabilities.maxImageExtent.width),
+        std::clamp<std::uint32_t>(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height)
     };
 }
 
@@ -168,7 +168,7 @@ bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string&
 
     auto [graphicsFamily, presentFamily] = _device->getQueueFamilyIndices();
 
-    const uint32_t queueFamilyIndices[] = {graphicsFamily, presentFamily};
+    const std::uint32_t queueFamilyIndices[] = {graphicsFamily, presentFamily};
 
     if (graphicsFamily != presentFamily) {
         swapchainInfo.setImageSharingMode(vk::SharingMode::eConcurrent);

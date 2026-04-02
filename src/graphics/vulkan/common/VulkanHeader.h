@@ -19,4 +19,4 @@ static constexpr VpProfileProperties vulkanProfile = {
     VP_KHR_ROADMAP_2024_SPEC_VERSION
 };
 
-constexpr uint32_t VULKAN_VERSION = VK_API_VERSION_1_4;
+constexpr std::uint32_t VULKAN_VERSION = VK_API_VERSION_1_4;

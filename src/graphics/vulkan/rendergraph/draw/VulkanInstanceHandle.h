@@ -3,5 +3,5 @@
 #include <cstdint>
 
 struct VulkanInstanceHandle {
-    uint32_t instanceIndex = 0;
+    std::uint32_t instanceIndex = 0;
 };

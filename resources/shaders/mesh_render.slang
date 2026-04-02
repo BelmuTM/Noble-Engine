@@ -14,6 +14,9 @@ struct ObjectData {
 };
 [[vk::push_constant]] ObjectData object;
 
+//[[vk::binding(0), vk::set(1)]] StructuredBuffer<uint> indices;
+//[[vk::binding(1), vk::set(1)]] StructuredBuffer<ObjectData> objects;
+
 struct VSOutput {
     float4 position  : SV_Position;
     float3 normal    : NORMAL;
@@ -73,18 +76,20 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     float3 normal = normalTexture.Sample(vertIn.texCoords).rgb;
 
 
-        float3 N = normalize(vertIn.normal);
+    float3 N = normalize(vertIn.normal);
 
-        float3 T = normalize(vertIn.tangent.xyz);
-        float3 B = normalize(cross(N, T) * vertIn.tangent.w);
+    float3 T = normalize(vertIn.tangent.xyz);
+    float3 B = normalize(cross(N, T) * vertIn.tangent.w);
 
-        float3x3 TBN = float3x3(T, B, N);
+    float3x3 TBN = float3x3(T, B, N);
 
-        normal = normalize(mul(normal * 2.0 - 1.0, TBN));
+    normal = normalize(mul(normal * 2.0 - 1.0, TBN));
 
 
     albedoBuffer = albedo;
-    normalBuffer = float4(vertIn.normal * 0.5 + 0.5, 1.0);
+    normalBuffer = float4(normal * 0.5 + 0.5, 1.0);
+
+    //debugBuffer2 = float4(fract(vertIn.texCoords), 0.0, 1.0);
 
     debugBuffer2 = float4(T * 0.5 + 0.5, 1.0);
 }

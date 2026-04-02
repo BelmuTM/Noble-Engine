@@ -29,11 +29,11 @@ int main() {
 
     /*
     Scene sceneDragons;
-    static constexpr uint32_t dragonsPerAxis = 16;
+    static constexpr std::uint32_t dragonsPerAxis = 16;
     static constexpr float    dragonsOffset  = 5.0f;
 
-    for (uint32_t x = 0; x < dragonsPerAxis; x++) {
-        for (uint32_t y = 0; y < dragonsPerAxis; y++) {
+    for (std::uint32_t x = 0; x < dragonsPerAxis; x++) {
+        for (std::uint32_t y = 0; y < dragonsPerAxis; y++) {
             float xPosition = (x - (dragonsPerAxis - 1) / 2.0f) * dragonsOffset;
             float yPosition = (y - (dragonsPerAxis - 1) / 2.0f) * dragonsOffset;
 

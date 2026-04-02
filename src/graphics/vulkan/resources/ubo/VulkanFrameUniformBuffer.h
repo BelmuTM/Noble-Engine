@@ -6,5 +6,5 @@
 
 class VulkanFrameUniformBuffer final : public VulkanUniformBuffer<FrameUniforms> {
 public:
-    void update(uint32_t frameIndex, const FrameUniforms& uniforms) const;
+    void update(std::uint32_t frameIndex, const FrameUniforms& uniforms) const;
 };

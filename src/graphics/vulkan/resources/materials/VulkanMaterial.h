@@ -8,7 +8,7 @@
 #include "core/resources/models/Material.h"
 
 struct VulkanMaterialTextures {
-    std::array<VulkanImage*, static_cast<size_t>(TextureType::Count)> textures{};
+    std::array<VulkanImage*, static_cast<std::size_t>(TextureType::Count)> textures{};
 };
 
 class VulkanMaterial {
@@ -26,11 +26,11 @@ public:
     void bindDescriptorSets() const;
 
     [[nodiscard]] VulkanImage* getTexture(const TextureType type) const {
-        return _textureMaps.textures[static_cast<size_t>(type)];
+        return _textureMaps.textures[static_cast<std::size_t>(type)];
     }
 
     void setTexture(const TextureType type, VulkanImage* image) {
-        _textureMaps.textures[static_cast<size_t>(type)] = image;
+        _textureMaps.textures[static_cast<std::size_t>(type)] = image;
     }
 
     [[nodiscard]] const VulkanDescriptorSets* getDescriptorSets() const noexcept { return _descriptorSets; }

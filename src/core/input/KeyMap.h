@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <unordered_map>
 
-enum class InputAction : uint8_t {
+enum class InputAction : std::uint8_t {
     None = 0,
 
     MoveForward,

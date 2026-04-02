@@ -111,7 +111,7 @@ namespace VulkanImageLayoutTransitions {
         const vk::Format        format,
         const vk::ImageLayout   oldLayout,
         const vk::ImageLayout   newLayout,
-        const uint32_t          mipLevels
+        const std::uint32_t     mipLevels
     ) {
         if (oldLayout == newLayout) return true;
 

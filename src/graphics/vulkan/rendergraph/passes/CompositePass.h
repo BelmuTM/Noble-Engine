@@ -11,6 +11,7 @@
 struct CompositePassCreateContext {
     VulkanMeshManager&          meshManager;
     const VulkanFrameResources& frameResources;
+
     VulkanShaderProgramManager& shaderProgramManager;
 
     static CompositePassCreateContext build(const VulkanRenderGraphBuilderContext& context) {

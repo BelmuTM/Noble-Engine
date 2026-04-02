@@ -7,8 +7,8 @@
 
 struct VulkanPushConstantRange {
     vk::ShaderStageFlags stageFlags;
-    uint32_t offset = 0;
-    uint32_t size   = 0;
+    std::uint32_t offset = 0;
+    std::uint32_t size   = 0;
 };
 
 struct IVulkanPushConstant {

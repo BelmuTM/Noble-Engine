@@ -15,7 +15,7 @@ namespace Utility {
         return std::filesystem::path(path).extension().string();
     }
 
-    glm::vec3 instanceColor(const uint64_t seed) {
+    glm::vec3 instanceColor(const std::uint64_t seed) {
         const float r = static_cast<float>(seed >> 0  & 0xFF) / 255.0f;
         const float g = static_cast<float>(seed >> 8  & 0xFF) / 255.0f;
         const float b = static_cast<float>(seed >> 16 & 0xFF) / 255.0f;

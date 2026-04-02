@@ -54,7 +54,7 @@ bool VulkanMaterial::loadTextures(VulkanImageManager* imageManager, std::string&
 }
 
 void VulkanMaterial::bindDescriptorSets() const {
-    for (size_t i = 0; i < _textureMaps.textures.size(); i++) {
+    for (std::size_t i = 0; i < _textureMaps.textures.size(); i++) {
         if (_descriptorSets && _textureMaps.textures[i]) {
             _descriptorSets->updatePerFrameDescriptorSets(_textureMaps.textures[i]->getDescriptorInfo(i));
         }

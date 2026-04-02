@@ -16,9 +16,7 @@ bool VulkanGraphicsPipeline::create(
 ) noexcept {
     _device = device;
 
-    TRY_BOOL(createPipelineLayout(
-        device, pass.getPipelineDescriptor(), errorMessage
-    ));
+    TRY_BOOL(createPipelineLayout(device, pass.getPipelineDescriptor(), errorMessage));
 
     TRY_BOOL(createPipeline(device, pass, errorMessage));
 

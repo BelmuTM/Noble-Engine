@@ -1,7 +1,7 @@
 #pragma once
 
+#include "graphics/vulkan/resources/materials/VulkanMaterial.h"
 #include "graphics/vulkan/resources/meshes/VulkanMesh.h"
-#include "graphics/vulkan/resources/objects/VulkanMaterial.h"
 
 struct VulkanDrawBatch {
     const VulkanMesh*     mesh     = nullptr;
@@ -15,8 +15,11 @@ struct VulkanDrawBatch {
 template<>
 struct std::hash<VulkanDrawBatch> {
     std::size_t operator()(const VulkanDrawBatch& batch) const noexcept {
-        const std::size_t h1 = std::hash<const VulkanMesh*>{}(batch.mesh);
-        const std::size_t h2 = std::hash<const VulkanMaterial*>{}(batch.material);
-        return h1 ^ (h2 << 1);
+        std::size_t hash = 0;
+
+        HashUtils::combine(hash, batch.mesh);
+        HashUtils::combine(hash, batch.material);
+
+        return hash;
     }
 };

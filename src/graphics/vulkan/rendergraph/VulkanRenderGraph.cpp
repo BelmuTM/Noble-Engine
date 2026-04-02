@@ -116,7 +116,7 @@ void executeDrawCalls(
     const vk::Extent2D                       extent,
     const vk::detail::DispatchLoaderDynamic& dispatchLoader
 ) {
-    const uint32_t frameIndex = frame->getFrameIndex();
+    const std::uint32_t frameIndex = frame->getFrameIndex();
 
     const VulkanShaderProgram* shaderProgram  = pass.getPipelineDescriptor().shaderProgram;
     const vk::PipelineLayout   pipelineLayout = pass.getPipeline()->getLayout();

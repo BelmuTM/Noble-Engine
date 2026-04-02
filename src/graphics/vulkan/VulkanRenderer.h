@@ -19,7 +19,7 @@
 
 class VulkanRenderer : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {
 public:
-    explicit VulkanRenderer(uint32_t framesInFlight = 2);
+    explicit VulkanRenderer(std::uint32_t framesInFlight = 2);
 
     [[nodiscard]] bool init(
         Window&              window,
@@ -32,22 +32,22 @@ public:
 
     void drawFrame(const FrameUniforms& uniforms) override;
 
-    uint32_t primitiveCount = 0;
+    std::uint32_t primitiveCount = 0;
 
 private:
     [[nodiscard]] bool onFramebufferResize(std::string& errorMessage);
 
     [[nodiscard]] bool recordCommandBuffer(
-        vk::CommandBuffer commandBuffer, uint32_t imageIndex, std::string& errorMessage
+        vk::CommandBuffer commandBuffer, std::uint32_t imageIndex, std::string& errorMessage
     );
 
-    [[nodiscard]] bool recordCurrentCommandBuffer(uint32_t imageIndex, std::string& errorMessage);
+    [[nodiscard]] bool recordCurrentCommandBuffer(std::uint32_t imageIndex, std::string& errorMessage);
 
-    [[nodiscard]] bool submitCurrentCommandBuffer(uint32_t imageIndex, std::string& errorMessage, bool& discardLogging);
+    [[nodiscard]] bool submitCurrentCommandBuffer(std::uint32_t imageIndex, std::string& errorMessage, bool& discardLogging);
 
     Window* _window = nullptr;
 
-    uint32_t _framesInFlight = 0;
+    std::uint32_t _framesInFlight = 0;
 
     unsigned int currentFrame = 0;
 
@@ -61,7 +61,10 @@ private:
 
     VulkanFrameResources      frameResources{};
     VulkanRenderResources     renderResources{};
+
+    VulkanMaterialManager     materialManager{};
     VulkanRenderObjectManager renderObjectManager{};
+
     VulkanFrameDraws          frameDraws{};
 
     VulkanShaderProgramManager shaderProgramManager{};

@@ -34,11 +34,11 @@ void VulkanShaderProgram::clearShaderModules() {
 }
 
 vk::ShaderModule VulkanShaderProgram::createShaderModule(
-    const std::vector<uint32_t>& bytecode, std::string& errorMessage
+    const std::vector<std::uint32_t>& bytecode, std::string& errorMessage
 ) const {
     vk::ShaderModuleCreateInfo shaderModuleInfo{};
     shaderModuleInfo
-        .setCodeSize(sizeof(uint32_t) * bytecode.size())
+        .setCodeSize(sizeof(std::uint32_t) * bytecode.size())
         .setPCode(bytecode.data());
 
     const auto shaderModuleCreate = VK_CALL(_device.createShaderModule(shaderModuleInfo), errorMessage);
@@ -75,7 +75,7 @@ bool VulkanShaderProgram::loadFromFiles(
 
         const auto [stage, entryPoint] = it->second;
 
-        const std::vector<uint32_t>& bytecode = readShaderSPIRVBytecode(path);
+        const std::vector<std::uint32_t>& bytecode = readShaderSPIRVBytecode(path);
         if (bytecode.empty()) {
             errorMessage += "bytecode is empty (file does not exist or is zero bytes).";
             return {};
@@ -108,10 +108,10 @@ bool VulkanShaderProgram::load(const std::string& path, const vk::Device& device
 }
 
 bool VulkanShaderProgram::reflectShaderResources(
-    const std::vector<uint32_t>& bytecode, const vk::ShaderStageFlags stage, std::string& errorMessage
+    const std::vector<std::uint32_t>& bytecode, const vk::ShaderStageFlags stage, std::string& errorMessage
 ) {
     const void*  bytecodeData = bytecode.data();
-    const size_t bytecodeSize = bytecode.size() * sizeof(uint32_t);
+    const std::size_t bytecodeSize = bytecode.size() * sizeof(std::uint32_t);
 
     SpvReflectShaderModule module;
     SpvReflectResult result = spvReflectCreateShaderModule(bytecodeSize, bytecodeData, &module);
@@ -126,7 +126,7 @@ bool VulkanShaderProgram::reflectShaderResources(
     // Stage outputs
     //Logger::debug("--> Stage Outputs <--");
 
-    uint32_t outputCount = 0;
+    std::uint32_t outputCount = 0;
     result = spvReflectEnumerateOutputVariables(&module, &outputCount, nullptr);
     assert(result == SPV_REFLECT_RESULT_SUCCESS);
     std::vector<SpvReflectInterfaceVariable*> outputs(outputCount);
@@ -139,7 +139,7 @@ bool VulkanShaderProgram::reflectShaderResources(
         std::string cleanName = output->name;
 
         if (cleanName.rfind("entryPointParam_", 0) == 0) {
-            const size_t pos = cleanName.rfind('.');
+            const std::size_t pos = cleanName.rfind('.');
             if (pos != std::string::npos) {
                 cleanName = cleanName.substr(pos + 1);
             }
@@ -156,17 +156,17 @@ bool VulkanShaderProgram::reflectShaderResources(
     // Descriptors
     //Logger::debug("--> Descriptors <--");
 
-    uint32_t descriptorSetCount = 0;
+    std::uint32_t descriptorSetCount = 0;
     result = spvReflectEnumerateDescriptorSets(&module, &descriptorSetCount, nullptr);
     assert(result == SPV_REFLECT_RESULT_SUCCESS);
     std::vector<SpvReflectDescriptorSet*> descriptorSets(descriptorSetCount);
     result = spvReflectEnumerateDescriptorSets(&module, &descriptorSetCount, descriptorSets.data());
     assert(result == SPV_REFLECT_RESULT_SUCCESS);
 
-    for (uint32_t set = 0; set < descriptorSetCount; set++) {
+    for (std::uint32_t set = 0; set < descriptorSetCount; set++) {
         const SpvReflectDescriptorSet* descriptorSet = descriptorSets[set];
 
-        for (uint32_t binding = 0; binding < descriptorSet->binding_count; binding++) {
+        for (std::uint32_t binding = 0; binding < descriptorSet->binding_count; binding++) {
             const SpvReflectDescriptorBinding* descriptorBinding = descriptorSet->bindings[binding];
 
             if (descriptorBinding->type_description->type_flags & SPV_REFLECT_TYPE_FLAG_EXTERNAL_SAMPLED_IMAGE) {
@@ -192,7 +192,7 @@ bool VulkanShaderProgram::reflectShaderResources(
     // Push constants
     //Logger::debug("--> Push Constants <--");
 
-    uint32_t pushConstantCount = 0;
+    std::uint32_t pushConstantCount = 0;
     result = spvReflectEnumeratePushConstantBlocks(&module, &pushConstantCount, nullptr);
     assert(result == SPV_REFLECT_RESULT_SUCCESS);
     std::vector<SpvReflectBlockVariable*> pushConstants(pushConstantCount);
@@ -225,7 +225,7 @@ std::string VulkanShaderProgram::extractStageExtension(const std::string& path) 
     return path.substr(secondLastDot + 1, lastDot - secondLastDot - 1);
 }
 
-std::vector<uint32_t> VulkanShaderProgram::readShaderSPIRVBytecode(const std::string& path) noexcept {
+std::vector<std::uint32_t> VulkanShaderProgram::readShaderSPIRVBytecode(const std::string& path) noexcept {
     std::ifstream file(path, std::ios::ate | std::ios::binary);
     if (!file.is_open()) {
         return {};
@@ -237,7 +237,7 @@ std::vector<uint32_t> VulkanShaderProgram::readShaderSPIRVBytecode(const std::st
         return {};
     }
 
-    std::vector<uint32_t> buffer(size / 4);
+    std::vector<std::uint32_t> buffer(size / 4);
 
     file.seekg(0, std::ios::beg);
     file.read(reinterpret_cast<char*>(buffer.data()), size);

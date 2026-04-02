@@ -7,18 +7,11 @@
 #include "graphics/vulkan/rendergraph/resources/VulkanRenderResources.h"
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorInfo.h"
 
-#include "core/resources/AssetManager.h"
 #include "core/entities/objects/ObjectManager.h"
-
-static const VulkanDescriptorScheme objectDescriptorScheme = {
-    {0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment},
-    {1, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment},
-    {2, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment}
-};
 
 class VulkanRenderObjectManager {
 public:
-    static constexpr uint32_t MAX_RENDER_OBJECTS = 2048;
+    static constexpr std::uint32_t MAX_RENDER_OBJECTS = 2048;
 
     using RenderObjectsVector = std::vector<std::unique_ptr<VulkanRenderObject>>;
 
@@ -39,13 +32,19 @@ public:
 
     void updateObjects() const;
 
+    [[nodiscard]] static VulkanDescriptorScheme getDescriptorScheme() noexcept {
+        static const VulkanDescriptorScheme scheme = {
+            {0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex},
+            {1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex}
+        };
+        return scheme;
+    }
+
     [[nodiscard]] const VulkanDescriptorManager& getDescriptorManager() const noexcept { return _descriptorManager; }
 
     [[nodiscard]] const RenderObjectsVector& getRenderObjects() const noexcept { return _renderObjects; }
 
 private:
-    [[nodiscard]] bool loadObjectTextures(const AssetManager::TexturesMap& textures, std::string& errorMessage) const;
-
     VulkanRenderObjectCreateContext _context;
 
     VulkanDescriptorManager _descriptorManager{};

@@ -10,5 +10,5 @@ namespace Utility {
 
     std::string getFileExtension(const std::string& path);
 
-    glm::vec3 instanceColor(uint64_t seed);
+    glm::vec3 instanceColor(std::uint64_t seed);
 };

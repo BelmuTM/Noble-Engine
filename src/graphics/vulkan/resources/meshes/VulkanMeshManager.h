@@ -57,9 +57,9 @@ private:
 
     std::vector<std::unique_ptr<VulkanMesh>> _meshes{};
 
-    size_t _currentVertexOffset = 0;
-    size_t _currentIndexOffset  = 0;
+    std::size_t _currentVertexOffset = 0;
+    std::size_t _currentIndexOffset  = 0;
 
-    size_t _vertexBufferSize = 0;
-    size_t _indexBufferSize  = 0;
+    std::size_t _vertexBufferSize = 0;
+    std::size_t _indexBufferSize  = 0;
 };

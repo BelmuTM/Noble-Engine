@@ -20,9 +20,13 @@ struct VulkanRenderGraphBuilderContext {
 
     VulkanMeshManager&          meshManager;
     const VulkanImageManager&   imageManager;
+
     VulkanFrameResources&       frameResources;
     VulkanRenderResources&      renderResources;
+
+    VulkanMaterialManager&      materialManager;
     VulkanRenderObjectManager&  renderObjectManager;
+
     VulkanShaderProgramManager& shaderProgramManager;
     VulkanPipelineManager&      pipelineManager;
 };

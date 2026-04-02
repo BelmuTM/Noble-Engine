@@ -21,7 +21,7 @@ public:
         const VulkanSurface& surface,
         const VulkanDevice&  device,
         VulkanSwapchain&     swapchain,
-        uint32_t             framesInFlight,
+        std::uint32_t        framesInFlight,
         std::string&         errorMessage
     ) noexcept;
 
@@ -30,13 +30,13 @@ public:
     [[nodiscard]] bool recreateSwapchain(std::string& errorMessage);
 
     [[nodiscard]] bool acquireNextImage(
-        uint32_t& imageIndex, uint32_t frameIndex, std::string& errorMessage, bool& discardLogging
+        std::uint32_t& imageIndex, std::uint32_t frameIndex, std::string& errorMessage, bool& discardLogging
     );
 
     [[nodiscard]] bool submitCommandBuffer(
         vk::CommandBuffer commandBuffer,
-        uint32_t          frameIndex,
-        uint32_t          imageIndex,
+        std::uint32_t     frameIndex,
+        std::uint32_t     imageIndex,
         std::string&      errorMessage,
         bool&             discardLogging
     );
@@ -44,7 +44,7 @@ public:
     [[nodiscard]] bool isOutOfDate() const noexcept { return _outOfDate; }
 
 private:
-    [[nodiscard]] bool waitForImageFence(uint32_t frameIndex, uint32_t imageIndex, std::string& errorMessage);
+    [[nodiscard]] bool waitForImageFence(std::uint32_t frameIndex, std::uint32_t imageIndex, std::string& errorMessage);
 
     Window* _window = nullptr;
 
@@ -54,7 +54,7 @@ private:
 
     VulkanSyncObjects _syncObjects{};
 
-    uint32_t _framesInFlight = 0;
+    std::uint32_t _framesInFlight = 0;
 
     bool _outOfDate = false;
 };

@@ -8,10 +8,6 @@
 #include "ubo/VulkanFrameUniformBuffer.h"
 #include "ubo/VulkanUniformBufferManager.h"
 
-static const VulkanDescriptorScheme frameDescriptorScheme = {
-    {0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eAllGraphics}
-};
-
 class VulkanFrameResources {
 public:
     VulkanFrameResources()  = default;
@@ -27,16 +23,23 @@ public:
         const VulkanDevice&         device,
         const VulkanImageManager&   imageManager,
         VulkanUniformBufferManager& uniformBufferManager,
-        uint32_t                    framesInFlight,
+        std::uint32_t               framesInFlight,
         std::string&                errorMessage
     ) noexcept;
 
     void destroy() noexcept;
 
-    void update(uint32_t frameIndex, uint32_t imageIndex, const FrameUniforms& uniforms);
+    void update(std::uint32_t frameIndex, std::uint32_t imageIndex, const FrameUniforms& uniforms);
 
-    [[nodiscard]] uint32_t getFrameIndex() const noexcept { return _frameIndex; }
-    [[nodiscard]] uint32_t getImageIndex() const noexcept { return _imageIndex; }
+    [[nodiscard]] std::uint32_t getFrameIndex() const noexcept { return _frameIndex; }
+    [[nodiscard]] std::uint32_t getImageIndex() const noexcept { return _imageIndex; }
+
+    [[nodiscard]] static const VulkanDescriptorScheme& getFrameDescriptorScheme() noexcept {
+        static const VulkanDescriptorScheme scheme = {
+            {0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eAllGraphics}
+        };
+        return scheme;
+    }
 
     [[nodiscard]] const VulkanDescriptorManager& getDescriptorManager() const noexcept { return _descriptorManager; }
 
@@ -46,9 +49,9 @@ private:
     const VulkanDevice*       _device       = nullptr;
     const VulkanImageManager* _imageManager = nullptr;
 
-    uint32_t _framesInFlight = 0;
-    uint32_t _frameIndex     = 0;
-    uint32_t _imageIndex     = 0;
+    std::uint32_t _framesInFlight = 0;
+    std::uint32_t _frameIndex     = 0;
+    std::uint32_t _imageIndex     = 0;
 
     VulkanDescriptorManager _descriptorManager{};
 

@@ -15,8 +15,7 @@ bool DebugPass::create(
     const VulkanPipelineDescriptor pipelineDescriptor{
         getShaderProgram(),
         {
-            context.frameResources.getDescriptorManager().getLayout(),
-            context.renderObjectManager.getDescriptorManager().getLayout()
+            context.frameResources.getDescriptorManager().getLayout()
         }
     };
 
@@ -25,21 +24,21 @@ bool DebugPass::create(
     setPipelineDescriptor(pipelineDescriptor);
     setBindPoint(vk::PipelineBindPoint::eGraphics);
 
-    uint64_t meshSeed = INT64_MAX;
+    std::size_t meshHash = 0;
 
     for (const auto& renderObject : context.renderObjectManager.getRenderObjects()) {
         Mesh aabbMesh{};
-        uint32_t vertexOffset = 0;
+        std::uint32_t vertexOffset = 0;
 
         // Draw each mesh's AABB
         for (const auto& mesh : renderObject->object->getModel().meshes) {
 
-            meshSeed ^= reinterpret_cast<uint64_t>(&mesh);
+            HashUtils::combine(meshHash, &mesh);
 
             for (const auto& corner : mesh.getAABB().getCorners()) {
                 Vertex vertex{};
                 vertex.position = corner;
-                vertex.color    = Utility::instanceColor(meshSeed);
+                vertex.color    = Utility::instanceColor(meshHash);
 
                 aabbMesh.addVertex(vertex);
             }

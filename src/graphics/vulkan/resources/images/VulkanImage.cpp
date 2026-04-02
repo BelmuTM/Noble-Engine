@@ -33,7 +33,7 @@ bool VulkanImage::transitionLayout(
     std::string&            errorMessage,
     const vk::ImageLayout   oldLayout,
     const vk::ImageLayout   newLayout,
-    const uint32_t          mipLevels
+    const std::uint32_t     mipLevels
 ) {
     TRY_BOOL(VulkanImageLayoutTransitions::transitionImageLayout(
         commandBuffer,
@@ -55,7 +55,7 @@ bool VulkanImage::transitionLayout(
     std::string&                errorMessage,
     const vk::ImageLayout       oldLayout,
     const vk::ImageLayout       newLayout,
-    const uint32_t              mipLevels
+    const std::uint32_t         mipLevels
 ) {
     vk::CommandBuffer commandBuffer{};
     TRY_BOOL(commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
@@ -71,7 +71,7 @@ bool VulkanImage::transitionLayout(
     const vk::CommandBuffer commandBuffer,
     std::string&            errorMessage,
     const vk::ImageLayout   newLayout,
-    const uint32_t          mipLevels
+    const std::uint32_t     mipLevels
 ) {
     TRY_BOOL(VulkanImageLayoutTransitions::transitionImageLayout(
         commandBuffer,
@@ -92,7 +92,7 @@ bool VulkanImage::transitionLayout(
     const VulkanCommandManager* commandManager,
     std::string&                errorMessage,
     const vk::ImageLayout       newLayout,
-    const uint32_t              mipLevels
+    const std::uint32_t         mipLevels
 ) {
     vk::CommandBuffer commandBuffer{};
     TRY_BOOL(commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
@@ -108,7 +108,7 @@ bool VulkanImage::createImage(
     const vk::ImageType       type,
     const vk::Format          format,
     const vk::Extent3D        extent,
-    const uint32_t            mipLevels,
+    const std::uint32_t       mipLevels,
     const vk::ImageUsageFlags usage,
     const VmaMemoryUsage      memoryUsage,
     const VulkanDevice*       device,
@@ -149,7 +149,7 @@ bool VulkanImage::createImageView(
     const vk::ImageViewType    type,
     const vk::Format           format,
     const vk::ImageAspectFlags aspectFlags,
-    const uint32_t             mipLevels,
+    const std::uint32_t        mipLevels,
     const VulkanDevice*        device,
     std::string&               errorMessage
 ) {
@@ -234,14 +234,14 @@ void VulkanImage::copyBufferToImage(
 void VulkanImage::generateMipmaps(
     const vk::CommandBuffer commandBuffer,
     const vk::Extent3D      extent,
-    const uint32_t          mipLevels
+    const std::uint32_t     mipLevels
 ) const {
     if (mipLevels <= 1) return;
 
     // Precompute mip sizes
     std::vector<vk::Extent3D> mipExtents(mipLevels);
     mipExtents[0] = extent;
-    for (uint32_t i = 1; i < mipLevels; i++) {
+    for (std::uint32_t i = 1; i < mipLevels; i++) {
         mipExtents[i].width  = std::max(1u, mipExtents[i - 1].width  / 2);
         mipExtents[i].height = std::max(1u, mipExtents[i - 1].height / 2);
         mipExtents[i].depth  = std::max(1u, mipExtents[i - 1].depth  / 2);
@@ -249,7 +249,7 @@ void VulkanImage::generateMipmaps(
 
     // Generate mips
     // Start from index 1 (full resolution level)
-    for (uint32_t i = 1; i < mipLevels; i++) {
+    for (std::uint32_t i = 1; i < mipLevels; i++) {
         // Transition level i - 1 to eTransferSrcOptimal
         // Waits for level i - 1 to be filled from previous vkCmdBlitImage
         vk::ImageSubresourceRange subresourceRange{};
@@ -370,7 +370,7 @@ bool VulkanImage::createFromBuffer(
     const vk::DeviceSize    bufferOffset,
     const vk::Format        format,
     const vk::Extent3D      extent,
-    const uint32_t          mipLevels,
+    const std::uint32_t     mipLevels,
     const vk::CommandBuffer commandBuffer,
     const VulkanDevice*     device,
     std::string&            errorMessage

@@ -38,7 +38,7 @@ public:
         const VulkanDevice&         device,
         const VulkanSwapchain&      swapchain,
         const VulkanCommandManager& commandManager,
-        uint32_t                    framesInFlight,
+        std::uint32_t               framesInFlight,
         std::string&                errorMessage
     ) noexcept;
 
@@ -93,7 +93,7 @@ private:
 
     VulkanRenderPassBufferFactory _bufferFactory{};
 
-    uint32_t _framesInFlight = 0;
+    std::uint32_t _framesInFlight = 0;
 
     // Global resources and resource accessors cache
     ResourcesMap         _resources{};

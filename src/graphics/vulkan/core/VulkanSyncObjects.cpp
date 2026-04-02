@@ -3,10 +3,10 @@
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 bool VulkanSyncObjects::create(
-    const vk::Device& device,
-    const uint32_t    framesInFlight,
-    const uint32_t    swapchainImageCount,
-    std::string&      errorMessage
+    const vk::Device&   device,
+    const std::uint32_t framesInFlight,
+    const std::uint32_t swapchainImageCount,
+    std::string&        errorMessage
 ) noexcept {
     _device = device;
 
@@ -31,7 +31,7 @@ void VulkanSyncObjects::backup() {
 }
 
 bool VulkanSyncObjects::createSyncObjects(
-    const uint32_t framesInFlight, const uint32_t swapchainImageCount, std::string& errorMessage
+    const std::uint32_t framesInFlight, const std::uint32_t swapchainImageCount, std::string& errorMessage
 ) {
     _imageAvailableSemaphores.resize(framesInFlight);
     _renderFinishedSemaphores.resize(swapchainImageCount);
@@ -39,7 +39,7 @@ bool VulkanSyncObjects::createSyncObjects(
 
     constexpr vk::FenceCreateInfo fenceInfo{vk::FenceCreateFlagBits::eSignaled};
 
-    for (uint32_t i = 0; i < framesInFlight; i++) {
+    for (std::uint32_t i = 0; i < framesInFlight; i++) {
         VK_CREATE(_device.createSemaphore({}), _imageAvailableSemaphores[i], errorMessage);
         VK_CREATE(_device.createFence(fenceInfo), _inFlightFences[i], errorMessage);
     }

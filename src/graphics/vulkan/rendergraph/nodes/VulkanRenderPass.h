@@ -23,7 +23,7 @@ struct VulkanPassTransition {
     }
 };
 
-enum class VulkanRenderPassType : uint8_t { None, MeshRender, Composite, Debug };
+enum class VulkanRenderPassType : std::uint8_t { None, MeshRender, Composite, Debug };
 
 struct VulkanRenderPassDescriptor {
     std::string          path;
@@ -32,8 +32,8 @@ struct VulkanRenderPassDescriptor {
 
 class VulkanRenderPass {
 public:
-    using DescriptorSetsMap     = std::unordered_map<uint32_t, VulkanDescriptorSets*>;
-    using DescriptorManagersMap = std::unordered_map<uint32_t, std::unique_ptr<VulkanDescriptorManager>>;
+    using DescriptorSetsMap     = std::unordered_map<std::uint32_t, VulkanDescriptorSets*>;
+    using DescriptorManagersMap = std::unordered_map<std::uint32_t, std::unique_ptr<VulkanDescriptorManager>>;
 
     VulkanRenderPass()          = default;
     virtual ~VulkanRenderPass() = default;

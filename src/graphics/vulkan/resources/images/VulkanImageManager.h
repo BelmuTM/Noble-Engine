@@ -11,8 +11,8 @@
 
 class VulkanImageManager {
 public:
-    static constexpr size_t STAGING_BUFFER_ALIGNMENT = 256ULL; // 256 bytes
-    static constexpr size_t MAX_BATCH_SIZE = 64ULL * 1024U * 1024U; // 64 MB
+    static constexpr std::size_t STAGING_BUFFER_ALIGNMENT = 256ULL; // 256 bytes
+    static constexpr std::size_t MAX_BATCH_SIZE = 64ULL * 1024U * 1024U; // 64 MB
 
     VulkanImageManager()  = default;
     ~VulkanImageManager() = default;
@@ -45,8 +45,8 @@ public:
     }
 
 private:
-    [[nodiscard]] static uint32_t getMipLevels(const vk::Extent3D extent) noexcept {
-        return static_cast<uint32_t>(std::floor(std::log2(std::max({extent.width, extent.height, extent.depth})))) + 1;
+    [[nodiscard]] static std::uint32_t getMipLevels(const vk::Extent3D extent) noexcept {
+        return static_cast<std::uint32_t>(std::floor(std::log2(std::max({extent.width, extent.height, extent.depth})))) + 1;
     }
 
     const VulkanDevice*         _device         = nullptr;

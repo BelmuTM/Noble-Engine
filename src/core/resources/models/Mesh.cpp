@@ -16,8 +16,8 @@ int getNumFaceVertices(const SMikkTSpaceContext*, int) {
 Vertex& getVertex(const SMikkTSpaceContext* context, const int face, const int vert) {
     const auto mesh = static_cast<Mesh*>(context->m_pUserData);
 
-    const uint32_t index  = mesh->getIndices()[face * 3 + vert];
-    Vertex&        vertex = mesh->getVertices()[index];
+    const std::uint32_t index  = mesh->getIndices()[face * 3 + vert];
+    Vertex&             vertex = mesh->getVertices()[index];
 
     return vertex;
 }
@@ -69,15 +69,15 @@ void Mesh::generateTangents() {
 }
 
 void Mesh::generateSmoothNormals(
-    const size_t vertexStart,
-    const size_t vertexEnd,
-    const size_t indexStart,
-    const size_t indexEnd
+    const std::size_t vertexStart,
+    const std::size_t vertexEnd,
+    const std::size_t indexStart,
+    const std::size_t indexEnd
 ) {
-    for (size_t i = indexStart; i < indexEnd; i += 3) {
-        const uint32_t i0 = _indices[i + 0];
-        const uint32_t i1 = _indices[i + 1];
-        const uint32_t i2 = _indices[i + 2];
+    for (std::size_t i = indexStart; i < indexEnd; i += 3) {
+        const std::uint32_t i0 = _indices[i + 0];
+        const std::uint32_t i1 = _indices[i + 1];
+        const std::uint32_t i2 = _indices[i + 2];
 
         if (i0 < vertexStart || i0 >= vertexEnd) continue;
         if (i1 < vertexStart || i1 >= vertexEnd) continue;
@@ -93,7 +93,7 @@ void Mesh::generateSmoothNormals(
         _vertices[i2].normal += faceNormal;
     }
 
-    for (uint32_t i = vertexStart; i < vertexEnd; i++) {
+    for (std::uint32_t i = vertexStart; i < vertexEnd; i++) {
         _vertices[i].normal = glm::normalize(_vertices[i].normal);
     }
 }

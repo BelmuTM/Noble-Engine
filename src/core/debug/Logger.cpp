@@ -15,7 +15,7 @@
 
 namespace {
 
-constexpr size_t MAX_LOG_QUEUE_SIZE = 512;
+constexpr std::size_t MAX_LOG_QUEUE_SIZE = 512;
 
 struct Log {
     Logger::Level                         level = Logger::Level::DEBUG;
@@ -50,7 +50,7 @@ void writeLogMessage(Stream& os, const Log& log) {
 
     std::ostringstream prefixStream;
     prefixStream << std::put_time(&tm, "[%Y-%m-%d %H:%M:%S] ")
-                 << '[' << levelStrings[static_cast<size_t>(log.level)] << "]: ";
+                 << '[' << levelStrings[static_cast<std::size_t>(log.level)] << "]: ";
 
     const std::string prefix = prefixStream.str();
 

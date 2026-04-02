@@ -23,15 +23,15 @@ public:
 
     [[nodiscard]] bool allocate(std::string& errorMessage);
 
-    void updateDescriptorSets(const VulkanDescriptorInfo& info, uint32_t frameIndex) const;
+    void updateDescriptorSets(const VulkanDescriptorInfo& info, std::uint32_t frameIndex) const;
 
     void updatePerFrameDescriptorSets(const VulkanDescriptorInfo& info) const;
 
-    void updatePerFrameUBODescriptorSets(const VulkanUniformBufferBase& ubo, uint32_t binding) const;
+    void updatePerFrameUBODescriptorSets(const VulkanUniformBufferBase& ubo, std::uint32_t binding) const;
 
     [[nodiscard]] const std::vector<vk::DescriptorSet>& getSets() const noexcept { return _descriptorSets; }
 
-    [[nodiscard]] vk::DescriptorSet getSet(const uint32_t frameIndex) const noexcept {
+    [[nodiscard]] vk::DescriptorSet getSet(const std::uint32_t frameIndex) const noexcept {
         return _descriptorSets[frameIndex];
     }
 

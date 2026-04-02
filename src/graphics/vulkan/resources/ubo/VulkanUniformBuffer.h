@@ -14,13 +14,13 @@ public:
 
     [[nodiscard]] virtual bool create(
         const VulkanDevice& device,
-        uint32_t            framesInFlight,
+        std::uint32_t       framesInFlight,
         std::string&        errorMessage
     ) noexcept = 0;
 
     virtual void destroy() noexcept = 0;
 
-    [[nodiscard]] virtual VulkanDescriptorInfo getDescriptorInfo(uint32_t binding, uint32_t frameIndex) const = 0;
+    [[nodiscard]] virtual VulkanDescriptorInfo getDescriptorInfo(std::uint32_t binding, std::uint32_t frameIndex) const = 0;
 };
 
 template <typename UniformBufferType>
@@ -37,7 +37,7 @@ public:
 
     [[nodiscard]] bool create(
         const VulkanDevice& device,
-        const uint32_t      framesInFlight,
+        const std::uint32_t framesInFlight,
         std::string&        errorMessage
     ) noexcept override {
         _device         = &device;
@@ -57,7 +57,7 @@ public:
     }
 
     [[nodiscard]] VulkanDescriptorInfo getDescriptorInfo(
-        const uint32_t binding, const uint32_t frameIndex
+        const std::uint32_t binding, const std::uint32_t frameIndex
     ) const noexcept override {
         return {
             .type       = vk::DescriptorType::eUniformBuffer,
@@ -78,7 +78,7 @@ protected:
         uniformBuffers.clear();
         uniformBuffers.reserve(_framesInFlight);
 
-        for (uint32_t i = 0; i < _framesInFlight; i++) {
+        for (std::uint32_t i = 0; i < _framesInFlight; i++) {
             VulkanBuffer uniformBuffer;
 
             TRY_BOOL(uniformBuffer.create(
@@ -98,7 +98,7 @@ protected:
     }
 
     template <typename UBOType>
-    void updateMemory(const uint32_t frameIndex, UBOType ubo) const {
+    void updateMemory(const std::uint32_t frameIndex, UBOType ubo) const {
         std::memcpy(uniformBuffers[frameIndex].getMappedPointer(), &ubo, sizeof(ubo));
     }
 
@@ -106,7 +106,7 @@ protected:
 
     const VulkanDevice* _device = nullptr;
 
-    uint32_t _framesInFlight = 0;
+    std::uint32_t _framesInFlight = 0;
 
     std::vector<VulkanBuffer> uniformBuffers{};
 };

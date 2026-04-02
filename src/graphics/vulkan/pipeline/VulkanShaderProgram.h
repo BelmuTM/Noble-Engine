@@ -11,7 +11,7 @@
 
 class VulkanShaderProgram {
 public:
-    using DescriptorSchemeMap = std::unordered_map<uint32_t, VulkanDescriptorScheme>;
+    using DescriptorSchemeMap = std::unordered_map<std::uint32_t, VulkanDescriptorScheme>;
 
     VulkanShaderProgram()  = default;
     ~VulkanShaderProgram() = default;
@@ -47,15 +47,15 @@ public:
 private:
     void clearShaderModules();
 
-    vk::ShaderModule createShaderModule(const std::vector<uint32_t>& bytecode, std::string& errorMessage) const;
+    vk::ShaderModule createShaderModule(const std::vector<std::uint32_t>& bytecode, std::string& errorMessage) const;
 
     [[nodiscard]] bool reflectShaderResources(
-        const std::vector<uint32_t>& bytecode, vk::ShaderStageFlags stage, std::string& errorMessage
+        const std::vector<std::uint32_t>& bytecode, vk::ShaderStageFlags stage, std::string& errorMessage
     );
 
     static std::string extractStageExtension(const std::string& path) noexcept;
 
-    static std::vector<uint32_t> readShaderSPIRVBytecode(const std::string& path) noexcept;
+    static std::vector<std::uint32_t> readShaderSPIRVBytecode(const std::string& path) noexcept;
 
     static std::vector<std::string> findShaderFilePaths(const std::string& path);
 

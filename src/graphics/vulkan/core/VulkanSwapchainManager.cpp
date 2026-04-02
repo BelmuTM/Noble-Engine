@@ -11,7 +11,7 @@ bool VulkanSwapchainManager::create(
     const VulkanSurface& surface,
     const VulkanDevice&  device,
     VulkanSwapchain&     swapchain,
-    const uint32_t       framesInFlight,
+    const std::uint32_t  framesInFlight,
     std::string&         errorMessage
 ) noexcept {
     _window         = &window;
@@ -44,8 +44,8 @@ bool VulkanSwapchainManager::recreateSwapchain(std::string& errorMessage) {
 
     _syncObjects.backup();
 
-    const vk::Device& logicalDevice       = _device->getLogicalDevice();
-    const uint32_t    swapchainImageCount = _swapchain->getImageCount();
+    const vk::Device&   logicalDevice       = _device->getLogicalDevice();
+    const std::uint32_t swapchainImageCount = _swapchain->getImageCount();
 
     TRY_BOOL(_syncObjects.create(logicalDevice, _framesInFlight, swapchainImageCount, errorMessage));
 
@@ -53,7 +53,7 @@ bool VulkanSwapchainManager::recreateSwapchain(std::string& errorMessage) {
 }
 
 bool VulkanSwapchainManager::acquireNextImage(
-    uint32_t& imageIndex, const uint32_t frameIndex, std::string& errorMessage, bool& discardLogging
+    std::uint32_t& imageIndex, const std::uint32_t frameIndex, std::string& errorMessage, bool& discardLogging
 ) {
     if (!_device) {
         errorMessage = "Failed to acquire Vulkan swapchain image: device is null.";
@@ -116,8 +116,8 @@ bool VulkanSwapchainManager::acquireNextImage(
 
 bool VulkanSwapchainManager::submitCommandBuffer(
     const vk::CommandBuffer commandBuffer,
-    const uint32_t          frameIndex,
-    const uint32_t          imageIndex,
+    const std::uint32_t     frameIndex,
+    const std::uint32_t     imageIndex,
     std::string&            errorMessage,
     bool&                   discardLogging
 ) {
@@ -186,7 +186,7 @@ bool VulkanSwapchainManager::submitCommandBuffer(
 }
 
 bool VulkanSwapchainManager::waitForImageFence(
-    const uint32_t frameIndex, const uint32_t imageIndex, std::string& errorMessage
+    const std::uint32_t frameIndex, const std::uint32_t imageIndex, std::string& errorMessage
 ) {
     if (!_device) {
         errorMessage = "Failed to wait for Vulkan image fence: device is null.";

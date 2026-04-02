@@ -5,12 +5,12 @@
 #include <cstring>
 
 bool VulkanObjectBuffer::create(
-    const VulkanDevice& device, const uint32_t maxObjects, std::string& errorMessage
+    const VulkanDevice& device, const std::uint32_t maxObjects, std::string& errorMessage
 ) noexcept {
     _device     = &device;
     _maxObjects = maxObjects;
 
-    const vk::DeviceSize objectBufferSize = sizeof(ObjectDataGPU) * maxObjects;
+    const vk::DeviceSize objectBufferSize = maxObjects * sizeof(ObjectDataGPU);
 
     TRY_BOOL(VulkanBuffer::create(
         objectBufferSize,
@@ -32,7 +32,7 @@ void VulkanObjectBuffer::destroy() noexcept {
     _device = nullptr;
 }
 
-void VulkanObjectBuffer::update(const uint32_t objectIndex, const ObjectDataGPU& dataToGPU) const {
+void VulkanObjectBuffer::update(const std::uint32_t objectIndex, const ObjectDataGPU& dataToGPU) const {
 #if defined(VULKAN_DEBUG_UTILS)
     assert(objectIndex < _maxObjects);
 #endif
@@ -42,5 +42,9 @@ void VulkanObjectBuffer::update(const uint32_t objectIndex, const ObjectDataGPU&
 }
 
 void VulkanObjectBuffer::update(const std::vector<ObjectDataGPU>& dataToGPU) const {
+#if defined(VULKAN_DEBUG_UTILS)
+    assert(dataToGPU.size() <= _maxObjects);
+#endif
+
     std::memcpy(getMappedPointer(), dataToGPU.data(), dataToGPU.size() * sizeof(ObjectDataGPU));
 }

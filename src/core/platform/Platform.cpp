@@ -1,5 +1,7 @@
 #include "Platform.h"
 
+#include <cstdint>
+
 #include <GLFW/glfw3.h>
 
 namespace Platform {
@@ -19,7 +21,7 @@ namespace Platform {
     }
 
     std::vector<const char*> getRequiredExtensions() {
-        uint32_t count;
+        std::uint32_t count;
         const char** extensions = glfwGetRequiredInstanceExtensions(&count);
         if (!extensions || count == 0) return {};
         return {extensions, extensions + count};

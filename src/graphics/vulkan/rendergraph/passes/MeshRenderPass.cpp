@@ -15,7 +15,7 @@ bool MeshRenderPass::create(
         getShaderProgram(),
         {
             context.frameResources.getDescriptorManager().getLayout(),
-            context.renderObjectManager.getDescriptorManager().getLayout()
+            context.materialManager.getDescriptorManager().getLayout()
         }
     };
 
@@ -32,7 +32,7 @@ bool MeshRenderPass::create(
                 .setName(renderObject->object->getModel().name)
                 .setMesh(mesh)
                 .setModelMatrix(renderObject->object->getModelMatrix())
-                .addDescriptorSets(material.getDescriptorSets())
+                .addDescriptorSets(material->getDescriptorSets())
                 .setPushConstant("object", &renderObject->gpuData);
         }
     }

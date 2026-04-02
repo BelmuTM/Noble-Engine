@@ -15,8 +15,8 @@ public:
 
     [[nodiscard]] bool create(
         const vk::Device& device,
-        uint32_t          framesInFlight,
-        uint32_t          swapchainImageCount,
+        std::uint32_t     framesInFlight,
+        std::uint32_t     swapchainImageCount,
         std::string&      errorMessage
     ) noexcept;
 
@@ -24,26 +24,26 @@ public:
 
     void backup();
 
-    [[nodiscard]] const vk::Semaphore& getImageAvailableSemaphore(const uint32_t frameIndex) const noexcept {
+    [[nodiscard]] const vk::Semaphore& getImageAvailableSemaphore(const std::uint32_t frameIndex) const noexcept {
         return _imageAvailableSemaphores[frameIndex];
     }
 
-    [[nodiscard]] const vk::Semaphore& getRenderFinishedSemaphore(const uint32_t frameIndex) const noexcept {
+    [[nodiscard]] const vk::Semaphore& getRenderFinishedSemaphore(const std::uint32_t frameIndex) const noexcept {
         return _renderFinishedSemaphores[frameIndex];
     }
 
-    [[nodiscard]] const vk::Fence& getInFlightFence(const uint32_t frameIndex) const noexcept {
+    [[nodiscard]] const vk::Fence& getInFlightFence(const std::uint32_t frameIndex) const noexcept {
         return _inFlightFences[frameIndex];
     }
 
     [[nodiscard]] std::vector<vk::Fence>& getImagesInFlightFences() noexcept { return _imagesInFlight; }
 
-    [[nodiscard]] const vk::Fence& getImagesInFlightFence(const uint32_t imageIndex) const noexcept {
+    [[nodiscard]] const vk::Fence& getImagesInFlightFence(const std::uint32_t imageIndex) const noexcept {
         return _imagesInFlight[imageIndex];
     }
 
 private:
-    bool createSyncObjects(uint32_t framesInFlight, uint32_t swapchainImageCount, std::string& errorMessage);
+    bool createSyncObjects(std::uint32_t framesInFlight, std::uint32_t swapchainImageCount, std::string& errorMessage);
 
     void destroySyncObjects();
 

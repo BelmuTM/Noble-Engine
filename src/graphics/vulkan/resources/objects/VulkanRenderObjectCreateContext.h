@@ -4,7 +4,7 @@
 
 #include "graphics/vulkan/core/VulkanDevice.h"
 
-#include "graphics/vulkan/resources/images/VulkanImageManager.h"
+#include "graphics/vulkan/resources/materials/VulkanMaterialManager.h"
 #include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"
 
 struct VulkanRenderObjectCreateContext {
@@ -13,8 +13,8 @@ struct VulkanRenderObjectCreateContext {
 
     const VulkanDevice* device = nullptr;
 
-    VulkanMeshManager*  meshManager  = nullptr;
-    VulkanImageManager* imageManager = nullptr;
+    VulkanMeshManager*     meshManager     = nullptr;
+    VulkanMaterialManager* materialManager = nullptr;
 
-    uint32_t framesInFlight;
+    std::uint32_t framesInFlight;
 };

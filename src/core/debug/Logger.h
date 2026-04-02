@@ -7,7 +7,7 @@
 #include <string>
 
 namespace Logger {
-    enum class Level : uint8_t { DEBUG, VERBOSE, INFO, WARNING, ERROR, FATAL, COUNT };
+    enum class Level : std::uint8_t { DEBUG, VERBOSE, INFO, WARNING, ERROR, FATAL, COUNT };
 
     void init();
     void shutdown();

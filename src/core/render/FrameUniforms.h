@@ -27,7 +27,7 @@ struct alignas(16) FrameUniforms {
 
     int debugMode = 0;
 
-    void update(Camera& camera, const uint32_t width, const uint32_t height, const DebugState& debugState) {
+    void update(Camera& camera, const std::uint32_t width, const std::uint32_t height, const DebugState& debugState) {
         static auto startTime   = std::chrono::high_resolution_clock::now();
         const  auto currentTime = std::chrono::high_resolution_clock::now();
 

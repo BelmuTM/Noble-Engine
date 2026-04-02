@@ -45,14 +45,14 @@ bool VulkanImageManager::loadImage(VulkanImage*& image, const Image* imageData, 
     constexpr int depth = 1;
 
     const auto extent = vk::Extent3D{
-        static_cast<uint32_t>(imageData->width),
-        static_cast<uint32_t>(imageData->height),
-        static_cast<uint32_t>(depth)
+        static_cast<std::uint32_t>(imageData->width),
+        static_cast<std::uint32_t>(imageData->height),
+        static_cast<std::uint32_t>(depth)
     };
 
     constexpr auto format  = vk::Format::eR8G8B8A8Srgb;
 
-    const uint32_t mipLevels = imageData->hasMipmaps ? getMipLevels(extent) : 1;
+    const std::uint32_t mipLevels = imageData->hasMipmaps ? getMipLevels(extent) : 1;
 
     VulkanBuffer stagingBuffer;
     // Create the staging buffer
@@ -128,12 +128,12 @@ bool VulkanImageManager::loadImages(
         }
 
         const auto extent = vk::Extent3D{
-            static_cast<uint32_t>(image->width),
-            static_cast<uint32_t>(image->height),
-            static_cast<uint32_t>(depth)
+            static_cast<std::uint32_t>(image->width),
+            static_cast<std::uint32_t>(image->height),
+            static_cast<std::uint32_t>(depth)
         };
 
-        const uint32_t mipLevels = image->hasMipmaps ? getMipLevels(extent) : 1;
+        const std::uint32_t mipLevels = image->hasMipmaps ? getMipLevels(extent) : 1;
 
         // Ensure image data is aligned properly in memory
         offset = (offset + STAGING_BUFFER_ALIGNMENT - 1) & ~(STAGING_BUFFER_ALIGNMENT - 1);
@@ -180,7 +180,7 @@ bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& imag
 
     std::vector<const Image*> batch{};
 
-    size_t currentBatchSize = 0;
+    std::size_t currentBatchSize = 0;
 
     for (const Image* image : images) {
         if (!image) {

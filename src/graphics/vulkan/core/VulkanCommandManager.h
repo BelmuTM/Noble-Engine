@@ -16,13 +16,13 @@ public:
     VulkanCommandManager& operator=(VulkanCommandManager&&) = delete;
 
     [[nodiscard]] bool create(
-        const VulkanDevice& device, uint32_t commandBufferCount, std::string& errorMessage
+        const VulkanDevice& device, std::uint32_t commandBufferCount, std::string& errorMessage
     ) noexcept;
 
     void destroy() noexcept;
 
     [[nodiscard]] bool createCommandBuffers(
-        std::vector<vk::CommandBuffer>& commandBuffers, uint32_t commandBufferCount, std::string& errorMessage
+        std::vector<vk::CommandBuffer>& commandBuffers, std::uint32_t commandBufferCount, std::string& errorMessage
     ) const;
 
     [[nodiscard]] bool createCommandBuffer(vk::CommandBuffer& commandBuffer, std::string& errorMessage) const;

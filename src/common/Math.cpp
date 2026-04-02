@@ -25,7 +25,7 @@ std::array<glm::vec3, 8> Math::AABB::getCorners() const {
     };
 }
 
-std::array<uint32_t, 24> Math::AABB::getLineIndices(const uint32_t startIndex) {
+std::array<std::uint32_t, 24> Math::AABB::getLineIndices(const std::uint32_t startIndex) {
     return {
         startIndex + 0, startIndex + 1,  // back-bottom
         startIndex + 1, startIndex + 2,  // back-right

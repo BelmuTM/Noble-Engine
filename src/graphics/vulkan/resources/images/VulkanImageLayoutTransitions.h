@@ -24,6 +24,6 @@ namespace VulkanImageLayoutTransitions {
         vk::Format        format,
         vk::ImageLayout   oldLayout,
         vk::ImageLayout   newLayout,
-        uint32_t          mipLevels = 1
+        std::uint32_t     mipLevels = 1
     );
 }

@@ -12,7 +12,7 @@
 
 class ThreadPool {
 public:
-    explicit ThreadPool(const size_t threadCount) {
+    explicit ThreadPool(const std::size_t threadCount) {
         running.store(true);
 
         queues.resize(threadCount);
@@ -24,7 +24,7 @@ public:
 
         workerThreads.reserve(threadCount);
 
-        for (size_t i = 0; i < threadCount; i++) {
+        for (std::size_t i = 0; i < threadCount; i++) {
             workerThreads.emplace_back([this, i] { workerLoop(i); });
         }
     }
@@ -55,7 +55,7 @@ public:
 
         {
             // Round-robin push to queues to reduce contention
-            const size_t queueIndex = nextQueue.fetch_add(1, std::memory_order_relaxed) % queues.size();
+            const std::size_t queueIndex = nextQueue.fetch_add(1, std::memory_order_relaxed) % queues.size();
 
             std::lock_guard lock(*queueMutexes[queueIndex]);
             queues[queueIndex].emplace_back([task] { (*task)(); });
@@ -67,9 +67,9 @@ public:
     }
 
 private:
-    void workerLoop(const size_t queueIndex) {
+    void workerLoop(const std::size_t queueIndex) {
         std::mt19937 rng(std::random_device{}());
-        std::uniform_int_distribution<size_t> distribution(0, queues.size() - 1);
+        std::uniform_int_distribution<std::size_t> distribution(0, queues.size() - 1);
 
         while (running.load(std::memory_order_acquire)) {
             std::function<void()> task;
@@ -89,9 +89,9 @@ private:
             // If the current thread has no task to process
             if (!task) {
                 // Try to steal a task from other threads
-                for (size_t i = 0; i < queues.size(); i++) {
+                for (std::size_t i = 0; i < queues.size(); i++) {
                     // Randomly pick the victim to reduce contention (vs round-robin)
-                    const size_t victim = distribution(rng);
+                    const std::size_t victim = distribution(rng);
                     if (victim == queueIndex) continue;
 
                     std::lock_guard lock(*queueMutexes[victim]);
@@ -116,7 +116,7 @@ private:
     }
 
     [[nodiscard]] bool hasPendingTasks() const {
-        for (size_t i = 0; i < queues.size(); i++) {
+        for (std::size_t i = 0; i < queues.size(); i++) {
             std::lock_guard lock(*queueMutexes[i]);
             if (!queues[i].empty()) return true;
         }
@@ -133,5 +133,5 @@ private:
 
     std::atomic<bool> running{false};
 
-    std::atomic<size_t> nextQueue{0};
+    std::atomic<std::size_t> nextQueue{0};
 };

@@ -10,22 +10,22 @@
 struct Image {
     std::string path;
 
-    std::unique_ptr<uint8_t[]> pixels{};
+    std::unique_ptr<std::uint8_t[]> pixels{};
 
     int width    = 0;
     int height   = 0;
     int channels = 0;
 
-    size_t byteSize = 0;
+    std::size_t byteSize = 0;
 
     bool hasMipmaps = false;
 
-    static uint8_t toByte(const float value) {
-        return static_cast<uint8_t>(std::clamp(value, 0.0f, 1.0f) * 255.0f);
+    static std::uint8_t toByte(const float value) {
+        return static_cast<std::uint8_t>(std::clamp(value, 0.0f, 1.0f) * 255.0f);
     }
 
-    static std::vector<uint8_t> rgbColorToBytes(const glm::vec3& color) {
-        std::vector<uint8_t> bytes(4);
+    static std::vector<std::uint8_t> rgbColorToBytes(const glm::vec3& color) {
+        std::vector<std::uint8_t> bytes(4);
 
         bytes[0] = toByte(color.r); // Red
         bytes[1] = toByte(color.g); // Green
@@ -40,7 +40,7 @@ struct Image {
 
         image.path = std::to_string(color.r) + '_' + std::to_string(color.g) + '_' + std::to_string(color.b) + "_image";
 
-        image.pixels    = std::make_unique<uint8_t[]>(4);
+        image.pixels    = std::make_unique<std::uint8_t[]>(4);
         image.pixels[0] = toByte(color.r);
         image.pixels[1] = toByte(color.g);
         image.pixels[2] = toByte(color.b);

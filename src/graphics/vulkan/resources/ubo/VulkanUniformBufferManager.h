@@ -15,7 +15,7 @@ public:
 
     [[nodiscard]] bool create(
         const VulkanDevice& device,
-        uint32_t            framesInFlight,
+        std::uint32_t       framesInFlight,
         std::string&        errorMessage
     ) noexcept;
 
@@ -26,7 +26,7 @@ public:
 private:
     const VulkanDevice* _device = nullptr;
 
-    uint32_t _framesInFlight = 0;
+    std::uint32_t _framesInFlight = 0;
 
     std::vector<VulkanUniformBufferBase*> _uniformBuffers{};
 };

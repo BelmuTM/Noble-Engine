@@ -64,8 +64,8 @@ void VulkanMeshManager::uploadMeshData(void* stagingData) {
     for (const auto& mesh : _meshes) {
         if (mesh->isBufferless()) continue;
 
-        const size_t verticesSize = mesh->getVerticesByteSize();
-        const size_t indicesSize  = mesh->getIndicesByteSize();
+        const std::size_t verticesSize = mesh->getVerticesByteSize();
+        const std::size_t indicesSize  = mesh->getIndicesByteSize();
 
         mesh->setVertexOffset(_currentVertexOffset);
         mesh->setIndexOffset(_currentIndexOffset - _vertexBufferSize);

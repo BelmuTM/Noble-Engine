@@ -8,7 +8,7 @@ bool VulkanFrameResources::create(
     const VulkanDevice&         device,
     const VulkanImageManager&   imageManager,
     VulkanUniformBufferManager& uniformBufferManager,
-    const uint32_t              framesInFlight,
+    const std::uint32_t         framesInFlight,
     std::string&                errorMessage
 ) noexcept {
     _device         = &device;
@@ -16,7 +16,7 @@ bool VulkanFrameResources::create(
     _framesInFlight = framesInFlight;
 
     // Descriptors creation
-    TRY_BOOL(_descriptorManager.create(device.getLogicalDevice(), frameDescriptorScheme, framesInFlight, 1, errorMessage));
+    TRY_BOOL(_descriptorManager.create(device.getLogicalDevice(), getFrameDescriptorScheme(), framesInFlight, 1, errorMessage));
 
     TRY_BOOL(uniformBufferManager.createBuffer(_frameUBO, errorMessage));
 
@@ -34,7 +34,7 @@ void VulkanFrameResources::destroy() noexcept {
 }
 
 void VulkanFrameResources::update(
-    const uint32_t frameIndex, const uint32_t imageIndex, const FrameUniforms& uniforms
+    const std::uint32_t frameIndex, const std::uint32_t imageIndex, const FrameUniforms& uniforms
 ) {
     _frameUBO.update(frameIndex, uniforms);
 

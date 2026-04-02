@@ -29,8 +29,8 @@ public:
     void destroy() noexcept;
 
     struct QueueFamilyIndices {
-        uint32_t graphicsFamily = UINT32_MAX;
-        uint32_t presentFamily  = UINT32_MAX;
+        std::uint32_t graphicsFamily = UINT32_MAX;
+        std::uint32_t presentFamily  = UINT32_MAX;
 
         [[nodiscard]] bool isComplete() const noexcept {
             return graphicsFamily != UINT32_MAX && presentFamily != UINT32_MAX;

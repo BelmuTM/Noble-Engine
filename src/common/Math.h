@@ -14,7 +14,7 @@ public:
 
         [[nodiscard]] std::array<glm::vec3, 8> getCorners() const;
 
-        static std::array<uint32_t, 24> getLineIndices(uint32_t startIndex = 0);
+        static std::array<std::uint32_t, 24> getLineIndices(std::uint32_t startIndex = 0);
 
     };
 

@@ -7,7 +7,7 @@
 #include "core/debug/ErrorHandling.h"
 #include "core/debug/Logger.h"
 
-VulkanRenderer::VulkanRenderer(const uint32_t framesInFlight) : _framesInFlight(framesInFlight) {}
+VulkanRenderer::VulkanRenderer(const std::uint32_t framesInFlight) : _framesInFlight(framesInFlight) {}
 
 bool VulkanRenderer::init(
     Window&              window,
@@ -42,9 +42,11 @@ bool VulkanRenderer::init(
         &frameResources, errorMessage, device, imageManager, uniformBufferManager, _framesInFlight
     ));
 
+    TRY_BOOL(createVulkanEntity(&materialManager, errorMessage, device, imageManager, _framesInFlight));
+
     TRY_BOOL(createVulkanEntity(
         &renderObjectManager, errorMessage, VulkanRenderObjectCreateContext{
-            &objectManager, &assetManager, &device, &meshManager, &imageManager, _framesInFlight
+            &objectManager, &assetManager, &device, &meshManager, &materialManager, _framesInFlight
         }
     ));
 
@@ -83,6 +85,7 @@ bool VulkanRenderer::init(
             imageManager,
             frameResources,
             renderResources,
+            materialManager,
             renderObjectManager,
             shaderProgramManager,
             pipelineManager
@@ -118,7 +121,7 @@ void VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
 
     if (!onFramebufferResize(errorMessage)) return;
 
-    uint32_t imageIndex;
+    std::uint32_t imageIndex;
     if (!swapchainManager.acquireNextImage(imageIndex, currentFrame, errorMessage, discardLogging)) return;
 
     // Frame data update
@@ -137,9 +140,9 @@ void VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
     VK_CALL(context.getDevice().getLogicalDevice().getQueryPoolResults(
         context.getDevice().getQueryPool(),
         0, 1,
-        sizeof(uint64_t),
+        sizeof(std::uint64_t),
         &primitiveCount,
-        sizeof(uint64_t),
+        sizeof(std::uint64_t),
         vk::QueryResultFlagBits::eWait |
         vk::QueryResultFlagBits::e64
     ), errorMessage);
@@ -163,7 +166,7 @@ bool VulkanRenderer::onFramebufferResize(std::string& errorMessage) {
 }
 
 bool VulkanRenderer::recordCommandBuffer(
-    const vk::CommandBuffer commandBuffer, const uint32_t imageIndex, std::string& errorMessage
+    const vk::CommandBuffer commandBuffer, const std::uint32_t imageIndex, std::string& errorMessage
 ) {
     constexpr vk::CommandBufferBeginInfo beginInfo{};
     VK_TRY(commandBuffer.begin(beginInfo), errorMessage);
@@ -189,7 +192,7 @@ bool VulkanRenderer::recordCommandBuffer(
     return true;
 }
 
-bool VulkanRenderer::recordCurrentCommandBuffer(const uint32_t imageIndex, std::string& errorMessage) {
+bool VulkanRenderer::recordCurrentCommandBuffer(const std::uint32_t imageIndex, std::string& errorMessage) {
     const vk::CommandBuffer& currentBuffer = commandManager.getCommandBuffers()[currentFrame];
     VK_CALL_LOG(currentBuffer.reset(), Logger::Level::ERROR);
 
@@ -199,7 +202,7 @@ bool VulkanRenderer::recordCurrentCommandBuffer(const uint32_t imageIndex, std::
 }
 
 bool VulkanRenderer::submitCurrentCommandBuffer(
-    const uint32_t imageIndex, std::string& errorMessage, bool& discardLogging
+    const std::uint32_t imageIndex, std::string& errorMessage, bool& discardLogging
 ) {
     const vk::CommandBuffer& currentBuffer = commandManager.getCommandBuffers()[currentFrame];
 

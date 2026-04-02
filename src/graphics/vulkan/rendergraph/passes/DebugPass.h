@@ -14,7 +14,9 @@ struct DebugPassCreateContext {
 
     const VulkanFrameResources&  frameResources;
     const VulkanRenderResources& renderResources;
+
     VulkanRenderObjectManager&   renderObjectManager;
+
     VulkanShaderProgramManager&  shaderProgramManager;
 
     static DebugPassCreateContext build(const VulkanRenderGraphBuilderContext& context) {
