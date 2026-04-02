@@ -2,8 +2,9 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "graphics/vulkan/resources/VulkanPushConstant.h"
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
+
+#include "graphics/vulkan/pipeline/shader_interface/VulkanPushConstant.h"
 
 #include <unordered_map>
 #include <vector>

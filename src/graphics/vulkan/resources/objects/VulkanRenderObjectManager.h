@@ -41,7 +41,7 @@ public:
 
     [[nodiscard]] const VulkanDescriptorManager& getDescriptorManager() const noexcept { return _descriptorManager; }
 
-    [[nodiscard]] const RenderObjectsVector& getRenderObjects() noexcept { return _renderObjects; }
+    [[nodiscard]] const RenderObjectsVector& getRenderObjects() const noexcept { return _renderObjects; }
 
 private:
     [[nodiscard]] bool loadObjectTextures(const AssetManager::TexturesMap& textures, std::string& errorMessage) const;

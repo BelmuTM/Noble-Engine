@@ -49,9 +49,7 @@ const glm::mat4& Camera::getProjectionInverseMatrix() noexcept {
 }
 
 void Camera::update(const float deltaTime) {
-    const glm::vec3 worldVelocity = toWorldSpace(_velocity);
-
-    move(worldVelocity * deltaTime);
+    move(toWorldSpace(_velocity) * deltaTime);
 }
 
 glm::vec3 Camera::toWorldSpace(const glm::vec3 vector) const {

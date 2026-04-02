@@ -97,7 +97,7 @@ void VulkanRenderObjectManager::updateObjects() const {
 
         renderObject.update();
 
-        dataToGPU[i] = renderObject.data;
+        dataToGPU[i] = renderObject.gpuData;
     }
 
     _objectBuffer.update(dataToGPU);

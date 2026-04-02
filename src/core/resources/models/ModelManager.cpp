@@ -163,7 +163,9 @@ Mesh ModelManager::processMesh_OBJ(
         }
     }
 
-    loadMaterial_OBJ(mesh, modelName, material);
+    if (targetMaterialIndex != -1) {
+        loadMaterial_OBJ(mesh, modelName, material);
+    }
 
     mesh.setAABB(aabb);
 
@@ -187,17 +189,19 @@ bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& 
         return false;
     }
 
-    if (materials.empty()) {
-        materials.emplace_back();
-    }
+    for (int materialIndex = -1; materialIndex < static_cast<int>(materials.size()); materialIndex++) {
+        tinyobj::material_t material{};
 
-    for (size_t materialIndex = 0; materialIndex < materials.size(); materialIndex++) {
+        if (materialIndex >= 0) {
+            material = materials[materialIndex];
+        }
+
         Mesh mesh = processMesh_OBJ(
             model.name,
             attributes,
             shapes,
-            materials[materialIndex],
-            static_cast<int>(materialIndex)
+            material,
+            materialIndex
         );
 
         if (!mesh.getVertices().empty()) {
@@ -528,7 +532,9 @@ bool ModelManager::load_glTF(
         for (const auto& glTFPrimitive : glTFMesh.primitives) {
             Mesh mesh = createMesh_glTF(model.name, glTFModel, glTFPrimitive);
 
-            model.addMesh(mesh);
+            if (!mesh.getVertices().empty()) {
+                model.addMesh(mesh);
+            }
         }
     }
 

@@ -132,7 +132,7 @@ function (compile_slang TARGET)
                     -fvk-use-entrypoint-name
                     -o ${SPV_FILE}
                     DEPENDS ${SOURCE}
-                    COMMENT "Building SPIR-V object ${SHADERS_OUTPUT_DIR_RELATIVE}/${SPV_FILE_NAME}"
+                    COMMENT "Building SPIR-V object ${SHADERS_OUTPUT_DIR}/${SPV_FILE_NAME}"
                     VERBATIM
                 )
             endforeach()

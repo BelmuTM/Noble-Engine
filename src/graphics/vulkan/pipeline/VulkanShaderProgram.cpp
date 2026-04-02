@@ -251,9 +251,8 @@ std::vector<std::string> VulkanShaderProgram::findShaderFilePaths(const std::str
     std::vector<std::string> paths{};
     for (const auto& stageExtension : stageData | std::views::keys) {
         const std::string relativePath = path + "." + stageExtension + ".spv";
-        const std::string fullPath     = relativePath;
 
-        if (FILE* file = fopen(fullPath.c_str(), "r")) {
+        if (FILE* file = fopen(relativePath.c_str(), "r")) {
             fclose(file);
             paths.push_back(relativePath);
         }

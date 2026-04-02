@@ -4,7 +4,7 @@
 
 #include "graphics/vulkan/pipeline/VulkanPipelineDescriptor.h"
 
-#include "graphics/vulkan/rendergraph/resources/VulkanDrawCall.h"
+#include "graphics/vulkan/rendergraph/draw/VulkanDrawCall.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObject.h"
 
 #include <memory>

@@ -7,8 +7,8 @@
 
 #include "graphics/vulkan/resources/VulkanFrameResources.h"
 
+#include "draw/VulkanFrameDraws.h"
 #include "nodes/VulkanRenderPass.h"
-#include "resources/VulkanFrameDraws.h"
 
 class VulkanRenderResources;
 

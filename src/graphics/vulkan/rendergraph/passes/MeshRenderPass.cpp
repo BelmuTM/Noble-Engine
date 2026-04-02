@@ -33,7 +33,7 @@ bool MeshRenderPass::create(
                 .setMesh(mesh)
                 .setModelMatrix(renderObject->object->getModelMatrix())
                 .addDescriptorSets(material.getDescriptorSets())
-                .setPushConstant("object", &renderObject->data);
+                .setPushConstant("object", &renderObject->gpuData);
         }
     }
 

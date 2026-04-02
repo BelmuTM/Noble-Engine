@@ -1,27 +1,21 @@
 #pragma once
 
-#include "graphics/vulkan/resources/meshes/VulkanMesh.h"
-#include "graphics/vulkan/resources/objects/VulkanMaterial.h"
+#include "graphics/vulkan/resources/meshes/VulkanRenderMesh.h"
 
 #include "graphics/vulkan/resources/images/VulkanImageManager.h"
 #include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"
 
+#include "graphics/vulkan/rendergraph/draw/VulkanInstanceHandle.h"
+
 #include "core/entities/objects/Object.h"
 
-struct VulkanRenderMesh {
-    VulkanMesh* mesh = nullptr;
-
-    VulkanMaterial material;
-};
-
 struct VulkanRenderObject {
-    uint32_t instanceIndex = 0;
-
-    Object* object = nullptr;
+    Object*       object = nullptr;
+    ObjectDataGPU gpuData;
 
     std::vector<VulkanRenderMesh> meshes{};
 
-    ObjectDataGPU data;
+    VulkanInstanceHandle instanceHandle{};
 
     bool create(
         const uint32_t           objectIndex,
@@ -31,8 +25,8 @@ struct VulkanRenderObject {
         VulkanDescriptorManager& descriptorManager,
         std::string&             errorMessage
     ) {
-        instanceIndex = objectIndex;
-        object        = sourceObject;
+        instanceHandle = VulkanInstanceHandle{objectIndex};
+        object         = sourceObject;
 
         meshes.reserve(object->getModel().meshes.size());
 
@@ -53,7 +47,7 @@ struct VulkanRenderObject {
     }
 
     void update() {
-        data.modelMatrix  = object->getModelMatrix();
-        data.normalMatrix = object->getNormalMatrix();
+        gpuData.modelMatrix  = object->getModelMatrix();
+        gpuData.normalMatrix = object->getNormalMatrix();
     }
 };

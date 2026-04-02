@@ -28,17 +28,17 @@ int main() {
     sceneSponza.addObject("sponza_old.gltf", {0.0f, 0.0f, 0.0f}, {90.0f, 0.0f, 0.0f}, glm::vec3{1.0f});
 
     /*
-    Scene sceneBnuuy;
-    static constexpr uint32_t bnuuyPerAxis = 16;
-    static constexpr float    bnuuyOffset  = 2.0f;
+    Scene sceneDragons;
+    static constexpr uint32_t dragonsPerAxis = 16;
+    static constexpr float    dragonsOffset  = 5.0f;
 
-    for (int32_t x = 0; x < bnuuyPerAxis; x++) {
-        for (int32_t y = 0; y < bnuuyPerAxis; y++) {
-            float xPosition = (x - (bnuuyPerAxis - 1) / 2.0f) * bnuuyOffset;
-            float yPosition = (y - (bnuuyPerAxis - 1) / 2.0f) * bnuuyOffset;
+    for (uint32_t x = 0; x < dragonsPerAxis; x++) {
+        for (uint32_t y = 0; y < dragonsPerAxis; y++) {
+            float xPosition = (x - (dragonsPerAxis - 1) / 2.0f) * dragonsOffset;
+            float yPosition = (y - (dragonsPerAxis - 1) / 2.0f) * dragonsOffset;
 
-            sceneBnuuy.addObject(
-                "stanford_bunny.obj", {xPosition, yPosition, 0.0f}, {90.0f, 90.0f, 0.0f}, glm::vec3{7.0f}
+            sceneDragons.addObject(
+                "stanford_dragon.obj", {xPosition, yPosition, 0.0f}, {0.0f, 180.0f, 60.0f}, glm::vec3{1.0f}
             );
         }
     }

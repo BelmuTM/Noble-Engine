@@ -56,7 +56,7 @@ bool DebugPass::create(
             .setName(renderObject->object->getModel().name + "_Debug")
             .setMesh(aabbMeshPtr)
             .setModelMatrix(renderObject->object->getModelMatrix())
-            .setPushConstant("object", &renderObject->data);
+            .setPushConstant("object", &renderObject->gpuData);
     }
 
     TRY_BOOL(_meshManager.create(context.device, context.commandManager, errorMessage));

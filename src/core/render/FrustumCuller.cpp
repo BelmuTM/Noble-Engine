@@ -42,6 +42,7 @@ std::array<Math::Plane, 6> FrustumCuller::getFrustumPlanes(const glm::mat4& view
 bool FrustumCuller::testVisibility(const Math::AABB& aabb, const std::array<Math::Plane, 6>& frustumPlanes) {
     for (const auto& [normal, d] : frustumPlanes) {
         glm::vec3 p = aabb.maxBound;
+
         if (normal.x < 0.0) p.x = aabb.minBound.x;
         if (normal.y < 0.0) p.y = aabb.minBound.y;
         if (normal.z < 0.0) p.z = aabb.minBound.z;
