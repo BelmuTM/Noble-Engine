@@ -1,6 +1,6 @@
 #include "VulkanFrameResources.h"
 
-#include "images/VulkanImageLayoutTransitions.h"
+#include "graphics/vulkan/resources/images/VulkanImageLayoutTransitions.h"
 
 #include "core/debug/ErrorHandling.h"
 

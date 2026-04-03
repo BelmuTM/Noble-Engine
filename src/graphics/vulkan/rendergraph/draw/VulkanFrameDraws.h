@@ -1,7 +1,8 @@
 #pragma once
 
 #include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
-#include "graphics/vulkan/resources/VulkanFrameResources.h"
+
+#include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 
 class VulkanFrameDraws {
 public:

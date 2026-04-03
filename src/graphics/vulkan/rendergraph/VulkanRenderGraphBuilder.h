@@ -8,7 +8,7 @@
 #include "graphics/vulkan/pipeline/VulkanShaderProgramManager.h"
 #include "graphics/vulkan/rendergraph/VulkanRenderGraph.h"
 
-#include "graphics/vulkan/resources/VulkanFrameResources.h"
+#include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 
 struct VulkanRenderGraphBuilderContext {

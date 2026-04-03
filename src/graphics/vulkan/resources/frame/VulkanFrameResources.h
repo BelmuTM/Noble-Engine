@@ -1,12 +1,13 @@
 #pragma once
 
-#include "descriptors/VulkanDescriptorManager.h"
-#include "descriptors/VulkanDescriptorSets.h"
+#include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
+#include "graphics/vulkan/resources/descriptors/VulkanDescriptorSets.h"
 
-#include "images/VulkanImageManager.h"
+#include "graphics/vulkan/resources/images/VulkanImageManager.h"
 
-#include "ubo/VulkanFrameUniformBuffer.h"
-#include "ubo/VulkanUniformBufferManager.h"
+#include "graphics/vulkan/resources/ubo/VulkanUniformBufferManager.h"
+
+#include "VulkanFrameUniformBuffer.h"
 
 class VulkanFrameResources {
 public:

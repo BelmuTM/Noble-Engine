@@ -7,7 +7,7 @@
 #include "graphics/vulkan/core/VulkanContext.h"
 #include "graphics/vulkan/core/VulkanSwapchainManager.h"
 
-#include "graphics/vulkan/resources/VulkanFrameResources.h"
+#include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/images/VulkanImageManager.h"
 #include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"

@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cstddef>
+
+#include "glm/glm.hpp"
+
 namespace HashUtils {
     template<typename T>
     void combine(std::size_t& seed, const T& value) noexcept {

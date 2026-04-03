@@ -3,7 +3,7 @@
 #include "graphics/vulkan/core/VulkanCommandManager.h"
 #include "graphics/vulkan/core/VulkanSwapchain.h"
 
-#include "graphics/vulkan/resources/VulkanFrameResources.h"
+#include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 
 #include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
 #include "graphics/vulkan/rendergraph/nodes/VulkanRenderPassResource.h"

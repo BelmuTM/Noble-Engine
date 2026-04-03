@@ -5,7 +5,7 @@
 #include "graphics/vulkan/core/VulkanInstance.h"
 #include "graphics/vulkan/core/VulkanSwapchain.h"
 
-#include "graphics/vulkan/resources/VulkanFrameResources.h"
+#include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 
 #include "draw/VulkanFrameDraws.h"
 #include "nodes/VulkanRenderPass.h"

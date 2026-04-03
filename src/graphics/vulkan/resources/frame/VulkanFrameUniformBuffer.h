@@ -1,6 +1,6 @@
 #pragma once
 
-#include "VulkanUniformBuffer.h"
+#include "graphics/vulkan/resources/ubo/VulkanUniformBuffer.h"
 
 #include "core/render/FrameUniforms.h"
 
