@@ -8,12 +8,16 @@ bool VulkanRenderObjectManager::create(
 ) noexcept {
     _context = context;
 
+    // Create descriptor manager
     TRY_BOOL(_descriptorManager.create(
         context.device->getLogicalDevice(), getDescriptorScheme(), context.framesInFlight, MAX_RENDER_OBJECTS, errorMessage
     ));
 
-    TRY_BOOL(_objectBuffer.create(*context.device, MAX_RENDER_OBJECTS, errorMessage));
+    // Create object buffer
+    _objectBuffer = context.storageBufferManager->allocateBuffer(MAX_RENDER_OBJECTS * sizeof(ObjectDataGPU), errorMessage);
+    TRY_BOOL(_objectBuffer);
 
+    // Load textures
     Logger::debug("Loading object textures");
 
     auto startTime = std::chrono::high_resolution_clock::now();
@@ -26,6 +30,7 @@ bool VulkanRenderObjectManager::create(
 
     Logger::debug("Loaded object textures in " + std::to_string(loadDuration) + " ms");
 
+    // Create render objects
     Logger::debug("Creating objects");
 
     startTime = std::chrono::high_resolution_clock::now();
@@ -43,7 +48,6 @@ bool VulkanRenderObjectManager::create(
 
 void VulkanRenderObjectManager::destroy() noexcept {
     _descriptorManager.destroy();
-    _objectBuffer.destroy();
 }
 
 bool VulkanRenderObjectManager::createRenderObjects(
@@ -64,7 +68,7 @@ bool VulkanRenderObjectManager::createRenderObjects(
             break;
         }
 
-        _renderObjects.emplace_back(std::make_unique<VulkanRenderObject>());
+        _renderObjects.push_back(std::make_unique<VulkanRenderObject>());
 
         TRY_BOOL(_renderObjects.back()->create(
             i, objects[i].get(), _context.meshManager, _context.materialManager, errorMessage
@@ -74,16 +78,17 @@ bool VulkanRenderObjectManager::createRenderObjects(
     return true;
 }
 
-void VulkanRenderObjectManager::updateObjects() const {
+void VulkanRenderObjectManager::updateObjects(const std::uint32_t frameIndex) const {
     std::vector<ObjectDataGPU> dataToGPU(_renderObjects.size());
 
+    // Batched object data update
     for (std::size_t i = 0; i < _renderObjects.size(); i++) {
-        auto& renderObject = *_renderObjects[i];
+        VulkanRenderObject& renderObject = *_renderObjects[i];
 
         renderObject.update();
 
         dataToGPU[i] = renderObject.gpuData;
     }
 
-    _objectBuffer.update(dataToGPU);
+    _objectBuffer->updateMemory(frameIndex, dataToGPU.data());
 }

@@ -10,7 +10,7 @@
 #include <memory>
 #include <ranges>
 
-// TO-DO: Separate into VulkanRenderPassDescription (immutable) and VulkanRenderPassState (mutable) for hot reloading.
+// TODO: Separate into VulkanRenderPassDescription (immutable) and VulkanRenderPassState (mutable) for hot reloading.
 
 class VulkanGraphicsPipeline;
 

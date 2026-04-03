@@ -39,7 +39,7 @@ private:
     void queryVertexBufferSize();
     void queryIndexBufferSize();
 
-    void uploadMeshData(void* stagingData);
+    void uploadMeshData(const VulkanBuffer& buffer);
 
     void assignBuffersToMeshes() const;
 

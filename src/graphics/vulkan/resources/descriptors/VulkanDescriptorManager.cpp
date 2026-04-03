@@ -9,12 +9,12 @@ bool VulkanDescriptorManager::create(
     const vk::Device&             device,
     const VulkanDescriptorScheme& descriptorScheme,
     const std::uint32_t           framesInFlight,
-    const std::uint32_t           maxSets,
+    const std::uint32_t           setCount,
     std::string&                  errorMessage
 ) noexcept {
     _device         = device;
     _framesInFlight = framesInFlight;
-    _maxSets        = framesInFlight * maxSets; // 1 set per frame in flight
+    _setCount       = framesInFlight * setCount; // 1 set per frame in flight
 
     buildDescriptorScheme(descriptorScheme);
 
@@ -44,6 +44,7 @@ bool VulkanDescriptorManager::allocate(VulkanDescriptorSets*& descriptorSets, st
     TRY_BOOL(tempDescriptorSets.allocate(errorMessage));
 
     _descriptorSets.push_back(std::make_unique<VulkanDescriptorSets>(std::move(tempDescriptorSets)));
+
     descriptorSets = _descriptorSets.back().get();
 
     return true;
@@ -76,7 +77,7 @@ void VulkanDescriptorManager::buildDescriptorScheme(const VulkanDescriptorScheme
 
     for (const auto& [binding, type, stageFlags, count, name] : descriptorScheme) {
         _bindings.emplace_back(binding, type, count, stageFlags, nullptr);
-        _poolSizes.emplace_back(type, count * _maxSets);
+        _poolSizes.emplace_back(type, count * _setCount);
     }
 }
 
@@ -103,7 +104,7 @@ bool VulkanDescriptorManager::createPool(std::string& errorMessage) {
     vk::DescriptorPoolCreateInfo descriptorPoolInfo{};
     descriptorPoolInfo
         .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
-        .setMaxSets(_maxSets)
+        .setMaxSets(_setCount)
         .setPoolSizes(_poolSizes);
 
     VK_CREATE(_device.createDescriptorPool(descriptorPoolInfo), _descriptorPool, errorMessage);

@@ -1,11 +1,7 @@
 #include "VulkanUniformBufferManager.h"
 
-#include "core/debug/ErrorHandling.h"
-
 bool VulkanUniformBufferManager::create(
-    const VulkanDevice& device,
-    const std::uint32_t framesInFlight,
-    std::string&        errorMessage
+    const VulkanDevice& device, const std::uint32_t framesInFlight, std::string&
 ) noexcept {
     _device         = &device;
     _framesInFlight = framesInFlight;
@@ -21,14 +17,4 @@ void VulkanUniformBufferManager::destroy() noexcept {
     _uniformBuffers.clear();
 
     _device = nullptr;
-}
-
-bool VulkanUniformBufferManager::createBuffer(
-    VulkanUniformBufferBase& buffer, std::string& errorMessage
-) {
-    TRY_BOOL(buffer.create(*_device, _framesInFlight, errorMessage));
-
-    _uniformBuffers.push_back(&buffer);
-
-    return true;
 }

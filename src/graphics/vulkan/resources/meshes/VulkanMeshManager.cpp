@@ -5,9 +5,7 @@
 #include <cstring>
 
 bool VulkanMeshManager::create(
-    const VulkanDevice&         device,
-    const VulkanCommandManager& commandManager,
-    std::string&                errorMessage
+    const VulkanDevice& device, const VulkanCommandManager& commandManager, std::string&
 ) noexcept {
     _device         = &device;
     _commandManager = &commandManager;
@@ -58,7 +56,7 @@ void VulkanMeshManager::queryIndexBufferSize() {
     }
 }
 
-void VulkanMeshManager::uploadMeshData(void* stagingData) {
+void VulkanMeshManager::uploadMeshData(const VulkanBuffer& buffer) {
     _currentIndexOffset = _vertexBufferSize;
 
     for (const auto& mesh : _meshes) {
@@ -70,8 +68,8 @@ void VulkanMeshManager::uploadMeshData(void* stagingData) {
         mesh->setVertexOffset(_currentVertexOffset);
         mesh->setIndexOffset(_currentIndexOffset - _vertexBufferSize);
 
-        std::memcpy(static_cast<char*>(stagingData) + _currentVertexOffset, mesh->getVertices().data(), verticesSize);
-        std::memcpy(static_cast<char*>(stagingData) + _currentIndexOffset , mesh->getIndices().data() , indicesSize);
+        buffer.updateMemory(mesh->getVertices().data(), verticesSize, _currentVertexOffset);
+        buffer.updateMemory(mesh->getIndices().data() , indicesSize , _currentIndexOffset );
 
         _currentVertexOffset += verticesSize;
         _currentIndexOffset  += indicesSize;
@@ -105,7 +103,7 @@ bool VulkanMeshManager::createMeshStagingBuffer(std::string& errorMessage) {
         return false;
     }
 
-    uploadMeshData(stagingData);
+    uploadMeshData(_stagingBuffer);
 
     _stagingBuffer.unmapMemory();
 

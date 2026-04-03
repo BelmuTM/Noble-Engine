@@ -56,6 +56,6 @@ private:
 
     VulkanDescriptorManager _descriptorManager{};
 
-    VulkanFrameUniformBuffer    _frameUBO{};
-    VulkanDescriptorSets* _frameUBODescriptors = nullptr;
+    VulkanFrameUniformBuffer* _frameUBO            = nullptr;
+    VulkanDescriptorSets*     _frameUBODescriptors = nullptr;
 };

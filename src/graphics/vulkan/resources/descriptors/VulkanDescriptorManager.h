@@ -21,7 +21,7 @@ public:
         const vk::Device&             device,
         const VulkanDescriptorScheme& descriptorScheme,
         std::uint32_t                 framesInFlight,
-        std::uint32_t                 maxSets,
+        std::uint32_t                 setCount,
         std::string&                  errorMessage
     ) noexcept;
 
@@ -53,7 +53,7 @@ private:
     vk::Device _device{};
 
     std::uint32_t _framesInFlight = 0;
-    std::uint32_t _maxSets        = 0;
+    std::uint32_t _setCount        = 0;
 
     std::vector<vk::DescriptorSetLayoutBinding> _bindings{};
     std::vector<vk::DescriptorPoolSize>         _poolSizes{};

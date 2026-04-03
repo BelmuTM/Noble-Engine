@@ -35,7 +35,10 @@ bool VulkanRenderer::init(
     TRY_BOOL(createVulkanEntity(&commandManager, errorMessage, device, _framesInFlight));
     TRY_BOOL(createVulkanEntity(&meshManager, errorMessage, device, commandManager));
     TRY_BOOL(createVulkanEntity(&imageManager, errorMessage, device, commandManager));
+
     TRY_BOOL(createVulkanEntity(&uniformBufferManager, errorMessage, device, _framesInFlight));
+    TRY_BOOL(createVulkanEntity(&storageBufferManager, errorMessage, device, _framesInFlight));
+
     TRY_BOOL(createVulkanEntity(&renderResources, errorMessage, device, swapchain, commandManager, _framesInFlight));
 
     TRY_BOOL(createVulkanEntity(
@@ -46,7 +49,13 @@ bool VulkanRenderer::init(
 
     TRY_BOOL(createVulkanEntity(
         &renderObjectManager, errorMessage, VulkanRenderObjectCreateContext{
-            &objectManager, &assetManager, &device, &meshManager, &materialManager, _framesInFlight
+            &objectManager,
+            &assetManager,
+            &device,
+            &meshManager,
+            &materialManager,
+            &storageBufferManager,
+            _framesInFlight
         }
     ));
 
@@ -127,7 +136,7 @@ void VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
     // Frame data update
     frameResources.update(currentFrame, imageIndex, uniforms);
     // Render objects update
-    renderObjectManager.updateObjects();
+    renderObjectManager.updateObjects(currentFrame);
     // Frustum culling
     frameDraws.cullDraws(renderGraph.getPasses(), uniforms);
 

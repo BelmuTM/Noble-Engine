@@ -18,10 +18,12 @@ bool VulkanFrameResources::create(
     // Descriptors creation
     TRY_BOOL(_descriptorManager.create(device.getLogicalDevice(), getFrameDescriptorScheme(), framesInFlight, 1, errorMessage));
 
-    TRY_BOOL(uniformBufferManager.createBuffer(_frameUBO, errorMessage));
+    _frameUBO = uniformBufferManager.allocateBuffer<VulkanFrameUniformBuffer>(errorMessage);
+    TRY_BOOL(_frameUBO);
 
     TRY_BOOL(_descriptorManager.allocate(_frameUBODescriptors, errorMessage));
-    _frameUBODescriptors->updatePerFrameUBODescriptorSets(_frameUBO, 0);
+
+    _frameUBODescriptors->updatePerFrameUBODescriptorSets(*_frameUBO, 0);
 
     return true;
 }
@@ -36,7 +38,7 @@ void VulkanFrameResources::destroy() noexcept {
 void VulkanFrameResources::update(
     const std::uint32_t frameIndex, const std::uint32_t imageIndex, const FrameUniforms& uniforms
 ) {
-    _frameUBO.update(frameIndex, uniforms);
+    _frameUBO->update(frameIndex, uniforms);
 
     _frameIndex = frameIndex;
     _imageIndex = imageIndex;

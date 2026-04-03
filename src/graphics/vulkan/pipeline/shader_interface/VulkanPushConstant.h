@@ -20,7 +20,7 @@ struct IVulkanPushConstant {
     ) const = 0;
 };
 
-template <typename PushConstantType>
+template<typename PushConstantType>
 struct VulkanPushConstant final : IVulkanPushConstant {
     const PushConstantType* ptr = nullptr;
 

@@ -16,7 +16,7 @@ public:
     ) const;
 
 private:
-    template <typename PassType, typename PassCreateContext>
+    template<typename PassType, typename PassCreateContext>
     [[nodiscard]] static std::unique_ptr<VulkanRenderPass> createPassFactory(
         const std::string& path, const VulkanRenderGraphBuilderContext& context, std::string& errorMessage
     ) {

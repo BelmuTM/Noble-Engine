@@ -21,12 +21,21 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] bool createBuffer(VulkanUniformBufferBase& buffer, std::string& errorMessage);
+    template<typename UniformBufferType>
+    [[nodiscard]] UniformBufferType* allocateBuffer(std::string& errorMessage) {
+        _uniformBuffers.push_back(std::make_unique<UniformBufferType>());
+
+        if (!_uniformBuffers.back()->create(*_device, _framesInFlight, errorMessage)) {
+            return nullptr;
+        }
+
+        return static_cast<UniformBufferType*>(_uniformBuffers.back().get());
+    }
 
 private:
     const VulkanDevice* _device = nullptr;
 
     std::uint32_t _framesInFlight = 0;
 
-    std::vector<VulkanUniformBufferBase*> _uniformBuffers{};
+    std::vector<std::unique_ptr<VulkanUniformBufferBase>> _uniformBuffers{};
 };

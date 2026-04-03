@@ -40,6 +40,10 @@ public:
     [[nodiscard]] vk::PhysicalDevice getPhysicalDevice() const noexcept { return _physicalDevice; }
     [[nodiscard]] const vk::Device& getLogicalDevice() const noexcept { return _logicalDevice; }
 
+    [[nodiscard]] vk::PhysicalDeviceLimits getLimits() const noexcept {
+        return _physicalDevice.getProperties2().properties.limits;
+    }
+
     [[nodiscard]] VmaAllocator getAllocator() const noexcept { return _allocator; }
 
     [[nodiscard]] const QueueFamilyIndices& getQueueFamilyIndices() const noexcept { return _queueFamilyIndices; }

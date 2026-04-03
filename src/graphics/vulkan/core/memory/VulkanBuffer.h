@@ -62,6 +62,33 @@ public:
 
     void unmapMemory();
 
+    void updateMemory(
+        const void*          data,
+        const vk::DeviceSize size   = VK_WHOLE_SIZE,
+        const vk::DeviceSize offset = 0
+    ) const {
+        // Using persistent mapping to update memory in place
+        std::memcpy(static_cast<std::byte*>(_mappedPointer) + offset, data, size);
+    }
+
+    template<typename BufferDataType>
+    void updateMemory(const BufferDataType& data, const vk::DeviceSize offset = 0) const {
+        updateMemory(&data, sizeof(BufferDataType), offset);
+    }
+
+    template<typename BufferDataType>
+    void updateArrayMemory(
+        const BufferDataType* data,
+        const size_t          count,
+        const vk::DeviceSize  offset = 0
+    ) const {
+        updateMemory(data, count * sizeof(BufferDataType), offset);
+    }
+
+    static vk::DeviceSize align(const vk::DeviceSize size, const vk::DeviceSize alignment) noexcept {
+        return (size + alignment - 1) & ~(alignment - 1);
+    }
+
     [[nodiscard]] vk::Buffer handle() const noexcept { return _buffer; }
 
     [[nodiscard]] vk::DeviceAddress getDeviceAddress() const noexcept { return _deviceAddress; }
@@ -72,7 +99,7 @@ private:
     const VulkanDevice* _device = nullptr;
 
     vk::Buffer     _buffer{};
-    vk::DeviceSize _bufferSize;
+    vk::DeviceSize _bufferSize = 0;
 
     vk::DeviceAddress _deviceAddress;
 

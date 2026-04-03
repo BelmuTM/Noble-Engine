@@ -11,6 +11,8 @@
 #include "graphics/vulkan/resources/images/VulkanImageManager.h"
 #include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
+
+#include "graphics/vulkan/resources/ssbo/VulkanStorageBufferManager.h"
 #include "graphics/vulkan/resources/ubo/VulkanUniformBufferManager.h"
 
 #include "graphics/vulkan/pipeline/VulkanPipelineManager.h"
@@ -57,6 +59,8 @@ private:
     VulkanCommandManager       commandManager{};
     VulkanMeshManager          meshManager{};
     VulkanImageManager         imageManager{};
+
+    VulkanStorageBufferManager storageBufferManager{};
     VulkanUniformBufferManager uniformBufferManager{};
 
     VulkanFrameResources      frameResources{};

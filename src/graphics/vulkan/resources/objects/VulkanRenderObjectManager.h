@@ -1,6 +1,5 @@
 #pragma once
 
-#include "VulkanObjectBuffer.h"
 #include "VulkanRenderObject.h"
 #include "VulkanRenderObjectCreateContext.h"
 
@@ -30,7 +29,7 @@ public:
 
     void destroy() noexcept;
 
-    void updateObjects() const;
+    void updateObjects(std::uint32_t frameIndex) const;
 
     [[nodiscard]] static VulkanDescriptorScheme getDescriptorScheme() noexcept {
         static const VulkanDescriptorScheme scheme = {
@@ -45,10 +44,11 @@ public:
     [[nodiscard]] const RenderObjectsVector& getRenderObjects() const noexcept { return _renderObjects; }
 
 private:
-    VulkanRenderObjectCreateContext _context;
+    VulkanRenderObjectCreateContext _context{};
 
     VulkanDescriptorManager _descriptorManager{};
-    VulkanObjectBuffer      _objectBuffer{};
+
+    VulkanStorageBuffer* _objectBuffer = nullptr;
 
     RenderObjectsVector _renderObjects{};
 };

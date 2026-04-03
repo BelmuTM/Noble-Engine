@@ -23,7 +23,7 @@ public:
     [[nodiscard]] virtual VulkanDescriptorInfo getDescriptorInfo(std::uint32_t binding, std::uint32_t frameIndex) const = 0;
 };
 
-template <typename UniformBufferType>
+template<typename UniformBufferType>
 class VulkanUniformBuffer : public VulkanUniformBufferBase {
 public:
     VulkanUniformBuffer() = default;
@@ -32,8 +32,8 @@ public:
     VulkanUniformBuffer(const VulkanUniformBuffer&)            = delete;
     VulkanUniformBuffer& operator=(const VulkanUniformBuffer&) = delete;
 
-    VulkanUniformBuffer(VulkanUniformBuffer&&)            = delete;
-    VulkanUniformBuffer& operator=(VulkanUniformBuffer&&) = delete;
+    VulkanUniformBuffer(VulkanUniformBuffer&& other)            = delete;
+    VulkanUniformBuffer& operator=(VulkanUniformBuffer&& other) = delete;
 
     [[nodiscard]] bool create(
         const VulkanDevice& device,
@@ -49,9 +49,11 @@ public:
     }
 
     void destroy() noexcept override {
-        for (auto& uniformBuffer : uniformBuffers) {
+        for (auto& uniformBuffer : _uniformBuffers) {
             uniformBuffer.destroy();
         }
+
+        _uniformBuffers.clear();
 
         _device = nullptr;
     }
@@ -61,12 +63,12 @@ public:
     ) const noexcept override {
         return {
             .type       = vk::DescriptorType::eUniformBuffer,
-            .bufferInfo = {uniformBuffers[frameIndex].handle(), 0, BUFFER_SIZE},
+            .bufferInfo = {_uniformBuffers[frameIndex].handle(), 0, getBufferSize()},
             .binding    = binding
         };
     }
 
-    [[nodiscard]] const std::vector<VulkanBuffer>& getBuffers() const noexcept { return uniformBuffers; }
+    [[nodiscard]] const std::vector<VulkanBuffer>& getBuffers() const noexcept { return _uniformBuffers; }
 
 protected:
     bool createUniformBuffers(std::string& errorMessage) {
@@ -75,14 +77,14 @@ protected:
             return false;
         }
 
-        uniformBuffers.clear();
-        uniformBuffers.reserve(_framesInFlight);
+        _uniformBuffers.clear();
+        _uniformBuffers.reserve(_framesInFlight);
 
         for (std::uint32_t i = 0; i < _framesInFlight; i++) {
             VulkanBuffer uniformBuffer;
 
             TRY_BOOL(uniformBuffer.create(
-                BUFFER_SIZE,
+                getBufferSize(),
                 vk::BufferUsageFlagBits::eUniformBuffer,
                 VMA_MEMORY_USAGE_CPU_TO_GPU,
                 _device,
@@ -91,22 +93,26 @@ protected:
 
             TRY_BOOL(uniformBuffer.mapMemory(errorMessage));
 
-            uniformBuffers.emplace_back(std::move(uniformBuffer));
+            _uniformBuffers.emplace_back(std::move(uniformBuffer));
         }
 
         return true;
     }
 
-    template <typename UBOType>
-    void updateMemory(const std::uint32_t frameIndex, UBOType ubo) const {
-        std::memcpy(uniformBuffers[frameIndex].getMappedPointer(), &ubo, sizeof(ubo));
+    void updateMemory(const std::uint32_t frameIndex, const UniformBufferType& data) const {
+        _uniformBuffers[frameIndex].updateMemory(data);
     }
 
-    static constexpr vk::DeviceSize BUFFER_SIZE = sizeof(UniformBufferType);
+    [[nodiscard]] vk::DeviceSize getBufferSize() const noexcept {
+        return VulkanBuffer::align(
+            sizeof(UniformBufferType),
+            _device->getLimits().minUniformBufferOffsetAlignment
+        );
+    }
 
     const VulkanDevice* _device = nullptr;
 
     std::uint32_t _framesInFlight = 0;
 
-    std::vector<VulkanBuffer> uniformBuffers{};
+    std::vector<VulkanBuffer> _uniformBuffers{};
 };

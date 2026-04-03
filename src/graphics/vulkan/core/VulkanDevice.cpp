@@ -69,10 +69,10 @@ void VulkanDevice::destroy() noexcept {
 }
 
 bool VulkanDevice::isPhysicalDeviceSuitable(const vk::PhysicalDevice device) {
-    const vk::PhysicalDeviceProperties& properties = device.getProperties();
+    const vk::PhysicalDeviceProperties2& deviceProperties = device.getProperties2();
 
     // Eliminate current candidate device if critical conditions aren't met
-    if (properties.apiVersion < VK_API_VERSION_1_3) {
+    if (deviceProperties.properties.apiVersion < VK_API_VERSION_1_3) {
         return false;
     }
 
@@ -108,11 +108,11 @@ bool VulkanDevice::pickPhysicalDevice(std::string& errorMessage) {
             continue;
         }
 
-        const auto& properties = device.getProperties();
+        const auto& deviceProperties = device.getProperties2();
 
-        if (properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
+        if (deviceProperties.properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
             discreteCandidates.push_back(device);
-        } else if (properties.deviceType == vk::PhysicalDeviceType::eIntegratedGpu) {
+        } else if (deviceProperties.properties.deviceType == vk::PhysicalDeviceType::eIntegratedGpu) {
             integratedCandidates.push_back(device);
         }
     }

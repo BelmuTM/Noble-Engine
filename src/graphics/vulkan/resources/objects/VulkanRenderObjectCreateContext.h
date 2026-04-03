@@ -7,6 +7,8 @@
 #include "graphics/vulkan/resources/materials/VulkanMaterialManager.h"
 #include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"
 
+#include "graphics/vulkan/resources/ssbo/VulkanStorageBufferManager.h"
+
 struct VulkanRenderObjectCreateContext {
     const ObjectManager* objectManager = nullptr;
     const AssetManager*  assetManager  = nullptr;
@@ -15,6 +17,8 @@ struct VulkanRenderObjectCreateContext {
 
     VulkanMeshManager*     meshManager     = nullptr;
     VulkanMaterialManager* materialManager = nullptr;
+
+    VulkanStorageBufferManager* storageBufferManager = nullptr;
 
     std::uint32_t framesInFlight;
 };

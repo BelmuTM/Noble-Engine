@@ -136,10 +136,10 @@ bool VulkanImageManager::loadImages(
         const std::uint32_t mipLevels = image->hasMipmaps ? getMipLevels(extent) : 1;
 
         // Ensure image data is aligned properly in memory
-        offset = (offset + STAGING_BUFFER_ALIGNMENT - 1) & ~(STAGING_BUFFER_ALIGNMENT - 1);
+        offset = VulkanBuffer::align(offset, STAGING_BUFFER_ALIGNMENT);
 
         // Copy the image's bytes into the staging buffer
-        std::memcpy(static_cast<char*>(stagingBuffer.getMappedPointer()) + offset, image->pixels.get(), image->byteSize);
+        stagingBuffer.updateMemory(image->pixels.get(), image->byteSize, offset);
 
         // Create image on the GPU
         VulkanImage tempImage{};
@@ -157,7 +157,7 @@ bool VulkanImageManager::loadImages(
     return true;
 }
 
-// TO-DO: Make this multithreaded
+// TODO: Make this multithreaded.
 bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& images, std::string& errorMessage) {
     if (images.empty()) return true;
 

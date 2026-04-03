@@ -63,7 +63,7 @@ private:
     bool _mouseRightButtonPressed = false;
 };
 
-// TO-DO: Queue listener events to support multithreading.
+// TODO: Queue listener events to support multithreading.
 class IInputListener {
 public:
     explicit IInputListener(InputManager& inputManager) : _inputManager(inputManager) {

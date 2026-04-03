@@ -53,7 +53,7 @@ public:
         _descriptorSets.push_back(descriptorSets);
         return *this;
     }
-    template <typename PushConstantType>
+    template<typename PushConstantType>
     VulkanDrawCall& setPushConstant(const std::string& name, const PushConstantType* data) noexcept {
         _pushConstants[name] = std::make_unique<VulkanPushConstant<PushConstantType>>(data);
         return *this;

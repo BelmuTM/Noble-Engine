@@ -24,7 +24,7 @@ struct Error {
 
 #define FAIL(msg) Error{(msg), {std::string(__FUNCTION__) + " (" + __FILE__ + ":" + std::to_string(__LINE__) + ")"}}
 
-template <typename T>
+template<typename T>
 class Expected {
 public:
     explicit Expected(const T& value) : _data(value) {}
