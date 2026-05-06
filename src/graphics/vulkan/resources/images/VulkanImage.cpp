@@ -1,9 +1,8 @@
 #include "VulkanImage.h"
 
-#include "VulkanImageLayoutTransitions.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include "core/debug/ErrorHandling.h"
+#include "VulkanImageLayoutTransitions.h"
 
 void VulkanImage::destroy() noexcept {
     if (!_device) return;
@@ -28,16 +27,14 @@ void VulkanImage::destroy() noexcept {
     }
 }
 
-bool VulkanImage::transitionLayout(
+Expected<void> VulkanImage::transitionLayout(
     const vk::CommandBuffer commandBuffer,
-    std::string&            errorMessage,
     const vk::ImageLayout   oldLayout,
     const vk::ImageLayout   newLayout,
     const std::uint32_t     mipLevels
 ) {
-    TRY_BOOL(VulkanImageLayoutTransitions::transitionImageLayout(
+    TRY(VulkanImageLayoutTransitions::transitionImageLayout(
         commandBuffer,
-        errorMessage,
         _image,
         _format,
         oldLayout,
@@ -47,35 +44,32 @@ bool VulkanImage::transitionLayout(
 
     _layout = newLayout;
 
-    return true;
+    return {};
 }
 
-bool VulkanImage::transitionLayout(
+Expected<void> VulkanImage::transitionLayout(
     const VulkanCommandManager* commandManager,
-    std::string&                errorMessage,
     const vk::ImageLayout       oldLayout,
     const vk::ImageLayout       newLayout,
     const std::uint32_t         mipLevels
 ) {
     vk::CommandBuffer commandBuffer{};
-    TRY_BOOL(commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
+    TRY(commandManager->beginSingleTimeCommands(commandBuffer));
 
-    TRY_BOOL(transitionLayout(commandBuffer, errorMessage, oldLayout, newLayout, mipLevels));
+    TRY(transitionLayout(commandBuffer, oldLayout, newLayout, mipLevels));
 
-    TRY_BOOL(commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
+    TRY(commandManager->endSingleTimeCommands(commandBuffer));
 
-    return true;
+    return {};
 }
 
-bool VulkanImage::transitionLayout(
+Expected<void> VulkanImage::transitionLayout(
     const vk::CommandBuffer commandBuffer,
-    std::string&            errorMessage,
     const vk::ImageLayout   newLayout,
     const std::uint32_t     mipLevels
 ) {
-    TRY_BOOL(VulkanImageLayoutTransitions::transitionImageLayout(
+    TRY(VulkanImageLayoutTransitions::transitionImageLayout(
         commandBuffer,
-        errorMessage,
         _image,
         _format,
         _layout,
@@ -85,34 +79,32 @@ bool VulkanImage::transitionLayout(
 
     _layout = newLayout;
 
-    return true;
+    return {};
 }
 
-bool VulkanImage::transitionLayout(
+Expected<void> VulkanImage::transitionLayout(
     const VulkanCommandManager* commandManager,
-    std::string&                errorMessage,
     const vk::ImageLayout       newLayout,
     const std::uint32_t         mipLevels
 ) {
     vk::CommandBuffer commandBuffer{};
-    TRY_BOOL(commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
+    TRY(commandManager->beginSingleTimeCommands(commandBuffer));
 
-    TRY_BOOL(transitionLayout(commandBuffer, errorMessage, newLayout, mipLevels));
+    TRY(transitionLayout(commandBuffer, newLayout, mipLevels));
 
-    TRY_BOOL(commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
+    TRY(commandManager->endSingleTimeCommands(commandBuffer));
 
-    return true;
+    return {};
 }
 
-bool VulkanImage::createImage(
+Expected<void> VulkanImage::createImage(
     const vk::ImageType       type,
     const vk::Format          format,
     const vk::Extent3D        extent,
     const std::uint32_t       mipLevels,
     const vk::ImageUsageFlags usage,
     const VmaMemoryUsage      memoryUsage,
-    const VulkanDevice*       device,
-    std::string&              errorMessage
+    const VulkanDevice*       device
 ) {
     _device = device;
 
@@ -134,24 +126,22 @@ bool VulkanImage::createImage(
     allocationInfo.usage = memoryUsage;
 
     VK_TRY(vmaCreateImage(allocator,
-           reinterpret_cast<VkImageCreateInfo*>(&imageInfo),
-           &allocationInfo,
-           reinterpret_cast<VkImage*>(&_image),
-           &_allocation,
-           nullptr),
-        errorMessage
-    );
+        reinterpret_cast<VkImageCreateInfo*>(&imageInfo),
+        &allocationInfo,
+        reinterpret_cast<VkImage*>(&_image),
+        &_allocation,
+        nullptr
+    ));
 
-    return true;
+    return {};
 }
 
-bool VulkanImage::createImageView(
+Expected<void> VulkanImage::createImageView(
     const vk::ImageViewType    type,
     const vk::Format           format,
     const vk::ImageAspectFlags aspectFlags,
     const std::uint32_t        mipLevels,
-    const VulkanDevice*        device,
-    std::string&               errorMessage
+    const VulkanDevice*        device
 ) {
     const vk::Device& logicalDevice = device->getLogicalDevice();
 
@@ -170,16 +160,15 @@ bool VulkanImage::createImageView(
         .setFormat(format)
         .setSubresourceRange(subresourceRange);
 
-    VK_CREATE(logicalDevice.createImageView(imageViewInfo), _imageView, errorMessage);
+    VK_CREATE(_imageView, logicalDevice.createImageView(imageViewInfo));
 
-    return true;
+    return {};
 }
 
-bool VulkanImage::createSampler(
+Expected<void> VulkanImage::createSampler(
     const vk::Filter             filter,
     const vk::SamplerAddressMode addressMode,
-    const VulkanDevice*          device,
-    std::string&                 errorMessage
+    const VulkanDevice*          device
 ) {
     const vk::Device&         logicalDevice  = device->getLogicalDevice();
     const vk::PhysicalDevice& physicalDevice = device->getPhysicalDevice();
@@ -202,9 +191,9 @@ bool VulkanImage::createSampler(
         .setBorderColor(vk::BorderColor::eIntOpaqueBlack)
         .setUnnormalizedCoordinates(vk::False);
 
-    VK_CREATE(logicalDevice.createSampler(samplerInfo), _sampler, errorMessage);
+    VK_CREATE(_sampler, logicalDevice.createSampler(samplerInfo));
 
-    return true;
+    return {};
 }
 
 void VulkanImage::copyBufferToImage(
@@ -365,15 +354,14 @@ void VulkanImage::generateMipmaps(
     commandBuffer.pipelineBarrier2(dependencyInfo);
 }
 
-bool VulkanImage::createFromBuffer(
+Expected<void> VulkanImage::createFromBuffer(
     const VulkanBuffer&     buffer,
     const vk::DeviceSize    bufferOffset,
     const vk::Format        format,
     const vk::Extent3D      extent,
     const std::uint32_t     mipLevels,
     const vk::CommandBuffer commandBuffer,
-    const VulkanDevice*     device,
-    std::string&            errorMessage
+    const VulkanDevice*     device
 ) {
     _device = device;
 
@@ -388,23 +376,17 @@ bool VulkanImage::createFromBuffer(
         usageFlags |= vk::ImageUsageFlagBits::eTransferSrc;
     }
 
-    TRY_BOOL(createImage(
+    TRY(createImage(
         vk::ImageType::e2D,
         format,
         extent,
         mipLevels,
         usageFlags,
         VMA_MEMORY_USAGE_GPU_ONLY,
-        device,
-        errorMessage
+        device
     ));
 
-    TRY_BOOL(transitionLayout(
-        commandBuffer,
-        errorMessage,
-        vk::ImageLayout::eTransferDstOptimal,
-        mipLevels
-    ));
+    TRY(transitionLayout(commandBuffer, vk::ImageLayout::eTransferDstOptimal, mipLevels));
 
     copyBufferToImage(commandBuffer, buffer.handle(), bufferOffset);
 
@@ -413,24 +395,18 @@ bool VulkanImage::createFromBuffer(
         generateMipmaps(commandBuffer, extent, mipLevels);
 
     } else {
-        TRY_BOOL(transitionLayout(
-            commandBuffer,
-            errorMessage,
-            vk::ImageLayout::eShaderReadOnlyOptimal,
-            mipLevels
-        ));
+        TRY(transitionLayout(commandBuffer, vk::ImageLayout::eShaderReadOnlyOptimal, mipLevels));
     }
 
-    TRY_BOOL(createImageView(
+    TRY(createImageView(
         vk::ImageViewType::e2D,
         format,
         vk::ImageAspectFlagBits::eColor,
         mipLevels,
-        device,
-        errorMessage
+        device
     ));
 
-    TRY_BOOL(createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, device, errorMessage));
+    TRY(createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, device));
 
-    return true;
+    return {};
 }

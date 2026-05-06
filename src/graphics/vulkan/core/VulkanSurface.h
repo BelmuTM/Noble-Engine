@@ -1,10 +1,9 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
 #include "core/platform/Window.h"
 
 #include "graphics/vulkan/common/VulkanHeader.h"
-
-#include <string>
 
 class VulkanSurface {
 public:
@@ -17,14 +16,14 @@ public:
     VulkanSurface(VulkanSurface&&)            = delete;
     VulkanSurface& operator=(VulkanSurface&&) = delete;
 
-    [[nodiscard]] bool create(const vk::Instance& instance, const Window& window, std::string& errorMessage) noexcept;
+    [[nodiscard]] Expected<void> create(const vk::Instance& instance, const Window& window) noexcept;
 
     void destroy() noexcept;
 
     [[nodiscard]] vk::SurfaceKHR handle() const noexcept { return _surface; }
 
 private:
-    bool createSurface(std::string& errorMessage);
+    Expected<void> createSurface();
 
     const Window* _window = nullptr;
 

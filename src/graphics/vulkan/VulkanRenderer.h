@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "graphics/GraphicsAPI.h"
 #include "graphics/vulkan/common/VulkanEntityOwner.h"
 
@@ -23,29 +25,26 @@ class VulkanRenderer : public GraphicsAPI, public VulkanEntityOwner<VulkanRender
 public:
     explicit VulkanRenderer(std::uint32_t framesInFlight = 2);
 
-    [[nodiscard]] bool init(
+    [[nodiscard]] Expected<void> init(
         Window&              window,
         const AssetManager&  assetManager,
-        const ObjectManager& objectManager,
-        std::string&         errorMessage
+        const ObjectManager& objectManager
     ) override;
 
     void shutdown() override;
 
-    void drawFrame(const FrameUniforms& uniforms) override;
+    Expected<void> drawFrame(const FrameUniforms& uniforms) override;
 
     std::uint32_t primitiveCount = 0;
 
 private:
-    [[nodiscard]] bool onFramebufferResize(std::string& errorMessage);
+    [[nodiscard]] Expected<void> onFramebufferResize();
 
-    [[nodiscard]] bool recordCommandBuffer(
-        vk::CommandBuffer commandBuffer, std::uint32_t imageIndex, std::string& errorMessage
-    );
+    [[nodiscard]] Expected<void> recordCommandBuffer(vk::CommandBuffer commandBuffer, std::uint32_t imageIndex);
 
-    [[nodiscard]] bool recordCurrentCommandBuffer(std::uint32_t imageIndex, std::string& errorMessage);
+    [[nodiscard]] Expected<void> recordCurrentCommandBuffer(std::uint32_t imageIndex);
 
-    [[nodiscard]] bool submitCurrentCommandBuffer(std::uint32_t imageIndex, std::string& errorMessage, bool& discardLogging);
+    [[nodiscard]] Expected<void> submitCurrentCommandBuffer(std::uint32_t imageIndex);
 
     Window* _window = nullptr;
 

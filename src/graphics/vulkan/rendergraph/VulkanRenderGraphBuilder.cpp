@@ -1,55 +1,49 @@
 #include "VulkanRenderGraphBuilder.h"
 
-#include "core/debug/Logger.h"
+#include "graphics/vulkan/common/VulkanDebugger.h"
 
-bool VulkanRenderGraphBuilder::build(
-    const std::vector<VulkanRenderPassDescriptor>& passDescriptors, std::string& errorMessage
-) const {
-    TRY_BOOL(createPasses(passDescriptors, errorMessage));
-
-    TRY_BOOL(createColorBuffers(errorMessage));
-
-    TRY_BOOL(attachSwapchainOutput(errorMessage));
-
-    TRY_BOOL(allocateDescriptors(errorMessage));
-
-    TRY_BOOL(createPipelines(errorMessage));
+Expected<void> VulkanRenderGraphBuilder::build(const std::vector<VulkanRenderPassDescriptor>& passDescriptors) const {
+    TRY(createPasses(passDescriptors));
+    TRY(createColorBuffers());
+    TRY(attachSwapchainOutput());
+    TRY(allocateDescriptors());
+    TRY(createPipelines());
 
     _context.renderResources.scheduleResourceTransitions();
 
-    return true;
+    return {};
 }
 
-bool VulkanRenderGraphBuilder::createPasses(
-    const std::vector<VulkanRenderPassDescriptor>& passDescriptors, std::string& errorMessage
+Expected<void> VulkanRenderGraphBuilder::createPasses(
+    const std::vector<VulkanRenderPassDescriptor>& passDescriptors
 ) const {
     for (const auto& [path, type] : passDescriptors) {
-        auto pass = _passFactory.createPass(path, type, _context, errorMessage);
-        if (!pass) return false;
+        std::unique_ptr<VulkanRenderPass> pass;
+        VK_TRY_ASSIGN(pass, _passFactory.createPass(path, type, _context));
 
         _context.renderGraph.addPass(std::move(pass));
     }
 
-    return true;
+    return {};
 }
 
-bool VulkanRenderGraphBuilder::createColorBuffers(std::string& errorMessage) const {
+Expected<void> VulkanRenderGraphBuilder::createColorBuffers() const {
     for (auto& pass : _context.renderGraph.getPasses()) {
-        TRY_BOOL(_context.renderResources.createColorBuffers(pass.get(), errorMessage));
+        TRY(_context.renderResources.createColorBuffers(pass.get()));
     }
 
-    return true;
+    return {};
 }
 
-bool VulkanRenderGraphBuilder::allocateDescriptors(std::string& errorMessage) const {
+Expected<void> VulkanRenderGraphBuilder::allocateDescriptors() const {
     for (const auto& pass : _context.renderGraph.getPasses()) {
-        TRY_BOOL(_context.renderResources.allocateDescriptors(pass.get(), errorMessage));
+        TRY(_context.renderResources.allocateDescriptors(pass.get()));
     }
 
-    return true;
+    return {};
 }
 
-bool VulkanRenderGraphBuilder::attachSwapchainOutput(std::string& errorMessage) const {
+Expected<void> VulkanRenderGraphBuilder::attachSwapchainOutput() const {
     static const std::string SWAPCHAIN_RESOURCE_NAME = "Swapchain_Output";
 
     const VulkanSwapchain& swapchain      = _context.swapchain;
@@ -73,24 +67,23 @@ bool VulkanRenderGraphBuilder::attachSwapchainOutput(std::string& errorMessage) 
     VulkanRenderPass* lastPass = _context.renderGraph.getPasses().back().get();
 
     if (lastPass->getColorAttachments().empty()) {
-        errorMessage = "Failed to attach Vulkan swapchain output: last executing pass has no color attachments.";
-        return false;
+        return VK_FAIL("Failed to attach swapchain output: last executing pass has no color attachments.");
     }
 
     // Attach the swapchain output to the first declared color attachment of the last executing pass
     lastPass->getColorAttachments().at(0) = std::make_unique<VulkanRenderPassAttachment>(swapchainAttachment);
 
-    return true;
+    return {};
 }
 
-bool VulkanRenderGraphBuilder::createPipelines(std::string& errorMessage) const {
+Expected<void> VulkanRenderGraphBuilder::createPipelines() const {
     for (const auto& pass : _context.renderGraph.getPasses()) {
         VulkanGraphicsPipeline* pipeline = _context.pipelineManager.allocatePipeline();
 
-        TRY_BOOL(_context.pipelineManager.createGraphicsPipeline(pipeline, *pass, errorMessage));
+        TRY(_context.pipelineManager.createGraphicsPipeline(pipeline, *pass));
 
         pass->setPipeline(pipeline);
     }
 
-    return true;
+    return {};
 }

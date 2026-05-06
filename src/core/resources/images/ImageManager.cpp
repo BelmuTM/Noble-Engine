@@ -41,9 +41,18 @@ std::shared_future<std::unique_ptr<Image>> ImageManager::load(
     });
 }
 
-const Image* ImageManager::loadBlocking(const std::string& path, std::string& errorMessage, const bool hasMipmaps) {
-    const auto& future = load(path, errorMessage, hasMipmaps);
-    if (!future.valid()) return nullptr;
+Expected<const Image*> ImageManager::loadBlocking(const std::string& path, const bool hasMipmaps) {
+    std::string errorMessage;
 
-    return future.get().get();
+    const auto& future = load(path, errorMessage, hasMipmaps);
+    if (!future.valid()) {
+        return FAIL(errorMessage, "");
+    }
+
+    const auto& ptr = future.get();
+    if (!ptr) {
+        return FAIL(errorMessage, "");
+    }
+
+    return Expected<const Image*>(ptr.get());
 }

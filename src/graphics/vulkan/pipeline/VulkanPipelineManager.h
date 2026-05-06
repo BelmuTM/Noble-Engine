@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 #include "VulkanGraphicsPipeline.h"
@@ -17,16 +19,14 @@ public:
     VulkanPipelineManager(VulkanPipelineManager&&)            = delete;
     VulkanPipelineManager& operator=(VulkanPipelineManager&&) = delete;
 
-    [[nodiscard]] bool create(const vk::Device& device, std::string& errorMessage) noexcept;
+    [[nodiscard]] Expected<void> create(const vk::Device& device) noexcept;
 
     void destroy() noexcept;
 
     [[nodiscard]] VulkanGraphicsPipeline* allocatePipeline();
 
-    [[nodiscard]] bool createGraphicsPipeline(
-        VulkanGraphicsPipeline* graphicsPipeline,
-        const VulkanRenderPass& pass,
-        std::string&            errorMessage
+    [[nodiscard]] Expected<void> createGraphicsPipeline(
+        VulkanGraphicsPipeline* graphicsPipeline, const VulkanRenderPass& pass
     ) const;
 
 private:

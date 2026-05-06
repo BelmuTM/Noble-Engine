@@ -1,26 +1,25 @@
 #include "VulkanRenderResources.h"
 
-#include "graphics/vulkan/rendergraph/VulkanRenderGraph.h"
+#include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include "core/debug/ErrorHandling.h"
+#include "graphics/vulkan/rendergraph/VulkanRenderGraph.h"
 
 #include <ranges>
 
-bool VulkanRenderResources::create(
+Expected<void> VulkanRenderResources::create(
     const VulkanDevice&         device,
     const VulkanSwapchain&      swapchain,
     const VulkanCommandManager& commandManager,
-    const std::uint32_t         framesInFlight,
-    std::string&                errorMessage
+    const std::uint32_t         framesInFlight
 ) noexcept {
     _device         = &device;
     _swapchain      = &swapchain;
     _commandManager = &commandManager;
     _framesInFlight = framesInFlight;
 
-    TRY_BOOL(createDepthBuffer(errorMessage));
+    TRY(createDepthBuffer());
 
-    return true;
+    return {};
 }
 
 void VulkanRenderResources::destroy() noexcept {
@@ -45,13 +44,13 @@ void VulkanRenderResources::destroy() noexcept {
     _commandManager = nullptr;
 }
 
-[[nodiscard]] bool VulkanRenderResources::recreate(VulkanRenderGraph& renderGraph, std::string& errorMessage) {
+Expected<void> VulkanRenderResources::recreate(VulkanRenderGraph& renderGraph) {
     // Depth buffer recreation
     if (_depthBuffer) {
         _depthBuffer->destroy();
 
-        TRY_BOOL(_bufferFactory.createDepthBufferImage(
-            *_depthBuffer, DEPTH_BUFFER_FORMAT, _swapchain->getExtent(), _device, _commandManager, errorMessage
+        TRY(_bufferFactory.createDepthBufferImage(
+            *_depthBuffer, DEPTH_BUFFER_FORMAT, _swapchain->getExtent(), _device, _commandManager
         ));
     }
 
@@ -59,27 +58,24 @@ void VulkanRenderResources::destroy() noexcept {
     for (auto& colorBuffer : _colorBuffers) {
         colorBuffer->destroy();
 
-        TRY_BOOL(_bufferFactory.createColorBufferImage(
-            *colorBuffer, colorBuffer->getFormat(), _swapchain->getExtent(), _device, _commandManager, errorMessage
+        TRY(_bufferFactory.createColorBufferImage(
+            *colorBuffer, colorBuffer->getFormat(), _swapchain->getExtent(), _device, _commandManager
         ));
 
-        TRY_BOOL(colorBuffer->transitionLayout(
-            _commandManager, errorMessage,
-            vk::ImageLayout::eShaderReadOnlyOptimal
-        ));
+        TRY(colorBuffer->transitionLayout(_commandManager, vk::ImageLayout::eShaderReadOnlyOptimal));
     }
 
     // Re-bind descriptor sets
     rebindDescriptors(renderGraph);
 
-    return true;
+    return {};
 }
 
-bool VulkanRenderResources::createDepthBuffer(std::string& errorMessage) {
+Expected<void> VulkanRenderResources::createDepthBuffer() {
     _depthBuffer = std::make_unique<VulkanImage>();
 
-    TRY_BOOL(_bufferFactory.createDepthBufferImage(
-        *_depthBuffer, DEPTH_BUFFER_FORMAT, _swapchain->getExtent(), _device, _commandManager, errorMessage
+    TRY(_bufferFactory.createDepthBufferImage(
+        *_depthBuffer, DEPTH_BUFFER_FORMAT, _swapchain->getExtent(), _device, _commandManager
     ));
 
     VulkanRenderPassResource depthBufferResource{};
@@ -99,10 +95,10 @@ bool VulkanRenderResources::createDepthBuffer(std::string& errorMessage) {
 
     addResource(depthBufferResource);
 
-    return true;
+    return {};
 }
 
-bool VulkanRenderResources::createColorBuffers(VulkanRenderPass* pass, std::string& errorMessage) {
+Expected<void> VulkanRenderResources::createColorBuffers(VulkanRenderPass* pass) {
     static constexpr auto format = vk::Format::eB8G8R8A8Srgb;
 
     for (const auto& colorOutput : pass->getShaderProgram()->getStageOutputs()) {
@@ -110,8 +106,8 @@ bool VulkanRenderResources::createColorBuffers(VulkanRenderPass* pass, std::stri
 
         VulkanImage* colorImage = _colorBuffers.back().get();
 
-        TRY_BOOL(_bufferFactory.createColorBufferImage(
-            *colorImage, format, _swapchain->getExtent(), _device, _commandManager, errorMessage
+        TRY(_bufferFactory.createColorBufferImage(
+            *colorImage, format, _swapchain->getExtent(), _device, _commandManager
         ));
 
         VulkanRenderPassResource colorBuffer{};
@@ -133,10 +129,10 @@ bool VulkanRenderResources::createColorBuffers(VulkanRenderPass* pass, std::stri
         addResourceWriter(colorOutput, pass);
     }
 
-    return true;
+    return {};
 }
 
-bool VulkanRenderResources::allocateDescriptors(VulkanRenderPass* pass, std::string& errorMessage) {
+Expected<void> VulkanRenderResources::allocateDescriptors(VulkanRenderPass* pass) {
     // Register resource reader passes
     for (const auto& scheme : pass->getShaderProgram()->getDescriptorSchemes() | std::views::values) {
         for (const auto& descriptor : scheme) {
@@ -150,10 +146,10 @@ bool VulkanRenderResources::allocateDescriptors(VulkanRenderPass* pass, std::str
     for (const auto& [set, scheme] : pass->getShaderProgram()->getDescriptorSchemes()) {
         // Create one manager (pool, layout) per descriptor scheme
         auto descriptorManager = std::make_unique<VulkanDescriptorManager>();
-        TRY_BOOL(descriptorManager->create(_device->getLogicalDevice(), scheme, _framesInFlight, 1, errorMessage));
+        TRY(descriptorManager->create(_device->getLogicalDevice(), scheme, _framesInFlight, 1));
 
         VulkanDescriptorSets* descriptorSets = nullptr;
-        TRY_BOOL(descriptorManager->allocate(descriptorSets, errorMessage));
+        TRY(descriptorManager->allocate(descriptorSets));
 
         // Store descriptor manager and sets keyed by set index
         pass->getDescriptorManagers()[set] = std::move(descriptorManager);
@@ -173,7 +169,7 @@ bool VulkanRenderResources::allocateDescriptors(VulkanRenderPass* pass, std::str
         }
     }
 
-    return true;
+    return {};
 }
 
 void VulkanRenderResources::bindDescriptors(

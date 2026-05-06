@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 #include "graphics/vulkan/core/VulkanDevice.h"
@@ -17,11 +19,10 @@ public:
     VulkanStorageBuffer(VulkanStorageBuffer&&)            = delete;
     VulkanStorageBuffer& operator=(VulkanStorageBuffer&&) = delete;
 
-    [[nodiscard]] bool create(
+    [[nodiscard]] Expected<void> create(
         const VulkanDevice& device,
         std::uint32_t       framesInFlight,
-        vk::DeviceSize      size,
-        std::string&        errorMessage
+        vk::DeviceSize      size
     ) noexcept;
 
     void destroy() noexcept;
@@ -37,7 +38,7 @@ public:
 
     template<typename StorageBufferType>
     void updateMemory(
-        const uint32_t           frameIndex,
+        const std::uint32_t      frameIndex,
         const StorageBufferType& data,
         const vk::DeviceSize     offset = 0
     ) const {
@@ -46,9 +47,9 @@ public:
 
     template<typename StorageBufferType>
     void updateArrayMemory(
-        const uint32_t           frameIndex,
+        const std::uint32_t      frameIndex,
         const StorageBufferType* data,
-        const size_t             count,
+        const std::size_t        count,
         const vk::DeviceSize     offset = 0
     ) const {
         _storageBuffers[frameIndex].updateArrayMemory(data, count, offset);
@@ -68,7 +69,7 @@ public:
     [[nodiscard]] const std::vector<VulkanBuffer>& getBuffers() const noexcept { return _storageBuffers; }
 
 protected:
-    bool createStorageBuffers(std::string& errorMessage);
+    Expected<void> createStorageBuffers();
 
     [[nodiscard]] vk::DeviceSize getBufferSize() const noexcept {
         return VulkanBuffer::align(_bufferSize, _device->getLimits().minStorageBufferOffsetAlignment);

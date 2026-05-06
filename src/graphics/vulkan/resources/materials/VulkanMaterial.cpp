@@ -1,56 +1,46 @@
 #include "VulkanMaterial.h"
 
-bool VulkanMaterial::create(
+Expected<void> VulkanMaterial::create(
     const Material&          sourceMaterial,
     VulkanImageManager*      imageManager,
-    VulkanDescriptorManager& descriptorManager,
-    std::string&             errorMessage
+    VulkanDescriptorManager& descriptorManager
 ) {
     _sourceMaterial = sourceMaterial;
 
     // Load all textures
-    TRY_BOOL(loadTextures(imageManager, errorMessage));
+    TRY(loadTextures(imageManager));
 
     // Allocate descriptor sets
-    TRY_BOOL(descriptorManager.allocate(_descriptorSets, errorMessage));
+    TRY(descriptorManager.allocate(_descriptorSets));
 
-    return true;
+    return {};
 }
 
 
-bool VulkanMaterial::loadTexture(
+Expected<void> VulkanMaterial::loadTexture(
     const TextureType   type,
     const std::string&  path,
     const glm::vec3&    fallbackColor,
-    VulkanImageManager* imageManager,
-    std::string&        errorMessage
+    VulkanImageManager* imageManager
 ) {
     VulkanImage* texturePtr = imageManager->getImage(path);
 
     // Load a single pixel image with the fallback color if the texture wasn't properly loaded
     if (!texturePtr) {
         const Image fallbackColorImage = Image::createSinglePixelImage(fallbackColor);
-        TRY_BOOL(imageManager->loadImage(texturePtr, &fallbackColorImage, errorMessage));
+        TRY(imageManager->loadImage(texturePtr, &fallbackColorImage));
     }
 
     setTexture(type, texturePtr);
 
-    return true;
+    return {};
 }
 
-bool VulkanMaterial::loadTextures(VulkanImageManager* imageManager, std::string& errorMessage) {
-
-    TRY_BOOL(loadTexture(
-        TextureType::Albedo, _sourceMaterial.albedoPath, _sourceMaterial.diffuse, imageManager, errorMessage
-    ));
-    TRY_BOOL(loadTexture(
-        TextureType::Normal, _sourceMaterial.normalPath, glm::vec3(0.0f), imageManager, errorMessage
-    ));
-    TRY_BOOL(loadTexture(
-        TextureType::Specular, _sourceMaterial.specularPath, _sourceMaterial.specular, imageManager, errorMessage
-    ));
-
-    return true;
+Expected<void> VulkanMaterial::loadTextures(VulkanImageManager* imageManager) {
+    TRY(loadTexture(TextureType::Albedo, _sourceMaterial.albedoPath, _sourceMaterial.diffuse, imageManager));
+    TRY(loadTexture(TextureType::Normal, _sourceMaterial.normalPath, glm::vec3(0.0f), imageManager));
+    TRY(loadTexture(TextureType::Specular, _sourceMaterial.specularPath, _sourceMaterial.specular, imageManager));
+    return {};
 }
 
 void VulkanMaterial::bindDescriptorSets() const {

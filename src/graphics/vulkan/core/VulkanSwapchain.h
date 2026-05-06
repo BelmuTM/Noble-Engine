@@ -1,17 +1,34 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
 #include "core/platform/Window.h"
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "VulkanDevice.h"
+#include "graphics/vulkan/core/VulkanDevice.h"
 #include "graphics/vulkan/resources/images/VulkanImage.h"
 
-#include <string>
+#include <optional>
 #include <vector>
 
 class VulkanSwapchain {
 public:
+    enum class Status : std::uint8_t {
+        Success,
+        Suboptimal,
+        OutOfDate
+    };
+
+    template<typename T>
+    struct SwapchainOp {
+        Status status;
+        std::optional<T> value;
+    };
+
+    struct SwapchainOpVoid {
+        Status status;
+    };
+
     VulkanSwapchain()  = default;
     ~VulkanSwapchain() = default;
 
@@ -21,13 +38,13 @@ public:
     VulkanSwapchain(VulkanSwapchain&&)            = delete;
     VulkanSwapchain& operator=(VulkanSwapchain&&) = delete;
 
-    [[nodiscard]] bool create(
-        const Window& window, const VulkanDevice& device, vk::SurfaceKHR surface, std::string& errorMessage
+    [[nodiscard]] Expected<void> create(
+        const Window& window, const VulkanDevice& device, vk::SurfaceKHR surface
     ) noexcept;
 
     void destroy() noexcept;
 
-    [[nodiscard]] bool recreate(vk::SurfaceKHR surface, std::string& errorMessage);
+    [[nodiscard]] Expected<void> recreate(vk::SurfaceKHR surface);
 
     void createImages();
 
@@ -51,12 +68,10 @@ private:
         std::vector<vk::PresentModeKHR>   presentModes;
     };
 
-    bool createSwapchain(vk::SurfaceKHR surface, std::string& errorMessage);
-    bool createImageViews(std::string& errorMessage);
+    Expected<void> createSwapchain(vk::SurfaceKHR surface);
+    Expected<void> createImageViews();
 
-    static SwapchainSupportInfo querySwapchainSupport(
-        vk::PhysicalDevice device, vk::SurfaceKHR _surface, std::string& errorMessage
-    );
+    static Expected<SwapchainSupportInfo> querySwapchainSupport(vk::PhysicalDevice device, vk::SurfaceKHR surface);
 
     [[nodiscard]] static vk::SurfaceFormatKHR chooseSurfaceFormat(
         const std::vector<vk::SurfaceFormatKHR>& availableFormats

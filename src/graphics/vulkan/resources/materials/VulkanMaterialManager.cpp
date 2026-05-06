@@ -2,44 +2,38 @@
 
 #include <ranges>
 
-bool VulkanMaterialManager::create(
+Expected<void> VulkanMaterialManager::create(
     const VulkanDevice& device,
     VulkanImageManager& imageManager,
-    const std::uint32_t framesInFlight,
-    std::string&        errorMessage
+    const std::uint32_t framesInFlight
 ) noexcept {
     _imageManager = &imageManager;
 
-    TRY_BOOL(_descriptorManager.create(
-        device.getLogicalDevice(), getDescriptorScheme(), framesInFlight, MAX_MATERIALS, errorMessage
-    ));
+    TRY(_descriptorManager.create(device.getLogicalDevice(), getDescriptorScheme(), framesInFlight, MAX_MATERIALS));
 
-    return true;
+    return {};
 }
 
 void VulkanMaterialManager::destroy() noexcept {
     _descriptorManager.destroy();
 }
 
-VulkanMaterial* VulkanMaterialManager::getOrCreateMaterial(const Material& sourceMaterial, std::string& errorMessage) {
-    const auto it = _materials.find(sourceMaterial);
-    if (it != _materials.end()) return it->second.get();
-
-    auto [emplaceIt, inserted] = _materials.emplace(sourceMaterial, std::make_unique<VulkanMaterial>());
-
-    if (inserted) {
-        if (!emplaceIt->second->create(sourceMaterial, _imageManager, _descriptorManager, errorMessage)) {
-            _materials.erase(emplaceIt);
-            return nullptr;
-        }
+Expected<VulkanMaterial*> VulkanMaterialManager::getOrCreateMaterial(const Material& sourceMaterial) {
+    if (const auto it = _materials.find(sourceMaterial); it != _materials.end()) {
+        return Expected(it->second.get());
     }
 
-    return emplaceIt->second.get();
+    auto material = std::make_unique<VulkanMaterial>();
+
+    TRY(material->create(sourceMaterial, _imageManager, _descriptorManager));
+
+
+    auto [it, inserted] = _materials.emplace(sourceMaterial, std::move(material));
+
+    return Expected(it->second.get());
 }
 
-bool VulkanMaterialManager::loadTextures(
-    const AssetManager::TexturesMap& textures, std::string& errorMessage
-) const {
+Expected<void> VulkanMaterialManager::loadTextures(const AssetManager::TexturesMap& textures) const {
     std::vector<const Image*> images{};
 
     for (const auto& texture : textures | std::views::values) {
@@ -47,7 +41,7 @@ bool VulkanMaterialManager::loadTextures(
         images.push_back(texture);
     }
 
-    TRY_BOOL(_imageManager->loadBatchedImages(images, errorMessage));
+    TRY(_imageManager->loadBatchedImages(images));
 
-    return true;
+    return {};
 }

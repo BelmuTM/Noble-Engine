@@ -1,10 +1,21 @@
 #include "Engine.h"
 
-#include "core/debug/Logger.h"
-
 namespace Engine {
+    void requestExit() {
+        running.store(false, std::memory_order_relaxed);
+    }
+
     void fatalExit(const std::string& message) {
+        exitCode = EXIT_FAILURE;
+        requestExit();
+
         Logger::fatal(message);
-        std::exit(EXIT_FAILURE);
+    }
+
+    void fatalExit(const Failure& failure) {
+        exitCode = EXIT_FAILURE;
+        requestExit();
+
+        Logger::fatal(failure);
     }
 }

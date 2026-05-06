@@ -1,16 +1,14 @@
 #include "VulkanDescriptorManager.h"
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
+
 #include "VulkanDescriptorSets.h"
 
-#include "core/debug/ErrorHandling.h"
-
-bool VulkanDescriptorManager::create(
+Expected<void> VulkanDescriptorManager::create(
     const vk::Device&             device,
     const VulkanDescriptorScheme& descriptorScheme,
     const std::uint32_t           framesInFlight,
-    const std::uint32_t           setCount,
-    std::string&                  errorMessage
+    const std::uint32_t           setCount
 ) noexcept {
     _device         = device;
     _framesInFlight = framesInFlight;
@@ -18,10 +16,10 @@ bool VulkanDescriptorManager::create(
 
     buildDescriptorScheme(descriptorScheme);
 
-    TRY_BOOL(createSetLayout(errorMessage));
-    TRY_BOOL(createPool(errorMessage));
+    TRY(createSetLayout());
+    TRY(createPool());
 
-    return true;
+    return {};
 }
 
 void VulkanDescriptorManager::destroy() noexcept {
@@ -38,31 +36,29 @@ void VulkanDescriptorManager::destroy() noexcept {
     _device = VK_NULL_HANDLE;
 }
 
-bool VulkanDescriptorManager::allocate(VulkanDescriptorSets*& descriptorSets, std::string& errorMessage) {
+Expected<void> VulkanDescriptorManager::allocate(VulkanDescriptorSets*& descriptorSets) {
     VulkanDescriptorSets tempDescriptorSets{*this};
 
-    TRY_BOOL(tempDescriptorSets.allocate(errorMessage));
+    TRY(tempDescriptorSets.allocate());
 
     _descriptorSets.push_back(std::make_unique<VulkanDescriptorSets>(std::move(tempDescriptorSets)));
 
     descriptorSets = _descriptorSets.back().get();
 
-    return true;
+    return {};
 }
 
-bool VulkanDescriptorManager::allocateSets(
+Expected<void> VulkanDescriptorManager::allocateSets(
     std::vector<vk::DescriptorSet>&      descriptorSets,
-    const vk::DescriptorSetAllocateInfo& descriptorSetInfo,
-    std::string&                         errorMessage
+    const vk::DescriptorSetAllocateInfo& descriptorSetInfo
 ) const {
     if (!_device) {
-        errorMessage = "Failed to allocate Vulkan descriptor sets: device is null.";
-        return false;
+        return VK_FAIL("Failed to allocate descriptor sets: device is null.");
     }
 
-    VK_CREATE(_device.allocateDescriptorSets(descriptorSetInfo), descriptorSets, errorMessage);
+    VK_CREATE(descriptorSets, _device.allocateDescriptorSets(descriptorSetInfo));
 
-    return true;
+    return {};
 }
 
 void VulkanDescriptorManager::updateSets(const vk::WriteDescriptorSet& descriptorSetWrite) const {
@@ -81,24 +77,22 @@ void VulkanDescriptorManager::buildDescriptorScheme(const VulkanDescriptorScheme
     }
 }
 
-bool VulkanDescriptorManager::createSetLayout(std::string& errorMessage) {
+Expected<void> VulkanDescriptorManager::createSetLayout() {
     if (!_device) {
-        errorMessage = "Failed to create Vulkan descriptor set layout: device is null.";
-        return false;
+        return VK_FAIL("Failed to create descriptor set layout: device is null.");
     }
 
     vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
     descriptorSetLayoutInfo.setBindings(_bindings);
 
-    VK_CREATE(_device.createDescriptorSetLayout(descriptorSetLayoutInfo), _descriptorSetLayout, errorMessage);
+    VK_CREATE(_descriptorSetLayout, _device.createDescriptorSetLayout(descriptorSetLayoutInfo));
 
-    return true;
+    return {};
 }
 
-bool VulkanDescriptorManager::createPool(std::string& errorMessage) {
+Expected<void> VulkanDescriptorManager::createPool() {
     if (!_device) {
-        errorMessage = "Failed to create Vulkan descriptor pool: device is null.";
-        return false;
+        return VK_FAIL("Failed to create descriptor pool: device is null.");
     }
 
     vk::DescriptorPoolCreateInfo descriptorPoolInfo{};
@@ -107,7 +101,7 @@ bool VulkanDescriptorManager::createPool(std::string& errorMessage) {
         .setMaxSets(_setCount)
         .setPoolSizes(_poolSizes);
 
-    VK_CREATE(_device.createDescriptorPool(descriptorPoolInfo), _descriptorPool, errorMessage);
+    VK_CREATE(_descriptorPool, _device.createDescriptorPool(descriptorPoolInfo));
 
-    return true;
+    return {};
 }

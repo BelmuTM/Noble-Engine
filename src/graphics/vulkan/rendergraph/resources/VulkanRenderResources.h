@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "graphics/vulkan/core/VulkanCommandManager.h"
 #include "graphics/vulkan/core/VulkanSwapchain.h"
 
@@ -34,23 +36,22 @@ public:
     VulkanRenderResources(VulkanRenderResources&&)            = delete;
     VulkanRenderResources& operator=(VulkanRenderResources&&) = delete;
 
-    [[nodiscard]] bool create(
+    [[nodiscard]] Expected<void> create(
         const VulkanDevice&         device,
         const VulkanSwapchain&      swapchain,
         const VulkanCommandManager& commandManager,
-        std::uint32_t               framesInFlight,
-        std::string&                errorMessage
+        std::uint32_t               framesInFlight
     ) noexcept;
 
     void destroy() noexcept;
 
-    [[nodiscard]] bool recreate(VulkanRenderGraph& renderGraph, std::string& errorMessage);
+    [[nodiscard]] Expected<void> recreate(VulkanRenderGraph& renderGraph);
 
-    [[nodiscard]] bool createDepthBuffer(std::string& errorMessage);
+    [[nodiscard]] Expected<void> createDepthBuffer();
 
-    [[nodiscard]] bool createColorBuffers(VulkanRenderPass* pass, std::string& errorMessage);
+    [[nodiscard]] Expected<void> createColorBuffers(VulkanRenderPass* pass);
 
-    [[nodiscard]] bool allocateDescriptors(VulkanRenderPass* pass, std::string& errorMessage);
+    [[nodiscard]] Expected<void> allocateDescriptors(VulkanRenderPass* pass);
 
     void scheduleResourceTransitions() const;
 

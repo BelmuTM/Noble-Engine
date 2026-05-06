@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
@@ -24,11 +26,9 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] bool loadFromFiles(
-        const std::vector<std::string>& paths, const vk::Device& device, std::string& errorMessage
-    );
+    [[nodiscard]] Expected<void> loadFromFiles(const std::vector<std::string>& paths, const vk::Device& device);
 
-    [[nodiscard]] bool load(const std::string& path, const vk::Device& device, std::string& errorMessage);
+    [[nodiscard]] Expected<void> load(const std::string& path, const vk::Device& device);
 
     [[nodiscard]] const std::vector<vk::PipelineShaderStageCreateInfo>& getStages() const noexcept {
         return _shaderStages;
@@ -47,10 +47,10 @@ public:
 private:
     void clearShaderModules();
 
-    vk::ShaderModule createShaderModule(const std::vector<std::uint32_t>& bytecode, std::string& errorMessage) const;
+    Expected<vk::ShaderModule> createShaderModule(const std::vector<std::uint32_t>& bytecode) const;
 
-    [[nodiscard]] bool reflectShaderResources(
-        const std::vector<std::uint32_t>& bytecode, vk::ShaderStageFlags stage, std::string& errorMessage
+    [[nodiscard]] Expected<void> reflectShaderResources(
+        const std::vector<std::uint32_t>& bytecode, vk::ShaderStageFlags stage
     );
 
     static std::string extractStageExtension(const std::string& path) noexcept;

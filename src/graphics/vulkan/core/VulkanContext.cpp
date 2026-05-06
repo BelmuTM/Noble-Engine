@@ -1,19 +1,17 @@
 #include "VulkanContext.h"
 
-#include "core/debug/ErrorHandling.h"
-
-bool VulkanContext::create(const Window& window, std::string& errorMessage) {
+Expected<void> VulkanContext::create(const Window& window) {
     ScopeGuard guard{[this] { destroy(); }};
 
-    TRY_BOOL(createVulkanEntity(&capabilities, errorMessage));
-    TRY_BOOL(createVulkanEntity(&instance, errorMessage, capabilities));
-    TRY_BOOL(createVulkanEntity(&surface, errorMessage, instance.handle(), window));
-    TRY_BOOL(createVulkanEntity(&device, errorMessage, capabilities, instance.handle(), surface.handle()));
-    TRY_BOOL(createVulkanEntity(&swapchain, errorMessage, window, device, surface.handle()));
+    TRY(createVulkanEntity(&capabilities));
+    TRY(createVulkanEntity(&instance, capabilities));
+    TRY(createVulkanEntity(&surface, instance.handle(), window));
+    TRY(createVulkanEntity(&device, capabilities, instance.handle(), surface.handle()));
+    TRY(createVulkanEntity(&swapchain, window, device, surface.handle()));
 
     guard.release();
 
-    return true;
+    return {};
 }
 
 void VulkanContext::destroy() {

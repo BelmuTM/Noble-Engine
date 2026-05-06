@@ -1,15 +1,13 @@
 #include "VulkanShaderProgramManager.h"
 
-#include "core/debug/ErrorHandling.h"
-
 #include "core/resources/AssetPaths.h"
 
 #include <ranges>
 
-bool VulkanShaderProgramManager::create(const vk::Device& device, std::string& errorMessage) noexcept {
+Expected<void> VulkanShaderProgramManager::create(const vk::Device& device) noexcept {
     _device = device;
 
-    return true;
+    return {};
 }
 
 void VulkanShaderProgramManager::destroy() noexcept {
@@ -20,16 +18,14 @@ void VulkanShaderProgramManager::destroy() noexcept {
     _device = VK_NULL_HANDLE;
 }
 
-bool VulkanShaderProgramManager::load(
-    VulkanShaderProgram*& program, const std::string& path, std::string& errorMessage
-) {
+Expected<void> VulkanShaderProgramManager::load(VulkanShaderProgram*& program, const std::string& path) {
     {
         // If shader program is already cached, return it
         std::lock_guard lock(_mutex);
 
         if (_cache.contains(path)) {
             program = _cache.at(path).get();
-            return true;
+            return {};
         }
     }
 
@@ -37,7 +33,7 @@ bool VulkanShaderProgramManager::load(
 
     VulkanShaderProgram tempProgram{};
 
-    TRY_BOOL(tempProgram.load(fullPath, _device, errorMessage));
+    TRY(tempProgram.load(fullPath, _device));
 
     // Insert shader program into cache
     std::lock_guard lock(_mutex);
@@ -46,5 +42,5 @@ bool VulkanShaderProgramManager::load(
 
     program = it->second.get();
 
-    return true;
+    return {};
 }

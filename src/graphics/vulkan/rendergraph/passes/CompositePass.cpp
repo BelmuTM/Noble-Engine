@@ -1,13 +1,7 @@
 #include "CompositePass.h"
 
-#include "core/debug/ErrorHandling.h"
-
-bool CompositePass::create(
-    const std::string&                path,
-    const CompositePassCreateContext& context,
-    std::string&                      errorMessage
-) {
-    TRY_BOOL(context.shaderProgramManager.load(getShaderProgram(), path, errorMessage));
+Expected<void> CompositePass::create(const std::string& path, const CompositePassCreateContext& context) {
+    TRY(context.shaderProgramManager.load(getShaderProgram(), path));
 
     const std::string& passName = std::filesystem::path(path).stem().string();
 
@@ -25,5 +19,5 @@ bool CompositePass::create(
 
     emplaceDrawCall().setMesh(fullscreenMesh);
 
-    return true;
+    return {};
 }

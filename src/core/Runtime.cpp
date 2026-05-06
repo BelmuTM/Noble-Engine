@@ -7,7 +7,6 @@
 #include <chrono>
 #include <thread>
 
-#include "debug/Logger.h"
 #include "entities/camera/CameraFreeFly.h"
 
 Runtime::Runtime(const Scene& scene, std::atomic<bool>& runningFlag)
@@ -18,7 +17,7 @@ Runtime::Runtime(const Scene& scene, std::atomic<bool>& runningFlag)
     _objectManager.addScene(scene);
 }
 
-bool Runtime::init(std::string& errorMessage) {
+Expected<void> Runtime::init() {
     _window.show();
 
     _inputManager.init(_window.handle());
@@ -41,13 +40,11 @@ bool Runtime::init(std::string& errorMessage) {
 
     _objectManager.createObjects();
 
-    if (!_renderer.init(_window, _assetManager, _objectManager, errorMessage)) {
-        return false;
-    }
+    TRY(_renderer.init(_window, _assetManager, _objectManager));
 
     _cameraBehavior = std::make_unique<CameraFreeFly>(_camera, _inputManager, _window.handle());
 
-    return true;
+    return {};
 }
 
 void Runtime::shutdown() {
@@ -98,7 +95,9 @@ void Runtime::engineLoop() {
         _cameraBehavior->update(deltaTime);
         _camera.setAspectRatio(static_cast<float>(windowWidth) / static_cast<float>(windowHeight));
         _uniforms.update(_camera, windowWidth, windowHeight, _debugState);
-        _renderer.drawFrame(_uniforms);
+
+        auto frameDraw = _renderer.drawFrame(_uniforms);
+        if (frameDraw.failed()) Logger::error(frameDraw.failure());
 
         ++frameCount;
 

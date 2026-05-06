@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "VulkanUniformBuffer.h"
 
 class VulkanUniformBufferManager {
@@ -13,23 +15,19 @@ public:
     VulkanUniformBufferManager(VulkanUniformBufferManager&&)            = delete;
     VulkanUniformBufferManager& operator=(VulkanUniformBufferManager&&) = delete;
 
-    [[nodiscard]] bool create(
-        const VulkanDevice& device,
-        std::uint32_t       framesInFlight,
-        std::string&        errorMessage
-    ) noexcept;
+    [[nodiscard]] Expected<void> create(const VulkanDevice& device, std::uint32_t framesInFlight) noexcept;
 
     void destroy() noexcept;
 
     template<typename UniformBufferType>
-    [[nodiscard]] UniformBufferType* allocateBuffer(std::string& errorMessage) {
+    [[nodiscard]] Expected<UniformBufferType*> allocateBuffer() {
         _uniformBuffers.push_back(std::make_unique<UniformBufferType>());
 
-        if (!_uniformBuffers.back()->create(*_device, _framesInFlight, errorMessage)) {
-            return nullptr;
-        }
+        TRY(_uniformBuffers.back()->create(*_device, _framesInFlight));
 
-        return static_cast<UniformBufferType*>(_uniformBuffers.back().get());
+        return Expected<UniformBufferType*>(
+            static_cast<UniformBufferType*>(_uniformBuffers.back().get())
+        );
     }
 
 private:

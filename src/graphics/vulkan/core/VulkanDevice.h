@@ -2,11 +2,9 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "VulkanCapabilities.h"
+#include "graphics/vulkan/core/VulkanCapabilities.h"
 
 #include "graphics/vulkan/core/memory/VmaUsage.h"
-
-#include <string>
 
 class VulkanDevice {
 public:
@@ -19,11 +17,10 @@ public:
     VulkanDevice(VulkanDevice&&)            = delete;
     VulkanDevice& operator=(VulkanDevice&&) = delete;
 
-    [[nodiscard]] bool create(
+    [[nodiscard]] Expected<void> create(
         const VulkanCapabilities& capabilities,
         const vk::Instance&       instance,
-        const vk::SurfaceKHR&     surface,
-        std::string&              errorMessage
+        const vk::SurfaceKHR&     surface
     ) noexcept;
 
     void destroy() noexcept;
@@ -56,15 +53,15 @@ public:
 private:
     static bool isPhysicalDeviceSuitable(vk::PhysicalDevice device);
 
-    bool pickPhysicalDevice(std::string& errorMessage);
+    Expected<void> pickPhysicalDevice();
 
     static QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface);
 
-    bool createLogicalDevice(QueueFamilyIndices queueFamilyIndices, std::string& errorMessage);
+    Expected<void> createLogicalDevice(QueueFamilyIndices queueFamilyIndices);
 
-    bool createAllocator(std::string& errorMessage);
+    Expected<void> createAllocator();
 
-    bool createQueryPool(std::string& errorMessage);
+    Expected<void> createQueryPool();
 
     const VulkanCapabilities* _capabilities = nullptr;
 

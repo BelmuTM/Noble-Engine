@@ -1,8 +1,8 @@
 #include "VulkanImageLayoutTransitions.h"
 
-#include "graphics/vulkan/resources/images/VulkanImage.h"
+#include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include <string>
+#include "graphics/vulkan/resources/images/VulkanImage.h"
 
 namespace VulkanImageLayoutTransitions {
     std::optional<LayoutTransition> getLayoutTransition(
@@ -104,16 +104,15 @@ namespace VulkanImageLayoutTransitions {
         return std::nullopt;
     }
 
-    bool transitionImageLayout(
+    Expected<void> transitionImageLayout(
         const vk::CommandBuffer commandBuffer,
-        std::string&            errorMessage,
         const vk::Image         image,
         const vk::Format        format,
         const vk::ImageLayout   oldLayout,
         const vk::ImageLayout   newLayout,
         const std::uint32_t     mipLevels
     ) {
-        if (oldLayout == newLayout) return true;
+        if (oldLayout == newLayout) return {};
 
         // Specify which region of the image to transition
         vk::ImageSubresourceRange subresourceRange{};
@@ -137,8 +136,7 @@ namespace VulkanImageLayoutTransitions {
         const auto transition = getLayoutTransition(oldLayout, newLayout);
 
         if (!transition) {
-            errorMessage = "Failed to transition Vulkan image layout: unsupported transition.";
-            return false;
+            return VK_FAIL("Failed to transition image layout: unsupported transition.");
         }
 
         vk::ImageMemoryBarrier2 barrier{};
@@ -159,6 +157,6 @@ namespace VulkanImageLayoutTransitions {
 
         commandBuffer.pipelineBarrier2(dependencyInfo);
 
-        return true;
+        return {};
     }
 }

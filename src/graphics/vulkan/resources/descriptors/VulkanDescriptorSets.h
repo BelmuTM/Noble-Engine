@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 #include "graphics/vulkan/resources/ubo/VulkanUniformBuffer.h"
@@ -21,7 +23,7 @@ public:
     VulkanDescriptorSets(VulkanDescriptorSets&&)            noexcept = default;
     VulkanDescriptorSets& operator=(VulkanDescriptorSets&&) noexcept = default;
 
-    [[nodiscard]] bool allocate(std::string& errorMessage);
+    [[nodiscard]] Expected<void> allocate();
 
     void updateDescriptorSets(const VulkanDescriptorInfo& info, std::uint32_t frameIndex) const;
 

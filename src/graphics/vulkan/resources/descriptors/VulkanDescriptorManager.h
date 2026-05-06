@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorInfo.h"
@@ -17,22 +19,20 @@ public:
     VulkanDescriptorManager(VulkanDescriptorManager&&)            = delete;
     VulkanDescriptorManager& operator=(VulkanDescriptorManager&&) = delete;
 
-    [[nodiscard]] bool create(
+    [[nodiscard]] Expected<void> create(
         const vk::Device&             device,
         const VulkanDescriptorScheme& descriptorScheme,
         std::uint32_t                 framesInFlight,
-        std::uint32_t                 setCount,
-        std::string&                  errorMessage
+        std::uint32_t                 setCount
     ) noexcept;
 
     void destroy() noexcept;
 
-    [[nodiscard]] bool allocate(VulkanDescriptorSets*& descriptorSets, std::string& errorMessage);
+    [[nodiscard]] Expected<void> allocate(VulkanDescriptorSets*& descriptorSets);
 
-    [[nodiscard]] bool allocateSets(
+    [[nodiscard]] Expected<void> allocateSets(
         std::vector<vk::DescriptorSet>&      descriptorSets,
-        const vk::DescriptorSetAllocateInfo& descriptorSetInfo,
-        std::string&                         errorMessage
+        const vk::DescriptorSetAllocateInfo& descriptorSetInfo
     ) const;
 
     void updateSets(const vk::WriteDescriptorSet& descriptorSetWrite) const;
@@ -46,9 +46,9 @@ public:
 private:
     void buildDescriptorScheme(const VulkanDescriptorScheme& descriptorScheme);
 
-    [[nodiscard]] bool createSetLayout(std::string& errorMessage);
+    [[nodiscard]] Expected<void> createSetLayout();
 
-    [[nodiscard]] bool createPool(std::string& errorMessage);
+    [[nodiscard]] Expected<void> createPool();
 
     vk::Device _device{};
 

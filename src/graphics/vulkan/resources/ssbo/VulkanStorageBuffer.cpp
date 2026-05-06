@@ -1,20 +1,19 @@
 #include "VulkanStorageBuffer.h"
 
-#include "core/debug/ErrorHandling.h"
+#include "graphics/vulkan/common/VulkanDebugger.h"
 
-bool VulkanStorageBuffer::create(
+Expected<void> VulkanStorageBuffer::create(
     const VulkanDevice&  device,
     const std::uint32_t  framesInFlight,
-    const vk::DeviceSize size,
-    std::string&         errorMessage
+    const vk::DeviceSize size
 ) noexcept {
     _device         = &device;
     _framesInFlight = framesInFlight;
     _bufferSize     = size;
 
-    TRY_BOOL(createStorageBuffers(errorMessage));
+    TRY(createStorageBuffers());
 
-    return true;
+    return {};
 }
 
 void VulkanStorageBuffer::destroy() noexcept {
@@ -27,10 +26,9 @@ void VulkanStorageBuffer::destroy() noexcept {
     _device = nullptr;
 }
 
-bool VulkanStorageBuffer::createStorageBuffers(std::string& errorMessage) {
+Expected<void> VulkanStorageBuffer::createStorageBuffers() {
     if (!_device) {
-        errorMessage = "Failed to create Vulkan storage buffers: device is null.";
-        return false;
+        return VK_FAIL("Failed to create storage buffers: device is null.");
     }
 
     _storageBuffers.clear();
@@ -40,18 +38,17 @@ bool VulkanStorageBuffer::createStorageBuffers(std::string& errorMessage) {
         VulkanBuffer storageBuffer;
 
         // TODO: Add the possibility to decide memory usage.
-        TRY_BOOL(storageBuffer.create(
+        TRY(storageBuffer.create(
             getBufferSize(),
             vk::BufferUsageFlagBits::eStorageBuffer,
             VMA_MEMORY_USAGE_CPU_TO_GPU,
-            _device,
-            errorMessage
+            _device
         ));
 
-        TRY_BOOL(storageBuffer.mapMemory(errorMessage));
+        TRY(storageBuffer.mapMemory());
 
         _storageBuffers.emplace_back(std::move(storageBuffer));
     }
 
-    return true;
+    return {};
 }

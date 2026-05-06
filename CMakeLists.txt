@@ -49,6 +49,9 @@ endif()
 # target_compile_options(NobleEngine PRIVATE -fsanitize=address -fno-omit-frame-pointer)
 # target_link_options(NobleEngine PRIVATE -fsanitize=address)
 
+# Toggle debug utils for Debug builds
+target_compile_definitions(NobleEngine PRIVATE $<$<CONFIG:Debug>:NOBLE_DEBUG_UTILS>)
+
 ##########################################################
 #                         VULKAN                         #
 ##########################################################

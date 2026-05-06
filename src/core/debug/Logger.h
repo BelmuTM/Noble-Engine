@@ -1,7 +1,6 @@
 #pragma once
 
-#define ERROR_MESSAGE(func) Logger::formatErrorMessage(#func)
-#define ERROR_MESSAGE_CODE(func, errorCode) Logger::formatErrorMessage(#func, errorCode)
+#include "ErrorHandling.h"
 
 #include <cstdint>
 #include <string>
@@ -9,10 +8,10 @@
 namespace Logger {
     enum class Level : std::uint8_t { DEBUG, VERBOSE, INFO, WARNING, ERROR, FATAL, COUNT };
 
+    constexpr std::array levelStrings = {"DEBUG", "VERBOSE", "INFO", "WARNING", "ERROR", "FATAL"};
+
     void init();
     void shutdown();
-
-    std::string formatErrorMessage(const std::string& functionName, int errorCode = -1);
 
     void log(Level level, const std::string& message);
 
@@ -20,8 +19,12 @@ namespace Logger {
     void verbose(const std::string& message);
     void info   (const std::string& message);
     void warning(const std::string& message);
-    void error  (const std::string& message);
-    void fatal  (const std::string& message);
+
+    void error(const std::string& message);
+    void error(const Failure& failure);
+
+    void fatal(const std::string& message);
+    void fatal(const Failure& failure);
 
     class Manager {
     public:

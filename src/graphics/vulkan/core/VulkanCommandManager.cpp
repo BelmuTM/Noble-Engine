@@ -2,17 +2,15 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include "core/debug/ErrorHandling.h"
-
-bool VulkanCommandManager::create(
-    const VulkanDevice& device, const std::uint32_t commandBufferCount, std::string& errorMessage
+Expected<void> VulkanCommandManager::create(
+    const VulkanDevice& device, const std::uint32_t commandBufferCount
 ) noexcept {
     _device = &device;
 
-    TRY_BOOL(createCommandPool(errorMessage));
-    TRY_BOOL(createCommandBuffers(_commandBuffers, commandBufferCount, errorMessage));
+    TRY(createCommandPool());
+    TRY(createCommandBuffers(_commandBuffers, commandBufferCount));
 
-    return true;
+    return {};
 }
 
 void VulkanCommandManager::destroy() noexcept {
@@ -26,7 +24,7 @@ void VulkanCommandManager::destroy() noexcept {
     _device = nullptr;
 }
 
-bool VulkanCommandManager::createCommandPool(std::string& errorMessage) {
+Expected<void> VulkanCommandManager::createCommandPool() {
     vk::CommandPoolCreateInfo commandPoolInfo{};
     commandPoolInfo
         .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
@@ -34,13 +32,13 @@ bool VulkanCommandManager::createCommandPool(std::string& errorMessage) {
 
     const vk::Device& logicalDevice = _device->getLogicalDevice();
 
-    VK_CREATE(logicalDevice.createCommandPool(commandPoolInfo), _commandPool, errorMessage);
+    VK_CREATE(_commandPool, logicalDevice.createCommandPool(commandPoolInfo));
 
-    return true;
+    return {};
 }
 
-bool VulkanCommandManager::createCommandBuffers(
-    std::vector<vk::CommandBuffer>& commandBuffers, const std::uint32_t commandBufferCount, std::string& errorMessage
+Expected<void> VulkanCommandManager::createCommandBuffers(
+    std::vector<vk::CommandBuffer>& commandBuffers, const std::uint32_t commandBufferCount
 ) const {
     vk::CommandBufferAllocateInfo allocateInfo{};
     allocateInfo
@@ -50,39 +48,39 @@ bool VulkanCommandManager::createCommandBuffers(
 
     const vk::Device& logicalDevice = _device->getLogicalDevice();
 
-    VK_CREATE(logicalDevice.allocateCommandBuffers(allocateInfo), commandBuffers, errorMessage);
+    VK_CREATE(commandBuffers, logicalDevice.allocateCommandBuffers(allocateInfo));
 
-    return true;
+    return {};
 }
 
-bool VulkanCommandManager::createCommandBuffer(vk::CommandBuffer& commandBuffer, std::string& errorMessage) const {
+Expected<void> VulkanCommandManager::createCommandBuffer(vk::CommandBuffer& commandBuffer) const {
     std::vector<vk::CommandBuffer> commandBuffers;
 
-    if (!createCommandBuffers(commandBuffers, 1, errorMessage)) return false;
+    TRY(createCommandBuffers(commandBuffers, 1));
     commandBuffer = commandBuffers.front();
 
-    return true;
+    return {};
 }
 
-bool VulkanCommandManager::beginSingleTimeCommands(vk::CommandBuffer& commandBuffer, std::string& errorMessage) const {
-    TRY_BOOL(createCommandBuffer(commandBuffer, errorMessage));
+Expected<void> VulkanCommandManager::beginSingleTimeCommands(vk::CommandBuffer& commandBuffer) const {
+    TRY(createCommandBuffer(commandBuffer));
 
     constexpr vk::CommandBufferBeginInfo beginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
-    VK_TRY(commandBuffer.begin(beginInfo), errorMessage);
+    VK_TRY(commandBuffer.begin(beginInfo));
 
-    return true;
+    return {};
 }
 
-bool VulkanCommandManager::endSingleTimeCommands(vk::CommandBuffer& commandBuffer, std::string& errorMessage) const {
-    VK_TRY(commandBuffer.end(), errorMessage);
+Expected<void> VulkanCommandManager::endSingleTimeCommands(vk::CommandBuffer& commandBuffer) const {
+    VK_TRY(commandBuffer.end());
 
     vk::SubmitInfo submitInfo{};
     submitInfo.setCommandBuffers(commandBuffer);
 
     const vk::Queue& graphicsQueue = _device->getGraphicsQueue();
 
-    VK_TRY(graphicsQueue.submit(submitInfo), errorMessage);
-    VK_TRY(graphicsQueue.waitIdle(), errorMessage);
+    VK_TRY(graphicsQueue.submit(submitInfo));
+    VK_TRY(graphicsQueue.waitIdle());
 
-    return true;
+    return {};
 }

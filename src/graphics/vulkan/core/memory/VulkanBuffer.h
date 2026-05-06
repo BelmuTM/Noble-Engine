@@ -7,6 +7,8 @@
 
 #include "graphics/vulkan/core/memory/VmaUsage.h"
 
+#include <cstring>
+
 class VulkanBuffer {
 public:
     VulkanBuffer()  = default;
@@ -18,47 +20,43 @@ public:
     VulkanBuffer(VulkanBuffer&&)            noexcept;
     VulkanBuffer& operator=(VulkanBuffer&&) noexcept;
 
-    [[nodiscard]] bool create(
+    [[nodiscard]] Expected<void> create(
         vk::DeviceSize       size,
         vk::BufferUsageFlags usage,
         VmaMemoryUsage       memoryUsage,
-        const VulkanDevice*  device,
-        std::string&         errorMessage
+        const VulkanDevice*  device
     ) noexcept;
 
     void destroy() noexcept;
 
-    [[nodiscard]] static bool createBuffer(
+    [[nodiscard]] static Expected<void> createBuffer(
         vk::Buffer&          buffer,
         VmaAllocation&       allocation,
         vk::DeviceSize       size,
         vk::BufferUsageFlags usage,
         VmaMemoryUsage       memoryUsage,
-        const VulkanDevice*  device,
-        std::string&         errorMessage
+        const VulkanDevice*  device
     );
 
-    [[nodiscard]] static bool copyBuffer(
+    [[nodiscard]] static Expected<void> copyBuffer(
         const vk::Buffer&           srcBuffer,
         const vk::Buffer&           dstBuffer,
         vk::DeviceSize              size,
         vk::DeviceSize              srcOffset,
         vk::DeviceSize              dstOffset,
-        const VulkanCommandManager* commandManager,
-        std::string&                errorMessage
+        const VulkanCommandManager* commandManager
     );
 
-    [[nodiscard]] bool copyFrom(
+    [[nodiscard]] Expected<void> copyFrom(
         const vk::Buffer&           srcBuffer,
         const VulkanCommandManager* commandManager,
-        std::string&                errorMessage,
         vk::DeviceSize              size      = VK_WHOLE_SIZE,
         vk::DeviceSize              srcOffset = 0,
         vk::DeviceSize              dstOffset = 0
     ) const;
 
     // Map GPU allocated memory to CPU memory
-    void* mapMemory(std::string& errorMessage);
+    Expected<void> mapMemory();
 
     void unmapMemory();
 
@@ -79,7 +77,7 @@ public:
     template<typename BufferDataType>
     void updateArrayMemory(
         const BufferDataType* data,
-        const size_t          count,
+        const std::size_t     count,
         const vk::DeviceSize  offset = 0
     ) const {
         updateMemory(data, count * sizeof(BufferDataType), offset);
@@ -101,7 +99,7 @@ private:
     vk::Buffer     _buffer{};
     vk::DeviceSize _bufferSize = 0;
 
-    vk::DeviceAddress _deviceAddress;
+    vk::DeviceAddress _deviceAddress = 0;
 
     VmaAllocation _allocation = VK_NULL_HANDLE;
 

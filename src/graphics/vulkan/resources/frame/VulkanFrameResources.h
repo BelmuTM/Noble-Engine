@@ -20,12 +20,11 @@ public:
     VulkanFrameResources(VulkanFrameResources&&)            = delete;
     VulkanFrameResources& operator=(VulkanFrameResources&&) = delete;
 
-    [[nodiscard]] bool create(
+    [[nodiscard]] Expected<void> create(
         const VulkanDevice&         device,
         const VulkanImageManager&   imageManager,
         VulkanUniformBufferManager& uniformBufferManager,
-        std::uint32_t               framesInFlight,
-        std::string&                errorMessage
+        std::uint32_t               framesInFlight
     ) noexcept;
 
     void destroy() noexcept;

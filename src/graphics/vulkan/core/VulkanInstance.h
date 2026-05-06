@@ -2,9 +2,8 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "VulkanCapabilities.h"
+#include "graphics/vulkan/core/VulkanCapabilities.h"
 
-#include <string>
 #include <vector>
 
 class VulkanInstance {
@@ -18,7 +17,7 @@ public:
     VulkanInstance(VulkanInstance&&)            = delete;
     VulkanInstance& operator=(VulkanInstance&&) = delete;
 
-    [[nodiscard]] bool create(const VulkanCapabilities& capabilities, std::string& errorMessage) noexcept;
+    [[nodiscard]] Expected<void> create(const VulkanCapabilities& capabilities) noexcept;
 
     void destroy() noexcept;
 
@@ -27,11 +26,11 @@ public:
 private:
     static std::vector<const char*> getRequiredExtensions();
 
-    bool createInstance(std::string& errorMessage);
+    Expected<void> createInstance();
 
 #ifdef VULKAN_VALIDATION_LAYERS_ENABLED
 
-    bool setupDebugMessenger(std::string& errorMessage);
+    Expected<void> setupDebugMessenger();
 
     static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(
         vk::DebugUtilsMessageSeverityFlagBitsEXT      severity,

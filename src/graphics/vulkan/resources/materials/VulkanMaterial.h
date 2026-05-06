@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorSets.h"
 
 #include "graphics/vulkan/resources/images/VulkanImage.h"
@@ -16,11 +18,10 @@ public:
     VulkanMaterial()  = default;
     ~VulkanMaterial() = default;
 
-    bool create(
+    Expected<void> create(
         const Material&          sourceMaterial,
         VulkanImageManager*      imageManager,
-        VulkanDescriptorManager& descriptorManager,
-        std::string&             errorMessage
+        VulkanDescriptorManager& descriptorManager
     );
 
     void bindDescriptorSets() const;
@@ -36,15 +37,14 @@ public:
     [[nodiscard]] const VulkanDescriptorSets* getDescriptorSets() const noexcept { return _descriptorSets; }
 
 private:
-    bool loadTexture(
+    Expected<void> loadTexture(
         TextureType         type,
         const std::string&  path,
         const glm::vec3&    fallbackColor,
-        VulkanImageManager* imageManager,
-        std::string&        errorMessage
+        VulkanImageManager* imageManager
     );
 
-    bool loadTextures(VulkanImageManager* imageManager, std::string& errorMessage);
+    Expected<void> loadTextures(VulkanImageManager* imageManager);
 
     Material _sourceMaterial{};
 

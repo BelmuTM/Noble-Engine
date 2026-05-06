@@ -1,9 +1,10 @@
 #include "VulkanDescriptorSets.h"
 
-bool VulkanDescriptorSets::allocate(std::string& errorMessage) {
+#include "graphics/vulkan/common/VulkanDebugger.h"
+
+Expected<void> VulkanDescriptorSets::allocate() {
     if (!_manager) {
-        errorMessage = "Failed to allocate Vulkan descriptor sets: descriptor manager is null.";
-        return false;
+        return VK_FAIL("Failed to allocate descriptor sets: descriptor manager is null.");
     }
 
     std::vector layouts(_manager->getFramesInFlight(), _manager->getLayout());
@@ -16,7 +17,7 @@ bool VulkanDescriptorSets::allocate(std::string& errorMessage) {
     _descriptorSets.clear();
     _descriptorSets.reserve(_manager->getFramesInFlight());
 
-    return _manager->allocateSets(_descriptorSets, descriptorSetInfo, errorMessage);
+    return _manager->allocateSets(_descriptorSets, descriptorSetInfo);
 }
 
 void VulkanDescriptorSets::updateDescriptorSets(const VulkanDescriptorInfo& info, const std::uint32_t frameIndex) const {

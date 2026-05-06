@@ -1,16 +1,14 @@
 #include "VulkanMeshManager.h"
 
-#include "core/debug/ErrorHandling.h"
+#include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include <cstring>
-
-bool VulkanMeshManager::create(
-    const VulkanDevice& device, const VulkanCommandManager& commandManager, std::string&
+Expected<void> VulkanMeshManager::create(
+    const VulkanDevice& device, const VulkanCommandManager& commandManager
 ) noexcept {
     _device         = &device;
     _commandManager = &commandManager;
 
-    return true;
+    return {};
 }
 
 void VulkanMeshManager::destroy() noexcept {
@@ -26,20 +24,20 @@ VulkanMesh* VulkanMeshManager::allocateMesh(const Mesh& meshData) {
     return _meshes.back().get();
 }
 
-bool VulkanMeshManager::fillBuffers(std::string& errorMessage) {
+Expected<void> VulkanMeshManager::fillBuffers() {
     queryVertexBufferSize();
     queryIndexBufferSize();
 
-    TRY_BOOL(createMeshStagingBuffer(errorMessage));
+    TRY(createMeshStagingBuffer());
 
-    TRY_BOOL(createVertexBuffer(errorMessage));
-    TRY_BOOL(createIndexBuffer(errorMessage));
+    TRY(createVertexBuffer());
+    TRY(createIndexBuffer());
 
     assignBuffersToMeshes();
 
     _stagingBuffer.destroy();
 
-    return true;
+    return {};
 }
 
 void VulkanMeshManager::queryVertexBufferSize() {
@@ -85,57 +83,47 @@ void VulkanMeshManager::assignBuffersToMeshes() const {
     }
 }
 
-bool VulkanMeshManager::createMeshStagingBuffer(std::string& errorMessage) {
+Expected<void> VulkanMeshManager::createMeshStagingBuffer() {
     const vk::DeviceSize stagingBufferSize = _vertexBufferSize + _indexBufferSize;
 
-    TRY_BOOL(_stagingBuffer.create(
+    TRY(_stagingBuffer.create(
         stagingBufferSize,
         vk::BufferUsageFlagBits::eTransferSrc,
         VMA_MEMORY_USAGE_CPU_TO_GPU,
-        _device,
-        errorMessage
+        _device
     ));
 
-    void* stagingData = _stagingBuffer.mapMemory(errorMessage);
-
-    if (!stagingData) {
-        errorMessage = "Failed to create Vulkan mesh staging buffer: mapped memory pointer is null.";
-        return false;
-    }
+    TRY(_stagingBuffer.mapMemory());
 
     uploadMeshData(_stagingBuffer);
 
     _stagingBuffer.unmapMemory();
 
-    return true;
+    return {};
 }
 
-bool VulkanMeshManager::createVertexBuffer(std::string& errorMessage) {
-    TRY_BOOL(_vertexBuffer.create(
+Expected<void> VulkanMeshManager::createVertexBuffer() {
+    TRY(_vertexBuffer.create(
         _vertexBufferSize,
         vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
         VMA_MEMORY_USAGE_GPU_ONLY,
-        _device,
-        errorMessage
+        _device
     ));
 
-    TRY_BOOL(_vertexBuffer.copyFrom(_stagingBuffer.handle(), _commandManager, errorMessage));
+    TRY(_vertexBuffer.copyFrom(_stagingBuffer.handle(), _commandManager));
 
-    return true;
+    return {};
 }
 
-bool VulkanMeshManager::createIndexBuffer(std::string& errorMessage) {
-    TRY_BOOL(_indexBuffer.create(
+Expected<void> VulkanMeshManager::createIndexBuffer() {
+    TRY(_indexBuffer.create(
         _indexBufferSize,
         vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
         VMA_MEMORY_USAGE_GPU_ONLY,
-        _device,
-        errorMessage
+        _device
     ));
 
-    TRY_BOOL(_indexBuffer.copyFrom(
-        _stagingBuffer.handle(), _commandManager, errorMessage, _indexBufferSize, _vertexBufferSize, 0
-    ));
+    TRY(_indexBuffer.copyFrom(_stagingBuffer.handle(), _commandManager, _indexBufferSize, _vertexBufferSize, 0));
 
-    return true;
+    return {};
 }

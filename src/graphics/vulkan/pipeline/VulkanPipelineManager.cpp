@@ -1,11 +1,9 @@
 #include "VulkanPipelineManager.h"
 
-#include "core/debug/ErrorHandling.h"
-
-bool VulkanPipelineManager::create(const vk::Device& device, std::string& errorMessage) noexcept {
+Expected<void> VulkanPipelineManager::create(const vk::Device& device) noexcept {
     _device = device;
 
-    return true;
+    return {};
 }
 
 void VulkanPipelineManager::destroy() noexcept {
@@ -21,12 +19,10 @@ VulkanGraphicsPipeline* VulkanPipelineManager::allocatePipeline() {
     return _graphicsPipelines.back().get();
 }
 
-bool VulkanPipelineManager::createGraphicsPipeline(
-    VulkanGraphicsPipeline* graphicsPipeline,
-    const VulkanRenderPass& pass,
-    std::string&            errorMessage
+Expected<void> VulkanPipelineManager::createGraphicsPipeline(
+    VulkanGraphicsPipeline* graphicsPipeline, const VulkanRenderPass& pass
 ) const {
-    TRY_BOOL(graphicsPipeline->create(_device, pass, errorMessage));
+    TRY(graphicsPipeline->create(_device, pass));
 
-    return true;
+    return {};
 }

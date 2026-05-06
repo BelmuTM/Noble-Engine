@@ -10,12 +10,13 @@ void AssetManager::loadModelsAsync(ThreadPool& threadPool, const std::vector<std
 
         if (!modelFutures.contains(modelPath)) {
             modelFutures[modelPath] = threadPool.enqueue([this, modelPath] {
-                std::string errorMessage;
+                Expected<const Model*> model = _modelManager.loadBlocking(modelPath);
 
-                const Model* model = _modelManager.loadBlocking(modelPath, errorMessage);
-                if (!model) Logger::error(errorMessage);
+                if (model.failed()) {
+                    Logger::error(model.failure());
+                }
 
-                return model;
+                return model.value();
             }).share();
         }
     }
@@ -35,12 +36,13 @@ void AssetManager::loadTexturesAsync(ThreadPool& threadPool, const std::vector<s
 
         if (!textureFutures.contains(texturePath)) {
             textureFutures[texturePath] = threadPool.enqueue([this, texturePath] {
-                std::string errorMessage;
+                Expected<const Image*> texture = _imageManager.loadBlocking(texturePath, MIPMAPS_ENABLED);
 
-                const Image* texture = _imageManager.loadBlocking(texturePath, errorMessage, MIPMAPS_ENABLED);
-                if (!texture) Logger::warning(errorMessage);
+                if (texture.failed()) {
+                    Logger::error(texture.failure());
+                }
 
-                return texture;
+                return texture.value();
             }).share();
         }
     }

@@ -1,45 +1,88 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include <string>
 
 #include <glm/vec3.hpp>
 #include <vulkan/vulkan.hpp>
 
+#include "core/debug/Logger.h"
+
+#ifdef FAIL
+#define VK_FAIL(msg) \
+    FAIL(msg, "Vulkan")
+#endif
+
 namespace VulkanDebugger {
     std::string formatVulkanErrorMessage(const std::string& expression, vk::Result result);
 
-    template<typename ReturnValue>
-    vk::Result getVulkanResult(ReturnValue returnValue) {
-        if constexpr (std::is_same_v<ReturnValue, vk::Result>) {
-            // HPP style
-            return returnValue;
-        } else if constexpr (std::is_same_v<ReturnValue, VkResult>) {
-            // C style
-            return static_cast<vk::Result>(returnValue);
-        } else {
-            // Assume vk::ResultValue<T>
-            return returnValue.result;
-        }
-    }
-
-    template<typename Function>
-    auto checkVulkanResult(const char* exprStr, Function&& func, std::string& errorMessage) {
-        auto returnValue = func();
-
-        const vk::Result result = getVulkanResult(returnValue);
-        if (result != vk::Result::eSuccess) {
-            errorMessage = formatVulkanErrorMessage(exprStr, result);
-        }
-        return returnValue;
-    }
-
-    template<typename ReturnValue>
-    vk::Result checkVulkanResultVoid(const char* exprStr, ReturnValue returnValue, std::string& errorMessage) {
-        const vk::Result result = getVulkanResult(returnValue);
-        if (result != vk::Result::eSuccess) {
-            errorMessage = formatVulkanErrorMessage(exprStr, result);
-        }
+    // From C-style to HPP-style
+    inline vk::Result extractVkResult(const vk::Result result) {
         return result;
+    }
+
+    inline vk::Result extractVkResult(VkResult result) {
+        return static_cast<vk::Result>(result);
+    }
+
+    template<typename T>
+    vk::Result extractVkResult(const vk::ResultValue<T>& resultValue) {
+        return resultValue.result;
+    }
+
+    inline Unexpected makeVkFailure(const char* exprStr, const vk::Result result) {
+        return VK_FAIL(formatVulkanErrorMessage(exprStr, result));
+    }
+
+    template<typename ResultType>
+    Expected<void> VK_CHECK(const char* exprStr, const ResultType& result) {
+        const vk::Result res = extractVkResult(result);
+        if (res != vk::Result::eSuccess) {
+            return makeVkFailure(exprStr, res);
+        }
+        return {};
+    }
+
+    template<typename ResultType>
+    vk::Result VK_CHECK_RESULT(const char* exprStr, const ResultType& result, Failure* outFailure = nullptr) {
+        const vk::Result res = extractVkResult(result);
+        if (res != vk::Result::eSuccess) {
+            if (outFailure) {
+                *outFailure = makeVkFailure(exprStr, res).failure;
+            }
+        }
+        return res;
+    }
+
+    template<typename ReturnValue>
+    vk::ResultValueType<ReturnValue> VK_CHECK_RESULT(
+        const char* exprStr, const vk::ResultValueType<ReturnValue>& resultValue, Failure* outFailure = nullptr
+    ) {
+        const vk::Result res = extractVkResult(resultValue.result);
+        if (res != vk::Result::eSuccess) {
+            if (outFailure) {
+                *outFailure = makeVkFailure(exprStr, res).failure;
+            }
+        }
+        return resultValue;
+    }
+
+    template<typename ResultType>
+    void VK_CHECK_LOG(const char* exprStr, const ResultType& result) {
+        const vk::Result res = extractVkResult(result);
+        if (res != vk::Result::eSuccess) {
+            Logger::error(formatVulkanErrorMessage(exprStr, res));
+        }
+    }
+
+    template<typename T>
+    Expected<T> VK_FROM_RESULT(const char* exprStr, const vk::ResultValue<T>& resultValue) {
+        const vk::Result res = extractVkResult(resultValue.result);
+        if (res != vk::Result::eSuccess) {
+            return makeVkFailure(exprStr, res);
+        }
+        return Expected<T>(std::move(resultValue.value));
     }
 
 #if defined(VULKAN_DEBUG_UTILS)
@@ -67,107 +110,42 @@ namespace VulkanDebugger {
 #endif
 }
 
-#define VK_ERROR_MESSAGE(expr, result) \
-    VulkanDebugger::formatVulkanErrorMessage(#expr, result)
+#define VK_EXPECT(expr) \
+    VulkanDebugger::VK_FROM_RESULT(#expr, (expr))
 
-///////////////////////////////////////////////////////////////////////////////
-///                            NON-LOGGING CALLS                            ///
-///////////////////////////////////////////////////////////////////////////////
+#define VK_FIRE_AND_FORGET(expr) \
+    VulkanDebugger::VK_CHECK_LOG(#expr, (expr))
 
-#define VK_CALL(expr, errorVar) \
-    VulkanDebugger::checkVulkanResult(#expr, [&] { return expr; }, errorVar)
-
-#define VK_CALL_VOID(expr, errorVar) \
-    VulkanDebugger::checkVulkanResultVoid(#expr, expr, errorVar);
-
-#define VK_TRY(expr, errorVar) \
-    do { \
-        std::string errorMessageTry_##__COUNTER__; \
-        const auto returnValueTry_##__COUNTER__ = VK_CALL(expr, errorMessageTry_##__COUNTER__); \
-        if (VulkanDebugger::getVulkanResult(returnValueTry_##__COUNTER__) != vk::Result::eSuccess) { \
-            errorVar = errorMessageTry_##__COUNTER__; \
-            return false; \
-        } \
-    } while (0)
-
-#define VK_TRY_VOID(expr, errorVar) \
-    do { \
-        const auto returnValueTryVoidLog_##__COUNTER__ = VK_CALL_VOID(expr, errorVar); \
-        if (returnValueTryVoidLog_##__COUNTER__ != vk::Result::eSuccess) { \
-            return; \
-        } \
-    } while (0)
-
-#define VK_CREATE(expr, var, errorVar) \
-    do { \
-        const auto returnValueCreate_##__COUNTER__ = VK_CALL(expr, errorVar); \
-        if (returnValueCreate_##__COUNTER__.result != vk::Result::eSuccess) { \
-            return false; \
-        } \
-        var = returnValueCreate_##__COUNTER__.value; \
-    } while (0)
-
-#define VK_CREATE_VOID(expr, var, errorVar) \
-    do { \
-        const auto returnValueCreateVoid_##__COUNTER__ = VK_CALL(expr, errorVar); \
-        if (returnValueCreateVoid_##__COUNTER__.result != vk::Result::eSuccess) { \
-            return; \
-        } \
-        var = returnValueCreateVoid_##__COUNTER__.value; \
-    } while (0)
-
-///////////////////////////////////////////////////////////////////////////////
-///                              LOGGING CALLS                              ///
-///////////////////////////////////////////////////////////////////////////////
-
-#define VK_CALL_LOG(expr, level) \
-    ([&] { \
-        std::string errorMessageCallLog_##__COUNTER__; \
-        const auto returnValueCallLog_##__COUNTER__ = VK_CALL(expr, errorMessageCallLog_##__COUNTER__); \
-        if (VulkanDebugger::getVulkanResult(returnValueCallLog_##__COUNTER__) != vk::Result::eSuccess) { \
-            Logger::log(level, errorMessageCallLog_##__COUNTER__); \
-        } \
-        return returnValueCallLog_##__COUNTER__; \
+#define VK_RESULT(expr, failurePtr)                                        \
+    ([&]() {                                                               \
+        auto _r = (expr);                                                  \
+        if (VulkanDebugger::extractVkResult(_r) != vk::Result::eSuccess) { \
+            if (failurePtr)                                                \
+                *failurePtr = VulkanDebugger::makeVkFailure(#expr,         \
+                    VulkanDebugger::extractVkResult(_r)).failure;          \
+        }                                                                  \
+        return _r;                                                         \
     }())
 
-#define VK_TRY_LOG(expr, level) \
-    do { \
-        std::string errorMessageTryLog_##__COUNTER__; \
-        const auto returnValueTryLog_##__COUNTER__ = VK_CALL(expr, errorMessageTryLog_##__COUNTER__); \
-        if (VulkanDebugger::getVulkanResult(returnValueTryLog_##__COUNTER__) != vk::Result::eSuccess) { \
-            Logger::log(level, errorMessageTryLog_##__COUNTER__); \
-            return false; \
-        } \
+#define VK_TRY(expr)                                                \
+    do {                                                            \
+        auto _resultTry_ = VulkanDebugger::VK_CHECK(#expr, (expr)); \
+        if (_resultTry_.failed())                                   \
+            return Unexpected{std::move(_resultTry_.failure())};    \
     } while (0)
 
-#define VK_TRY_VOID_LOG(expr, level) \
-    do { \
-        std::string errorMessageTryVoidLog_##__COUNTER__; \
-        const auto returnValueTryVoidLog_##__COUNTER__ = VK_CALL_VOID(expr, errorMessageTryVoidLog_##__COUNTER__); \
-        if (returnValueTryVoidLog_##__COUNTER__ != vk::Result::eSuccess) { \
-            Logger::log(level, errorMessageTryVoidLog_##__COUNTER__); \
-            return; \
-        } \
+#define VK_TRY_ASSIGN(varOut, expr)                                 \
+    do {                                                            \
+        auto _resultUnwrap_ = (expr);                               \
+        if (!_resultUnwrap_)                                        \
+            return Unexpected{std::move(_resultUnwrap_.failure())}; \
+        varOut = std::move(_resultUnwrap_.value());                 \
     } while (0)
 
-#define VK_CREATE_LOG(expr, var, level) \
-    do { \
-        std::string errorMessageCreateLog_##__COUNTER__; \
-        const auto returnValueCreateLog_##__COUNTER__ = VK_CALL(expr, errorMessageCreateLog_##__COUNTER__); \
-        if (returnValueCreateLog_##__COUNTER__.result != vk::Result::eSuccess) { \
-            Logger::log(level, errorMessageCreateLog_##__COUNTER__); \
-            return false; \
-        } \
-        var = returnValueCreateLog_##__COUNTER__.value; \
-    } while (0)
-
-#define VK_CREATE_VOID_LOG(expr, var, level) \
-    do { \
-        std::string errorMessageCreateVoidLog_##__COUNTER__; \
-        const auto returnValueCreateVoidLog_##__COUNTER__ = VK_CALL(expr, errorMessageCreateVoidLog_##__COUNTER__); \
-        if (returnValueCreateVoidLog_##__COUNTER__.result != vk::Result::eSuccess) { \
-            Logger::log(level, errorMessageCreateVoidLog_##__COUNTER__); \
-            return; \
-        } \
-        var = returnValueCreateVoidLog_##__COUNTER__.value; \
+#define VK_CREATE(varOut, expr)                                     \
+    do {                                                            \
+        auto _resultCreate_ = VK_EXPECT(expr);                      \
+        if (!_resultCreate_)                                        \
+            return Unexpected{std::move(_resultCreate_.failure())}; \
+        varOut = std::move(_resultCreate_.value());                 \
     } while (0)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
 #include "core/platform/Window.h"
 
 #include "core/entities/objects/ObjectManager.h"
@@ -13,14 +14,13 @@ public:
     GraphicsAPI()          = default;
     virtual ~GraphicsAPI() = default;
 
-    [[nodiscard]] virtual bool init(
+    [[nodiscard]] virtual Expected<void> init(
         Window&              window,
         const AssetManager&  assetManager,
-        const ObjectManager& objectManager,
-        std::string&         errorMessage
+        const ObjectManager& objectManager
     ) = 0;
 
     virtual void shutdown() = 0;
 
-    virtual void drawFrame(const FrameUniforms& uniforms) {}
+    virtual Expected<void> drawFrame(const FrameUniforms& uniforms) = 0;
 };

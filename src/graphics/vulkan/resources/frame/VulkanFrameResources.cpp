@@ -3,29 +3,28 @@
 #include "graphics/vulkan/resources/images/VulkanImageLayoutTransitions.h"
 
 #include "core/debug/ErrorHandling.h"
+#include "graphics/vulkan/common/VulkanDebugger.h"
 
-bool VulkanFrameResources::create(
+Expected<void> VulkanFrameResources::create(
     const VulkanDevice&         device,
     const VulkanImageManager&   imageManager,
     VulkanUniformBufferManager& uniformBufferManager,
-    const std::uint32_t         framesInFlight,
-    std::string&                errorMessage
+    const std::uint32_t         framesInFlight
 ) noexcept {
     _device         = &device;
     _imageManager   = &imageManager;
     _framesInFlight = framesInFlight;
 
     // Descriptors creation
-    TRY_BOOL(_descriptorManager.create(device.getLogicalDevice(), getFrameDescriptorScheme(), framesInFlight, 1, errorMessage));
+    TRY(_descriptorManager.create(device.getLogicalDevice(), getFrameDescriptorScheme(), framesInFlight, 1));
 
-    _frameUBO = uniformBufferManager.allocateBuffer<VulkanFrameUniformBuffer>(errorMessage);
-    TRY_BOOL(_frameUBO);
+    VK_TRY_ASSIGN(_frameUBO, uniformBufferManager.allocateBuffer<VulkanFrameUniformBuffer>());
 
-    TRY_BOOL(_descriptorManager.allocate(_frameUBODescriptors, errorMessage));
+    TRY(_descriptorManager.allocate(_frameUBODescriptors));
 
     _frameUBODescriptors->updatePerFrameUBODescriptorSets(*_frameUBO, 0);
 
-    return true;
+    return {};
 }
 
 void VulkanFrameResources::destroy() noexcept {

@@ -23,9 +23,9 @@ public:
     VulkanRenderObjectManager(VulkanRenderObjectManager&&)            = delete;
     VulkanRenderObjectManager& operator=(VulkanRenderObjectManager&&) = delete;
 
-    [[nodiscard]] bool create(const VulkanRenderObjectCreateContext& context, std::string& errorMessage) noexcept;
+    [[nodiscard]] Expected<void> create(const VulkanRenderObjectCreateContext& context) noexcept;
 
-    [[nodiscard]] bool createRenderObjects(const ObjectManager::ObjectsVector& objects, std::string& errorMessage);
+    [[nodiscard]] Expected<void> createRenderObjects(const ObjectManager::ObjectsVector& objects);
 
     void destroy() noexcept;
 

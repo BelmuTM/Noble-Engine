@@ -2,16 +2,16 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-bool VulkanCapabilities::create(std::string& errorMessage) noexcept {
+Expected<void> VulkanCapabilities::create() noexcept {
     constexpr VpCapabilitiesCreateInfo createInfo{
         .flags            = VP_PROFILE_CREATE_STATIC_BIT,
         .apiVersion       = VULKAN_VERSION,
         .pVulkanFunctions = nullptr
     };
 
-    VK_TRY(vpCreateCapabilities(&createInfo, nullptr, &_capabilities), errorMessage);
+    VK_TRY(vpCreateCapabilities(&createInfo, nullptr, &_capabilities));
 
-    return true;
+    return {};
 }
 
 void VulkanCapabilities::destroy() noexcept {

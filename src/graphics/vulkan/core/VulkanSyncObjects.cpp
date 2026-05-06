@@ -2,19 +2,18 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-bool VulkanSyncObjects::create(
+Expected<void> VulkanSyncObjects::create(
     const vk::Device&   device,
     const std::uint32_t framesInFlight,
-    const std::uint32_t swapchainImageCount,
-    std::string&        errorMessage
+    const std::uint32_t swapchainImageCount
 ) noexcept {
     _device = device;
 
-    if (!createSyncObjects(framesInFlight, swapchainImageCount, errorMessage)) return false;
+    TRY(createSyncObjects(framesInFlight, swapchainImageCount));
 
     _imagesInFlight.resize(swapchainImageCount, VK_NULL_HANDLE);
 
-    return true;
+    return {};
 }
 
 void VulkanSyncObjects::destroy() noexcept {
@@ -30,8 +29,8 @@ void VulkanSyncObjects::backup() {
     _oldRenderFinished.insert(_oldRenderFinished.end(), _renderFinishedSemaphores.begin(), _renderFinishedSemaphores.end());
 }
 
-bool VulkanSyncObjects::createSyncObjects(
-    const std::uint32_t framesInFlight, const std::uint32_t swapchainImageCount, std::string& errorMessage
+Expected<void> VulkanSyncObjects::createSyncObjects(
+    const std::uint32_t framesInFlight, const std::uint32_t swapchainImageCount
 ) {
     _imageAvailableSemaphores.resize(framesInFlight);
     _renderFinishedSemaphores.resize(swapchainImageCount);
@@ -40,15 +39,15 @@ bool VulkanSyncObjects::createSyncObjects(
     constexpr vk::FenceCreateInfo fenceInfo{vk::FenceCreateFlagBits::eSignaled};
 
     for (std::uint32_t i = 0; i < framesInFlight; i++) {
-        VK_CREATE(_device.createSemaphore({}), _imageAvailableSemaphores[i], errorMessage);
-        VK_CREATE(_device.createFence(fenceInfo), _inFlightFences[i], errorMessage);
+        VK_CREATE(_imageAvailableSemaphores[i], _device.createSemaphore({}));
+        VK_CREATE(_inFlightFences[i], _device.createFence(fenceInfo));
     }
 
     for (auto& renderFinishedSemaphore : _renderFinishedSemaphores) {
-        VK_CREATE(_device.createSemaphore({}), renderFinishedSemaphore, errorMessage);
+        VK_CREATE(renderFinishedSemaphore, _device.createSemaphore({}));
     }
 
-    return true;
+    return {};
 }
 
 void VulkanSyncObjects::destroySyncObjects() {

@@ -14,7 +14,6 @@
 #include "graphics/vulkan/VulkanRenderer.h"
 
 #include <atomic>
-#include <string>
 
 class Runtime {
 public:
@@ -22,7 +21,7 @@ public:
 
     ~Runtime() = default;
 
-    [[nodiscard]] bool init(std::string& errorMessage);
+    [[nodiscard]] Expected<void> init();
 
     void shutdown();
 

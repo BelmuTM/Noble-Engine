@@ -5,22 +5,15 @@
 #include "graphics/vulkan/rendergraph/resources/VulkanRenderResources.h"
 #include "graphics/vulkan/resources/meshes/VulkanVertex.h"
 
-#include "core/debug/ErrorHandling.h"
-
 #include <ranges>
 
-bool VulkanGraphicsPipeline::create(
-    const vk::Device&       device,
-    const VulkanRenderPass& pass,
-    std::string&            errorMessage
-) noexcept {
+Expected<void> VulkanGraphicsPipeline::create(const vk::Device& device, const VulkanRenderPass& pass) noexcept {
     _device = device;
 
-    TRY_BOOL(createPipelineLayout(device, pass.getPipelineDescriptor(), errorMessage));
+    TRY(createPipelineLayout(device, pass.getPipelineDescriptor()));
+    TRY(createPipeline(device, pass));
 
-    TRY_BOOL(createPipeline(device, pass, errorMessage));
-
-    return true;
+    return {};
 }
 
 void VulkanGraphicsPipeline::destroy() noexcept {
@@ -39,10 +32,9 @@ void VulkanGraphicsPipeline::destroy() noexcept {
     _device = VK_NULL_HANDLE;
 }
 
-bool VulkanGraphicsPipeline::createPipelineLayout(
+Expected<void> VulkanGraphicsPipeline::createPipelineLayout(
     const vk::Device&               device,
-    const VulkanPipelineDescriptor& descriptor,
-    std::string&                    errorMessage
+    const VulkanPipelineDescriptor& descriptor
 ) {
     std::vector<vk::PushConstantRange> _pushConstantRanges{};
 
@@ -55,9 +47,9 @@ bool VulkanGraphicsPipeline::createPipelineLayout(
         .setSetLayouts(descriptor.descriptorLayouts)
         .setPushConstantRanges(_pushConstantRanges);
 
-    VK_CREATE(device.createPipelineLayout(layoutInfo), _pipelineLayout, errorMessage);
+    VK_CREATE(_pipelineLayout, device.createPipelineLayout(layoutInfo));
 
-    return true;
+    return {};
 }
 
 /*---------------------------------------*/
@@ -114,11 +106,7 @@ vk::PipelineDynamicStateCreateInfo makeDynamicState() noexcept {
 
 }
 
-bool VulkanGraphicsPipeline::createPipeline(
-    const vk::Device&       device,
-    const VulkanRenderPass& pass,
-    std::string&            errorMessage
-) {
+Expected<void> VulkanGraphicsPipeline::createPipeline(const vk::Device& device, const VulkanRenderPass& pass) {
     const auto& shaderStages = pass.getPipelineDescriptor().shaderProgram->getStages();
 
     // Color attachment state
@@ -197,8 +185,7 @@ bool VulkanGraphicsPipeline::createPipeline(
                 .setPolygonMode(vk::PolygonMode::eLine);
             break;
         default:
-            errorMessage = "Failed to create Vulkan graphics pipeline: unknown pass type.";
-            return false;
+            return VK_FAIL("Failed to create graphics pipeline: unknown pass type.");
     }
 
     // Multisample state
@@ -248,7 +235,7 @@ bool VulkanGraphicsPipeline::createPipeline(
         .setLayout(_pipelineLayout)
         .setRenderPass(nullptr);
 
-    VK_CREATE(device.createGraphicsPipeline(nullptr, pipelineInfo), _pipeline, errorMessage);
+    VK_CREATE(_pipeline, device.createGraphicsPipeline(nullptr, pipelineInfo));
 
-    return true;
+    return {};
 }

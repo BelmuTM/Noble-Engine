@@ -4,25 +4,19 @@
 
 #include "graphics/vulkan/rendergraph/VulkanRenderGraphBuilder.h"
 
-#include "core/debug/ErrorHandling.h"
-#include "core/debug/Logger.h"
-
 VulkanRenderer::VulkanRenderer(const std::uint32_t framesInFlight) : _framesInFlight(framesInFlight) {}
 
-bool VulkanRenderer::init(
+Expected<void> VulkanRenderer::init(
     Window&              window,
     const AssetManager&  assetManager,
-    const ObjectManager& objectManager,
-    std::string&         errorMessage
+    const ObjectManager& objectManager
 ) {
     _window = &window;
-
-    errorMessage = "Failed to init Vulkan renderer: no error message provided.";
 
     ScopeGuard guard{[this] { shutdown(); }};
 
     // Create context (instance, device, surface, swapchain)
-    TRY_BOOL(createVulkanEntity(&context, errorMessage, window));
+    TRY(context.create(window));
 
     const VulkanSurface& surface       = context.getSurface();
     const VulkanDevice&  device        = context.getDevice();
@@ -31,24 +25,21 @@ bool VulkanRenderer::init(
     VulkanSwapchain& swapchain = context.getSwapchain();
 
     // Resource managers creation
-    TRY_BOOL(createVulkanEntity(&swapchainManager, errorMessage, window, surface, device, swapchain, _framesInFlight));
-    TRY_BOOL(createVulkanEntity(&commandManager, errorMessage, device, _framesInFlight));
-    TRY_BOOL(createVulkanEntity(&meshManager, errorMessage, device, commandManager));
-    TRY_BOOL(createVulkanEntity(&imageManager, errorMessage, device, commandManager));
+    TRY(createVulkanEntity(&swapchainManager, window, surface, device, swapchain, _framesInFlight));
+    TRY(createVulkanEntity(&commandManager, device, _framesInFlight));
+    TRY(createVulkanEntity(&meshManager, device, commandManager));
+    TRY(createVulkanEntity(&imageManager, device, commandManager));
 
-    TRY_BOOL(createVulkanEntity(&uniformBufferManager, errorMessage, device, _framesInFlight));
-    TRY_BOOL(createVulkanEntity(&storageBufferManager, errorMessage, device, _framesInFlight));
+    TRY(createVulkanEntity(&uniformBufferManager, device, _framesInFlight));
+    TRY(createVulkanEntity(&storageBufferManager, device, _framesInFlight));
 
-    TRY_BOOL(createVulkanEntity(&renderResources, errorMessage, device, swapchain, commandManager, _framesInFlight));
+    TRY(createVulkanEntity(&renderResources, device, swapchain, commandManager, _framesInFlight));
+    TRY(createVulkanEntity(&frameResources, device, imageManager, uniformBufferManager, _framesInFlight));
 
-    TRY_BOOL(createVulkanEntity(
-        &frameResources, errorMessage, device, imageManager, uniformBufferManager, _framesInFlight
-    ));
+    TRY(createVulkanEntity(&materialManager, device, imageManager, _framesInFlight));
 
-    TRY_BOOL(createVulkanEntity(&materialManager, errorMessage, device, imageManager, _framesInFlight));
-
-    TRY_BOOL(createVulkanEntity(
-        &renderObjectManager, errorMessage, VulkanRenderObjectCreateContext{
+    TRY(createVulkanEntity(
+        &renderObjectManager, VulkanRenderObjectCreateContext{
             &objectManager,
             &assetManager,
             &device,
@@ -60,11 +51,11 @@ bool VulkanRenderer::init(
     ));
 
     // Pipeline creation
-    TRY_BOOL(createVulkanEntity(&shaderProgramManager, errorMessage, logicalDevice));
-    TRY_BOOL(createVulkanEntity(&pipelineManager, errorMessage, logicalDevice));
+    TRY(createVulkanEntity(&shaderProgramManager, logicalDevice));
+    TRY(createVulkanEntity(&pipelineManager, logicalDevice));
 
     // Render graph construction
-    TRY_BOOL(createVulkanEntity(&renderGraph, errorMessage, VulkanRenderGraphCreateContext{
+    TRY(createVulkanEntity(&renderGraph, VulkanRenderGraphCreateContext{
         &context.getInstance(),
         &device,
         &swapchain,
@@ -100,38 +91,36 @@ bool VulkanRenderer::init(
             pipelineManager
         },
         passFactory
-     );
+    );
 
-    TRY_BOOL(renderGraphBuilder.build(passes, errorMessage));
+    TRY(renderGraphBuilder.build(passes));
 
-    TRY_BOOL(meshManager.fillBuffers(errorMessage));
+    TRY(meshManager.fillBuffers());
 
     guard.release();
 
-    return true;
+    return {};
 }
 
 void VulkanRenderer::shutdown() {
     if (context.getDevice().getLogicalDevice()) {
-        VK_CALL_LOG(context.getDevice().getLogicalDevice().waitIdle(), Logger::Level::ERROR);
+        VK_FIRE_AND_FORGET(context.getDevice().getLogicalDevice().waitIdle());
     }
 
     flushDeletionQueue();
 }
 
-void VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
-    bool discardLogging = swapchainManager.isOutOfDate();
+Expected<void> VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
+    TRY(onFramebufferResize());
 
-    std::string errorMessage;
+    VulkanSwapchain::SwapchainOp<uint32_t> imageAcquireResult;
+    VK_TRY_ASSIGN(imageAcquireResult, swapchainManager.acquireNextImage(currentFrame));
 
-    ScopeGuard guard{[&discardLogging, &errorMessage] {
-        if (!discardLogging) Logger::error(errorMessage);
-    }};
+    if (!imageAcquireResult.value.has_value()) {
+        return {};
+    }
 
-    if (!onFramebufferResize(errorMessage)) return;
-
-    std::uint32_t imageIndex;
-    if (!swapchainManager.acquireNextImage(imageIndex, currentFrame, errorMessage, discardLogging)) return;
+    const uint32_t imageIndex = imageAcquireResult.value.value();
 
     // Frame data update
     frameResources.update(currentFrame, imageIndex, uniforms);
@@ -140,13 +129,13 @@ void VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
     // Frustum culling
     frameDraws.cullDraws(renderGraph.getPasses(), uniforms);
 
-    if (!recordCurrentCommandBuffer(imageIndex, errorMessage)) return;
-    if (!submitCurrentCommandBuffer(imageIndex, errorMessage, discardLogging)) return;
+    TRY(recordCurrentCommandBuffer(imageIndex));
+    TRY(submitCurrentCommandBuffer(imageIndex));
 
     currentFrame = (currentFrame + 1) % _framesInFlight;
 
     // Queried drawn triangles count
-    VK_CALL(context.getDevice().getLogicalDevice().getQueryPoolResults(
+    VK_FIRE_AND_FORGET(context.getDevice().getLogicalDevice().getQueryPoolResults(
         context.getDevice().getQueryPool(),
         0, 1,
         sizeof(std::uint64_t),
@@ -154,68 +143,66 @@ void VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
         sizeof(std::uint64_t),
         vk::QueryResultFlagBits::eWait |
         vk::QueryResultFlagBits::e64
-    ), errorMessage);
+    ));
 
-    guard.release();
+    return {};
 }
 
-bool VulkanRenderer::onFramebufferResize(std::string& errorMessage) {
-    if (!_window || !_window->isFramebufferResized()) return true;
+Expected<void> VulkanRenderer::onFramebufferResize() {
+    if (!_window || !_window->isFramebufferResized()) return {};
 
     if (context.getDevice().getLogicalDevice()) {
-        VK_CALL_LOG(context.getDevice().getLogicalDevice().waitIdle(), Logger::Level::ERROR);
+        VK_TRY(context.getDevice().getLogicalDevice().waitIdle());
     }
 
-    TRY_BOOL(swapchainManager.recreateSwapchain(errorMessage));
-    TRY_BOOL(renderResources.recreate(renderGraph, errorMessage));
+    TRY(swapchainManager.recreateSwapchain());
+    TRY(renderResources.recreate(renderGraph));
 
     _window->setFramebufferResized(false);
 
-    return true;
+    return {};
 }
 
-bool VulkanRenderer::recordCommandBuffer(
-    const vk::CommandBuffer commandBuffer, const std::uint32_t imageIndex, std::string& errorMessage
+Expected<void> VulkanRenderer::recordCommandBuffer(
+    const vk::CommandBuffer commandBuffer, const std::uint32_t imageIndex
 ) {
     constexpr vk::CommandBufferBeginInfo beginInfo{};
-    VK_TRY(commandBuffer.begin(beginInfo), errorMessage);
+    VK_TRY(commandBuffer.begin(beginInfo));
 
     VulkanImage* swapchainImage = context.getSwapchain().getImage(imageIndex);
 
-    TRY_BOOL(swapchainImage->transitionLayout(
-        commandBuffer, errorMessage,
+    TRY(swapchainImage->transitionLayout(
+        commandBuffer,
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eColorAttachmentOptimal
     ));
 
-    renderGraph.execute(commandBuffer);
+    TRY(renderGraph.execute(commandBuffer));
 
-    TRY_BOOL(swapchainImage->transitionLayout(
-        commandBuffer, errorMessage,
+    TRY(swapchainImage->transitionLayout(
+        commandBuffer,
         vk::ImageLayout::eColorAttachmentOptimal,
         vk::ImageLayout::ePresentSrcKHR
     ));
 
-    VK_TRY(commandBuffer.end(), errorMessage);
+    VK_TRY(commandBuffer.end());
 
-    return true;
+    return {};
 }
 
-bool VulkanRenderer::recordCurrentCommandBuffer(const std::uint32_t imageIndex, std::string& errorMessage) {
+Expected<void> VulkanRenderer::recordCurrentCommandBuffer(const std::uint32_t imageIndex) {
     const vk::CommandBuffer& currentBuffer = commandManager.getCommandBuffers()[currentFrame];
-    VK_CALL_LOG(currentBuffer.reset(), Logger::Level::ERROR);
+    VK_TRY(currentBuffer.reset());
 
-    TRY_BOOL(recordCommandBuffer(currentBuffer, imageIndex, errorMessage));
+    TRY(recordCommandBuffer(currentBuffer, imageIndex));
 
-    return true;
+    return {};
 }
 
-bool VulkanRenderer::submitCurrentCommandBuffer(
-    const std::uint32_t imageIndex, std::string& errorMessage, bool& discardLogging
-) {
+Expected<void> VulkanRenderer::submitCurrentCommandBuffer(const std::uint32_t imageIndex) {
     const vk::CommandBuffer& currentBuffer = commandManager.getCommandBuffers()[currentFrame];
 
-    TRY_BOOL(swapchainManager.submitCommandBuffer(currentBuffer, currentFrame, imageIndex, errorMessage, discardLogging));
+    TRY(swapchainManager.submitCommandBuffer(currentBuffer, currentFrame, imageIndex));
 
-    return true;
+    return {};
 }

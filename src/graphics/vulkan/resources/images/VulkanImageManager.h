@@ -1,13 +1,16 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
+#include "core/resources/images/Image.h"
+
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 #include "VulkanImage.h"
 #include "graphics/vulkan/core/VulkanCommandManager.h"
 
-#include "core/resources/images/Image.h"
-
-#include <unordered_set>
+#include <mutex>
+#include <unordered_map>
 
 class VulkanImageManager {
 public:
@@ -23,21 +26,20 @@ public:
     VulkanImageManager(VulkanImageManager&&)            = delete;
     VulkanImageManager& operator=(VulkanImageManager&&) = delete;
 
-    [[nodiscard]] bool create(
-        const VulkanDevice& device, const VulkanCommandManager& commandManager, std::string& errorMessage
+    [[nodiscard]] Expected<void> create(
+        const VulkanDevice& device, const VulkanCommandManager& commandManager
     ) noexcept;
 
     void destroy() noexcept;
 
-    [[nodiscard]] bool loadImage(VulkanImage*& image, const Image* imageData, std::string& errorMessage);
+    [[nodiscard]] Expected<void> loadImage(VulkanImage*& image, const Image* imageData);
 
-    [[nodiscard]] bool loadImages(
+    [[nodiscard]] Expected<void> loadImages(
         const std::vector<const Image*>& images,
-        const VulkanBuffer&              stagingBuffer,
-        std::string&                     errorMessage
+        const VulkanBuffer&              stagingBuffer
     );
 
-    [[nodiscard]] bool loadBatchedImages(const std::vector<const Image*>& images, std::string& errorMessage);
+    [[nodiscard]] Expected<void> loadBatchedImages(const std::vector<const Image*>& images);
 
     [[nodiscard]] VulkanImage* getImage(const std::string& path) const {
         const auto it = _imageCache.find(path);

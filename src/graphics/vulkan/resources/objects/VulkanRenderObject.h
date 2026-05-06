@@ -1,6 +1,9 @@
 #pragma once
 
-#include "core/debug/Logger.h"
+#include "core/debug/ErrorHandling.h"
+
+#include "graphics/vulkan/common/VulkanDebugger.h"
+
 #include "graphics/vulkan/resources/meshes/VulkanRenderMesh.h"
 
 #include "graphics/vulkan/resources/materials/VulkanMaterialManager.h"
@@ -18,12 +21,11 @@ struct VulkanRenderObject {
 
     VulkanInstanceHandle instanceHandle{};
 
-    bool create(
+    Expected<void> create(
         const std::uint32_t    objectIndex,
         Object*                sourceObject,
         VulkanMeshManager*     meshManager,
-        VulkanMaterialManager* materialManager,
-        std::string&           errorMessage
+        VulkanMaterialManager* materialManager
     ) {
         instanceHandle = VulkanInstanceHandle{objectIndex};
         object         = sourceObject;
@@ -37,8 +39,8 @@ struct VulkanRenderObject {
             submesh.mesh = meshManager->allocateMesh(mesh);
 
             // Load material
-            VulkanMaterial* material = materialManager->getOrCreateMaterial(mesh.getMaterial(), errorMessage);
-            TRY_BOOL(material);
+            VulkanMaterial* material;
+            VK_TRY_ASSIGN(material, materialManager->getOrCreateMaterial(mesh.getMaterial()));
 
             submesh.material = material;
             submesh.material->bindDescriptorSets();
@@ -46,7 +48,7 @@ struct VulkanRenderObject {
             meshes.push_back(submesh);
         }
 
-        return true;
+        return {};
     }
 
     void update() {

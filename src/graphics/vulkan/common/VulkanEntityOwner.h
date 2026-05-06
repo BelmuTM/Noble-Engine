@@ -1,21 +1,24 @@
 #pragma once
 
+#include "VulkanDebugger.h"
+
 #include <functional>
 #include <ranges>
-#include <string>
 
 template<typename>
 class VulkanEntityOwner {
 public:
     template<typename Resource, typename... Args>
-    bool createVulkanEntity(Resource* res, std::string& errorMessage, Args&&... args) {
-        if (!res->create(std::forward<Args>(args)..., errorMessage)) return false;
+    Expected<void> createVulkanEntity(Resource* resource, Args&&... args) {
 
-        entityDeletionQueue.push_back([res] {
-            if (!res) return;
-            res->destroy();
+        TRY(resource->create(std::forward<Args>(args)...));
+
+        entityDeletionQueue.push_back([resource] {
+            if (!resource) return;
+            resource->destroy();
         });
-        return true;
+
+        return {};
     }
 
     void flushDeletionQueue() {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 #include "graphics/vulkan/core/VulkanInstance.h"
@@ -37,13 +39,13 @@ public:
     VulkanRenderGraph(VulkanRenderGraph&&)            = delete;
     VulkanRenderGraph& operator=(VulkanRenderGraph&&) = delete;
 
-    [[nodiscard]] bool create(const VulkanRenderGraphCreateContext& context, std::string& errorMessage) noexcept;
+    [[nodiscard]] Expected<void> create(const VulkanRenderGraphCreateContext& context) noexcept;
 
     void destroy() noexcept;
 
-    void execute(vk::CommandBuffer commandBuffer) const;
+    Expected<void> execute(vk::CommandBuffer commandBuffer) const;
 
-    bool executePass(vk::CommandBuffer commandBuffer, const VulkanRenderPass& pass, std::string& errorMessage) const;
+    Expected<void> executePass(vk::CommandBuffer commandBuffer, const VulkanRenderPass& pass) const;
 
     [[nodiscard]]       std::vector<std::unique_ptr<VulkanRenderPass>>& getPasses()       noexcept { return _passes; }
     [[nodiscard]] const std::vector<std::unique_ptr<VulkanRenderPass>>& getPasses() const noexcept { return _passes; }

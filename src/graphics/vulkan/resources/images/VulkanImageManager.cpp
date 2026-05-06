@@ -1,18 +1,18 @@
 #include "VulkanImageManager.h"
 
-#include "graphics/vulkan/core/memory/VulkanBuffer.h"
+#include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include "core/debug/ErrorHandling.h"
+#include "graphics/vulkan/core/memory/VulkanBuffer.h"
 
 #include <ranges>
 
-bool VulkanImageManager::create(
-    const VulkanDevice& device, const VulkanCommandManager& commandManager, std::string&
+Expected<void> VulkanImageManager::create(
+    const VulkanDevice& device, const VulkanCommandManager& commandManager
 ) noexcept {
     _device         = &device;
     _commandManager = &commandManager;
 
-    return true;
+    return {};
 }
 
 void VulkanImageManager::destroy() noexcept {
@@ -26,10 +26,9 @@ void VulkanImageManager::destroy() noexcept {
     _commandManager = nullptr;
 }
 
-bool VulkanImageManager::loadImage(VulkanImage*& image, const Image* imageData, std::string& errorMessage) {
+Expected<void> VulkanImageManager::loadImage(VulkanImage*& image, const Image* imageData) {
     if (!imageData) {
-        errorMessage = "Failed to upload Vulkan image to GPU: image is null.";
-        return false;
+        return VK_FAIL("Failed to upload image: image is null.");
     }
 
     {
@@ -38,7 +37,7 @@ bool VulkanImageManager::loadImage(VulkanImage*& image, const Image* imageData, 
 
         if (const auto it = _imageCache.find(imageData->path); it != _imageCache.end()) {
             image = it->second.get();
-            return true;
+            return {};
         }
     }
 
@@ -56,34 +55,28 @@ bool VulkanImageManager::loadImage(VulkanImage*& image, const Image* imageData, 
 
     VulkanBuffer stagingBuffer;
     // Create the staging buffer
-    TRY_BOOL(stagingBuffer.create(
+    TRY(stagingBuffer.create(
         imageData->byteSize,
         vk::BufferUsageFlagBits::eTransferSrc,
         VMA_MEMORY_USAGE_CPU_TO_GPU,
-        _device,
-        errorMessage
+        _device
     ));
 
-    void* stagingData = stagingBuffer.mapMemory(errorMessage);
-
-    if (!stagingData) {
-        errorMessage = "Failed to create Vulkan image staging buffer: mapped memory pointer is null.";
-        return false;
-    }
+    TRY(stagingBuffer.mapMemory());
 
     // Copy the image's bytes into the staging buffer
-    std::memcpy(stagingData, imageData->pixels.get(), imageData->byteSize);
+    stagingBuffer.updateMemory(imageData->pixels.get(), imageData->byteSize);
 
     stagingBuffer.unmapMemory();
 
     // Create image on the GPU
     vk::CommandBuffer commandBuffer{};
-    TRY_BOOL(_commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
+    TRY(_commandManager->beginSingleTimeCommands(commandBuffer));
 
     VulkanImage tempImage{};
-    TRY_BOOL(tempImage.createFromBuffer(stagingBuffer, 0, format, extent, mipLevels, commandBuffer, _device, errorMessage));
+    TRY(tempImage.createFromBuffer(stagingBuffer, 0, format, extent, mipLevels, commandBuffer, _device));
 
-    TRY_BOOL(_commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
+    TRY(_commandManager->endSingleTimeCommands(commandBuffer));
 
     stagingBuffer.destroy();
 
@@ -91,36 +84,35 @@ bool VulkanImageManager::loadImage(VulkanImage*& image, const Image* imageData, 
         // Insert image into the cache
         std::lock_guard lock(_mutex);
 
-        auto [it, inserted] = _imageCache.try_emplace(imageData->path, nullptr);
+        auto& slot = _imageCache[imageData->path];
 
-        if (inserted) {
-            it->second = std::make_unique<VulkanImage>(std::move(tempImage));
+        if (!slot) {
+            slot = std::make_unique<VulkanImage>(std::move(tempImage));
         }
 
-        image = it->second.get();
+        image = slot.get();
     }
 
-    return true;
+    return {};
 }
 
-bool VulkanImageManager::loadImages(
-    const std::vector<const Image*>& images, const VulkanBuffer& stagingBuffer, std::string& errorMessage
+Expected<void> VulkanImageManager::loadImages(
+    const std::vector<const Image*>& images, const VulkanBuffer& stagingBuffer
 ) {
-    if (images.empty()) return true;
+    if (images.empty()) return {};
 
     constexpr auto format = vk::Format::eR8G8B8A8Srgb;
 
     constexpr int depth = 1;
 
     vk::CommandBuffer commandBuffer{};
-    TRY_BOOL(_commandManager->beginSingleTimeCommands(commandBuffer, errorMessage));
+    TRY(_commandManager->beginSingleTimeCommands(commandBuffer));
 
     vk::DeviceSize offset = 0;
 
     for (const Image* image : images) {
         if (!image) {
-            errorMessage = "Failed to upload Vulkan image to GPU: image is null.";
-            return false;
+            return VK_FAIL("Failed to upload image: image is null.");
         }
 
         if (_imageCache.contains(image->path)) {
@@ -143,40 +135,32 @@ bool VulkanImageManager::loadImages(
 
         // Create image on the GPU
         VulkanImage tempImage{};
-        TRY_BOOL(tempImage.createFromBuffer(
-            stagingBuffer, offset, format, extent, mipLevels, commandBuffer, _device, errorMessage
-        ));
+        TRY(tempImage.createFromBuffer(stagingBuffer, offset, format, extent, mipLevels, commandBuffer, _device));
 
         offset += image->byteSize;
 
         _imageCache.emplace(image->path, std::make_unique<VulkanImage>(std::move(tempImage)));
     }
 
-    TRY_BOOL(_commandManager->endSingleTimeCommands(commandBuffer, errorMessage));
+    TRY(_commandManager->endSingleTimeCommands(commandBuffer));
 
-    return true;
+    return {};
 }
 
 // TODO: Make this multithreaded.
-bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& images, std::string& errorMessage) {
-    if (images.empty()) return true;
+Expected<void> VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& images) {
+    if (images.empty()) return {};
 
     VulkanBuffer stagingBuffer;
     // Create the staging buffer
-    TRY_BOOL(stagingBuffer.create(
+    TRY(stagingBuffer.create(
         MAX_BATCH_SIZE,
         vk::BufferUsageFlagBits::eTransferSrc,
         VMA_MEMORY_USAGE_CPU_TO_GPU,
-        _device,
-        errorMessage
+        _device
     ));
 
-    const void* stagingData = stagingBuffer.mapMemory(errorMessage);
-
-    if (!stagingData) {
-        errorMessage = "Failed to create Vulkan image staging buffer: mapped memory pointer is null.";
-        return false;
-    }
+    TRY(stagingBuffer.mapMemory());
 
     std::vector<const Image*> batch{};
 
@@ -184,8 +168,7 @@ bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& imag
 
     for (const Image* image : images) {
         if (!image) {
-            errorMessage = "Failed to batch Vulkan image for GPU upload: image is null";
-            return false;
+            return VK_FAIL("Failed to batch image for upload: image is null.");
         }
 
         if (_imageCache.contains(image->path)) {
@@ -196,7 +179,7 @@ bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& imag
         if (image->byteSize > MAX_BATCH_SIZE) {
             // Flush batched images
             if (!batch.empty()) {
-                TRY_BOOL(loadImages(batch, stagingBuffer, errorMessage));
+                TRY(loadImages(batch, stagingBuffer));
                 batch.clear();
             }
 
@@ -204,7 +187,7 @@ bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& imag
 
             // Load image with its own dedicated staging buffer
             VulkanImage* _ = nullptr;
-            TRY_BOOL(loadImage(_, image, errorMessage));
+            TRY(loadImage(_, image));
 
             continue;
         }
@@ -212,7 +195,7 @@ bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& imag
         // If adding image to the batch exceeds the maximum batch size
         if (currentBatchSize + image->byteSize > MAX_BATCH_SIZE) {
             // Flush batched images
-            TRY_BOOL(loadImages(batch, stagingBuffer, errorMessage));
+            TRY(loadImages(batch, stagingBuffer));
             batch.clear();
 
             currentBatchSize = 0;
@@ -225,12 +208,12 @@ bool VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& imag
 
     // Flush remaining batched images
     if (!batch.empty()) {
-        TRY_BOOL(loadImages(batch, stagingBuffer, errorMessage));
+        TRY(loadImages(batch, stagingBuffer));
     }
 
     batch.clear();
 
     stagingBuffer.destroy();
 
-    return true;
+    return {};
 }

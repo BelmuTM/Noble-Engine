@@ -1,9 +1,10 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
 #include "core/platform/Window.h"
 
-#include "VulkanContext.h"
-#include "VulkanSyncObjects.h"
+#include "graphics/vulkan/core/VulkanContext.h"
+#include "graphics/vulkan/core/VulkanSyncObjects.h"
 
 class VulkanSwapchainManager {
 public:
@@ -16,35 +17,28 @@ public:
     VulkanSwapchainManager(VulkanSwapchainManager&&)            = delete;
     VulkanSwapchainManager& operator=(VulkanSwapchainManager&&) = delete;
 
-    [[nodiscard]] bool create(
+    [[nodiscard]] Expected<void> create(
         Window&              window,
         const VulkanSurface& surface,
         const VulkanDevice&  device,
         VulkanSwapchain&     swapchain,
-        std::uint32_t        framesInFlight,
-        std::string&         errorMessage
+        std::uint32_t        framesInFlight
     ) noexcept;
 
     void destroy() noexcept;
 
-    [[nodiscard]] bool recreateSwapchain(std::string& errorMessage);
+    [[nodiscard]] Expected<void> recreateSwapchain();
 
-    [[nodiscard]] bool acquireNextImage(
-        std::uint32_t& imageIndex, std::uint32_t frameIndex, std::string& errorMessage, bool& discardLogging
-    );
+    [[nodiscard]] Expected<VulkanSwapchain::SwapchainOp<uint32_t>> acquireNextImage(::uint32_t frameIndex);
 
-    [[nodiscard]] bool submitCommandBuffer(
+    [[nodiscard]] Expected<VulkanSwapchain::SwapchainOpVoid> submitCommandBuffer(
         vk::CommandBuffer commandBuffer,
         std::uint32_t     frameIndex,
-        std::uint32_t     imageIndex,
-        std::string&      errorMessage,
-        bool&             discardLogging
-    );
-
-    [[nodiscard]] bool isOutOfDate() const noexcept { return _outOfDate; }
+        std::uint32_t     imageIndex
+    ) const;
 
 private:
-    [[nodiscard]] bool waitForImageFence(std::uint32_t frameIndex, std::uint32_t imageIndex, std::string& errorMessage);
+    [[nodiscard]] Expected<void> waitForImageFence(std::uint32_t frameIndex, std::uint32_t imageIndex);
 
     Window* _window = nullptr;
 
@@ -55,6 +49,4 @@ private:
     VulkanSyncObjects _syncObjects{};
 
     std::uint32_t _framesInFlight = 0;
-
-    bool _outOfDate = false;
 };

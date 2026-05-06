@@ -5,15 +5,14 @@
 #include <GLFW/glfw3.h>
 
 namespace Platform {
-    bool init(std::string& errorMessage) {
+    Expected<void> init() {
         if (!glfwInit()) {
-            errorMessage = "Failed to init GLFW context.";
-            return false;
+            return FAIL("Failed to init GLFW context.", "GLFW");
         }
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-        return true;
+        return {};
     }
 
     void shutdown() {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "graphics/vulkan/rendergraph/VulkanRenderGraphBuilder.h"
 #include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
 
@@ -25,9 +27,5 @@ struct CompositePassCreateContext {
 
 class CompositePass final : public VulkanRenderPass {
 public:
-    [[nodiscard]] bool create(
-        const std::string&                path,
-        const CompositePassCreateContext& context,
-        std::string&                      errorMessage
-    );
+    [[nodiscard]] Expected<void> create(const std::string& path, const CompositePassCreateContext& context);
 };

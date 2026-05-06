@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 #include "VulkanMesh.h"
@@ -20,17 +22,15 @@ public:
     VulkanMeshManager(VulkanMeshManager&&)            = delete;
     VulkanMeshManager& operator=(VulkanMeshManager&&) = delete;
 
-    [[nodiscard]] bool create(
-        const VulkanDevice&         device,
-        const VulkanCommandManager& commandManager,
-        std::string&                errorMessage
+    [[nodiscard]] Expected<void> create(
+        const VulkanDevice& device, const VulkanCommandManager& commandManager
     ) noexcept;
 
     void destroy() noexcept;
 
     [[nodiscard]] VulkanMesh* allocateMesh(const Mesh& meshData);
 
-    [[nodiscard]] bool fillBuffers(std::string& errorMessage);
+    [[nodiscard]] Expected<void> fillBuffers();
 
     [[nodiscard]] const VulkanBuffer& getVertexBuffer() const noexcept { return _vertexBuffer; }
     [[nodiscard]] const VulkanBuffer& getIndexBuffer()  const noexcept { return _indexBuffer; }
@@ -43,10 +43,10 @@ private:
 
     void assignBuffersToMeshes() const;
 
-    bool createMeshStagingBuffer(std::string& errorMessage);
+    Expected<void> createMeshStagingBuffer();
 
-    bool createVertexBuffer(std::string& errorMessage);
-    bool createIndexBuffer(std::string& errorMessage);
+    Expected<void> createVertexBuffer();
+    Expected<void> createIndexBuffer();
 
     const VulkanDevice*         _device         = nullptr;
     const VulkanCommandManager* _commandManager = nullptr;

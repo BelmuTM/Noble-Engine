@@ -1,5 +1,9 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
+#include "graphics/vulkan/common/VulkanHeader.h"
+
 #include "graphics/vulkan/core/VulkanCommandManager.h"
 #include "graphics/vulkan/core/VulkanDevice.h"
 
@@ -10,21 +14,19 @@ public:
     VulkanRenderPassBufferFactory()  = default;
     ~VulkanRenderPassBufferFactory() = default;
 
-    [[nodiscard]] static bool createDepthBufferImage(
+    [[nodiscard]] static Expected<void> createDepthBufferImage(
         VulkanImage&                depthBuffer,
         vk::Format                  format,
         vk::Extent2D                extent,
         const VulkanDevice*         device,
-        const VulkanCommandManager* commandManager,
-        std::string&                errorMessage
+        const VulkanCommandManager* commandManager
     );
 
-    [[nodiscard]] static bool createColorBufferImage(
+    [[nodiscard]] static Expected<void> createColorBufferImage(
         VulkanImage&                colorBuffer,
         vk::Format                  format,
         vk::Extent2D                extent,
         const VulkanDevice*         device,
-        const VulkanCommandManager* commandManager,
-        std::string&                errorMessage
+        const VulkanCommandManager* commandManager
     );
 };

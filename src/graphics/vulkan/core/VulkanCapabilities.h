@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 class VulkanCapabilities {
@@ -13,7 +15,7 @@ public:
     VulkanCapabilities(VulkanCapabilities&&)            = delete;
     VulkanCapabilities& operator=(VulkanCapabilities&&) = delete;
 
-    [[nodiscard]] bool create(std::string& errorMessage) noexcept;
+    [[nodiscard]] Expected<void> create() noexcept;
 
     void destroy() noexcept;
 

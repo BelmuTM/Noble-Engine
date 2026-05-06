@@ -2,10 +2,14 @@
 
 #include "Model.h"
 
+#include "core/debug/ErrorHandling.h"
 #include "core/resources/AsyncResourceManager.h"
 
 #include "libraries/tinygltfUsage.h"
 #include "libraries/tinyobjloaderUsage.h"
+
+#include <future>
+#include <memory>
 
 class ModelManager : public AsyncResourceManager<Model> {
 public:
@@ -20,7 +24,7 @@ public:
 
     std::shared_future<std::unique_ptr<Model>> load(const std::string& path, std::string& errorMessage);
 
-    const Model* loadBlocking(const std::string& path, std::string& errorMessage);
+    Expected<const Model*> loadBlocking(const std::string& path);
 
     static void loadMaterial_OBJ(
         Mesh&                      mesh,

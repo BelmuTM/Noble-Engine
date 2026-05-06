@@ -18,20 +18,20 @@ static const std::vector validationLayers = {
 
 #endif
 
-bool VulkanInstance::create(const VulkanCapabilities& capabilities, std::string& errorMessage) noexcept {
+Expected<void> VulkanInstance::create(const VulkanCapabilities& capabilities) noexcept {
     _capabilities = &capabilities;
 
-    if (!createInstance(errorMessage)) return false;
+    TRY(createInstance());
 
     _dispatchLoader = vk::detail::DispatchLoaderDynamic(_instance, vkGetInstanceProcAddr);
 
 #ifdef VULKAN_VALIDATION_LAYERS_ENABLED
 
-    if (!setupDebugMessenger(errorMessage)) return false;
+    TRY(setupDebugMessenger());
 
 #endif
 
-    return true;
+    return {};
 }
 
 void VulkanInstance::destroy() noexcept {
@@ -68,7 +68,7 @@ std::vector<const char*> VulkanInstance::getRequiredExtensions() {
     return extensions;
 }
 
-bool VulkanInstance::createInstance(std::string& errorMessage) {
+Expected<void> VulkanInstance::createInstance() {
     constexpr VkApplicationInfo applicationInfo{
         .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
         .pApplicationName   = "Noble Engine",
@@ -80,34 +80,31 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
 
     // Check if profile is supported
     vk::Bool32 profileSupported = vk::False;
-    VK_TRY(vpGetInstanceProfileSupport(_capabilities->handle(), nullptr, &vulkanProfile, &profileSupported), errorMessage);
+    VK_TRY(vpGetInstanceProfileSupport(_capabilities->handle(), nullptr, &vulkanProfile, &profileSupported));
 
     if (!profileSupported) {
-        errorMessage = "Failed to create Vulkan instance: Vulkan profile not supported.";
-        return false;
+        return VK_FAIL("Failed to create instance: profile not supported.");
     }
 
     // Fetch required extensions and check if they are supported
     const auto extensions = getRequiredExtensions();
 
     if (extensions.empty()) {
-        errorMessage = "Failed to fetch required Vulkan extensions: Vulkan not supported on device.";
-        return false;
+        return VK_FAIL("Failed to fetch required extensions: Vulkan not supported on device.");
     }
 
-    auto availableExtensions = VK_CALL(vk::enumerateInstanceExtensionProperties(), errorMessage);
-    if (availableExtensions.result != vk::Result::eSuccess) return false;
+    const auto availableExtensions = VK_EXPECT(vk::enumerateInstanceExtensionProperties());
+    TRY(availableExtensions);
 
     // Ensure enabled extensions are supported by the drivers
     std::unordered_set<std::string> availableExtensionNames;
-    for (auto& [extensionName, specVersion] : availableExtensions.value) {
+    for (auto& [extensionName, specVersion] : availableExtensions.value()) {
         availableExtensionNames.insert(extensionName);
     }
 
     for (const char* requiredExtension : extensions) {
         if (!availableExtensionNames.contains(requiredExtension)) {
-            errorMessage = "Required Vulkan extension not supported: " + std::string(requiredExtension);
-            return false;
+            return VK_FAIL("Required extension not supported: " + std::string(requiredExtension));
         }
     }
 
@@ -117,19 +114,20 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
 
     layers = validationLayers;
 
-    const auto availableLayers = VK_CALL(vk::enumerateInstanceLayerProperties(), errorMessage);
-    if (availableLayers.result != vk::Result::eSuccess) return false;
+    Failure enumerateFailure;
+
+    const auto availableLayers = VK_EXPECT(vk::enumerateInstanceLayerProperties());
+    TRY(availableLayers);
 
     // Ensure enabled validation layers are supported by the drivers
     std::unordered_set<std::string> availableLayerNames;
-    for (const auto& layer : availableLayers.value) {
+    for (const auto& layer : availableLayers.value()) {
         availableLayerNames.insert(layer.layerName);
     }
 
     for (const char* requiredLayer : layers) {
         if (!availableLayerNames.contains(requiredLayer)) {
-            errorMessage = "Required Vulkan layer not supported: " + std::string(requiredLayer);
-            return false;
+            return VK_FAIL("Required layer not supported: " + std::string(requiredLayer));
         }
     }
 
@@ -152,11 +150,11 @@ bool VulkanInstance::createInstance(std::string& errorMessage) {
     };
 
     VkInstance rawInstance{};
-    VK_TRY(vpCreateInstance(_capabilities->handle(), &vpCreateInfo, nullptr, &rawInstance), errorMessage);
+    VK_TRY(vpCreateInstance(_capabilities->handle(), &vpCreateInfo, nullptr, &rawInstance));
 
     _instance = vk::Instance(rawInstance);
 
-    return true;
+    return {};
 }
 
 #ifdef VULKAN_VALIDATION_LAYERS_ENABLED
@@ -186,7 +184,7 @@ vk::Bool32 VulkanInstance::debugCallback(
     return vk::False;
 }
 
-bool VulkanInstance::setupDebugMessenger(std::string& errorMessage) {
+Expected<void> VulkanInstance::setupDebugMessenger() {
     constexpr vk::DebugUtilsMessageSeverityFlagsEXT severityFlags(
         vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
         vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError);
@@ -202,11 +200,12 @@ bool VulkanInstance::setupDebugMessenger(std::string& errorMessage) {
         .setPfnUserCallback(&debugCallback)
         .setPUserData(this);
 
-    VK_CREATE(_instance.createDebugUtilsMessengerEXT(
-        debugUtilsMessengerInfo, nullptr, _dispatchLoader
-    ), _debugMessenger, errorMessage);
+    VK_CREATE(
+        _debugMessenger,
+        _instance.createDebugUtilsMessengerEXT(debugUtilsMessengerInfo, nullptr, _dispatchLoader)
+    );
 
-    return true;
+    return {};
 }
 
 #endif

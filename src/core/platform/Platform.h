@@ -1,12 +1,13 @@
 #pragma once
 
-#include <string>
+#include "core/debug/ErrorHandling.h"
+
 #include <vector>
 
 namespace Platform {
-    bool init(std::string& errorMessage);
+    Expected<void> init();
 
     void shutdown();
 
     std::vector<const char*> getRequiredExtensions();
-};
+}

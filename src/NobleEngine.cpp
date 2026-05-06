@@ -5,20 +5,12 @@
 #include "core/platform/Platform.h"
 #include "core/platform/SignalHandlers.h"
 
-#include <atomic>
-
-std::atomic running(true);
-
 int main() {
-    SignalHandlers::setupHandlers(running);
+    SignalHandlers::setupHandlers(Engine::running);
 
     Logger::Manager loggerManager;
 
-    std::string errorMessage;
-
-    if (!Platform::init(errorMessage)) {
-        Engine::fatalExit(errorMessage);
-    }
+    Engine::fatalOnFail(Platform::init());
 
     Scene sceneSponza;
     sceneSponza.addObject("lucy.obj", {-1.0f, 1.0f, 1.47f}, {0.0f, 0.0f, -30.0f}, glm::vec3{0.0025f});
@@ -44,11 +36,9 @@ int main() {
     }
     */
 
-    Runtime runtime(sceneSponza, running);
+    Runtime runtime(sceneSponza, Engine::running);
 
-    if (!runtime.init(errorMessage)) {
-        Engine::fatalExit(errorMessage);
-    }
+    Engine::fatalOnFail(runtime.init());
 
     runtime.run();
 
@@ -56,5 +46,5 @@ int main() {
 
     Platform::shutdown();
 
-    return 0;
+    return Engine::exitCode;
 }

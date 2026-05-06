@@ -1,8 +1,12 @@
 #pragma once
 
 #include "Image.h"
+
+#include "core/debug/ErrorHandling.h"
 #include "core/resources/AsyncResourceManager.h"
 
+#include <future>
+#include <memory>
 #include <string>
 
 class ImageManager : public AsyncResourceManager<Image> {
@@ -20,5 +24,5 @@ public:
         const std::string& path, std::string& errorMessage, bool hasMipmaps = false
     );
 
-    const Image* loadBlocking(const std::string& path, std::string& errorMessage, bool hasMipmaps = false);
+    Expected<const Image*> loadBlocking(const std::string& path, bool hasMipmaps = false);
 };

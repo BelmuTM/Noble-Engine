@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "VulkanRenderPassFactory.h"
 
 #include "graphics/vulkan/core/VulkanSwapchain.h"
@@ -45,22 +47,18 @@ public:
     VulkanRenderGraphBuilder(VulkanRenderGraphBuilder&&)            = delete;
     VulkanRenderGraphBuilder& operator=(VulkanRenderGraphBuilder&&) = delete;
 
-    [[nodiscard]] bool build(
-        const std::vector<VulkanRenderPassDescriptor>& passDescriptors, std::string& errorMessage
-    ) const;
+    [[nodiscard]] Expected<void> build(const std::vector<VulkanRenderPassDescriptor>& passDescriptors) const;
 
 private:
-    [[nodiscard]] bool createPasses(
-        const std::vector<VulkanRenderPassDescriptor>& passDescriptors, std::string& errorMessage
-    ) const;
+    [[nodiscard]] Expected<void> createPasses(const std::vector<VulkanRenderPassDescriptor>& passDescriptors) const;
 
-    [[nodiscard]] bool attachSwapchainOutput(std::string& errorMessage) const;
+    [[nodiscard]] Expected<void> attachSwapchainOutput() const;
 
-    [[nodiscard]] bool createColorBuffers(std::string& errorMessage) const;
+    [[nodiscard]] Expected<void> createColorBuffers() const;
 
-    [[nodiscard]] bool allocateDescriptors(std::string& errorMessage) const;
+    [[nodiscard]] Expected<void> allocateDescriptors() const;
 
-    [[nodiscard]] bool createPipelines(std::string& errorMessage) const;
+    [[nodiscard]] Expected<void> createPipelines() const;
 
     const VulkanRenderGraphBuilderContext& _context;
 

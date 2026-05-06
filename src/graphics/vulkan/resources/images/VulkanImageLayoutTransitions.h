@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 #include <optional>
@@ -17,9 +19,8 @@ namespace VulkanImageLayoutTransitions {
         vk::ImageLayout oldLayout, vk::ImageLayout newLayout
     );
 
-    [[nodiscard]] bool transitionImageLayout(
+    [[nodiscard]] Expected<void> transitionImageLayout(
         vk::CommandBuffer commandBuffer,
-        std::string&      errorMessage,
         vk::Image         image,
         vk::Format        format,
         vk::ImageLayout   oldLayout,

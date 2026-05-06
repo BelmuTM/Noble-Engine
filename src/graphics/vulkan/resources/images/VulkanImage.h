@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 #include "graphics/vulkan/core/VulkanCommandManager.h"
@@ -22,61 +24,54 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] bool transitionLayout(
+    [[nodiscard]] Expected<void> transitionLayout(
         vk::CommandBuffer commandBuffer,
-        std::string&      errorMessage,
         vk::ImageLayout   oldLayout,
         vk::ImageLayout   newLayout,
         std::uint32_t     mipLevels = 1
     );
 
-    [[nodiscard]] bool transitionLayout(
+    [[nodiscard]] Expected<void> transitionLayout(
         const VulkanCommandManager* commandManager,
-        std::string&                errorMessage,
         vk::ImageLayout             oldLayout,
         vk::ImageLayout             newLayout,
         std::uint32_t               mipLevels = 1
     );
 
-    [[nodiscard]] bool transitionLayout(
+    [[nodiscard]] Expected<void> transitionLayout(
         vk::CommandBuffer commandBuffer,
-        std::string&      errorMessage,
         vk::ImageLayout   newLayout,
         std::uint32_t     mipLevels = 1
     );
 
-    [[nodiscard]] bool transitionLayout(
+    [[nodiscard]] Expected<void> transitionLayout(
         const VulkanCommandManager* commandManager,
-        std::string&                errorMessage,
         vk::ImageLayout             newLayout,
         std::uint32_t               mipLevels = 1
     );
 
-    [[nodiscard]] bool createImage(
+    [[nodiscard]] Expected<void> createImage(
         vk::ImageType       type,
         vk::Format          format,
         vk::Extent3D        extent,
         std::uint32_t       mipLevels,
         vk::ImageUsageFlags usage,
         VmaMemoryUsage      memoryUsage,
-        const VulkanDevice* device,
-        std::string&        errorMessage
+        const VulkanDevice* device
     );
 
-    [[nodiscard]] bool createImageView(
+    [[nodiscard]] Expected<void> createImageView(
         vk::ImageViewType    type,
         vk::Format           format,
         vk::ImageAspectFlags aspectFlags,
         std::uint32_t        mipLevels,
-        const VulkanDevice*  device,
-        std::string&         errorMessage
+        const VulkanDevice*  device
     );
 
-    [[nodiscard]] bool createSampler(
+    [[nodiscard]] Expected<void> createSampler(
         vk::Filter             filter,
         vk::SamplerAddressMode addressMode,
-        const VulkanDevice*    device,
-        std::string&           errorMessage
+        const VulkanDevice*    device
     );
 
     void copyBufferToImage(
@@ -91,15 +86,14 @@ public:
         std::uint32_t     mipLevels
     ) const;
 
-    [[nodiscard]] bool createFromBuffer(
+    [[nodiscard]] Expected<void> createFromBuffer(
         const VulkanBuffer& buffer,
         vk::DeviceSize      bufferOffset,
         vk::Format          format,
         vk::Extent3D        extent,
         std::uint32_t       mipLevels,
         vk::CommandBuffer   commandBuffer,
-        const VulkanDevice* device,
-        std::string&        errorMessage
+        const VulkanDevice* device
     );
 
     [[nodiscard]] vk::Image handle() const noexcept { return _image; }

@@ -41,16 +41,15 @@ VulkanBuffer& VulkanBuffer::operator=(VulkanBuffer&& other) noexcept {
     return *this;
 }
 
-bool VulkanBuffer::create(
+Expected<void> VulkanBuffer::create(
     const vk::DeviceSize       size,
     const vk::BufferUsageFlags usage,
     const VmaMemoryUsage       memoryUsage,
-    const VulkanDevice*        device,
-    std::string&               errorMessage
+    const VulkanDevice*        device
 ) noexcept {
     _device = device;
 
-    TRY_BOOL(createBuffer(_buffer, _allocation, size, usage, memoryUsage, device, errorMessage));
+    TRY(createBuffer(_buffer, _allocation, size, usage, memoryUsage, device));
 
     _bufferSize = size;
 
@@ -61,7 +60,7 @@ bool VulkanBuffer::create(
         _deviceAddress = _device->getLogicalDevice().getBufferAddress(deviceAddressInfo);
     }
 
-    return true;
+    return {};
 }
 
 void VulkanBuffer::destroy() noexcept {
@@ -81,18 +80,16 @@ void VulkanBuffer::destroy() noexcept {
     _mappedPointer = nullptr;
 }
 
-bool VulkanBuffer::createBuffer(
+Expected<void> VulkanBuffer::createBuffer(
     vk::Buffer&                buffer,
     VmaAllocation&             allocation,
     const vk::DeviceSize       size,
     const vk::BufferUsageFlags usage,
     const VmaMemoryUsage       memoryUsage,
-    const VulkanDevice*        device,
-    std::string&               errorMessage
+    const VulkanDevice*        device
 ) {
     if (size == 0) {
-        errorMessage = "Failed to create Vulkan buffer: size is 0.";
-        return false;
+        return VK_FAIL("Failed to create buffer: size is 0.");
     }
 
     const VmaAllocator& allocator = device->getAllocator();
@@ -107,28 +104,26 @@ bool VulkanBuffer::createBuffer(
     allocationInfo.usage = memoryUsage;
 
     VK_TRY(vmaCreateBuffer(allocator,
-           reinterpret_cast<const VkBufferCreateInfo*>(&bufferInfo),
-           &allocationInfo,
-           reinterpret_cast<VkBuffer*>(&buffer),
-           &allocation,
-           nullptr),
-        errorMessage
-    );
+         reinterpret_cast<const VkBufferCreateInfo*>(&bufferInfo),
+         &allocationInfo,
+         reinterpret_cast<VkBuffer*>(&buffer),
+         &allocation,
+         nullptr
+    ));
 
-    return true;
+    return {};
 }
 
-bool VulkanBuffer::copyBuffer(
+Expected<void> VulkanBuffer::copyBuffer(
     const vk::Buffer&           srcBuffer,
     const vk::Buffer&           dstBuffer,
     const vk::DeviceSize        size,
     const vk::DeviceSize        srcOffset,
     const vk::DeviceSize        dstOffset,
-    const VulkanCommandManager* commandManager,
-    std::string&                errorMessage
+    const VulkanCommandManager* commandManager
 ) {
     vk::CommandBuffer copyCommandBuffer{};
-    TRY_BOOL(commandManager->beginSingleTimeCommands(copyCommandBuffer, errorMessage));
+    TRY(commandManager->beginSingleTimeCommands(copyCommandBuffer));
 
     vk::BufferCopy2 copyRegion{srcOffset, dstOffset, size};
 
@@ -140,40 +135,37 @@ bool VulkanBuffer::copyBuffer(
 
     copyCommandBuffer.copyBuffer2(copyBufferInfo);
 
-    TRY_BOOL(commandManager->endSingleTimeCommands(copyCommandBuffer, errorMessage));
+    TRY(commandManager->endSingleTimeCommands(copyCommandBuffer));
 
-    return true;
+    return {};
 }
 
-bool VulkanBuffer::copyFrom(
+Expected<void> VulkanBuffer::copyFrom(
     const vk::Buffer&           srcBuffer,
     const VulkanCommandManager* commandManager,
-    std::string&                errorMessage,
     vk::DeviceSize              size,
     const vk::DeviceSize        srcOffset,
     const vk::DeviceSize        dstOffset
 ) const {
     if (size == VK_WHOLE_SIZE) size = _bufferSize;
 
-    TRY_BOOL(copyBuffer(srcBuffer, _buffer, size, srcOffset, dstOffset, commandManager, errorMessage));
+    TRY(copyBuffer(srcBuffer, _buffer, size, srcOffset, dstOffset, commandManager));
 
-    return true;
+    return {};
 }
 
-void* VulkanBuffer::mapMemory(std::string& errorMessage) {
+Expected<void> VulkanBuffer::mapMemory() {
     if (!_device || !_allocation) {
-        errorMessage = "Failed to map buffer memory: device or memory not initialized.";
-        return nullptr;
+        return VK_FAIL("Failed to map buffer memory: device or memory not initialized.");
     }
 
-    const VmaAllocator& allocator = _device->getAllocator();
+    VK_TRY(vmaMapMemory(_device->getAllocator(), _allocation, &_mappedPointer));
 
-    const auto memoryMap = VK_CALL(vmaMapMemory(allocator, _allocation, &_mappedPointer), errorMessage);
-    if (memoryMap != VK_SUCCESS) {
-        return nullptr;
+    if (!_mappedPointer) {
+        return VK_FAIL("Failed to map buffer memory: mapped memory pointer is null.");
     }
 
-    return _mappedPointer;
+    return {};
 }
 
 void VulkanBuffer::unmapMemory() {

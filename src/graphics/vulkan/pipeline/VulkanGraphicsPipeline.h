@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 #include "VulkanPipelineDescriptor.h"
@@ -17,11 +19,7 @@ public:
     VulkanGraphicsPipeline(VulkanGraphicsPipeline&&)            = delete;
     VulkanGraphicsPipeline& operator=(VulkanGraphicsPipeline&&) = delete;
 
-    [[nodiscard]] bool create(
-        const vk::Device&       device,
-        const VulkanRenderPass& pass,
-        std::string&            errorMessage
-    ) noexcept;
+    [[nodiscard]] Expected<void> create(const vk::Device& device, const VulkanRenderPass& pass) noexcept;
 
     void destroy() noexcept;
 
@@ -30,17 +28,11 @@ public:
     [[nodiscard]] const vk::PipelineLayout& getLayout() const noexcept { return _pipelineLayout; }
 
 private:
-    [[nodiscard]] bool createPipelineLayout(
-        const vk::Device&               device,
-        const VulkanPipelineDescriptor& descriptor,
-        std::string&                    errorMessage
+    [[nodiscard]] Expected<void> createPipelineLayout(
+        const vk::Device& device, const VulkanPipelineDescriptor& descriptor
     );
 
-    [[nodiscard]] bool createPipeline(
-        const vk::Device&       device,
-        const VulkanRenderPass& pass,
-        std::string&            errorMessage
-    );
+    [[nodiscard]] Expected<void> createPipeline(const vk::Device& device, const VulkanRenderPass& pass);
 
     vk::Device _device{};
 

@@ -1,14 +1,12 @@
 #include "VulkanStorageBufferManager.h"
 
-#include "core/debug/ErrorHandling.h"
-
-bool VulkanStorageBufferManager::create(
-    const VulkanDevice& device, const std::uint32_t framesInFlight, std::string&
+Expected<void> VulkanStorageBufferManager::create(
+    const VulkanDevice& device, const std::uint32_t framesInFlight
 ) noexcept {
     _device         = &device;
     _framesInFlight = framesInFlight;
 
-    return true;
+    return {};
 }
 
 void VulkanStorageBufferManager::destroy() noexcept {
@@ -21,12 +19,10 @@ void VulkanStorageBufferManager::destroy() noexcept {
     _device = nullptr;
 }
 
-VulkanStorageBuffer* VulkanStorageBufferManager::allocateBuffer(const vk::DeviceSize size, std::string& errorMessage) {
+Expected<VulkanStorageBuffer*> VulkanStorageBufferManager::allocateBuffer(const vk::DeviceSize size) {
     _storageBuffers.push_back(std::make_unique<VulkanStorageBuffer>());
 
-    if (!_storageBuffers.back()->create(*_device, _framesInFlight, size, errorMessage)) {
-        return nullptr;
-    }
+    TRY(_storageBuffers.back()->create(*_device, _framesInFlight, size));
 
-    return _storageBuffers.back().get();
+    return Expected(_storageBuffers.back().get());
 }

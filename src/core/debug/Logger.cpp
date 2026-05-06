@@ -15,65 +15,76 @@
 
 namespace {
 
-constexpr std::size_t MAX_LOG_QUEUE_SIZE = 512;
+constexpr std::size_t MAX_LOG_QUEUE_SIZE = 256;
 
-struct Log {
-    Logger::Level                         level = Logger::Level::DEBUG;
-    std::string                           message;
+struct LogEvent {
+    Logger::Level level = Logger::Level::DEBUG;
+
+    std::string message;
+    std::string domain;
+
     std::chrono::system_clock::time_point timestamp;
 
-    Log() = default;
-
-    Log(const Logger::Level lvl, std::string msg)
-        : level(lvl), message(std::move(msg)), timestamp(std::chrono::system_clock::now()) {
-    }
+    std::optional<Failure> failure;
 };
 
 #ifdef LOG_FILE_WRITE
-std::ofstream           logFile;
+std::ofstream logFile;
 #endif
+
 std::thread             logThread;
-std::queue<Log>         logQueue;
+std::queue<LogEvent>    logQueue;
 std::mutex              logMutex;
 std::condition_variable logCv;
 
 std::atomic running{false};
 
-constexpr std::array levelStrings = {"DEBUG", "VERBOSE", "INFO", "WARNING", "ERROR", "FATAL"};
-
 template<typename Stream>
-void writeLogMessage(Stream& os, const Log& log) {
+void writeLog(Stream& os, const LogEvent& log) {
     const auto time = std::chrono::system_clock::to_time_t(log.timestamp);
     std::tm    tm{};
 
     Utility::localtime(tm, &time);
 
     std::ostringstream prefixStream;
-    prefixStream << std::put_time(&tm, "[%Y-%m-%d %H:%M:%S] ")
-                 << '[' << levelStrings[static_cast<std::size_t>(log.level)] << "]: ";
+    prefixStream << std::put_time(&tm, "[%Y-%m-%d %H:%M:%S]") << ' '
+                 << '(' << Logger::levelStrings[static_cast<std::size_t>(log.level)];
+
+    if (!log.domain.empty()) {
+        prefixStream << " / " << log.domain;
+    }
+
+    prefixStream << "): ";
 
     const std::string prefix = prefixStream.str();
 
     // Output individual lines of the log message
     std::istringstream messageStream(log.message);
-    std::string        line;
+    std::string        messageLine;
     bool               firstLine = true;
 
-    while (std::getline(messageStream, line)) {
+    while (std::getline(messageStream, messageLine)) {
         // Indent multi-line messages to match the prefix's length
-        os << (firstLine ? prefix : std::string(prefix.size(), ' ')) << line << '\n';
+        os << (firstLine ? prefix : std::string(prefix.size(), ' ')) << messageLine << '\n';
         firstLine = false;
+    }
+
+    if (log.failure) {
+        for (std::size_t i = 0; i < log.failure->count; i++) {
+            auto [function, file, line] = log.failure->frames[i];
+            os << "    at " << function << " (" << file << ':' << line << ")\n";
+        }
     }
 }
 
 void logWorker() {
-    while (running || !logQueue.empty()) {
-        Log entry;
+    while (running.load() || !logQueue.empty()) {
+        LogEvent entry;
         {
             // Acquire the mutex to safely access the shared log queue
             std::unique_lock lock(logMutex);
             // Wait until there is at least one message in the queue or the logger is shutdown to log messages
-            logCv.wait(lock, [] { return !logQueue.empty() || !running; });
+            logCv.wait(lock, [] { return !running.load() || !logQueue.empty(); });
 
             if (logQueue.empty()) continue;
 
@@ -83,10 +94,10 @@ void logWorker() {
 
 #ifdef LOG_FILE_WRITE
         if (logFile.is_open()) {
-            writeLogMessage(logFile, entry);
+            writeLog(logFile, entry);
         }
 #endif
-        writeLogMessage(std::cout, entry);
+        writeLog(std::cout, entry);
 
         if (entry.level >= Logger::Level::ERROR) {
 
@@ -152,8 +163,8 @@ namespace Logger {
 #endif
     }
 
-    void log(const Level level, const std::string& message) {
-        if (message.empty()) return;
+    void enqueueLogEvent(const LogEvent& logEvent) {
+        if (logEvent.message.empty()) return;
 
         std::unique_lock lock(logMutex);
 
@@ -162,20 +173,34 @@ namespace Logger {
             logQueue.pop();
         }
 
-        logQueue.emplace(level, message);
+        logQueue.push(logEvent);
         logCv.notify_one();
     }
 
-    std::string formatErrorMessage(const std::string& functionName, const int errorCode) {
-        return functionName + " failed (error code: " + (errorCode == -1 ? "N/A" : std::to_string(errorCode)) + ")";
+    void log(const Level level, const std::string& message) {
+        return enqueueLogEvent(LogEvent{level, message, "", std::chrono::system_clock::now()});
+    }
+
+    void log(const Level level, const Failure& failure) {
+        return enqueueLogEvent(LogEvent{
+            level,
+            failure.error.message,
+            failure.error.domain,
+            std::chrono::system_clock::now(),
+            failure
+        });
     }
 
     void debug  (const std::string& message) { log(Level::DEBUG, message); }
     void verbose(const std::string& message) { log(Level::VERBOSE, message); }
     void info   (const std::string& message) { log(Level::INFO, message); }
     void warning(const std::string& message) { log(Level::WARNING, message); }
-    void error  (const std::string& message) { log(Level::ERROR, message); }
-    void fatal  (const std::string& message) { log(Level::FATAL, message); }
+
+    void error(const std::string& message) { log(Level::ERROR, message); }
+    void error(const Failure& failure)     { log(Level::ERROR, failure); }
+
+    void fatal(const std::string& message) { log(Level::FATAL, message); }
+    void fatal(const Failure& failure)     { log(Level::FATAL, failure); }
 
     Manager::Manager() {
         init();

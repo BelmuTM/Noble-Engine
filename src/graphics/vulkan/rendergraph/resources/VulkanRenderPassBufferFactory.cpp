@@ -1,14 +1,11 @@
 #include "VulkanRenderPassBufferFactory.h"
 
-#include "core/debug/ErrorHandling.h"
-
-bool VulkanRenderPassBufferFactory::createDepthBufferImage(
+Expected<void> VulkanRenderPassBufferFactory::createDepthBufferImage(
     VulkanImage&                depthBuffer,
     const vk::Format            format,
     const vk::Extent2D          extent,
     const VulkanDevice*         device,
-    const VulkanCommandManager* commandManager,
-    std::string&                errorMessage
+    const VulkanCommandManager* commandManager
 ) {
     const auto depthExtent = vk::Extent3D(extent.width, extent.height, 1);
 
@@ -21,39 +18,35 @@ bool VulkanRenderPassBufferFactory::createDepthBufferImage(
         aspects |= vk::ImageAspectFlagBits::eStencil;
     }
 
-    TRY_BOOL(depthBuffer.createImage(
+    TRY(depthBuffer.createImage(
         vk::ImageType::e2D,
         format,
         depthExtent,
         1,
         vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
         VMA_MEMORY_USAGE_GPU_ONLY,
-        device,
-        errorMessage
+        device
     ));
 
-    TRY_BOOL(depthBuffer.createImageView(vk::ImageViewType::e2D, format, aspects, 1, device, errorMessage));
+    TRY(depthBuffer.createImageView(vk::ImageViewType::e2D, format, aspects, 1, device));
 
-    TRY_BOOL(depthBuffer.transitionLayout(
-        commandManager, errorMessage,
+    TRY(depthBuffer.transitionLayout(
+        commandManager,
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eDepthStencilAttachmentOptimal
     ));
 
-    TRY_BOOL(depthBuffer.createSampler(
-        vk::Filter::eLinear, vk::SamplerAddressMode::eClampToEdge, device, errorMessage
-    ));
+    TRY(depthBuffer.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eClampToEdge, device));
 
-    return true;
+    return {};
 }
 
-bool VulkanRenderPassBufferFactory::createColorBufferImage(
+Expected<void> VulkanRenderPassBufferFactory::createColorBufferImage(
     VulkanImage&                colorBuffer,
     const vk::Format            format,
     const vk::Extent2D          extent,
     const VulkanDevice*         device,
-    const VulkanCommandManager* commandManager,
-    std::string&                errorMessage
+    const VulkanCommandManager* commandManager
 ) {
     const auto colorExtent = vk::Extent3D{extent.width, extent.height, 1};
 
@@ -61,30 +54,25 @@ bool VulkanRenderPassBufferFactory::createColorBufferImage(
     colorBuffer.setExtent(colorExtent);
     colorBuffer.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
 
-    TRY_BOOL(colorBuffer.createImage(
+    TRY(colorBuffer.createImage(
         vk::ImageType::e2D,
         format,
         colorExtent,
         1,
         vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
         VMA_MEMORY_USAGE_GPU_ONLY,
-        device,
-        errorMessage
+        device
     ));
 
-    TRY_BOOL(colorBuffer.createImageView(
-        vk::ImageViewType::e2D, format, vk::ImageAspectFlagBits::eColor, 1, device, errorMessage
-    ));
+    TRY(colorBuffer.createImageView(vk::ImageViewType::e2D, format, vk::ImageAspectFlagBits::eColor, 1, device));
 
-    TRY_BOOL(colorBuffer.transitionLayout(
-        commandManager, errorMessage,
+    TRY(colorBuffer.transitionLayout(
+        commandManager,
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::eColorAttachmentOptimal
     ));
 
-    TRY_BOOL(colorBuffer.createSampler(
-        vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, device, errorMessage
-    ));
+    TRY(colorBuffer.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, device));
 
-    return true;
+    return {};
 }

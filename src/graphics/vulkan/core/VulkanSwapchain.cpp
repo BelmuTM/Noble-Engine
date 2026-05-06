@@ -3,22 +3,21 @@
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 #include "core/debug/Logger.h"
-#include "core/debug/ErrorHandling.h"
 
 #include <limits>
 
-bool VulkanSwapchain::create(
-    const Window& window, const VulkanDevice& device, const vk::SurfaceKHR surface, std::string& errorMessage
+Expected<void> VulkanSwapchain::create(
+    const Window& window, const VulkanDevice& device, const vk::SurfaceKHR surface
 ) noexcept {
     _window = &window;
     _device = &device;
 
-    TRY_BOOL(createSwapchain(surface, errorMessage));
-    TRY_BOOL(createImageViews(errorMessage));
+    TRY(createSwapchain(surface));
+    TRY(createImageViews());
 
     createImages();
 
-    return true;
+    return {};
 }
 
 void VulkanSwapchain::destroy() noexcept {
@@ -41,19 +40,18 @@ void VulkanSwapchain::destroy() noexcept {
     }
 }
 
-bool VulkanSwapchain::recreate(const vk::SurfaceKHR surface, std::string& errorMessage) {
+Expected<void> VulkanSwapchain::recreate(const vk::SurfaceKHR surface) {
     if (!_device) {
-        errorMessage = "Failed to recreate Vulkan swapchain: device is null.";
-        return false;
+        return VK_FAIL("Failed to recreate swapchain: device is null.");
     }
 
-    VK_CALL(_device->getLogicalDevice().waitIdle(), errorMessage);
+    VK_TRY(_device->getLogicalDevice().waitIdle());
 
     destroy();
 
-    TRY_BOOL(create(*_window, *_device, surface, errorMessage));
+    TRY(create(*_window, *_device, surface));
 
-    return true;
+    return {};
 }
 
 void VulkanSwapchain::createImages() {
@@ -71,14 +69,19 @@ void VulkanSwapchain::createImages() {
     }
 }
 
-VulkanSwapchain::SwapchainSupportInfo VulkanSwapchain::querySwapchainSupport(
-    const vk::PhysicalDevice device, const vk::SurfaceKHR _surface, std::string& errorMessage
+Expected<VulkanSwapchain::SwapchainSupportInfo> VulkanSwapchain::querySwapchainSupport(
+    const vk::PhysicalDevice device, const vk::SurfaceKHR surface
 ) {
-    const auto surfaceCapabilities = VK_CALL(device.getSurfaceCapabilitiesKHR(_surface), errorMessage);
-    const auto surfaceFormats      = VK_CALL(device.getSurfaceFormatsKHR(_surface), errorMessage);
-    const auto surfacePresentModes = VK_CALL(device.getSurfacePresentModesKHR(_surface), errorMessage);
+    vk::SurfaceCapabilitiesKHR capabilities;
+    VK_CREATE(capabilities, device.getSurfaceCapabilitiesKHR(surface));
 
-    return {surfaceCapabilities.value, surfaceFormats.value, surfacePresentModes.value};
+    std::vector<vk::SurfaceFormatKHR> formats;
+    VK_CREATE(formats, device.getSurfaceFormatsKHR(surface));
+
+    std::vector<vk::PresentModeKHR> modes;
+    VK_CREATE(modes, device.getSurfacePresentModesKHR(surface));
+
+    return Expected<SwapchainSupportInfo>({capabilities, formats, modes});
 }
 
 vk::SurfaceFormatKHR VulkanSwapchain::chooseSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats) {
@@ -122,32 +125,29 @@ vk::Extent2D VulkanSwapchain::chooseExtent(const vk::SurfaceCapabilitiesKHR& cap
     };
 }
 
-bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string& errorMessage) {
-    errorMessage = "Failed to create Vulkan swapchain: ";
-
+Expected<void> VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface) {
     if (!_window) {
-        errorMessage += "window is null.";
-        return false;
+        return VK_FAIL("Failed to create swapchain: window is null.");
     }
 
     int width, height;
     _window->getFramebufferSize(width, height);
     if (width == 0 || height == 0) {
-        errorMessage += "window size is null.";
-        return false;
+        return VK_FAIL("Failed to create swapchain: window size is null.");
     }
 
-    const auto [capabilities, formats, presentModes] =
-        querySwapchainSupport(_device->getPhysicalDevice(), surface, errorMessage);
+    SwapchainSupportInfo supportInfo;
+    VK_TRY_ASSIGN(supportInfo, querySwapchainSupport(_device->getPhysicalDevice(), surface));
 
-    const vk::SurfaceFormatKHR& surfaceFormat = chooseSurfaceFormat(formats);
-    const vk::PresentModeKHR&   presentMode   = choosePresentMode(presentModes);
-    const vk::Extent2D&         extent        = chooseExtent(capabilities);
+    const vk::SurfaceFormatKHR& surfaceFormat = chooseSurfaceFormat(supportInfo.formats);
+    const vk::PresentModeKHR&   presentMode   = choosePresentMode(supportInfo.presentModes);
+    const vk::Extent2D&         extent        = chooseExtent(supportInfo.capabilities);
 
-    auto minImageCount = std::max(3u, capabilities.minImageCount);
-         minImageCount = capabilities.maxImageCount > 0 && minImageCount > capabilities.maxImageCount
-                             ? capabilities.maxImageCount
-                             : minImageCount;
+    std::uint32_t minImageCount = std::max(3u, supportInfo.capabilities.minImageCount);
+
+    if (supportInfo.capabilities.maxImageCount > 0) {
+        minImageCount = std::min(minImageCount, supportInfo.capabilities.maxImageCount);
+    }
 
     vk::SwapchainCreateInfoKHR swapchainInfo{};
     swapchainInfo
@@ -160,7 +160,7 @@ bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string&
         .setImageArrayLayers(1)
         .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
         .setImageSharingMode(vk::SharingMode::eExclusive)
-        .setPreTransform(capabilities.currentTransform)
+        .setPreTransform(supportInfo.capabilities.currentTransform)
         .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
         .setPresentMode(presentMode)
         .setClipped(vk::True)
@@ -182,17 +182,17 @@ bool VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface, std::string&
 
     const vk::Device& logicalDevice = _device->getLogicalDevice();
 
-    VK_CREATE(logicalDevice.createSwapchainKHR(swapchainInfo), _swapchain, errorMessage);
+    VK_CREATE(_swapchain, logicalDevice.createSwapchainKHR(swapchainInfo));
 
     _format = surfaceFormat.format;
     _extent = extent;
 
-    VK_CREATE(logicalDevice.getSwapchainImagesKHR(_swapchain), _imageHandles, errorMessage);
+    VK_CREATE(_imageHandles, logicalDevice.getSwapchainImagesKHR(_swapchain));
 
-    return true;
+    return {};
 }
 
-bool VulkanSwapchain::createImageViews(std::string& errorMessage) {
+Expected<void> VulkanSwapchain::createImageViews() {
     const vk::Device& logicalDevice = _device->getLogicalDevice();
 
     _imageViews.clear();
@@ -207,11 +207,11 @@ bool VulkanSwapchain::createImageViews(std::string& errorMessage) {
     for (const auto swapchainImage : _imageHandles) {
         imageViewInfo.image = swapchainImage;
 
-        const auto imageViewCreate = VK_CALL(logicalDevice.createImageView(imageViewInfo), errorMessage);
-        if (imageViewCreate.result != vk::Result::eSuccess) return false;
+        vk::ImageView imageView;
+        VK_CREATE(imageView, logicalDevice.createImageView(imageViewInfo));
 
-        _imageViews.push_back(imageViewCreate.value);
+        _imageViews.push_back(std::move(imageView));
     }
 
-    return true;
+    return {};
 }

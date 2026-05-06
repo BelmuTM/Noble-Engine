@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 class VulkanSyncObjects {
@@ -13,11 +14,10 @@ public:
     VulkanSyncObjects(VulkanSyncObjects&&)            = delete;
     VulkanSyncObjects& operator=(VulkanSyncObjects&&) = delete;
 
-    [[nodiscard]] bool create(
+    [[nodiscard]] Expected<void> create(
         const vk::Device& device,
         std::uint32_t     framesInFlight,
-        std::uint32_t     swapchainImageCount,
-        std::string&      errorMessage
+        std::uint32_t     swapchainImageCount
     ) noexcept;
 
     void destroy() noexcept;
@@ -43,7 +43,7 @@ public:
     }
 
 private:
-    bool createSyncObjects(std::uint32_t framesInFlight, std::uint32_t swapchainImageCount, std::string& errorMessage);
+    Expected<void> createSyncObjects(std::uint32_t framesInFlight, std::uint32_t swapchainImageCount);
 
     void destroySyncObjects();
 

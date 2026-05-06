@@ -1,13 +1,7 @@
 #include "MeshRenderPass.h"
 
-#include "core/debug/ErrorHandling.h"
-
-bool MeshRenderPass::create(
-    const std::string&                 path,
-    const MeshRenderPassCreateContext& context,
-    std::string&                       errorMessage
-) {
-    TRY_BOOL(context.shaderProgramManager.load(getShaderProgram(), path, errorMessage));
+Expected<void> MeshRenderPass::create(const std::string& path, const MeshRenderPassCreateContext& context) {
+    TRY(context.shaderProgramManager.load(getShaderProgram(), path));
 
     const std::string& passName = std::filesystem::path(path).stem().string();
 
@@ -37,5 +31,5 @@ bool MeshRenderPass::create(
         }
     }
 
-    return true;
+    return {};
 }

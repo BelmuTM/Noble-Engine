@@ -1,14 +1,9 @@
 #include "DebugPass.h"
 
 #include "common/Utility.h"
-#include "core/debug/ErrorHandling.h"
 
-bool DebugPass::create(
-    const std::string&            path,
-    const DebugPassCreateContext& context,
-    std::string&                  errorMessage
-) {
-    TRY_BOOL(context.shaderProgramManager.load(getShaderProgram(), path, errorMessage));
+Expected<void> DebugPass::create(const std::string& path, const DebugPassCreateContext& context) {
+    TRY(context.shaderProgramManager.load(getShaderProgram(), path));
 
     const std::string& passName = std::filesystem::path(path).stem().string();
 
@@ -58,10 +53,10 @@ bool DebugPass::create(
             .setPushConstant("object", &renderObject->gpuData);
     }
 
-    TRY_BOOL(_meshManager.create(context.device, context.commandManager, errorMessage));
-    TRY_BOOL(_meshManager.fillBuffers(errorMessage));
+    TRY(_meshManager.create(context.device, context.commandManager));
+    TRY(_meshManager.fillBuffers());
 
-    return true;
+    return {};
 }
 
 void DebugPass::destroy() noexcept {

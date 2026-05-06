@@ -1,14 +1,13 @@
 #include "VulkanRenderGraph.h"
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
+
 #include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
 #include "graphics/vulkan/rendergraph/resources/VulkanRenderResources.h"
 
-#include "core/debug/Logger.h"
-
 #include <ranges>
 
-bool VulkanRenderGraph::create(const VulkanRenderGraphCreateContext& context, std::string&) noexcept {
+Expected<void> VulkanRenderGraph::create(const VulkanRenderGraphCreateContext& context) noexcept {
     _context = context;
 
     _context.dispatchLoader = vk::detail::DispatchLoaderDynamic(
@@ -16,7 +15,7 @@ bool VulkanRenderGraph::create(const VulkanRenderGraphCreateContext& context, st
         context.device->getLogicalDevice(), vkGetDeviceProcAddr
     );
 
-    return true;
+    return {};
 }
 
 void VulkanRenderGraph::destroy() noexcept {
@@ -27,34 +26,30 @@ void VulkanRenderGraph::destroy() noexcept {
     _passes.clear();
 }
 
-void VulkanRenderGraph::execute(const vk::CommandBuffer commandBuffer) const {
-    std::string errorMessage;
-    ScopeGuard guard{[&errorMessage] { Logger::error(errorMessage); }};
-
+Expected<void> VulkanRenderGraph::execute(const vk::CommandBuffer commandBuffer) const {
     commandBuffer.resetQueryPool(_context.queryPool, 0, 1);
 
     for (const auto& pass : _passes) {
-        if (!executePass(commandBuffer, *pass, errorMessage)) return;
+        TRY(executePass(commandBuffer, *pass));
     }
 
-    guard.release();
+    return {};
 }
 
 namespace {
 
-bool prepareColorAttachments(
+Expected<void> prepareColorAttachments(
     const vk::CommandBuffer                   commandBuffer,
     const VulkanRenderPass&                   pass,
-    std::vector<vk::RenderingAttachmentInfo>& colorAttachments,
-    std::string& errorMessage
+    std::vector<vk::RenderingAttachmentInfo>& colorAttachments
 ) {
     for (const auto& colorAttachment : pass.getColorAttachments()) {
         auto& colorResource = colorAttachment->resource;
 
         if (VulkanImage* colorImage = colorResource.resolveImage()) {
             // Color attachment transition
-            TRY_BOOL(colorImage->transitionLayout(
-                commandBuffer, errorMessage,
+            TRY(colorImage->transitionLayout(
+                commandBuffer,
                 vk::ImageLayout::eColorAttachmentOptimal
             ));
 
@@ -69,15 +64,14 @@ bool prepareColorAttachments(
         }
     }
 
-    return true;
+    return {};
 }
 
-bool prepareDepthAttachment(
+Expected<void> prepareDepthAttachment(
     const vk::CommandBuffer      commandBuffer,
     const VulkanRenderPass&      pass,
     const VulkanRenderResources* resources,
-    vk::RenderingAttachmentInfo& depthAttachment,
-    std::string&                 errorMessage
+    vk::RenderingAttachmentInfo& depthAttachment
 ) {
     const VulkanRenderPassAttachment* depthAttachmentPtr = pass.getDepthAttachment();
 
@@ -94,7 +88,7 @@ bool prepareDepthAttachment(
     }
 
     // Depth image transition
-    TRY_BOOL(depthImage->transitionLayout(commandBuffer, errorMessage, targetDepthLayout));
+    TRY(depthImage->transitionLayout(commandBuffer, targetDepthLayout));
 
     if (depthAttachmentPtr) {
         depthAttachment
@@ -105,7 +99,7 @@ bool prepareDepthAttachment(
             .setClearValue(depthAttachmentPtr->clearValue);
     }
 
-    return true;
+    return {};
 }
 
 void executeDrawCalls(
@@ -162,24 +156,20 @@ void executeDrawCalls(
     }
 }
 
-bool executePostPassTransitions(
-    const vk::CommandBuffer commandBuffer,
-    const VulkanRenderPass& pass,
-    std::string&            errorMessage
-) {
+Expected<void> executePostPassTransitions(const vk::CommandBuffer commandBuffer, const VulkanRenderPass& pass) {
     for (const auto& [resource, targetLayout] : pass.getTransitions()) {
         VulkanImage* resourceImage = resource->resolveImage();
 
-        TRY_BOOL(resourceImage->transitionLayout(commandBuffer, errorMessage, targetLayout));
+        TRY(resourceImage->transitionLayout(commandBuffer, targetLayout));
     }
 
-    return true;
+    return {};
 }
 
 }
 
-bool VulkanRenderGraph::executePass(
-    const vk::CommandBuffer commandBuffer, const VulkanRenderPass& pass, std::string& errorMessage
+Expected<void> VulkanRenderGraph::executePass(
+    const vk::CommandBuffer commandBuffer, const VulkanRenderPass& pass
 ) const {
     const vk::Extent2D extent = _context.swapchain->getExtent();
 
@@ -188,11 +178,11 @@ bool VulkanRenderGraph::executePass(
     if (pass.getBindPoint() == vk::PipelineBindPoint::eGraphics) {
         // Color attachments
         std::vector<vk::RenderingAttachmentInfo> colorAttachments{};
-        TRY_BOOL(prepareColorAttachments(commandBuffer, pass, colorAttachments, errorMessage));
+        TRY(prepareColorAttachments(commandBuffer, pass, colorAttachments));
 
         // Depth attachment
         vk::RenderingAttachmentInfo depthAttachment{};
-        TRY_BOOL(prepareDepthAttachment(commandBuffer, pass, _context.resources, depthAttachment, errorMessage));
+        TRY(prepareDepthAttachment(commandBuffer, pass, _context.resources, depthAttachment));
 
         // Rendering info
         vk::RenderingInfo renderingInfo{};
@@ -228,8 +218,8 @@ bool VulkanRenderGraph::executePass(
 #endif
 
         // Transition resources for next pass
-        TRY_BOOL(executePostPassTransitions(commandBuffer, pass, errorMessage));
+        TRY(executePostPassTransitions(commandBuffer, pass));
     }
 
-    return true;
+    return {};
 }

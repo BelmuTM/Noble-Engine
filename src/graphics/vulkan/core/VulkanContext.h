@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
 #include "core/platform/Window.h"
 
 #include "graphics/vulkan/common/VulkanEntityOwner.h"
@@ -21,7 +22,7 @@ public:
     VulkanContext(VulkanContext&&)            = delete;
     VulkanContext& operator=(VulkanContext&&) = delete;
 
-    bool create(const Window& window, std::string& errorMessage);
+    Expected<void> create(const Window& window);
 
     void destroy();
 

@@ -100,24 +100,32 @@ void ObjectManager::createObjects() {
 
 #else
 
-    std::string errorMessage;
-
     for (const auto& [modelPath, position, rotation, scale] : _objectDescriptors) {
         // Load model
-        const Model* model = _assetManager.getModelManager().loadBlocking(modelPath, errorMessage);
-        if (!model) Logger::warning(errorMessage);
+        Expected<const Model*> model = _assetManager.getModelManager().loadBlocking(modelPath);
+
+        if (model.failed()) {
+            Logger::error(model.failure());
+            continue;
+        }
 
         // Load textures and map them to their respective path
-        for (const auto& texturePath : model->texturePaths) {
-            _assetManager.getTextures()[texturePath] =
-                _assetManager.getImageManager().loadBlocking(texturePath, errorMessage, AssetManager::MIPMAPS_ENABLED);
-            if (!_assetManager.getTextures()[texturePath]) Logger::warning(errorMessage);
+        for (const auto& texturePath : model.value()->texturePaths) {
+            Expected<const Image*> texture =
+                _assetManager.getImageManager().loadBlocking(texturePath, AssetManager::MIPMAPS_ENABLED);
+
+            if (texture.failed()) {
+                Logger::error(texture.failure());
+                continue;
+            }
+
+            _assetManager.getTextures()[texturePath] = texture.value();
         }
 
         // Create the object and push its pointer to the vector
         _objects.push_back(std::make_unique<Object>());
 
-        _objects.back()->create(model, position, rotation, scale);
+        _objects.back()->create(model.value(), position, rotation, scale);
     }
 
 #endif

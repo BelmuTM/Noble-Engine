@@ -1,7 +1,8 @@
 #include "VulkanRenderPassFactory.h"
 
+#include "graphics/vulkan/common/VulkanDebugger.h"
+
 #include "VulkanRenderGraphBuilder.h"
-#include "core/debug/Logger.h"
 
 #include "passes/CompositePass.h"
 #include "passes/DebugPass.h"
@@ -13,17 +14,15 @@ void VulkanRenderPassFactory::registerPassTypes() {
     _factories[VulkanRenderPassType::Composite]  = &createPassFactory<CompositePass,  CompositePassCreateContext>;
 }
 
-std::unique_ptr<VulkanRenderPass> VulkanRenderPassFactory::createPass(
+Expected<std::unique_ptr<VulkanRenderPass>> VulkanRenderPassFactory::createPass(
     const std::string&                     path,
     const VulkanRenderPassType             type,
-    const VulkanRenderGraphBuilderContext& context,
-    std::string&                           errorMessage
+    const VulkanRenderGraphBuilderContext& context
 ) const {
     const auto it = _factories.find(type);
     if (it == _factories.end()) {
-        errorMessage = "Failed to create Vulkan render pass: no factory registered for pass type.";
-        return nullptr;
+        return VK_FAIL("Failed to create render pass: no factory registered for pass type.");
     }
 
-    return it->second(path, context, errorMessage);
+    return Expected(it->second(path, context));
 }

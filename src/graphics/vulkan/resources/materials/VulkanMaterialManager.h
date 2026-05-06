@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
 #include "graphics/vulkan/resources/materials/VulkanMaterial.h"
 
@@ -18,18 +20,17 @@ public:
     VulkanMaterialManager(VulkanMaterialManager&&)            = delete;
     VulkanMaterialManager& operator=(VulkanMaterialManager&&) = delete;
 
-    [[nodiscard]] bool create(
+    [[nodiscard]] Expected<void> create(
         const VulkanDevice& device,
         VulkanImageManager& imageManager,
-        std::uint32_t       framesInFlight,
-        std::string&        errorMessage
+        std::uint32_t       framesInFlight
     ) noexcept;
 
     void destroy() noexcept;
 
-    VulkanMaterial* getOrCreateMaterial(const Material& sourceMaterial, std::string& errorMessage);
+    Expected<VulkanMaterial*> getOrCreateMaterial(const Material& sourceMaterial);
 
-    [[nodiscard]] bool loadTextures(const AssetManager::TexturesMap& textures, std::string& errorMessage) const;
+    [[nodiscard]] Expected<void> loadTextures(const AssetManager::TexturesMap& textures) const;
 
     [[nodiscard]] static VulkanDescriptorScheme getDescriptorScheme() noexcept {
         VulkanDescriptorScheme scheme{};

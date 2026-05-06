@@ -17,34 +17,31 @@ static const std::vector deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
-bool VulkanDevice::create(
+Expected<void> VulkanDevice::create(
     const VulkanCapabilities& capabilities,
     const vk::Instance&       instance,
-    const vk::SurfaceKHR&     surface,
-    std::string&              errorMessage
+    const vk::SurfaceKHR&     surface
 ) noexcept {
     _capabilities = &capabilities;
     _instance     = instance;
 
-    TRY_BOOL(pickPhysicalDevice(errorMessage));
+    TRY(pickPhysicalDevice());
 
     _queueFamilyIndices = findQueueFamilies(_physicalDevice, surface);
 
     if (_queueFamilyIndices.graphicsFamily == UINT32_MAX) {
-        errorMessage = "Failed to find a queue with graphics capabilities.";
-        return false;
+        return VK_FAIL("Failed to find a queue with graphics capabilities.");
     }
 
     if (_queueFamilyIndices.presentFamily == UINT32_MAX) {
-        errorMessage = "Failed to find a queue with presentation capabilities.";
-        return false;
+        return VK_FAIL("Failed to find a queue with presentation capabilities.");
     }
 
-    TRY_BOOL(createLogicalDevice(_queueFamilyIndices, errorMessage));
-    TRY_BOOL(createAllocator(errorMessage));
-    TRY_BOOL(createQueryPool(errorMessage));
+    TRY(createLogicalDevice(_queueFamilyIndices));
+    TRY(createAllocator());
+    TRY(createQueryPool());
 
-    return true;
+    return {};
 }
 
 void VulkanDevice::destroy() noexcept {
@@ -89,20 +86,20 @@ bool VulkanDevice::isPhysicalDeviceSuitable(const vk::PhysicalDevice device) {
     });
 }
 
-bool VulkanDevice::pickPhysicalDevice(std::string& errorMessage) {
-    const auto availableDevices = VK_CALL(_instance.enumeratePhysicalDevices(), errorMessage);
-    if (availableDevices.result != vk::Result::eSuccess) return false;
+Expected<void> VulkanDevice::pickPhysicalDevice() {
+    const auto availableDevices = VK_EXPECT(_instance.enumeratePhysicalDevices());
+    TRY(availableDevices);
 
     // Pick the best suitable candidate within available devices
     std::vector<vk::PhysicalDevice> discreteCandidates;
     std::vector<vk::PhysicalDevice> integratedCandidates;
 
-    for (const auto& device : availableDevices.value) {
+    for (const auto& device : availableDevices.value()) {
         vk::Bool32 profileSupported = vk::False;
 
         VK_TRY(vpGetPhysicalDeviceProfileSupport(
             _capabilities->handle(), _instance, device, &vulkanProfile, &profileSupported
-        ), errorMessage);
+        ));
 
         if (!static_cast<bool>(profileSupported) || !isPhysicalDeviceSuitable(device)) {
             continue;
@@ -122,13 +119,12 @@ bool VulkanDevice::pickPhysicalDevice(std::string& errorMessage) {
     } else if (!integratedCandidates.empty()) {
         _physicalDevice = integratedCandidates.front();
     } else {
-        errorMessage = "Failed to find suitable graphics devices.";
-        return false;
+        return VK_FAIL("Failed to find suitable graphics devices.");
     }
 
     Logger::info("Using graphics device \"" + std::string(_physicalDevice.getProperties().deviceName) + "\"");
 
-    return true;
+    return {};
 }
 
 VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
@@ -178,7 +174,7 @@ VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
     return indices;
 }
 
-bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndices, std::string& errorMessage) {
+Expected<void> VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndices) {
     // Queue priority is constant and set to one because we are using a single queue
     static constexpr float queuePriority = 1.0f;
 
@@ -231,20 +227,17 @@ bool VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueFamilyIndic
     };
 
     VkDevice rawDevice = VK_NULL_HANDLE;
-    VK_TRY(
-        vpCreateDevice(_capabilities->handle(), _physicalDevice, &vpCreateInfo, nullptr, &rawDevice),
-        errorMessage
-    );
+    VK_TRY(vpCreateDevice(_capabilities->handle(), _physicalDevice, &vpCreateInfo, nullptr, &rawDevice));
 
     _logicalDevice = vk::Device(rawDevice);
 
     _graphicsQueue = _logicalDevice.getQueue(queueFamilyIndices.graphicsFamily, 0);
     _presentQueue  = _logicalDevice.getQueue(queueFamilyIndices.presentFamily , 0);
 
-    return true;
+    return {};
 }
 
-bool VulkanDevice::createAllocator(std::string& errorMessage) {
+Expected<void> VulkanDevice::createAllocator() {
     const VmaAllocatorCreateInfo allocatorInfo{
         .flags            = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
         .physicalDevice   = _physicalDevice,
@@ -253,19 +246,19 @@ bool VulkanDevice::createAllocator(std::string& errorMessage) {
         .vulkanApiVersion = VULKAN_VERSION,
     };
 
-    VK_TRY(vmaCreateAllocator(&allocatorInfo, &_allocator), errorMessage);
+    VK_TRY(vmaCreateAllocator(&allocatorInfo, &_allocator));
 
-    return true;
+    return {};
 }
 
-bool VulkanDevice::createQueryPool(std::string& errorMessage) {
+Expected<void> VulkanDevice::createQueryPool() {
     vk::QueryPoolCreateInfo queryPoolInfo{};
     queryPoolInfo
         .setQueryType(vk::QueryType::ePipelineStatistics)
         .setQueryCount(1)
         .setPipelineStatistics(vk::QueryPipelineStatisticFlagBits::eInputAssemblyPrimitives);
 
-    VK_CREATE(_logicalDevice.createQueryPool(queryPoolInfo), _queryPool, errorMessage);
+    VK_CREATE(_queryPool, _logicalDevice.createQueryPool(queryPoolInfo));
 
-    return true;
+    return {};
 }

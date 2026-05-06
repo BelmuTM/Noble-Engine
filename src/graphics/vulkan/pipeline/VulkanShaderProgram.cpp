@@ -2,7 +2,6 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include "core/debug/ErrorHandling.h"
 #include "core/debug/Logger.h"
 
 #include <fstream>
@@ -33,28 +32,21 @@ void VulkanShaderProgram::clearShaderModules() {
     _shaderModules.clear();
 }
 
-vk::ShaderModule VulkanShaderProgram::createShaderModule(
-    const std::vector<std::uint32_t>& bytecode, std::string& errorMessage
-) const {
+Expected<vk::ShaderModule> VulkanShaderProgram::createShaderModule(const std::vector<std::uint32_t>& bytecode) const {
     vk::ShaderModuleCreateInfo shaderModuleInfo{};
     shaderModuleInfo
         .setCodeSize(sizeof(std::uint32_t) * bytecode.size())
         .setPCode(bytecode.data());
 
-    const auto shaderModuleCreate = VK_CALL(_device.createShaderModule(shaderModuleInfo), errorMessage);
-    if (shaderModuleCreate.result != vk::Result::eSuccess) {
-        return {};
-    }
+    vk::ShaderModule shaderModule;
+    VK_CREATE(shaderModule, _device.createShaderModule(shaderModuleInfo));
 
-    return shaderModuleCreate.value;
+    return Expected(std::move(shaderModule));
 }
 
-bool VulkanShaderProgram::loadFromFiles(
-    const std::vector<std::string>& paths, const vk::Device& device, std::string& errorMessage
-) {
+Expected<void> VulkanShaderProgram::loadFromFiles(const std::vector<std::string>& paths, const vk::Device& device) {
     if (paths.empty()) {
-        errorMessage = "Failed to load shader program: no paths found.";
-        return false;
+        return VK_FAIL("Failed to load shader program: no paths found.");
     }
 
     _device = device;
@@ -62,27 +54,25 @@ bool VulkanShaderProgram::loadFromFiles(
     ScopeGuard guard{[this] { clearShaderModules(); }};
 
     for (const auto& path : paths) {
-        errorMessage = "Failed to load shader stage \"" + path + "\": ";
+        std::string baseErrorMessage = "Failed to load shader stage \"" + path + "\": ";
 
         std::string stageExtension = extractStageExtension(path);
 
         const auto it = stageData.find(stageExtension);
 
         if (stageExtension.empty() || it == stageData.end()) {
-            errorMessage += "incorrect file extension \"" + stageExtension + "\".";
-            return false;
+            return VK_FAIL(baseErrorMessage + "incorrect file extension \"" + stageExtension + "\".");
         }
 
         const auto [stage, entryPoint] = it->second;
 
         const std::vector<std::uint32_t>& bytecode = readShaderSPIRVBytecode(path);
         if (bytecode.empty()) {
-            errorMessage += "bytecode is empty (file does not exist or is zero bytes).";
-            return {};
+            return VK_FAIL(baseErrorMessage + "bytecode is empty (file does not exist or is zero bytes).");
         }
 
-        const vk::ShaderModule& module = createShaderModule(bytecode, errorMessage);
-        if (!module) return false;
+        vk::ShaderModule module;
+        VK_TRY_ASSIGN(module, createShaderModule(bytecode));
 
         _shaderModules.push_back(module);
 
@@ -95,20 +85,20 @@ bool VulkanShaderProgram::loadFromFiles(
         _shaderStages.push_back(stageInfo);
 
         //Logger::debug("----- STAGE [" + path + "] -----");
-        TRY_BOOL(reflectShaderResources(bytecode, stage, errorMessage));
+        TRY(reflectShaderResources(bytecode, stage));
     }
 
     guard.release();
 
-    return true;
+    return {};
 }
 
-bool VulkanShaderProgram::load(const std::string& path, const vk::Device& device, std::string& errorMessage) {
-    return loadFromFiles(findShaderFilePaths(path), device, errorMessage);
+Expected<void> VulkanShaderProgram::load(const std::string& path, const vk::Device& device) {
+    return loadFromFiles(findShaderFilePaths(path), device);
 }
 
-bool VulkanShaderProgram::reflectShaderResources(
-    const std::vector<std::uint32_t>& bytecode, const vk::ShaderStageFlags stage, std::string& errorMessage
+Expected<void> VulkanShaderProgram::reflectShaderResources(
+    const std::vector<std::uint32_t>& bytecode, const vk::ShaderStageFlags stage
 ) {
     const void*  bytecodeData = bytecode.data();
     const std::size_t bytecodeSize = bytecode.size() * sizeof(std::uint32_t);
@@ -117,8 +107,7 @@ bool VulkanShaderProgram::reflectShaderResources(
     SpvReflectResult result = spvReflectCreateShaderModule(bytecodeSize, bytecodeData, &module);
 
     if (result != SPV_REFLECT_RESULT_SUCCESS) {
-        errorMessage = "Failed to reflect SPIR-V shaders: invalid shader bytecode.";
-        return false;
+        return VK_FAIL("Failed to reflect SPIR-V shaders: invalid shader bytecode.");
     }
 
     constexpr SpvReflectTypeFlags floatVectorFlags = SPV_REFLECT_TYPE_FLAG_VECTOR | SPV_REFLECT_TYPE_FLAG_FLOAT;
@@ -213,7 +202,7 @@ bool VulkanShaderProgram::reflectShaderResources(
 
     spvReflectDestroyShaderModule(&module);
 
-    return true;
+    return {};
 }
 
 std::string VulkanShaderProgram::extractStageExtension(const std::string& path) noexcept {

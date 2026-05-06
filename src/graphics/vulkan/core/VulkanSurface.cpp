@@ -2,13 +2,13 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-bool VulkanSurface::create(const vk::Instance& instance, const Window& window, std::string& errorMessage) noexcept {
+Expected<void> VulkanSurface::create(const vk::Instance& instance, const Window& window) noexcept {
     _window   = &window;
     _instance = instance;
 
-    if (!createSurface(errorMessage)) return false;
+    TRY(createSurface());
 
-    return true;
+    return {};
 }
 
 void VulkanSurface::destroy() noexcept {
@@ -21,21 +21,15 @@ void VulkanSurface::destroy() noexcept {
     _instance = VK_NULL_HANDLE;
 }
 
-bool VulkanSurface::createSurface(std::string& errorMessage) {
+Expected<void> VulkanSurface::createSurface() {
     if (!_window) {
-        errorMessage = "Failed to create Vulkan window surface: window handle is null.";
-        return false;
+        return VK_FAIL("Failed to create window surface: window handle is null.");
     }
 
     VkSurfaceKHR surface;
-    const VkResult create = glfwCreateWindowSurface(_instance, _window->handle(), nullptr, &surface);
-
-    if (static_cast<vk::Result>(create) != vk::Result::eSuccess) {
-        errorMessage =
-            VulkanDebugger::formatVulkanErrorMessage("glfwCreateWindowSurface", static_cast<vk::Result>(create));
-    }
+    VK_TRY(glfwCreateWindowSurface(_instance, _window->handle(), nullptr, &surface));
 
     _surface = vk::SurfaceKHR(surface);
 
-    return true;
+    return {};
 }

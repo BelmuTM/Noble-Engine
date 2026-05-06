@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "VulkanStorageBuffer.h"
 
 class VulkanStorageBufferManager {
@@ -13,15 +15,11 @@ public:
     VulkanStorageBufferManager(VulkanStorageBufferManager&&)            = delete;
     VulkanStorageBufferManager& operator=(VulkanStorageBufferManager&&) = delete;
 
-    [[nodiscard]] bool create(
-        const VulkanDevice& device,
-        std::uint32_t       framesInFlight,
-        std::string&        errorMessage
-    ) noexcept;
+    [[nodiscard]] Expected<void> create(const VulkanDevice& device, std::uint32_t framesInFlight) noexcept;
 
     void destroy() noexcept;
 
-    [[nodiscard]] VulkanStorageBuffer* allocateBuffer(vk::DeviceSize size, std::string& errorMessage);
+    [[nodiscard]] Expected<VulkanStorageBuffer*> allocateBuffer(vk::DeviceSize size);
 
 private:
     const VulkanDevice* _device = nullptr;

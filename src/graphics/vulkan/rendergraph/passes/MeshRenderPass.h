@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/debug/ErrorHandling.h"
+
 #include "graphics/vulkan/rendergraph/VulkanRenderGraphBuilder.h"
 #include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
 
@@ -29,9 +31,5 @@ struct MeshRenderPassCreateContext {
 
 class MeshRenderPass final : public VulkanRenderPass {
 public:
-    [[nodiscard]] bool create(
-        const std::string&                 path,
-        const MeshRenderPassCreateContext& context,
-        std::string&                       errorMessage
-    );
+    [[nodiscard]] Expected<void> create(const std::string& path, const MeshRenderPassCreateContext& context);
 };

@@ -1,12 +1,12 @@
 #include "VulkanUniformBufferManager.h"
 
-bool VulkanUniformBufferManager::create(
-    const VulkanDevice& device, const std::uint32_t framesInFlight, std::string&
+Expected<void> VulkanUniformBufferManager::create(
+    const VulkanDevice& device, const std::uint32_t framesInFlight
 ) noexcept {
     _device         = &device;
     _framesInFlight = framesInFlight;
 
-    return true;
+    return {};
 }
 
 void VulkanUniformBufferManager::destroy() noexcept {

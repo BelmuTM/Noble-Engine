@@ -35,6 +35,11 @@ std::shared_future<std::unique_ptr<Model>> ModelManager::load(const std::string&
 
         if (!loaded) return nullptr;
 
+        if (!model) {
+            errorMessage = "Failed to load model \"" + fullPath + "\": unknown reason.";
+            return nullptr;
+        }
+
         // Add each mesh's textures to the model's texture paths (albedo, normal map, metallic)
         for (const auto& mesh : model->meshes) {
             const auto& material = mesh.getMaterial();
@@ -48,11 +53,20 @@ std::shared_future<std::unique_ptr<Model>> ModelManager::load(const std::string&
     });
 }
 
-const Model* ModelManager::loadBlocking(const std::string& path, std::string& errorMessage) {
-    const auto& future = load(path, errorMessage);
-    if (!future.valid()) return nullptr;
+Expected<const Model*> ModelManager::loadBlocking(const std::string& path) {
+    std::string errorMessage;
 
-    return future.get().get();
+    const auto& future = load(path, errorMessage);
+    if (!future.valid()) {
+        return FAIL(errorMessage, "");
+    }
+
+    const auto& ptr = future.get();
+    if (!ptr) {
+        return FAIL(errorMessage, "");
+    }
+
+    return Expected<const Model*>(ptr.get());
 }
 
 /*---------------------------------------*/

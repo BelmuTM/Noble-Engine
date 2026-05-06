@@ -1,28 +1,28 @@
 #include "VulkanRenderObjectManager.h"
 
-#include "core/debug/ErrorHandling.h"
 #include "core/debug/Logger.h"
+#include "graphics/vulkan/common/VulkanDebugger.h"
 
-bool VulkanRenderObjectManager::create(
-    const VulkanRenderObjectCreateContext& context, std::string& errorMessage
-) noexcept {
+Expected<void> VulkanRenderObjectManager::create(const VulkanRenderObjectCreateContext& context) noexcept {
     _context = context;
 
     // Create descriptor manager
-    TRY_BOOL(_descriptorManager.create(
-        context.device->getLogicalDevice(), getDescriptorScheme(), context.framesInFlight, MAX_RENDER_OBJECTS, errorMessage
+    TRY(_descriptorManager.create(
+        context.device->getLogicalDevice(), getDescriptorScheme(), context.framesInFlight, MAX_RENDER_OBJECTS
     ));
 
     // Create object buffer
-    _objectBuffer = context.storageBufferManager->allocateBuffer(MAX_RENDER_OBJECTS * sizeof(ObjectDataGPU), errorMessage);
-    TRY_BOOL(_objectBuffer);
+    VK_TRY_ASSIGN(
+        _objectBuffer,
+        context.storageBufferManager->allocateBuffer(MAX_RENDER_OBJECTS * sizeof(ObjectDataGPU))
+    );
 
     // Load textures
     Logger::debug("Loading object textures");
 
     auto startTime = std::chrono::high_resolution_clock::now();
 
-    TRY_BOOL(context.materialManager->loadTextures(context.assetManager->getTextures(), errorMessage));
+    TRY(context.materialManager->loadTextures(context.assetManager->getTextures()));
 
     auto endTime = std::chrono::high_resolution_clock::now();
 
@@ -35,7 +35,7 @@ bool VulkanRenderObjectManager::create(
 
     startTime = std::chrono::high_resolution_clock::now();
 
-    TRY_BOOL(createRenderObjects(context.objectManager->getObjects(), errorMessage));
+    TRY(createRenderObjects(context.objectManager->getObjects()));
 
     endTime = std::chrono::high_resolution_clock::now();
 
@@ -43,16 +43,14 @@ bool VulkanRenderObjectManager::create(
 
     Logger::debug("Created objects in " + std::to_string(loadDuration) + " ms");
 
-    return true;
+    return {};
 }
 
 void VulkanRenderObjectManager::destroy() noexcept {
     _descriptorManager.destroy();
 }
 
-bool VulkanRenderObjectManager::createRenderObjects(
-    const ObjectManager::ObjectsVector& objects, std::string& errorMessage
-) {
+Expected<void> VulkanRenderObjectManager::createRenderObjects(const ObjectManager::ObjectsVector& objects) {
     _renderObjects.reserve(objects.size());
 
     std::uint32_t meshCount = 0;
@@ -70,12 +68,10 @@ bool VulkanRenderObjectManager::createRenderObjects(
 
         _renderObjects.push_back(std::make_unique<VulkanRenderObject>());
 
-        TRY_BOOL(_renderObjects.back()->create(
-            i, objects[i].get(), _context.meshManager, _context.materialManager, errorMessage
-        ));
+        TRY(_renderObjects.back()->create(i, objects[i].get(), _context.meshManager, _context.materialManager));
     }
 
-    return true;
+    return {};
 }
 
 void VulkanRenderObjectManager::updateObjects(const std::uint32_t frameIndex) const {
