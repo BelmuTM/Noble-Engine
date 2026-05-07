@@ -20,7 +20,7 @@ void VulkanShaderProgramManager::destroy() noexcept {
 
 Expected<void> VulkanShaderProgramManager::load(VulkanShaderProgram*& program, const std::string& path) {
     {
-        // If shader program is already cached, return it
+        // Fast path: shader program already in cache
         std::lock_guard lock(_mutex);
 
         if (_cache.contains(path)) {

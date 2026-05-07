@@ -7,37 +7,27 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
-std::shared_future<std::unique_ptr<Model>> ModelManager::load(const std::string& path, std::string& errorMessage) {
-    return loadAsyncFuture(path, [path, &errorMessage]() -> std::unique_ptr<Model> {
+ModelManager::ResourceHandlePointer ModelManager::load(const std::string& path) {
+    return loadAsync(path, [path]() -> Expected<ResourcePointer>  {
+        if (path.empty()) return Expected(ResourcePointer{});
 
         Logger::info("Loading model \"" + path + "\"...");
 
         // Load model
         auto model = std::make_unique<Model>();
 
+        model->path = path;
         model->retrieveName(path);
 
         const std::string& extension = Utility::getFileExtension(path);
         const std::string  fullPath  = AssetPaths::MODELS + path;
 
-        bool loaded = false;
-
         if (extension == ".obj") {
-            loaded = load_OBJ(*model, fullPath, errorMessage);
-
+            TRY(load_OBJ(*model, fullPath));
         } else if (extension == ".gltf" || extension == ".glb") {
-            loaded = load_glTF(*model, fullPath, extension, errorMessage);
-
+            TRY(load_glTF(*model, fullPath, extension));
         } else {
-            errorMessage = "Failed to load model \"" + fullPath + "\": unsupported format.";
-            loaded = false;
-        }
-
-        if (!loaded) return nullptr;
-
-        if (!model) {
-            errorMessage = "Failed to load model \"" + fullPath + "\": unknown reason.";
-            return nullptr;
+            return FAIL("Unsupported model format: \"" + fullPath + "\"", "ModelManager");
         }
 
         // Add each mesh's textures to the model's texture paths (albedo, normal map, metallic)
@@ -49,24 +39,25 @@ std::shared_future<std::unique_ptr<Model>> ModelManager::load(const std::string&
             model->texturePaths.insert(material.specularPath);
         }
 
-        return model;
+        return Expected(std::move(model));
     });
 }
 
 Expected<const Model*> ModelManager::loadBlocking(const std::string& path) {
-    std::string errorMessage;
+    const ResourceHandlePointer handle = load(path);
 
-    const auto& future = load(path, errorMessage);
-    if (!future.valid()) {
-        return FAIL(errorMessage, "");
+    if (!handle) {
+        return FAIL("Failed to initiate load for model \"" + path + "\"", "ModelManager");
     }
 
-    const auto& ptr = future.get();
-    if (!ptr) {
-        return FAIL(errorMessage, "");
+    // WARNING: Spin-wait, only acceptable at startup, do not use in engine loop
+    while (handle->isPending()) { std::this_thread::yield(); }
+
+    if (handle->isFailed()) {
+        return Unexpected(handle->failure);
     }
 
-    return Expected<const Model*>(ptr.get());
+    return Expected<const Model*>(handle->resource.get());
 }
 
 /*---------------------------------------*/
@@ -192,15 +183,17 @@ Mesh ModelManager::processMesh_OBJ(
     return mesh;
 }
 
-bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& errorMessage) {
+Expected<void> ModelManager::load_OBJ(Model& model, const std::string& path) {
     tinyobj::attrib_t                attributes;
     std::vector<tinyobj::shape_t>    shapes;
     std::vector<tinyobj::material_t> materials;
 
+    std::string errorMessage;
+
     if (!tinyobj::LoadObj(
         &attributes, &shapes, &materials, &errorMessage, path.c_str(), AssetPaths::MODELS
     )) {
-        return false;
+        return FAIL(errorMessage, "ModelManager");
     }
 
     for (int materialIndex = -1; materialIndex < static_cast<int>(materials.size()); materialIndex++) {
@@ -223,7 +216,7 @@ bool ModelManager::load_OBJ(Model& model, const std::string& path, std::string& 
         }
     }
 
-    return true;
+    return {};
 }
 
 /*---------------------------------------*/
@@ -500,12 +493,11 @@ void ModelManager::processNode_glTF(
     }
 }
 
-bool ModelManager::load_glTF(
-    Model& model, const std::string& path, const std::string& extension, std::string& errorMessage
-) {
+Expected<void> ModelManager::load_glTF(Model& model, const std::string& path, const std::string& extension) {
     tinygltf::Model    glTFModel;
     tinygltf::TinyGLTF glTFloader;
 
+    std::string errorMessage;
     std::string warningMessage;
 
     bool modelLoaded = false;
@@ -520,7 +512,9 @@ bool ModelManager::load_glTF(
         Logger::warning(warningMessage);
     }
 
-    if (!modelLoaded) return false;
+    if (!modelLoaded) {
+        return FAIL(errorMessage, "ModelManager");
+    }
 
     // If the model has scenes and nodes
 
@@ -533,7 +527,7 @@ bool ModelManager::load_glTF(
                 processNode_glTF(model, glTFModel, glTFModel.nodes[nodeIndex], glm::mat4(1.0f));
             }
 
-            return true;
+            return {};
         }
     }
 
@@ -552,5 +546,5 @@ bool ModelManager::load_glTF(
         }
     }
 
-    return true;
+    return {};
 }

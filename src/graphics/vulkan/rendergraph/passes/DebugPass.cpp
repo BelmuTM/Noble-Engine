@@ -18,6 +18,7 @@ Expected<void> DebugPass::create(const std::string& path, const DebugPassCreateC
     setName(passName + "_DebugPass");
     setPipelineDescriptor(pipelineDescriptor);
     setBindPoint(vk::PipelineBindPoint::eGraphics);
+    //setDepthAttachment(context.renderResources.getDepthBufferAttachment());
 
     std::size_t meshHash = 0;
 

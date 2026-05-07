@@ -32,7 +32,7 @@ Expected<void> VulkanImageManager::loadImage(VulkanImage*& image, const Image* i
     }
 
     {
-        // If image is already cached, return it
+        // Fast path: image already in cache
         std::lock_guard lock(_mutex);
 
         if (const auto it = _imageCache.find(imageData->path); it != _imageCache.end()) {
@@ -84,13 +84,13 @@ Expected<void> VulkanImageManager::loadImage(VulkanImage*& image, const Image* i
         // Insert image into the cache
         std::lock_guard lock(_mutex);
 
-        auto& slot = _imageCache[imageData->path];
+        auto [it, inserted] = _imageCache.try_emplace(imageData->path, nullptr);
 
-        if (!slot) {
-            slot = std::make_unique<VulkanImage>(std::move(tempImage));
+        if (inserted) {
+            it->second = std::make_unique<VulkanImage>(std::move(tempImage));
         }
 
-        image = slot.get();
+        image = it->second.get();
     }
 
     return {};

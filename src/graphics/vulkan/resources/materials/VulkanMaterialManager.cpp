@@ -23,12 +23,14 @@ Expected<VulkanMaterial*> VulkanMaterialManager::getOrCreateMaterial(const Mater
         return Expected(it->second.get());
     }
 
-    auto material = std::make_unique<VulkanMaterial>();
+    auto [it, inserted] = _materials.emplace(sourceMaterial, std::make_unique<VulkanMaterial>());
 
-    TRY(material->create(sourceMaterial, _imageManager, _descriptorManager));
-
-
-    auto [it, inserted] = _materials.emplace(sourceMaterial, std::move(material));
+    if (inserted) {
+        TRY_CATCH(
+            it->second->create(sourceMaterial, _imageManager, _descriptorManager),
+            _materials.erase(it)
+        );
+    }
 
     return Expected(it->second.get());
 }
@@ -38,7 +40,7 @@ Expected<void> VulkanMaterialManager::loadTextures(const AssetManager::TexturesM
 
     for (const auto& texture : textures | std::views::values) {
         if (!texture) continue;
-        images.push_back(texture);
+        images.push_back(texture->resource.get());
     }
 
     TRY(_imageManager->loadBatchedImages(images));

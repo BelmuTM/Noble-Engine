@@ -69,10 +69,6 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
     float4 albedo = albedoTexture.Sample(vertIn.texCoords);
 
-    if (albedo.a < 1.0) {
-        discard;
-    }
-
     float3 normal = normalTexture.Sample(vertIn.texCoords).rgb;
 
 
@@ -87,7 +83,7 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
 
     albedoBuffer = albedo;
-    normalBuffer = float4(normal * 0.5 + 0.5, 1.0);
+    normalBuffer = float4(vertIn.normal * 0.5 + 0.5, 1.0);
 
     //debugBuffer2 = float4(fract(vertIn.texCoords), 0.0, 1.0);
 

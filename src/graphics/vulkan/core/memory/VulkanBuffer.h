@@ -70,6 +70,7 @@ public:
     }
 
     template<typename BufferDataType>
+    requires (!std::is_pointer_v<BufferDataType>)
     void updateMemory(const BufferDataType& data, const vk::DeviceSize offset = 0) const {
         updateMemory(&data, sizeof(BufferDataType), offset);
     }

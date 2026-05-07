@@ -16,7 +16,6 @@ Expected<void> VulkanMaterial::create(
     return {};
 }
 
-
 Expected<void> VulkanMaterial::loadTexture(
     const TextureType   type,
     const std::string&  path,

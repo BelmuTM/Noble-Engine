@@ -11,8 +11,8 @@ class AssetManager {
 public:
     static constexpr bool MIPMAPS_ENABLED = true;
 
-    using ModelsMap   = std::unordered_map<std::string, const Model*>;
-    using TexturesMap = std::unordered_map<std::string, const Image*>;
+    using ModelsMap   = std::unordered_map<std::string, ModelManager::ResourceHandlePointer>;
+    using TexturesMap = std::unordered_map<std::string, ImageManager::ResourceHandlePointer>;
 
     AssetManager()  = default;
     ~AssetManager() = default;

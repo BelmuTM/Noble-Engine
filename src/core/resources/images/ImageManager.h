@@ -20,9 +20,7 @@ public:
     ImageManager(ImageManager&&)            = delete;
     ImageManager& operator=(ImageManager&&) = delete;
 
-    std::shared_future<std::unique_ptr<Image>> load(
-        const std::string& path, std::string& errorMessage, bool hasMipmaps = false
-    );
+    ResourceHandlePointer load(const std::string& path, bool hasMipmaps = false);
 
     Expected<const Image*> loadBlocking(const std::string& path, bool hasMipmaps = false);
 };

@@ -60,7 +60,7 @@ struct [[nodiscard]] Failure {
     Failure(Failure&&)                 = default;
     Failure& operator=(Failure&&)      = default;
 
-    Failure push(const ErrorFrame& frame) && {
+    Failure&& push(const ErrorFrame& frame) && {
         if (count < MAX_FRAMES) {
             frames[count++] = frame;
         } else {
@@ -74,7 +74,7 @@ struct [[nodiscard]] Failure {
     }
 };
 
-struct Unexpected {
+struct [[nodiscard]] Unexpected {
     Failure failure;
 
     explicit Unexpected(Failure fail) : failure(std::move(fail)) {}
@@ -85,6 +85,9 @@ struct Unexpected {
 
 template<typename T>
 class [[nodiscard]] Expected {
+    static_assert(!std::is_reference_v<T>);
+    static_assert(!std::is_void_v<T>);
+
 public:
     explicit Expected(const T& value) : _data(value) {}
     explicit Expected(T&& value) noexcept : _data(std::move(value)) {}
@@ -152,28 +155,31 @@ private:
     std::optional<Failure> _failure;
 };
 
-#define TRY_BOOL(expr)             \
-    do {                           \
-        if (!(expr)) return false; \
-    } while (0)
+#define MAKE_ERROR_FRAME() \
+    {__FUNCTION__, __FILE__, __LINE__}
 
 #define TRY(expr)                                      \
     do {                                               \
-        auto _result = (expr);                         \
-        if (!_result) {                                \
-            auto fail = std::move(_result.failure());  \
+        auto _resultTry_ = (expr);                     \
+        if (!_resultTry_) {                            \
             return Unexpected{                         \
-                std::move(fail).push(                  \
-                    {__FUNCTION__, __FILE__, __LINE__} \
+                std::move(_resultTry_.failure()).push( \
+                    MAKE_ERROR_FRAME()                 \
                 )                                      \
             };                                         \
         }                                              \
     } while (0)
 
-#define TRY_ASSIGN(expr)                                   \
-    ([&]() -> decltype(auto) {                             \
-        auto _tmp_ = (expr);                               \
-        if (!_tmp_)                                        \
-            return Unexpected{std::move(_tmp_.failure())}; \
-        return _tmp_.value();                              \
-    }())
+#define TRY_CATCH(exprTry, exprCatch)                  \
+    do {                                               \
+        auto _resultTry_ = (exprTry);                  \
+        if (!_resultTry_) {                            \
+            (exprCatch);                               \
+                                                       \
+            return Unexpected{                         \
+                std::move(_resultTry_.failure()).push( \
+                    MAKE_ERROR_FRAME()                 \
+                )                                      \
+            };                                         \
+        }                                              \
+    } while (0)

@@ -99,7 +99,7 @@ vk::SurfaceFormatKHR VulkanSwapchain::chooseSurfaceFormat(const std::vector<vk::
 
 vk::PresentModeKHR VulkanSwapchain::choosePresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes) {
     if (availablePresentModes.empty()) {
-        Logger::error("Failed to find available Vulkan present modes.");
+        Logger::error("Failed to find available present modes.");
     }
 
     for (const auto& availableMode : availablePresentModes) {

@@ -40,9 +40,7 @@ void ObjectManager::createObjects() {
 
     _assetManager.loadModelsAsync(threadPool, _modelPaths);
 
-    auto endTime = std::chrono::high_resolution_clock::now();
-
-    auto loadDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+    auto loadDuration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count();
 
     Logger::info("Loaded models in " + std::to_string(loadDuration) + "ms");
 
@@ -50,9 +48,9 @@ void ObjectManager::createObjects() {
     _texturePaths.clear();
 
     for (const auto& model : _assetManager.getModels() | std::views::values) {
-        if (model->texturePaths.empty()) continue;
+        if (model->resource->texturePaths.empty()) continue;
 
-        for (const auto& texturePath : model->texturePaths) {
+        for (const auto& texturePath : model->resource->texturePaths) {
             if (!texturePath.empty()) {
                 _texturePaths.push_back(texturePath);
             }
@@ -63,40 +61,32 @@ void ObjectManager::createObjects() {
 
     _assetManager.loadTexturesAsync(threadPool, _texturePaths);
 
-    endTime = std::chrono::high_resolution_clock::now();
-
-    loadDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+    loadDuration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count();
 
     Logger::info("Loaded textures in " + std::to_string(loadDuration) + "ms");
 
     // Create objects
     std::vector<std::future<std::unique_ptr<Object>>> objectFutures;
 
-    Logger::info("Creating objects");
+    for (const auto& [modelPath, position, rotation, scale] : _objectDescriptors) {
+        const Model* model = _assetManager.getModelManager().get(modelPath);
 
-    for (const auto& objectDescriptor : _objectDescriptors) {
-        objectFutures.push_back(
-            threadPool.enqueue([this, objectDescriptor]() -> std::unique_ptr<Object> {
-                // Retrieve previously loaded model
-                const Model* model = _assetManager.getModelManager().get(objectDescriptor.modelPath);
-                if (!model) return nullptr;
+        if (!model) {
+            Logger::error("Failed to create object: model not ready: " + modelPath);
+            continue;
+        }
 
-                auto object = std::make_unique<Object>();
-
-                object->create(model, objectDescriptor.position, objectDescriptor.rotation, objectDescriptor.scale);
-
-                return object;
-            })
-        );
+        auto object = std::make_unique<Object>();
+        object->create(model, position, rotation, scale);
+        _objects.push_back(std::move(object));
     }
 
     for (auto& objectFuture : objectFutures) {
         if (objectFuture.valid()) {
-            _objects.push_back(objectFuture.get());
+            if (auto object = objectFuture.get())
+                _objects.push_back(std::move(object));
         }
     }
-
-    Logger::info("Created objects");
 
 #else
 
@@ -111,15 +101,21 @@ void ObjectManager::createObjects() {
 
         // Load textures and map them to their respective path
         for (const auto& texturePath : model.value()->texturePaths) {
+            // Texture is already cached
+            if (_assetManager.getTextures().contains(texturePath)) continue;
+
             Expected<const Image*> texture =
                 _assetManager.getImageManager().loadBlocking(texturePath, AssetManager::MIPMAPS_ENABLED);
 
-            if (texture.failed()) {
+            if (!texture) {
                 Logger::error(texture.failure());
                 continue;
             }
 
-            _assetManager.getTextures()[texturePath] = texture.value();
+            ImageManager::ResourceHandlePointer handle = _assetManager.getImageManager().getHandle(texturePath);
+
+            if (handle)
+                _assetManager.getTextures().emplace(texturePath, std::move(handle));
         }
 
         // Create the object and push its pointer to the vector

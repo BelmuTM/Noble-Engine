@@ -22,7 +22,7 @@ public:
     ModelManager(ModelManager&&)            = delete;
     ModelManager& operator=(ModelManager&&) = delete;
 
-    std::shared_future<std::unique_ptr<Model>> load(const std::string& path, std::string& errorMessage);
+    ResourceHandlePointer load(const std::string& path);
 
     Expected<const Model*> loadBlocking(const std::string& path);
 
@@ -40,11 +40,9 @@ public:
         const std::vector<tinygltf::Image>&   images
     );
 
-    [[nodiscard]] static bool load_OBJ(Model& model, const std::string& path, std::string& errorMessage);
+    [[nodiscard]] static Expected<void> load_OBJ(Model& model, const std::string& path);
 
-    [[nodiscard]] static bool load_glTF(
-        Model& model, const std::string& path, const std::string& extension, std::string& errorMessage
-    );
+    [[nodiscard]] static Expected<void> load_glTF(Model& model, const std::string& path, const std::string& extension);
 
 private:
     static Mesh processMesh_OBJ(

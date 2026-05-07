@@ -5,10 +5,8 @@
 
 #include "libraries/stbUsage.h"
 
-std::shared_future<std::unique_ptr<Image>> ImageManager::load(
-    const std::string& path, std::string& errorMessage, const bool hasMipmaps
-) {
-    return loadAsyncFuture(path, [path, &errorMessage, hasMipmaps]() -> std::unique_ptr<Image> {
+ImageManager::ResourceHandlePointer ImageManager::load(const std::string& path, const bool hasMipmaps) {
+    return loadAsync(path, [path, hasMipmaps]() -> Expected<ResourcePointer> {
 
         Logger::info("Loading texture \"" + path + "\"...");
 
@@ -19,8 +17,7 @@ std::shared_future<std::unique_ptr<Image>> ImageManager::load(
         stbi_uc* pixels = stbi_load(fullPath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
         if (!pixels) {
-            errorMessage = "Failed to load texture \"" + fullPath + "\".";
-            return nullptr;
+            return FAIL("Failed to load texture \"" + fullPath + "\".", "ImageManager");
         }
 
         const std::size_t byteSize = width * height * STBI_rgb_alpha;
@@ -37,22 +34,23 @@ std::shared_future<std::unique_ptr<Image>> ImageManager::load(
         image->byteSize   = byteSize;
         image->hasMipmaps = hasMipmaps;
 
-        return image;
+        return Expected(std::move(image));
     });
 }
 
 Expected<const Image*> ImageManager::loadBlocking(const std::string& path, const bool hasMipmaps) {
-    std::string errorMessage;
+    const ResourceHandlePointer handle = load(path, hasMipmaps);
 
-    const auto& future = load(path, errorMessage, hasMipmaps);
-    if (!future.valid()) {
-        return FAIL(errorMessage, "");
+    if (!handle) {
+        return FAIL("Failed to initiate load for texture \"" + path + "\"", "ImageManager");
     }
 
-    const auto& ptr = future.get();
-    if (!ptr) {
-        return FAIL(errorMessage, "");
+    // WARNING: Spin-wait, only acceptable at startup, do not use in engine loop
+    while (handle->isPending()) { std::this_thread::yield(); }
+
+    if (handle->isFailed()) {
+        return Unexpected(handle->failure);
     }
 
-    return Expected<const Image*>(ptr.get());
+    return Expected<const Image*>(handle->resource.get());
 }

@@ -3,53 +3,53 @@
 #include "core/debug/Logger.h"
 
 void AssetManager::loadModelsAsync(ThreadPool& threadPool, const std::vector<std::string>& modelPaths) {
-    std::unordered_map<std::string, std::shared_future<const Model*>> modelFutures;
+    std::vector<std::future<ModelManager::ResourceHandlePointer>> futures;
+    futures.reserve(modelPaths.size());
 
-    for (const auto& modelPath : modelPaths) {
-        if (modelPath.empty()) continue;
+    for (const auto& path : modelPaths) {
+        if (path.empty() || _models.contains(path)) continue;
 
-        if (!modelFutures.contains(modelPath)) {
-            modelFutures[modelPath] = threadPool.enqueue([this, modelPath] {
-                Expected<const Model*> model = _modelManager.loadBlocking(modelPath);
-
-                if (model.failed()) {
-                    Logger::error(model.failure());
-                }
-
-                return model.value();
-            }).share();
-        }
+        futures.push_back(threadPool.enqueue([this, path] {
+            return _modelManager.load(path);
+        }));
     }
 
-    for (auto& [modelPath, modelFuture] : modelFutures) {
-        if (modelFuture.valid()) {
-            _models.emplace(modelPath, modelFuture.get());
-        }
+    for (auto& future : futures) {
+        ModelManager::ResourceHandlePointer handle = future.get();
+        if (!handle) continue;
+
+        // Spin-wait
+        while (handle->isPending()) { std::this_thread::yield(); }
+
+        if (handle->isFailed())
+            Logger::error(handle->failure.error.message);
+        else
+            _models.emplace(handle->resource->path, std::move(handle));
     }
 }
 
 void AssetManager::loadTexturesAsync(ThreadPool& threadPool, const std::vector<std::string>& texturePaths) {
-    std::unordered_map<std::string, std::shared_future<const Image*>> textureFutures;
+    std::vector<std::future<ImageManager::ResourceHandlePointer>> futures;
+    futures.reserve(texturePaths.size());
 
-    for (const auto& texturePath : texturePaths) {
-        if (texturePath.empty()) continue;
+    for (const auto& path : texturePaths) {
+        if (path.empty() || _textures.contains(path)) continue;
 
-        if (!textureFutures.contains(texturePath)) {
-            textureFutures[texturePath] = threadPool.enqueue([this, texturePath] {
-                Expected<const Image*> texture = _imageManager.loadBlocking(texturePath, MIPMAPS_ENABLED);
-
-                if (texture.failed()) {
-                    Logger::error(texture.failure());
-                }
-
-                return texture.value();
-            }).share();
-        }
+        futures.push_back(threadPool.enqueue([this, path] {
+            return _imageManager.load(path, MIPMAPS_ENABLED);
+        }));
     }
 
-    for (auto& [texturePath, textureFuture] : textureFutures) {
-        if (textureFuture.valid()) {
-            _textures.emplace(texturePath, textureFuture.get());
-        }
+    for (auto& future : futures) {
+        ImageManager::ResourceHandlePointer handle = future.get();
+        if (!handle) continue;
+
+        // Spin-wait
+        while (handle->isPending()) { std::this_thread::yield(); }
+
+        if (handle->isFailed())
+            Logger::error(handle->failure.error.message);
+        else
+            _textures.emplace(handle->resource->path, std::move(handle));
     }
 }

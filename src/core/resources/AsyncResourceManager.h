@@ -7,118 +7,129 @@
 #include <type_traits>
 #include <unordered_map>
 
-template<typename ResourceType, template<typename> typename PointerType = std::unique_ptr>
+template<typename ResourceType>
 class AsyncResourceManager {
 public:
-    // Non-const version - returns non-const pointer
+    using ResourcePointer = std::unique_ptr<ResourceType>;
+
+    struct ResourceHandle {
+        enum class Status : std::uint8_t { Pending, Loading, Ready, Failed };
+
+        std::atomic<Status> status{Status::Pending};
+        ResourcePointer     resource;
+        Failure             failure;
+
+        [[nodiscard]] bool isReady()  const noexcept {
+            return status.load(std::memory_order_acquire) == Status::Ready;
+        }
+
+        [[nodiscard]] bool isFailed() const noexcept {
+            return status.load(std::memory_order_acquire) == Status::Failed;
+        }
+
+        [[nodiscard]] bool isPending() const noexcept {
+            auto s = status.load(std::memory_order_acquire);
+            return s == Status::Pending || s == Status::Loading;
+        }
+    };
+
+    using ResourceHandlePointer = std::shared_ptr<ResourceHandle>;
+
+    // Non-const - returns nullptr if not ready yet
     ResourceType* get(const std::string& path) {
+        std::shared_lock lock(_mutex);
+
         auto it = _cache.find(path);
-        if (it == _cache.end()) {
-            return nullptr;
+        if (it == _cache.end()) return nullptr;
+
+        if (auto handle = it->second) {
+            if (handle->isReady())
+                return handle->resource.get();
         }
 
-        auto& future = it->second;
-
-        if (!future.valid()) {
-            return nullptr;
-        }
-
-        auto& ptr = future.get();
-        return ptr ? ptr.get() : nullptr;
+        return nullptr;
     }
 
-    // Const version - returns const pointer
+    // Const - returns nullptr if not ready yet
     const ResourceType* get(const std::string& path) const {
+        std::shared_lock lock(_mutex);
+
         auto it = _cache.find(path);
-        if (it == _cache.end()) {
-            return nullptr;
+        if (it == _cache.end()) return nullptr;
+
+        if (auto handle = it->second) {
+            if (handle->isReady())
+                return handle->resource.get();
         }
 
-        const auto& future = it->second;
-
-        if (!future.valid()) {
-            return nullptr;
-        }
-
-        const auto& ptr = future.get();
-        return ptr ? ptr.get() : nullptr;
+        return nullptr;
     }
 
-    [[nodiscard]] std::unordered_map<std::string, std::shared_future<PointerType<ResourceType>>>& getCache() noexcept {
+    [[nodiscard]] std::unordered_map<std::string, std::weak_ptr<ResourceHandle>>& getCache() noexcept {
         return _cache;
     }
 
 protected:
-    static_assert(
-        std::is_same_v<PointerType<ResourceType>, std::unique_ptr<ResourceType>> ||
-        std::is_same_v<PointerType<ResourceType>, std::shared_ptr<ResourceType>>,
-        "PointerType must be std::unique_ptr or std::shared_ptr"
-    );
-
     template<typename LoadFunction>
-    std::shared_future<PointerType<ResourceType>> loadAsyncFuture(const std::string& path, LoadFunction&& loadFunc) {
-        if (path.empty()) return {};
-
-        using LoadReturnType = decltype(loadFunc());
+    ResourceHandlePointer loadAsync(const std::string& path, LoadFunction&& loadFunction) {
         static_assert(
-            std::is_same_v<LoadReturnType, PointerType<ResourceType>>,
-            "loadFunc must return the same pointer type as AsyncResourceManager<...>::PointerType"
+            std::is_invocable_r_v<Expected<ResourcePointer>, LoadFunction>,
+            "loadFunction must be callable and return Expected<std::unique_ptr<ResourceType>>"
         );
 
-        // If resource is already cached, return it
+        if (path.empty()) return nullptr;
+
+        // Fast path: resource already in cache
         {
             std::shared_lock readLock(_mutex);
-            if (auto it = _cache.find(path); it != _cache.end())
+            if (auto it = _cache.find(path); it != _cache.end()) {
                 return it->second;
+            }
         }
 
+        // Slow path: insert a pending resource handle before releasing the write lock
         std::unique_lock writeLock(_mutex);
-
+        // Another thread won the race
         if (auto it = _cache.find(path); it != _cache.end()) {
             return it->second;
         }
 
-        // Mark resource as “loading” using a std::shared_future
-        const auto promise = std::make_shared<std::promise<PointerType<ResourceType>>>();
-        const auto future  = promise->get_future().share();
         // Cache a placeholder while the resource is loading
-        _cache[path] = future;
+        auto handle = std::make_shared<ResourceHandle>();
+        handle->status.store(ResourceHandle::Status::Loading, std::memory_order_relaxed);
+
+        _cache[path] = handle;
 
         writeLock.unlock();
 
-        try {
-            PointerType<ResourceType> loadedResource = loadFunc();
+        // Loading the resource
+        Expected<ResourcePointer> result = loadFunction();
 
-            // Failed load
-            if (!loadedResource) {
-                // Remove cache placeholder
-                std::unique_lock cleanupLock(_mutex);
-                _cache.erase(path);
-                return {};
-            }
+        if (result) {
+            handle->resource = std::move(result.value());
+            handle->status.store(ResourceHandle::Status::Ready, std::memory_order_release);
 
-            // Notify waiters that the resource has done loading
-            promise->set_value(std::move(loadedResource));
+        } else {
+            handle->failure = std::move(result.failure());
+            handle->status.store(ResourceHandle::Status::Failed, std::memory_order_release);
 
-        } catch(...) {
-            promise->set_exception(std::current_exception());
-
+            // Cleanup cache placeholder to allow for retries
             std::unique_lock cleanupLock(_mutex);
             _cache.erase(path);
         }
 
-        return future;
+        return handle;
     }
 
     void cleanupCache(std::function<void(ResourceType&)> destructor) {
         std::unique_lock lock(_mutex);
 
-        // Call the destructor of each resource stored in the cache
+        // Call the destructor of all resources stored in the cache
         if (destructor) {
-            for (auto& [path, future] : _cache) {
-                if (future.valid()) {
-                    auto& resourcePtr = future.get();
-                    if (resourcePtr) destructor(*resourcePtr);
+            for (auto& [path, handle] : _cache) {
+                if (handle) {
+                    if (handle->isReady() && handle->resource)
+                        destructor(*handle->resource);
                 }
             }
         }
@@ -127,7 +138,7 @@ protected:
     }
 
 private:
-    std::shared_mutex _mutex{};
+    mutable std::shared_mutex _mutex{};
 
-    std::unordered_map<std::string, std::shared_future<PointerType<ResourceType>>> _cache;
+    std::unordered_map<std::string, ResourceHandlePointer> _cache;
 };
