@@ -34,42 +34,77 @@ Please contact Belmu to discuss potential contributions to the project.
 - [Git](http://git-scm.com/download/win)
     * [In the installer] Check the box allowing to use Git from the command line and from 3rd-party software.
 
-### UNIX-Based System Requirements
+### Linux Package Dependencies
 
-- [CMake 3.22 (or later)](https://github.com/Kitware/CMake/releases/)
+<details>
+<summary>Ubuntu / Debian Package Dependencies</summary>
+```
+sudo apt-get update
+sudo apt-get install -y \
+    cmake \
+    git \
+    libx11-xcb-dev \
+    libxkbcommon-dev \
+    libXi-dev \
+    libwayland-dev \
+    libxrandr-dev \
+    libxcb-randr0-dev \
+    libXinerama-dev \
+    libXcursor-dev
+```
+</details>
 
-#### Ubuntu / Debian Package Dependencies
+<details>
+<summary>Arch Linux dependencies</summary>
+```bash
+sudo pacman -S \
+    cmake \
+    git \
+    libx11 \
+    libxcb \
+    libxkbcommon \
+    libxkbcommon-x11 \
+    libxi \
+    libxrandr \
+    libxinerama \
+    libxcursor
 ```
-sudo apt-get install git libx11-xcb-dev libxkbcommon-dev libXi-dev libwayland-dev libxrandr-dev libxcb-randr0-dev libXinerama-dev libXcursor-dev
-```
-
-#### Arch-Based System Package Dependencies
-```
-sudo pacman -S git libx11 libxcb libxkbcommon libxkbcommon-x11 libxi libxrandr libxinerama libxcursor
-```
+</details>
 
 ## Building
 
-### 64-bit Windows
+### Quick start (auto-detect compiler)
+
 ```sh
 git clone https://github.com/BelmuTM/Noble-Engine.git  
 cd Noble-Engine
 git submodule update --init --recursive
-cmake -S . -B build/ -D CMAKE_BUILD_TYPE=Debug -A x64
-cmake --build ./build/ --config Debug
+cmake --preset dev
+
+cmake --build --preset debug
+# OR
+cmake --build --preset release
 ```
 
-### Linux and macOS
-```sh
-git clone https://github.com/BelmuTM/Noble-Engine.git  
-cd Noble-Engine
-git submodule update --init --recursive
-cmake -S . -B build/ -D CMAKE_BUILD_TYPE=Debug
-cmake --build ./build/ --config Debug
-```
+### Platform-specific presets
+
+| Platform | Compiler | Configure preset | Build preset          | Configuration |
+|----------|----------|------------------|-----------------------|---------------|
+| Linux    | GCC      | linux-gcc        | linux-gcc-debug       | Debug         |
+|          |          |                  | linux-gcc-release     | Release       |
+| Linux    | Clang    | linux-clang      | linux-clang-debug     | Debug         |
+|          |          |                  | linux-clang-release   | Release       |
+| Windows  | MSVC     | windows-msvc     | windows-msvc-debug    | Debug         |
+|          |          |                  | windows-msvc-release  | Release       |
+| Windows  | Clang-cl | windows-clang    | windows-clang-debug   | Debug         |
+|          |          |                  | windows-clang-release | Release       |
 
 # License
 
 > [!NOTE]  
 > Noble Engine is licensed under the [GNU General Public License V3.0](https://www.gnu.org/licenses/gpl-3.0.en.html).
 > Consider reading the terms before modifying or redistributing this project.
+
+<div align="center">
+  Made with ❤️
+</div>

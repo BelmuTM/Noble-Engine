@@ -1,0 +1,134 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 22,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "dev",
+      "displayName": "Dev (auto-detect compiler)",
+      "hidden": false,
+      "generator": "Ninja Multi-Config",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+
+    {
+      "name": "linux-gcc",
+      "displayName": "Linux - GCC",
+      "inherits": "dev",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
+      "name": "linux-clang",
+      "displayName": "Linux - Clang",
+      "inherits": "dev",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+
+    {
+      "name": "windows-msvc",
+      "displayName": "Windows x64 - MSVC",
+      "inherits": "dev",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "toolset": {
+        "value": "host=x64",
+        "strategy": "external"
+      },
+      "architecture":{
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl"
+      }
+    },
+    {
+      "name": "windows-clang-cl",
+      "displayName": "Windows x64 - Clang-cl",
+      "inherits": "dev",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "toolset": {
+        "value": "host=x64",
+        "strategy": "external"
+      },
+      "architecture":{
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl"
+      }
+    }
+  ],
+
+  "buildPresets": [
+    {
+      "name": "base-debug",
+      "hidden": true,
+      "configuration": "Debug",
+      "cleanFirst": false
+    },
+    {
+      "name": "base-release",
+      "hidden": true,
+      "configuration": "Release",
+      "cleanFirst": false
+    },
+
+    {
+      "name": "debug",
+      "displayName": "Debug (auto-detect compiler)",
+      "inherits": "base-debug",
+      "configurePreset": "dev"
+    },
+    {
+      "name": "release",
+      "displayName": "Release (auto-detect compiler)",
+      "inherits": "base-release",
+      "configurePreset": "dev"
+    },
+
+    { "name":  "linux-gcc-debug", "displayName": "Linux GCC (Debug)", "inherits": "base-debug", "configurePreset": "linux-gcc" },
+    { "name":  "linux-gcc-release", "displayName": "Linux GCC (Release)", "inherits": "base-release", "configurePreset": "linux-gcc" },
+
+    { "name":  "linux-clang-debug", "displayName": "Linux Clang (Debug)", "inherits": "base-debug", "configurePreset": "linux-clang" },
+    { "name":  "linux-clang-release", "displayName": "Linux Clang (Release)", "inherits": "base-release", "configurePreset": "linux-clang" },
+
+    { "name":  "windows-msvc-debug", "displayName": "MSVC (Debug)", "inherits": "base-debug", "configurePreset": "windows-msvc" },
+    { "name":  "windows-msvc-release", "displayName": "MSVC (Release)", "inherits": "base-release", "configurePreset": "windows-msvc" },
+
+    { "name":  "windows-clang-cl-debug", "displayName": "Clang-cl (Debug)", "inherits": "base-debug", "configurePreset": "windows-clang-cl" },
+    { "name":  "windows-clang-cl-release", "displayName": "Clang-cl (Release)", "inherits": "base-release", "configurePreset": "windows-clang-cl" }
+  ]
+}
