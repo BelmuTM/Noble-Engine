@@ -38,6 +38,7 @@ Please contact Belmu to discuss potential contributions to the project.
 
 <details>
 <summary>Ubuntu / Debian Package Dependencies</summary>
+
 ```
 sudo apt-get update
 sudo apt-get install -y \
@@ -56,6 +57,7 @@ sudo apt-get install -y \
 
 <details>
 <summary>Arch Linux dependencies</summary>
+
 ```bash
 sudo pacman -S \
     cmake \
