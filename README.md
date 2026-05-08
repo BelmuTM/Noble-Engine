@@ -1,8 +1,7 @@
 # Noble Engine
 
-[![Support me on Patreon](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3DBelmu%26type%3Dpatrons&style=flat)](https://patreon.com/Belmu)
-[![Discord](https://img.shields.io/discord/804772139344461834.svg?logo=discord&logoColor=white&logoWidth=20&labelColor=7289DA&label=Discord)](https://discord.gg/jjRrhpkH9e)
-[![Twitter](https://img.shields.io/twitter/follow/Belmu_?color=dark&label=Follow&logoColor=dark)](https://twitter.com/Belmu_)
+<a href="https://patreon.com/Belmu"><img src="https://i.imgur.com/XNsj1Qx.png" title="Patreon Page" width="15%" height="15%"></a>
+<a href="https://discord.gg/jjRrhpkH9e"><img src="https://i.imgur.com/egvRtMf.png" title="Discord Server" width="15%" height="15%"></a>
 
 ![Noble](https://i.imgur.com/ImidCjI.jpeg)
 
