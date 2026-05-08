@@ -69,8 +69,11 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
     float4 albedo = albedoTexture.Sample(vertIn.texCoords);
 
-    float3 normal = normalTexture.Sample(vertIn.texCoords).rgb;
+    if (albedo.a < 1.0) {
+        discard;
+    }
 
+    float3 normal = normalTexture.Sample(vertIn.texCoords).rgb;
 
     float3 N = normalize(vertIn.normal);
 

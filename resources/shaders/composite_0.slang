@@ -44,10 +44,10 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     float3 viewPosition   = screenToView(screenPosition, uniforms.projectionInverse);
     float3 worldPosition  = viewToWorld(viewPosition, uniforms.viewInverse);
 
-    float3 lightPosition0 = float3(0.0, 1.0, 5.0);
+    float3 lightPosition0 = uniforms.cameraPosition;
     float3 lightPosition1 = float3(4.5, -1.0, 1.0);
 
-    lightPosition0.x += lerp(0.0, 5.5, sin(uniforms.frameTimeCounter));
+    //lightPosition0.x += lerp(0.0, 5.5, sin(uniforms.frameTimeCounter));
 
     float3 lightDirection0 = normalize(lightPosition0 - worldPosition.xyz);
     float3 lightDirection1 = normalize(lightPosition1 - worldPosition.xyz);
@@ -58,7 +58,7 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     float dist0 = length(lightPosition0 - worldPosition.xyz);
     float dist1 = length(lightPosition1 - worldPosition.xyz);
 
-    float attenuation0 = 1.0 / (dist0 * dist0 * 0.15);
+    float attenuation0 = 1.0 / (dist0 * dist0 * 0.05);
     float attenuation1 = 1.0 / (dist1 * dist1 * 0.35);
 
     float3 rainbow;

@@ -202,17 +202,3 @@ void VulkanRenderResources::rebindDescriptors(VulkanRenderGraph& renderGraph) {
 
     }
 }
-
-void VulkanRenderResources::scheduleResourceTransitions() const {
-    for (const auto& [resourceName, writerPasses] : _resourceWriters) {
-        auto it = _resources.find(resourceName);
-        if (it == _resources.end()) continue;
-
-        VulkanRenderPassResource* resource = it->second.get();
-
-        for (VulkanRenderPass* writerPass : writerPasses) {
-            if (!writerPass) continue;
-            writerPass->addTransition({resource, vk::ImageLayout::eShaderReadOnlyOptimal});
-        }
-    }
-}

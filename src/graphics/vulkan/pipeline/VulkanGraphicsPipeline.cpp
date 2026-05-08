@@ -202,10 +202,6 @@ Expected<void> VulkanGraphicsPipeline::createPipeline(const vk::Device& device, 
         .setDepthBoundsTestEnable(vk::False)
         .setStencilTestEnable(vk::False);
 
-    if (pass.getType() == VulkanRenderPassType::Debug) {
-        depthStencilState.setDepthWriteEnable(vk::False);
-    }
-
     // Color blend state
 
     vk::PipelineColorBlendStateCreateInfo colorBlendState{};

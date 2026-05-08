@@ -9,7 +9,8 @@ Expected<void> VulkanRenderGraphBuilder::build(const std::vector<VulkanRenderPas
     TRY(allocateDescriptors());
     TRY(createPipelines());
 
-    _context.renderResources.scheduleResourceTransitions();
+    scheduleDepthLoadOps();
+    scheduleResourceTransitions();
 
     return {};
 }
@@ -86,4 +87,38 @@ Expected<void> VulkanRenderGraphBuilder::createPipelines() const {
     }
 
     return {};
+}
+
+void VulkanRenderGraphBuilder::scheduleDepthLoadOps() const {
+    bool depthWritten = false;
+
+    const VulkanRenderPassAttachment* canonicalDepthAttachment = _context.renderResources.getDepthBufferAttachment();
+
+    for (const auto& pass : _context.renderGraph.getPasses()) {
+        if (!pass->getDepthAttachment()) continue;
+
+        auto depthAttachment = std::make_unique<VulkanRenderPassAttachment>(*canonicalDepthAttachment);
+
+        depthAttachment->setLoadOp(
+            depthWritten ? vk::AttachmentLoadOp::eLoad
+                         : vk::AttachmentLoadOp::eClear
+        );
+
+        pass->setDepthAttachment(std::move(depthAttachment));
+        depthWritten = true;
+    }
+}
+
+void VulkanRenderGraphBuilder::scheduleResourceTransitions() const {
+    for (const auto& [resourceName, writerPasses] : _context.renderResources.getResourceWriters()) {
+        auto it = _context.renderResources.getResources().find(resourceName);
+        if (it == _context.renderResources.getResources().end()) continue;
+
+        VulkanRenderPassResource* resource = it->second.get();
+
+        for (VulkanRenderPass* writerPass : writerPasses) {
+            if (!writerPass) continue;
+            writerPass->addTransition({resource, vk::ImageLayout::eShaderReadOnlyOptimal});
+        }
+    }
 }

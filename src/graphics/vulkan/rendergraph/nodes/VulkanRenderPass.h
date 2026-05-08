@@ -67,7 +67,9 @@ public:
 
     [[nodiscard]] DescriptorManagersMap& getDescriptorManagers() noexcept { return _descriptorManagers; }
 
-    [[nodiscard]] VulkanRenderPassAttachment* getDepthAttachment() const noexcept { return _depthAttachment; }
+    [[nodiscard]] VulkanRenderPassAttachment* getDepthAttachment() const noexcept {
+        return _depthAttachment.get();
+    }
 
     [[nodiscard]] std::vector<std::unique_ptr<VulkanRenderPassAttachment>>& getColorAttachments() noexcept {
         return _colorAttachments;
@@ -105,8 +107,13 @@ public:
         return *this;
     }
 
-    VulkanRenderPass& setDepthAttachment(VulkanRenderPassAttachment* depthAttachment) noexcept {
-        _depthAttachment = depthAttachment;
+    VulkanRenderPass& setDepthAttachment(std::unique_ptr<VulkanRenderPassAttachment> depthAttachment) noexcept {
+        _depthAttachment = std::move(depthAttachment);
+        return *this;
+    }
+
+    VulkanRenderPass& setDepthAttachment(const VulkanRenderPassAttachment* prototype) noexcept {
+        _depthAttachment = std::make_unique<VulkanRenderPassAttachment>(*prototype);
         return *this;
     }
 
@@ -148,7 +155,7 @@ private:
     DescriptorSetsMap     _descriptorSets{};
     DescriptorManagersMap _descriptorManagers{};
 
-    VulkanRenderPassAttachment* _depthAttachment = nullptr;
+    std::unique_ptr<VulkanRenderPassAttachment> _depthAttachment{};
 
     std::vector<std::unique_ptr<VulkanRenderPassAttachment>> _colorAttachments{};
     std::vector<VulkanPassTransition>                        _transitions{};

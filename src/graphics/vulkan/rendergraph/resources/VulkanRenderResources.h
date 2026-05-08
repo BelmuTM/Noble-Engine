@@ -53,11 +53,7 @@ public:
 
     [[nodiscard]] Expected<void> allocateDescriptors(VulkanRenderPass* pass);
 
-    void scheduleResourceTransitions() const;
-
-    [[nodiscard]] const ResourcesMap& getResources() const noexcept {
-        return _resources;
-    }
+    [[nodiscard]] const ResourcesMap& getResources() const noexcept { return _resources; }
 
     [[nodiscard]]       ResourceAccessorsMap& getResourceReaders()       noexcept { return _resourceReaders; }
     [[nodiscard]] const ResourceAccessorsMap& getResourceReaders() const noexcept { return _resourceReaders; }

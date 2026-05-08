@@ -60,6 +60,10 @@ private:
 
     [[nodiscard]] Expected<void> createPipelines() const;
 
+    void scheduleDepthLoadOps() const;
+    
+    void scheduleResourceTransitions() const;
+
     const VulkanRenderGraphBuilderContext& _context;
 
     const VulkanRenderPassFactory& _passFactory;
