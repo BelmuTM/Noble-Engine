@@ -1,9 +1,5 @@
 # Noble Engine
 
-[![Support me on Patreon](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3DBelmu%26type%3Dpatrons&style=flat)](https://patreon.com/Belmu)
-[![Discord](https://img.shields.io/discord/804772139344461834.svg?logo=discord&logoColor=white&logoWidth=20&labelColor=7289DA&label=Discord)](https://discord.gg/jjRrhpkH9e)
-[![Twitter](https://img.shields.io/twitter/follow/Belmu_?color=dark&label=Follow&logoColor=dark)](https://twitter.com/Belmu_)
-
 ![Noble](https://i.imgur.com/ImidCjI.jpeg)
 
 Noble Engine is a rendering engine aimed at modern hardware written in C++ with the [Vulkan API](https://www.vulkan.org/).
@@ -13,6 +9,10 @@ Being able to manipulate 3D environments, render them and use them at our advant
 ### Contact
 
 Belmu is the main developer and sole contributor of the project.
+
+[![Support me on Patreon](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3DBelmu%26type%3Dpatrons&style=flat)](https://patreon.com/Belmu)
+[![Discord](https://img.shields.io/discord/804772139344461834.svg?logo=discord&logoColor=white&logoWidth=20&labelColor=7289DA&label=Discord)](https://discord.gg/jjRrhpkH9e)
+[![Twitter](https://img.shields.io/twitter/follow/Belmu_?color=dark&label=Follow&logoColor=dark)](https://twitter.com/Belmu_)
 
 ### Contributing
 
