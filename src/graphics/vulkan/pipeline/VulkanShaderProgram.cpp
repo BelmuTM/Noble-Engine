@@ -158,13 +158,14 @@ Expected<void> VulkanShaderProgram::reflectShaderResources(
         for (std::uint32_t binding = 0; binding < descriptorSet->binding_count; binding++) {
             const SpvReflectDescriptorBinding* descriptorBinding = descriptorSet->bindings[binding];
 
+            /*
+            Logger::debug(
+                "set=" + std::to_string(descriptorSet->set) + "(" + std::to_string(set) + "), " + "binding=" +
+                std::to_string(descriptorBinding->binding) + " : " + descriptorBinding->name
+            );
+            */
+
             if (descriptorBinding->type_description->type_flags & SPV_REFLECT_TYPE_FLAG_EXTERNAL_SAMPLED_IMAGE) {
-                /*
-                Logger::debug(
-                    "set=" + std::to_string(descriptorSet->set) + "(" + std::to_string(set) + "), " + "binding=" +
-                    std::to_string(descriptorBinding->binding) + " : " + descriptorBinding->name
-                );
-                */
 
                 const VulkanDescriptorBindingInfo info{
                     .binding    = descriptorBinding->binding,

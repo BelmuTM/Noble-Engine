@@ -31,6 +31,8 @@ public:
 
     void updateObjects(std::uint32_t frameIndex) const;
 
+    [[nodiscard]] const RenderObjectsVector& getRenderObjects() const noexcept { return _renderObjects; }
+
     [[nodiscard]] static VulkanDescriptorScheme getDescriptorScheme() noexcept {
         static const VulkanDescriptorScheme scheme = {
             {0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex},
@@ -41,14 +43,17 @@ public:
 
     [[nodiscard]] const VulkanDescriptorManager& getDescriptorManager() const noexcept { return _descriptorManager; }
 
-    [[nodiscard]] const RenderObjectsVector& getRenderObjects() const noexcept { return _renderObjects; }
+    [[nodiscard]] const VulkanDescriptorSets* getDescriptorSets() const noexcept { return _objectDescriptors; }
 
 private:
     VulkanRenderObjectCreateContext _context{};
 
+    RenderObjectsVector _renderObjects{};
+
     VulkanDescriptorManager _descriptorManager{};
 
-    VulkanStorageBuffer* _objectBuffer = nullptr;
+    VulkanStorageBuffer* _objectBuffer      = nullptr;
+    VulkanStorageBuffer* _indirectionBuffer = nullptr;
 
-    RenderObjectsVector _renderObjects{};
+    VulkanDescriptorSets* _objectDescriptors = nullptr;
 };

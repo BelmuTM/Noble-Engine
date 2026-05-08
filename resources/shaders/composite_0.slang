@@ -58,7 +58,7 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     float dist0 = length(lightPosition0 - worldPosition.xyz);
     float dist1 = length(lightPosition1 - worldPosition.xyz);
 
-    float attenuation0 = 1.0 / (dist0 * dist0 * 0.05);
+    float attenuation0 = clamp(1.0 / (dist0 * dist0 * 0.05), 0.0, 1.0);
     float attenuation1 = 1.0 / (dist1 * dist1 * 0.35);
 
     float3 rainbow;

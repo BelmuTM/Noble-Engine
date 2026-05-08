@@ -4,6 +4,7 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
+#include "graphics/vulkan/resources/ssbo/VulkanStorageBuffer.h"
 #include "graphics/vulkan/resources/ubo/VulkanUniformBuffer.h"
 
 #include "VulkanDescriptorManager.h"
@@ -30,6 +31,7 @@ public:
     void updatePerFrameDescriptorSets(const VulkanDescriptorInfo& info) const;
 
     void updatePerFrameUBODescriptorSets(const VulkanUniformBufferBase& ubo, std::uint32_t binding) const;
+    void updatePerFrameSSBODescriptorSets(const VulkanStorageBuffer& ssbo, std::uint32_t binding) const;
 
     [[nodiscard]] const std::vector<vk::DescriptorSet>& getSets() const noexcept { return _descriptorSets; }
 

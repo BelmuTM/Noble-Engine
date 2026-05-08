@@ -60,6 +60,7 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
     float3 color = compositeBuffer.Sample(vertIn.uv).rgb;
 
+    /*
     float3 normal = mul(float3x3(uniforms.view), normalBuffer.Sample(vertIn.uv).rgb * 2.0 - 1.0).xyz;
 
     float depth = depthBuffer.Sample(vertIn.uv).r;
@@ -67,7 +68,6 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     float3 screenPosition = float3(vertIn.uv, depth);
     float3 viewPosition   = screenToView(screenPosition, uniforms.projectionInverse);
 
-    /*
     float3 hitPosition;
 
     if (normalBuffer.Sample(vertIn.uv).z >= 0.9) {
@@ -77,14 +77,14 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
             uniforms.projectionInverse,
             viewPosition + normal * 1e-3,
             normalize(reflect(normalize(viewPosition), normal)),
-            1.0,
+            2.0,
             bayer128(coords),
             resolution,
             hitPosition
         );
 
         if (hit) {
-            color += compositeBuffer.Sample(hitPosition.xy).rgb;
+            color += compositeBuffer.Sample(hitPosition.xy).rgb * 2.0;
         }
     }
     */

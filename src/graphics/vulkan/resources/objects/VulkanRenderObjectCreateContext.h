@@ -20,5 +20,5 @@ struct VulkanRenderObjectCreateContext {
 
     VulkanStorageBufferManager* storageBufferManager = nullptr;
 
-    std::uint32_t framesInFlight;
+    std::uint32_t framesInFlight = 0;
 };

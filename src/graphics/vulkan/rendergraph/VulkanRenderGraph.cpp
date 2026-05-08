@@ -130,7 +130,7 @@ void executeDrawCalls(
 
         // TODO: Use a pre-allocated temporary vector + std::span for scalability (owned by VulkanFrameResources).
         std::vector<vk::DescriptorSet> descriptorSets{};
-        descriptorSets.push_back(frame->getDescriptors()->getSet(frameIndex));
+        descriptorSets.push_back(frame->getDescriptorSets()->getSet(frameIndex));
 
         for (const auto& drawDescriptorSets : draw.getDescriptorSets()) {
             descriptorSets.push_back(drawDescriptorSets->getSet(frameIndex));

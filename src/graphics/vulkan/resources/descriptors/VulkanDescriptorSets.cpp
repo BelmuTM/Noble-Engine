@@ -31,7 +31,7 @@ void VulkanDescriptorSets::updateDescriptorSets(const VulkanDescriptorInfo& info
         .setDescriptorCount(1)
         .setDescriptorType(info.type);
 
-    if (info.type == vk::DescriptorType::eUniformBuffer)
+    if (info.type == vk::DescriptorType::eUniformBuffer || info.type == vk::DescriptorType::eStorageBuffer)
         descriptorSetWrite.setBufferInfo(info.bufferInfo);
     else if (info.type == vk::DescriptorType::eCombinedImageSampler)
         descriptorSetWrite.setImageInfo(info.imageInfo);
@@ -50,5 +50,13 @@ void VulkanDescriptorSets::updatePerFrameUBODescriptorSets(
 ) const {
     for (std::uint32_t i = 0; i < _manager->getFramesInFlight(); i++) {
         updateDescriptorSets(ubo.getDescriptorInfo(binding, i), i);
+    }
+}
+
+void VulkanDescriptorSets::updatePerFrameSSBODescriptorSets(
+    const VulkanStorageBuffer& ssbo, const std::uint32_t binding
+) const {
+    for (std::uint32_t i = 0; i < _manager->getFramesInFlight(); i++) {
+        updateDescriptorSets(ssbo.getDescriptorInfo(binding, i), i);
     }
 }

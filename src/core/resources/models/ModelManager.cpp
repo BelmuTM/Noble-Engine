@@ -472,12 +472,12 @@ void ModelManager::processNode_glTF(
             for (auto& vertex : mesh.getVertices()) {
                 vertex.position = glm::vec3(worldTransform * glm::vec4(vertex.position, 1.0f));
                 vertex.normal   = glm::normalize(normalMatrix * vertex.normal);
-                // The determinant sign tells you if the transform contains a reflection
+
                 const float handedness = glm::determinant(glm::mat3(worldTransform)) < 0.0f ? -1.0f : 1.0f;
 
                 vertex.tangent = glm::vec4(
                     glm::normalize(glm::mat3(worldTransform) * glm::vec3(vertex.tangent)),
-                    vertex.tangent.w * handedness  // <-- flip if reflected
+                    vertex.tangent.w * handedness
                 );
             }
 

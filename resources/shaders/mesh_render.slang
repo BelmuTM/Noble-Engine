@@ -14,8 +14,8 @@ struct ObjectData {
 };
 [[vk::push_constant]] ObjectData object;
 
-//[[vk::binding(0), vk::set(1)]] StructuredBuffer<uint> indices;
-//[[vk::binding(1), vk::set(1)]] StructuredBuffer<ObjectData> objects;
+// [[vk::binding(0, 1)]] StructuredBuffer<uint> objectIndices;
+// [[vk::binding(1, 1)]] StructuredBuffer<ObjectData> objects;
 
 struct VSOutput {
     float4 position  : SV_Position;
@@ -27,6 +27,9 @@ struct VSOutput {
 
 [shader("vertex")]
 VSOutput vertMain(VSInput input) {
+    // uint objIndex = objectIndices[instanceID];
+    // ObjectData obj = objects[objIndex];
+
     float4 worldPosition = mul(object.modelMatrix, float4(input.position, 1.0));
     float3 worldNormal   = normalize(mul(float3x3(object.normalMatrix), input.normal));
     float3 worldTangent  = normalize(input.tangent.xyz);
@@ -45,9 +48,9 @@ layout (location = 0) out float4 albedoBuffer;
 layout (location = 1) out float4 normalBuffer;
 layout (location = 2) out float4 debugBuffer2;
 
-layout (set = 1, binding = 0) Sampler2D albedoTexture;
-layout (set = 1, binding = 1) Sampler2D normalTexture;
-layout (set = 1, binding = 2) Sampler2D specularTexture;
+layout (set = 2, binding = 0) Sampler2D albedoTexture;
+layout (set = 2, binding = 1) Sampler2D normalTexture;
+layout (set = 2, binding = 2) Sampler2D specularTexture;
 
 float bayer2(float2 a) {
     a = floor(a);

@@ -9,6 +9,7 @@ Expected<void> MeshRenderPass::create(const std::string& path, const MeshRenderP
         getShaderProgram(),
         {
             context.frameResources.getDescriptorManager().getLayout(),
+            context.renderObjectManager.getDescriptorManager().getLayout(),
             context.materialManager.getDescriptorManager().getLayout()
         }
     };
@@ -26,6 +27,7 @@ Expected<void> MeshRenderPass::create(const std::string& path, const MeshRenderP
                 .setName(renderObject->object->getModel().name)
                 .setMesh(mesh)
                 .setModelMatrix(renderObject->object->getModelMatrix())
+                .addDescriptorSets(context.renderObjectManager.getDescriptorSets())
                 .addDescriptorSets(material->getDescriptorSets())
                 .setPushConstant("object", &renderObject->gpuData);
         }

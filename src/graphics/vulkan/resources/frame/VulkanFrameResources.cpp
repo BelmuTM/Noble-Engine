@@ -16,7 +16,7 @@ Expected<void> VulkanFrameResources::create(
     _framesInFlight = framesInFlight;
 
     // Descriptors creation
-    TRY(_descriptorManager.create(device.getLogicalDevice(), getFrameDescriptorScheme(), framesInFlight, 1));
+    TRY(_descriptorManager.create(device.getLogicalDevice(), getDescriptorScheme(), framesInFlight, 1));
 
     VK_TRY_ASSIGN(_frameUBO, uniformBufferManager.allocateBuffer<VulkanFrameUniformBuffer>());
 

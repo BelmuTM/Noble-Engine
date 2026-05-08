@@ -4,7 +4,9 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-static constexpr float speedMultiplier = 3.0f;
+static constexpr float speedIncrease = 3.0f;
+static constexpr float speedDecrease = 0.2f;
+
 static constexpr float cameraSmoothing = 6.0f;
 
 CameraFreeFly::CameraFreeFly(Camera& camera, InputManager& inputManager, GLFWwindow* window)
@@ -33,9 +35,15 @@ void CameraFreeFly::update(const float deltaTime) {
     }
 
     float speed = _camera.getSpeed();
+
     if (_inputManager.isHeld(InputAction::IncreaseSpeed)) {
-        speed *= speedMultiplier;
+        speed *= speedIncrease;
     }
+
+    if (_inputManager.isMouseLeftButtonPressed()) {
+        speed *= speedDecrease;
+    }
+
     velocity *= speed;
 
     const glm::vec3 currentVelocity  = _camera.getVelocity();

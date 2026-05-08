@@ -34,7 +34,7 @@ public:
     [[nodiscard]] std::uint32_t getFrameIndex() const noexcept { return _frameIndex; }
     [[nodiscard]] std::uint32_t getImageIndex() const noexcept { return _imageIndex; }
 
-    [[nodiscard]] static const VulkanDescriptorScheme& getFrameDescriptorScheme() noexcept {
+    [[nodiscard]] static const VulkanDescriptorScheme& getDescriptorScheme() noexcept {
         static const VulkanDescriptorScheme scheme = {
             {0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eAllGraphics}
         };
@@ -43,7 +43,7 @@ public:
 
     [[nodiscard]] const VulkanDescriptorManager& getDescriptorManager() const noexcept { return _descriptorManager; }
 
-    [[nodiscard]] const VulkanDescriptorSets* getDescriptors() const noexcept { return _frameUBODescriptors; }
+    [[nodiscard]] const VulkanDescriptorSets* getDescriptorSets() const noexcept { return _frameUBODescriptors; }
 
 private:
     const VulkanDevice*       _device       = nullptr;
