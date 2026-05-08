@@ -3,7 +3,6 @@
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 #include "core/debug/Logger.h"
-#include "core/debug/ErrorHandling.h"
 
 #include <algorithm>
 #include <ranges>
@@ -187,6 +186,7 @@ Expected<void> VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueF
 
     VkPhysicalDeviceFeatures deviceFeatures{
         .fillModeNonSolid        = vk::True,
+        .wideLines               = vk::True,
         .samplerAnisotropy       = vk::True,
         .pipelineStatisticsQuery = vk::True
     };

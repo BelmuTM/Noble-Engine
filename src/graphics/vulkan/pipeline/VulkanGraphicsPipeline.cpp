@@ -170,7 +170,7 @@ Expected<void> VulkanGraphicsPipeline::createPipeline(const vk::Device& device, 
         .setPolygonMode(vk::PolygonMode::eFill)
         .setFrontFace(vk::FrontFace::eCounterClockwise)
         .setDepthBiasEnable(vk::False)
-        .setLineWidth(1.0f);
+        .setLineWidth(2.0f);
 
     switch (pass.getType()) {
         case VulkanRenderPassType::MeshRender:

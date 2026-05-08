@@ -1,9 +1,8 @@
 #include "VulkanFrameResources.h"
 
-#include "graphics/vulkan/resources/images/VulkanImageLayoutTransitions.h"
-
-#include "core/debug/ErrorHandling.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
+
+#include "graphics/vulkan/resources/images/VulkanImageLayoutTransitions.h"
 
 Expected<void> VulkanFrameResources::create(
     const VulkanDevice&         device,

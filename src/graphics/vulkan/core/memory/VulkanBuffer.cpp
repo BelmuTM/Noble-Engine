@@ -2,8 +2,6 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include "core/debug/ErrorHandling.h"
-
 VulkanBuffer::VulkanBuffer(VulkanBuffer&& other) noexcept {
     _device        = other._device;
     _buffer        = other._buffer;
