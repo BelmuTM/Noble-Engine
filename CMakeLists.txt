@@ -39,7 +39,7 @@ if (NOT MSVC)
     )
 endif()
 
-# MSVC static runtime (Debug = MDd, Release = MT)
+# MSVC static runtime (Debug = MDd, Release = MD)
 set_target_properties(NobleEngine PROPERTIES
     CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
 )
