@@ -1,5 +1,7 @@
 #include "Math.h"
 
+#include <array>
+
 Math::AABB Math::AABB::transform(const glm::mat4& m) const {
     AABB newAABB{};
     for (const auto& corner : getCorners()) {

@@ -28,6 +28,8 @@ target_compile_definitions(NobleEngine PRIVATE
     # $<$<CONFIG:Debug>:LOG_FILE_WRITE>
 )
 
+target_compile_definitions(NobleEngine PRIVATE NOMINMAX)
+
 # ---- Static Runtime Linkage ------------------------------------------------------------------------------------------
 # Not applied on MSVC
 if (NOT MSVC)
@@ -37,9 +39,9 @@ if (NOT MSVC)
     )
 endif()
 
-# MSVC static runtime (Debug = MTd, Release = MT)
+# MSVC static runtime (Debug = MDd, Release = MT)
 set_target_properties(NobleEngine PROPERTIES
-    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+    CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
 )
 
 # ---- Compiler Warnings -----------------------------------------------------------------------------------------------

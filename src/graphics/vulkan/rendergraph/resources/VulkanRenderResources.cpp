@@ -80,7 +80,7 @@ Expected<void> VulkanRenderResources::createDepthBuffer() {
 
     VulkanRenderPassResource depthBufferResource{};
     depthBufferResource
-        .setName(DEPTH_BUFFER_RESOURCE_NAME)
+        .setName(std::string(DEPTH_BUFFER_RESOURCE_NAME))
         .setType(VulkanRenderPassResourceType::Buffer)
         .setImage(_depthBuffer.get());
 

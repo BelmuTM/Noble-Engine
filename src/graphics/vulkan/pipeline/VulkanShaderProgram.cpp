@@ -4,6 +4,7 @@
 
 #include "core/debug/Logger.h"
 
+#include <filesystem>
 #include <fstream>
 #include <ranges>
 #include <unordered_map>
@@ -217,11 +218,13 @@ std::string VulkanShaderProgram::extractStageExtension(const std::string& path) 
 
 std::vector<std::uint32_t> VulkanShaderProgram::readShaderSPIRVBytecode(const std::string& path) noexcept {
     std::ifstream file(path, std::ios::ate | std::ios::binary);
+
     if (!file.is_open()) {
         return {};
     }
 
     const std::streamsize size = file.tellg();
+
     if (size % 4 != 0) {
         file.close();
         return {};
@@ -242,8 +245,7 @@ std::vector<std::string> VulkanShaderProgram::findShaderFilePaths(const std::str
     for (const auto& stageExtension : stageData | std::views::keys) {
         const std::string relativePath = path + "." + stageExtension + ".spv";
 
-        if (FILE* file = fopen(relativePath.c_str(), "r")) {
-            fclose(file);
+        if (std::filesystem::exists(relativePath)) {
             paths.push_back(relativePath);
         }
     }

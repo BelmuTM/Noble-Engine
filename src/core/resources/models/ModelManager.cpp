@@ -382,7 +382,7 @@ void ModelManager::processMeshPrimitives_glTF(
 
         // Add vertex and corresponding index to the mesh
         mesh.addVertex(vertex);
-        mesh.addIndex(i);
+        mesh.addIndex(static_cast<std::uint32_t>(i));
     }
 
     mesh.setAABB(aabb);

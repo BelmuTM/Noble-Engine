@@ -25,10 +25,10 @@ void VulkanDrawCall::record(
 
             commandBuffer.bindIndexBuffer(indexBuffer, indexOffset, vk::IndexType::eUint32);
 
-            commandBuffer.drawIndexed(_mesh->getIndices().size(), 1, 0, 0, 0);
+            commandBuffer.drawIndexed(static_cast<std::uint32_t>(_mesh->getIndices().size()), 1, 0, 0, 0);
         }
     } else {
-        commandBuffer.draw(_mesh->getVertices().size(), 1, 0, 0);
+        commandBuffer.draw(static_cast<std::uint32_t> (_mesh->getVertices().size()), 1, 0, 0);
     }
 }
 

@@ -52,7 +52,7 @@ public:
 
     [[nodiscard]] VulkanImage* getImage(const std::uint32_t imageIndex) const { return _images[imageIndex].get(); }
 
-    [[nodiscard]] std::uint32_t getImageCount() const noexcept { return _imageHandles.size(); }
+    [[nodiscard]] std::uint32_t getImageCount() const noexcept { return static_cast<std::uint32_t>(_imageHandles.size()); }
 
     [[nodiscard]] vk::Format getFormat() const noexcept { return _format; }
     [[nodiscard]] vk::Extent2D getExtent() const noexcept { return _extent; }

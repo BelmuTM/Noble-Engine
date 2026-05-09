@@ -2,6 +2,8 @@
 
 #include "core/resources/models/Mesh.h"
 
+#include <array>
+
 class FrustumCuller {
 public:
     FrustumCuller()  = default;

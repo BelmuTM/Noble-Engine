@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <ranges>
+#include <string>
 #include <unordered_set>
 #include <vector>
 
@@ -75,10 +76,15 @@ bool VulkanDevice::isPhysicalDeviceSuitable(const vk::PhysicalDevice device) {
     const auto availableDeviceExtensions = device.enumerateDeviceExtensionProperties();
     if (availableDeviceExtensions.result != vk::Result::eSuccess) return false;
 
-    std::unordered_set<std::string> availableExtensionNames;
-    std::ranges::transform(availableDeviceExtensions.value,
-                           std::inserter(availableExtensionNames, availableExtensionNames.end()),
-                           [](const vk::ExtensionProperties& ext) { return std::string(ext.extensionName); });
+    std::unordered_set<std::string_view> availableExtensionNames;
+
+    std::ranges::transform(
+        availableDeviceExtensions.value,
+        std::inserter(availableExtensionNames, availableExtensionNames.end()),
+        [](const vk::ExtensionProperties& ext) { 
+            return std::string_view(ext.extensionName.data());
+        }
+    );
 
     return std::ranges::all_of(deviceExtensions, [&](const char* requiredExtension) {
         return availableExtensionNames.contains(requiredExtension);
@@ -121,7 +127,7 @@ Expected<void> VulkanDevice::pickPhysicalDevice() {
         return VK_FAIL("Failed to find suitable graphics devices.");
     }
 
-    Logger::info("Using graphics device \"" + std::string(_physicalDevice.getProperties().deviceName) + "\"");
+    Logger::info("Using graphics device \"" + std::string(_physicalDevice.getProperties().deviceName.data()) + "\"");
 
     return {};
 }
@@ -132,8 +138,10 @@ VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
     QueueFamilyIndices indices;
     const auto& properties = device.getQueueFamilyProperties2();
 
+    const std::uint32_t propertiesSize = static_cast<uint32_t>(properties.size());
+
     // Find a queue family with graphics capabilities
-    for (std::size_t i = 0; i < properties.size(); i++) {
+    for (std::uint32_t i = 0; i < propertiesSize; i++) {
         if (properties[i].queueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics) {
             indices.graphicsFamily = i;
             break;
@@ -145,8 +153,9 @@ VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
     vk::Bool32 presentSupport = device.getSurfaceSupportKHR(indices.graphicsFamily, surface).value;
     // If not found, find a queue family that supports present
     if (!presentSupport) {
+
         // Find another queue family that support both graphics and present
-        for (std::size_t i = 0; i < properties.size(); i++) {
+        for (std::uint32_t i = 0; i < propertiesSize; i++) {
             presentSupport = device.getSurfaceSupportKHR(i, surface).value;
 
             if (properties[i].queueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics && presentSupport) {
@@ -155,9 +164,10 @@ VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
                 break;
             }
         }
+
         // If not found, find a queue family that only supports present
         if (indices.presentFamily == UINT32_MAX) {
-            for (std::size_t i = 0; i < properties.size(); i++) {
+            for (std::uint32_t i = 0; i < propertiesSize; i++) {
                 presentSupport = device.getSurfaceSupportKHR(i, surface).value;
 
                 if (presentSupport) {
@@ -166,6 +176,7 @@ VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
                 }
             }
         }
+
     } else {
         indices.presentFamily = indices.graphicsFamily;
     }

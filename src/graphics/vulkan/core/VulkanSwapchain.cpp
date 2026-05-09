@@ -4,6 +4,7 @@
 
 #include "core/debug/Logger.h"
 
+#include <algorithm>
 #include <limits>
 
 Expected<void> VulkanSwapchain::create(

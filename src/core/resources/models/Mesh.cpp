@@ -93,7 +93,7 @@ void Mesh::generateSmoothNormals(
         _vertices[i2].normal += faceNormal;
     }
 
-    for (std::uint32_t i = vertexStart; i < vertexEnd; i++) {
+    for (std::size_t i = vertexStart; i < vertexEnd; i++) {
         _vertices[i].normal = glm::normalize(_vertices[i].normal);
     }
 }
