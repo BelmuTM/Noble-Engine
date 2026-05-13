@@ -65,7 +65,7 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     albedo.rgb = srgbToLinear(albedo.rgb);
 
     float3 worldNormal   = vertIn.normal;
-    float3 tangentNormal = normalTexture.Sample(vertIn.texCoords).rgb;
+    float3 tangentNormal = normalTexture.Sample(vertIn.texCoords).rgb * 2.0 - 1.0;
 
     if (length(vertIn.tangent.xyz) > 1e-4) {
         float3 N = vertIn.normal;

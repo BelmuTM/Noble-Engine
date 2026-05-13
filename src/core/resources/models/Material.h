@@ -20,7 +20,7 @@ struct Material {
     std::string name = "Undefined_Material";
 
     glm::vec3 diffuse{1.0f, 1.0f, 1.0f};
-    glm::vec3 normal{0.0f, 0.0f, 1.0f};
+    glm::vec3 normal{0.5f, 0.5f, 1.0f};
     glm::vec3 specular{0.0f, 0.0f, 0.0f};
     glm::vec3 emission{0.0f, 0.0f, 0.0f};
 
