@@ -66,16 +66,20 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
     float3 worldNormal = vertIn.normal;
 
-    float3 tangentNormal = normalTexture.Sample(vertIn.texCoords).rgb * 2.0 - 1.0;
+    float3 tangentNormal = normalTexture.Sample(vertIn.texCoords).rgb;
 
-    if (length(tangentNormal - 0.5) > 0.01 && length(vertIn.tangent.xyz) > 1e-3) {
+    if (length(tangentNormal) <= 1e-4) {
+        tangentNormal = float3(0.0, 0.0, 1.0);
+    }
+
+    if (length(vertIn.tangent.xyz) > 1e-4) {
         float3 N = vertIn.normal;
         float3 T = vertIn.tangent.xyz;
         float3 B = cross(N, T) * vertIn.tangent.w;
 
         float3x3 TBN = float3x3(T, B, N);
 
-        worldNormal = normalize(mul(tangentNormal, TBN));
+        worldNormal = normalize(mul(tangentNormal * 2.0 - 1.0, TBN));
     }
 
     albedoBuffer = albedo;
