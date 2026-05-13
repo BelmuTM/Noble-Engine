@@ -30,6 +30,13 @@ Expected<void> VulkanMaterial::loadTexture(
         TRY(imageManager->loadImage(texturePtr, &fallbackColorImage));
     }
 
+    /*
+    if (type == TextureType::Normal) {
+        const Image fallbackColorImage = Image::createSinglePixelImage(glm::vec3(0.5f, 0.5f, 1.0f));
+        TRY(imageManager->loadImage(texturePtr, &fallbackColorImage));
+    }
+    */
+
     setTexture(type, texturePtr);
 
     return {};

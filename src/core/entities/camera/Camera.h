@@ -29,6 +29,8 @@ public:
 
     void updateRotation();
 
+    [[nodiscard]] glm::vec3 toWorldSpace(glm::vec3 vector) const;
+
     [[nodiscard]] float getNearPlane() const noexcept { return _nearPlane; }
     [[nodiscard]] float getFarPlane() const noexcept { return _farPlane; }
 
@@ -78,8 +80,6 @@ public:
     void addVelocity(const glm::vec3& delta) noexcept { _velocity += delta; }
 
 private:
-    [[nodiscard]] glm::vec3 toWorldSpace(glm::vec3 vector) const;
-
     float _aspectRatio = 1.0f;
 
     float _fov = 70.0f;

@@ -56,7 +56,7 @@ sudo apt-get install -y \
 <summary>Arch Linux dependencies</summary>
 
 ```bash
-sudo pacman -S \
+sudo pacman -Sy \
     cmake \
     git \
     libx11 \

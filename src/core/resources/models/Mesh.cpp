@@ -38,7 +38,7 @@ void getNormal(const SMikkTSpaceContext* context, float out[3], const int face, 
     out[2] = vertex.normal.z;
 }
 
-void getTextureCoords(const SMikkTSpaceContext* context, float out[3], const int face, const int vert) {
+void getTextureCoords(const SMikkTSpaceContext* context, float out[2], const int face, const int vert) {
     const Vertex& vertex = getVertex(context, face, vert);
 
     out[0] = vertex.textureCoords.x;

@@ -14,6 +14,10 @@
 
 class VulkanImageManager {
 public:
+    // TODO: Eventually replace this with a function parameter
+    // (fine for now since most images stored on the disk are RGBA8)
+    static constexpr auto HARDCODED_IMAGE_FORMAT = vk::Format::eR8G8B8A8Unorm;
+
     static constexpr std::size_t STAGING_BUFFER_ALIGNMENT = 256ULL; // 256 bytes
     static constexpr std::size_t MAX_BATCH_SIZE = 64ULL * 1024U * 1024U; // 64 MB
 

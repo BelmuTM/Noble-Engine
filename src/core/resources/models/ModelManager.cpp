@@ -102,7 +102,8 @@ Mesh ModelManager::processMesh_OBJ(
     std::unordered_map<Vertex, std::uint32_t> uniqueVertices{};
     Math::AABB aabb{};
 
-    const bool hasNormals = !attributes.normals.empty();
+    const bool hasNormals       = !attributes.normals.empty();
+    const bool hasTextureCoords = !attributes.texcoords.empty();
 
     for (const auto& [name, objMesh] : shapes) {
         std::size_t indexOffset = 0;
@@ -141,7 +142,7 @@ Mesh ModelManager::processMesh_OBJ(
                 }
 
                 // UV
-                if (!attributes.texcoords.empty() && texcoord_index >= 0) {
+                if (hasTextureCoords && texcoord_index >= 0) {
                     vertex.textureCoords = {
                         attributes.texcoords[2 * texcoord_index + 0],
                         1.0f - attributes.texcoords[2 * texcoord_index + 1]
@@ -178,7 +179,9 @@ Mesh ModelManager::processMesh_OBJ(
         mesh.generateSmoothNormals();
     }
 
-    mesh.generateTangents();
+    if (hasTextureCoords) {
+        mesh.generateTangents();
+    }
 
     return mesh;
 }
@@ -391,7 +394,7 @@ void ModelManager::processMeshPrimitives_glTF(
         mesh.generateSmoothNormals();
     }
 
-    if (!hasTangents) {
+    if (!hasTangents && hasTextureCoords) {
         mesh.generateTangents();
     }
 }
@@ -435,7 +438,7 @@ void ModelManager::processNode_glTF(
             translation = glm::vec3(node.translation[0], node.translation[1], node.translation[2]);
         }
 
-        glm::quat rotation(1.0, 0.0, 0.0, 0.0);
+        glm::quat rotation(1.0f, 0.0f, 0.0f, 0.0f);
         if (!node.rotation.empty()) {
             rotation = glm::quat(
                 static_cast<float>(node.rotation[3]),
@@ -476,7 +479,7 @@ void ModelManager::processNode_glTF(
                 const float handedness = glm::determinant(glm::mat3(worldTransform)) < 0.0f ? -1.0f : 1.0f;
 
                 vertex.tangent = glm::vec4(
-                    glm::normalize(glm::mat3(worldTransform) * glm::vec3(vertex.tangent)),
+                    glm::normalize(normalMatrix * glm::vec3(vertex.tangent)),
                     vertex.tangent.w * handedness
                 );
             }

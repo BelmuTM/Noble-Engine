@@ -1,3 +1,4 @@
+#include "include/common.slang"
 #include "include/uniforms.slang"
 
 struct VSInput {
@@ -31,7 +32,7 @@ layout (location = 0) out float4 debugBuffer;
 
 [shader("fragment")]
 void fragMain(VSOutput vertIn) : SV_TARGET {
-    if (uniforms.debugMode == 0) discard;
+    if (uniforms.debugMode != DEBUG_MESH) discard;
 
     debugBuffer = float4(vertIn.color, 1.0);
 }

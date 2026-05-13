@@ -46,15 +46,16 @@ void writeLog(Stream& os, const LogEvent& log) {
 
     Utility::localtime(tm, &time);
 
+    const auto         timeString  = std::put_time(&tm, "(%Y-%m-%d %H:%M:%S)");
+    const std::string& levelString = Logger::levelStrings[static_cast<std::size_t>(log.level)];
+
     std::ostringstream prefixStream;
-    prefixStream << std::put_time(&tm, "(%Y-%m-%d %H:%M:%S)") << ' '
-                 << '[' << Logger::levelStrings[static_cast<std::size_t>(log.level)];
+    prefixStream << timeString << " [";
 
-    if (!log.domain.empty()) {
-        prefixStream << " / " << log.domain;
-    }
+    if (!log.domain.empty())
+        prefixStream << log.domain << " / ";
 
-    prefixStream << "]: ";
+    prefixStream << levelString << "]: ";
 
     const std::string prefix = prefixStream.str();
 

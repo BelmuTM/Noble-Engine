@@ -1,11 +1,12 @@
 #include "include/uniforms.slang"
+#include "include/color.slang"
 
 struct VSInput {
     float3 position  : POSITION;
-    float3 normal    : NORMAL;
-    float4 tangent   : TANGENT;
-    float3 color     : COLOR;
-    float2 texCoords : TEXCOORD0;
+    float3 normal    : TEXCOORD0;
+    float4 tangent   : TEXCOORD1;
+    float3 color     : TEXCOORD2;
+    float2 texCoords : TEXCOORD3;
 }
 
 struct ObjectData {
@@ -19,10 +20,10 @@ struct ObjectData {
 
 struct VSOutput {
     float4 position  : SV_Position;
-    float3 normal    : NORMAL;
-    float4 tangent   : TANGENT;
-    float3 color     : COLOR;
-    float2 texCoords : TEXCOORD0;
+    float3 normal    : TEXCOORD0;
+    float4 tangent   : TEXCOORD1;
+    float3 color     : TEXCOORD2;
+    float2 texCoords : TEXCOORD3;
 };
 
 [shader("vertex")]
@@ -32,12 +33,11 @@ VSOutput vertMain(VSInput input) {
 
     float4 worldPosition = mul(object.modelMatrix, float4(input.position, 1.0));
     float3 worldNormal   = normalize(mul(float3x3(object.normalMatrix), input.normal));
-    float3 worldTangent  = normalize(input.tangent.xyz);
 
     VSOutput output;
     output.position  = mul(uniforms.projection, mul(uniforms.view, worldPosition));
     output.normal    = worldNormal;
-    output.tangent   = float4(worldTangent, input.tangent.w);
+    output.tangent   = input.tangent;
     output.color     = input.color;
     output.texCoords = input.texCoords;
 
@@ -46,52 +46,40 @@ VSOutput vertMain(VSInput input) {
 
 layout (location = 0) out float4 albedoBuffer;
 layout (location = 1) out float4 normalBuffer;
-layout (location = 2) out float4 debugBuffer2;
+// layout (location = 2) out float4 debugViewBuffer;
 
 layout (set = 2, binding = 0) Sampler2D albedoTexture;
 layout (set = 2, binding = 1) Sampler2D normalTexture;
 layout (set = 2, binding = 2) Sampler2D specularTexture;
 
-float bayer2(float2 a) {
-    a = floor(a);
-    return fract(dot(a, float2(0.5, a.y * 0.75)));
-}
-
-#define bayer4(a)   (bayer2(0.5   * (a))  *  0.25 + bayer2(a))
-#define bayer8(a)   (bayer4(0.5   * (a))  *  0.25 + bayer2(a))
-#define bayer16(a)  (bayer8(0.5   * (a))  *  0.25 + bayer2(a))
-#define bayer32(a)  (bayer16(0.5  * (a))  *  0.25 + bayer2(a))
-#define bayer64(a)  (bayer32(0.5  * (a))  *  0.25 + bayer2(a))
-#define bayer128(a) (bayer64(0.5  * (a))  *  0.25 + bayer2(a))
-#define bayer256(a) (bayer128(0.5 * (a))  *  0.25 + bayer2(a))
-#define bayer512(a) (bayer256(0.5 * (a))  *  0.25 + bayer2(a))
-
 [shader("fragment")]
 void fragMain(VSOutput vertIn) : SV_TARGET {
-    const float fadeStartDist = 0.25;
-
     float4 albedo = albedoTexture.Sample(vertIn.texCoords);
+
+    albedo.rgb *= vertIn.color;
 
     if (albedo.a < 1.0) {
         discard;
     }
 
-    float3 normal = normalTexture.Sample(vertIn.texCoords).rgb;
+    albedo.rgb = srgbToLinear(albedo.rgb);
 
-    float3 N = normalize(vertIn.normal);
+    float3 worldNormal = vertIn.normal;
 
-    float3 T = normalize(vertIn.tangent.xyz);
-    float3 B = normalize(cross(N, T) * vertIn.tangent.w);
+    float3 tangentNormal = normalTexture.Sample(vertIn.texCoords).rgb * 2.0 - 1.0;
 
-    float3x3 TBN = float3x3(T, B, N);
+    if (length(tangentNormal - 0.5) > 0.01 && length(vertIn.tangent.xyz) > 1e-3) {
+        float3 N = vertIn.normal;
+        float3 T = vertIn.tangent.xyz;
+        float3 B = cross(N, T) * vertIn.tangent.w;
 
-    normal = normalize(mul(normal * 2.0 - 1.0, TBN));
+        float3x3 TBN = float3x3(T, B, N);
 
+        worldNormal = normalize(mul(tangentNormal, TBN));
+    }
 
     albedoBuffer = albedo;
-    normalBuffer = float4(vertIn.normal * 0.5 + 0.5, 1.0);
+    normalBuffer = float4(worldNormal * 0.5 + 0.5, 1.0);
 
-    //debugBuffer2 = float4(fract(vertIn.texCoords), 0.0, 1.0);
-
-    debugBuffer2 = float4(T * 0.5 + 0.5, 1.0);
+    // debugViewBuffer = float4(worldNormal * 0.5 + 0.5, 1.0);
 }

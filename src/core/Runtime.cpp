@@ -84,7 +84,9 @@ void Runtime::engineLoop() {
         previousTime = currentTime;
 
         if (_inputManager.isPressed(InputAction::ToggleDebugView)) {
-            _debugState.debugMode = (_debugState.debugMode + 1) % 2;
+            _debugState.incrementMode();
+
+            Logger::debug("Set debug mode to " + std::to_string(_debugState.debugMode));
         }
 
         _inputManager.update();

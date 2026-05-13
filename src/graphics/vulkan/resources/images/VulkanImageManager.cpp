@@ -49,7 +49,7 @@ Expected<void> VulkanImageManager::loadImage(VulkanImage*& image, const Image* i
         static_cast<std::uint32_t>(depth)
     };
 
-    constexpr auto format  = vk::Format::eR8G8B8A8Srgb;
+    constexpr auto format = HARDCODED_IMAGE_FORMAT;
 
     const std::uint32_t mipLevels = imageData->hasMipmaps ? getMipLevels(extent) : 1;
 
@@ -101,7 +101,7 @@ Expected<void> VulkanImageManager::loadImages(
 ) {
     if (images.empty()) return {};
 
-    constexpr auto format = vk::Format::eR8G8B8A8Srgb;
+    constexpr auto format = HARDCODED_IMAGE_FORMAT;
 
     constexpr int depth = 1;
 

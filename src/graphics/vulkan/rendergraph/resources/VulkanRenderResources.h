@@ -25,6 +25,9 @@ public:
     static constexpr std::string_view DEPTH_BUFFER_RESOURCE_NAME = "depthBuffer";
     static constexpr auto             DEPTH_BUFFER_FORMAT        = vk::Format::eD32Sfloat;
 
+    // TODO: Eventually replace this with a function parameter
+    static constexpr auto COLOR_BUFFER_FORMAT = vk::Format::eR16G16B16A16Sfloat;
+
     using ResourcesMap         = std::unordered_map<std::string, std::unique_ptr<VulkanRenderPassResource>>;
     using ResourceAccessorsMap = std::unordered_map<std::string, std::vector<VulkanRenderPass*>>;
 

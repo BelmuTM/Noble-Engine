@@ -99,7 +99,7 @@ Expected<void> VulkanRenderResources::createDepthBuffer() {
 }
 
 Expected<void> VulkanRenderResources::createColorBuffers(VulkanRenderPass* pass) {
-    static constexpr auto format = vk::Format::eB8G8R8A8Srgb;
+    static constexpr auto format = COLOR_BUFFER_FORMAT;
 
     for (const auto& colorOutput : pass->getShaderProgram()->getStageOutputs()) {
         _colorBuffers.push_back(std::make_unique<VulkanImage>());

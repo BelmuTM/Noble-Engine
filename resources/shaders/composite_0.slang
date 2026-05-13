@@ -26,8 +26,6 @@ layout (location = 0) out float4 compositeBuffer;
 layout (set = 1, binding = 0) Sampler2D depthBuffer;
 layout (set = 1, binding = 1) Sampler2D albedoBuffer;
 layout (set = 1, binding = 2) Sampler2D normalBuffer;
-layout (set = 1, binding = 3) Sampler2D debugBuffer;
-layout (set = 1, binding = 4) Sampler2D debugBuffer2;
 
 #define TAU 2.0 * 3.14159
 
@@ -36,7 +34,7 @@ layout (set = 1, binding = 4) Sampler2D debugBuffer2;
 [shader("fragment")]
 void fragMain(VSOutput vertIn) : SV_TARGET {
     float3 albedo = albedoBuffer.Sample(vertIn.uv).rgb;
-    float3 normal = normalize(normalBuffer.Sample(vertIn.uv).rgb * 2.0 - 1.0);
+    float3 normal = normalBuffer.Sample(vertIn.uv).rgb * 2.0 - 1.0;
 
     float depth = depthBuffer.Sample(vertIn.uv).r;
 
@@ -44,10 +42,10 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     float3 viewPosition   = screenToView(screenPosition, uniforms.projectionInverse);
     float3 worldPosition  = viewToWorld(viewPosition, uniforms.viewInverse);
 
-    float3 lightPosition0 = uniforms.cameraPosition;
+    float3 lightPosition0 = float3(-0.5, 0.7, 6.0);
     float3 lightPosition1 = float3(4.5, -1.0, 1.0);
 
-    //lightPosition0.x += lerp(0.0, 5.5, sin(uniforms.frameTimeCounter));
+    lightPosition0.x += lerp(0.0, 5.5, sin(uniforms.frameTimeCounter));
 
     float3 lightDirection0 = normalize(lightPosition0 - worldPosition.xyz);
     float3 lightDirection1 = normalize(lightPosition1 - worldPosition.xyz);
@@ -58,8 +56,11 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     float dist0 = length(lightPosition0 - worldPosition.xyz);
     float dist1 = length(lightPosition1 - worldPosition.xyz);
 
-    float attenuation0 = clamp(1.0 / (dist0 * dist0 * 0.05), 0.0, 1.0);
-    float attenuation1 = 1.0 / (dist1 * dist1 * 0.35);
+    const float lightIntensity0 = 3.0;
+    const float lightIntensity1 = 1.0;
+
+    float attenuation0 = lightIntensity0 / (dist0 * dist0);
+    float attenuation1 = lightIntensity1 / (dist1 * dist1);
 
     float3 rainbow;
     rainbow.r = sin(uniforms.frameTimeCounter * TAU / 6.0 + 0.0) * 0.5 + 0.5;
@@ -69,13 +70,9 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     const float3 lightColor0 = float3(0.969, 0.549, 0.125);
     float3 lightColor1 = rainbow;
 
-    const float3 ambient = float3(0.01);
+    const float3 ambient = float3(5e-4);
 
     float3 lighting = albedo * (ambient + lightColor0 * NdotL0 * attenuation0 + lightColor1 * NdotL1 * attenuation1);
 
     compositeBuffer = float4(lighting, 1.0);
-
-    //if (vertIn.uv.x < 0.5) compositeBuffer = debugBuffer2.Sample(vertIn.uv);
-
-    compositeBuffer += debugBuffer.Sample(vertIn.uv);
 }
