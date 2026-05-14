@@ -13,10 +13,10 @@ struct ObjectData {
     float4x4 modelMatrix;
     float4x4 normalMatrix;
 };
-[[vk::push_constant]] ObjectData object;
+//[[vk::push_constant]] ObjectData object;
 
-// [[vk::binding(0, 1)]] StructuredBuffer<uint> objectIndices;
-// [[vk::binding(1, 1)]] StructuredBuffer<ObjectData> objects;
+[[vk::binding(0, 1)]] StructuredBuffer<ObjectData> objects;
+[[vk::binding(0, 2)]] StructuredBuffer<uint> objectIndices;
 
 struct VSOutput {
     float4 position  : SV_Position;
@@ -27,12 +27,12 @@ struct VSOutput {
 };
 
 [shader("vertex")]
-VSOutput vertMain(VSInput input) {
-    // uint objIndex = objectIndices[instanceID];
-    // ObjectData obj = objects[objIndex];
+VSOutput vertMain(VSInput input, uint instanceID : SV_InstanceID, uint baseInstance : SV_StartInstanceLocation) {
+    uint       objectIndex = objectIndices[baseInstance + instanceID];
+    ObjectData objectData  = objects[objectIndex];
 
-    float4 worldPosition = mul(object.modelMatrix, float4(input.position, 1.0));
-    float3 worldNormal   = normalize(mul(float3x3(object.normalMatrix), input.normal));
+    float4 worldPosition = mul(objectData.modelMatrix, float4(input.position, 1.0));
+    float3 worldNormal   = normalize(mul(float3x3(objectData.normalMatrix), input.normal));
 
     VSOutput output;
     output.position  = mul(uniforms.projection, mul(uniforms.view, worldPosition));
@@ -48,9 +48,9 @@ layout (location = 0) out float4 albedoBuffer;
 layout (location = 1) out float4 normalBuffer;
 // layout (location = 2) out float4 debugViewBuffer;
 
-layout (set = 2, binding = 0) Sampler2D albedoTexture;
-layout (set = 2, binding = 1) Sampler2D normalTexture;
-layout (set = 2, binding = 2) Sampler2D specularTexture;
+layout (set = 3, binding = 0) Sampler2D albedoTexture;
+layout (set = 3, binding = 1) Sampler2D normalTexture;
+layout (set = 3, binding = 2) Sampler2D specularTexture;
 
 [shader("fragment")]
 void fragMain(VSOutput vertIn) : SV_TARGET {

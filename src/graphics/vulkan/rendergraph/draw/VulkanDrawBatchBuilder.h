@@ -1,6 +1,6 @@
 #pragma once
 
-#include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
+#include "VulkanDrawCall.h"
 
 #include "VulkanDrawBatch.h"
 #include "VulkanInstanceHandle.h"
@@ -10,9 +10,16 @@
 
 class VulkanDrawBatchBuilder {
 public:
-    explicit VulkanDrawBatchBuilder(const VulkanRenderObjectManager& renderObjectManager)
-        : _renderObjectManager(renderObjectManager) {}
+    struct BuiltDrawBatch {
+        const VulkanDrawCall* drawCall;
+        std::uint32_t         firstInstance;
+        std::uint32_t         instanceCount;
+    };
 
+    using BatchValue         = std::pair<const VulkanDrawCall*, std::vector<VulkanInstanceHandle>>;
+    using VulkanDrawBatchMap = std::unordered_map<VulkanDrawBatch, BatchValue>;
+
+    VulkanDrawBatchBuilder()  = default;
     ~VulkanDrawBatchBuilder() = default;
 
     VulkanDrawBatchBuilder(const VulkanDrawBatchBuilder&)            = delete;
@@ -21,10 +28,18 @@ public:
     VulkanDrawBatchBuilder(VulkanDrawBatchBuilder&&)            = delete;
     VulkanDrawBatchBuilder& operator=(VulkanDrawBatchBuilder&&) = delete;
 
-    void build();
+    void build(const std::vector<const VulkanDrawCall*>& drawCalls);
+
+    [[nodiscard]] const VulkanDrawBatchMap& getDrawBatchMap() const noexcept { return _drawBatchMap; }
+
+    [[nodiscard]] const std::vector<BuiltDrawBatch>& getBuiltDrawBatches() const noexcept { return _builtDrawBatches; }
+
+    [[nodiscard]] const std::vector<std::uint32_t>& getIndirectionData() const noexcept { return _indirectionData; }
 
 private:
-    const VulkanRenderObjectManager& _renderObjectManager;
+    VulkanDrawBatchMap _drawBatchMap{};
 
-    std::unordered_map<VulkanDrawBatch, std::vector<VulkanInstanceHandle>> _batchMap{};
+    std::vector<BuiltDrawBatch> _builtDrawBatches{};
+
+    std::vector<std::uint32_t> _indirectionData{};
 };

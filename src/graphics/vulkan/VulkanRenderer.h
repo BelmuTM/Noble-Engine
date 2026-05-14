@@ -44,7 +44,7 @@ private:
 
     [[nodiscard]] Expected<void> recordCurrentCommandBuffer(std::uint32_t imageIndex);
 
-    [[nodiscard]] Expected<void> submitCurrentCommandBuffer(std::uint32_t imageIndex);
+    [[nodiscard]] Expected<VulkanSwapchain::SwapchainOpVoid> submitCurrentCommandBuffer(std::uint32_t imageIndex);
 
     Window* _window = nullptr;
 
@@ -62,13 +62,13 @@ private:
     VulkanStorageBufferManager storageBufferManager{};
     VulkanUniformBufferManager uniformBufferManager{};
 
-    VulkanFrameResources      frameResources{};
-    VulkanRenderResources     renderResources{};
+    VulkanFrameResources       frameResources{};
+    VulkanRenderResources      renderResources{};
 
-    VulkanMaterialManager     materialManager{};
-    VulkanRenderObjectManager renderObjectManager{};
+    VulkanMaterialManager      materialManager{};
+    VulkanRenderObjectManager  renderObjectManager{};
 
-    VulkanFrameDraws          frameDraws{};
+    VulkanFrameCuller          frameCuller{};
 
     VulkanShaderProgramManager shaderProgramManager{};
     VulkanPipelineManager      pipelineManager{};

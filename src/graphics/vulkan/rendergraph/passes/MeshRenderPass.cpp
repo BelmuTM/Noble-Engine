@@ -10,6 +10,7 @@ Expected<void> MeshRenderPass::create(const std::string& path, const MeshRenderP
         {
             context.frameResources.getDescriptorManager().getLayout(),
             context.renderObjectManager.getDescriptorManager().getLayout(),
+            context.frameCuller.getDescriptorManager().getLayout(),
             context.materialManager.getDescriptorManager().getLayout()
         }
     };
@@ -22,14 +23,16 @@ Expected<void> MeshRenderPass::create(const std::string& path, const MeshRenderP
 
     for (const auto& renderObject : context.renderObjectManager.getRenderObjects()) {
         // Each submesh requires its own draw call
-        for (const auto& [mesh, material] : renderObject->meshes) {
+        for (const auto& renderMesh : renderObject->meshes) {
             emplaceDrawCall()
                 .setName(renderObject->object->getModel().name)
-                .setMesh(mesh)
+                .setRenderMesh(renderMesh)
+                .setInstanceHandle(renderObject->instanceHandle)
                 .setModelMatrix(renderObject->object->getModelMatrix())
                 .addDescriptorSets(context.renderObjectManager.getDescriptorSets())
-                .addDescriptorSets(material->getDescriptorSets())
-                .setPushConstant("object", &renderObject->gpuData);
+                .addDescriptorSets(context.frameCuller.getDescriptorSets())
+                .addDescriptorSets(renderMesh.material->getDescriptorSets());
+                //.setPushConstant("object", &renderObject->gpuData);
         }
     }
 

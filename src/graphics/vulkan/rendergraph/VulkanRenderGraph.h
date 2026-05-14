@@ -9,7 +9,7 @@
 
 #include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 
-#include "draw/VulkanFrameDraws.h"
+#include "draw/VulkanFrameCuller.h"
 #include "nodes/VulkanRenderPass.h"
 
 class VulkanRenderResources;
@@ -22,7 +22,7 @@ struct VulkanRenderGraphCreateContext {
     VulkanFrameResources*             frame     = nullptr;
     VulkanRenderResources*            resources = nullptr;
 
-    const VulkanFrameDraws*           frameDraws = nullptr;
+    const VulkanFrameCuller*          frameCuller = nullptr;
 
     vk::QueryPool                     queryPool;
     vk::detail::DispatchLoaderDynamic dispatchLoader{};

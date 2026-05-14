@@ -38,8 +38,8 @@ Expected<void> VulkanRenderer::init(
 
     TRY(createVulkanEntity(&materialManager, device, imageManager, _framesInFlight));
 
-    TRY(createVulkanEntity(
-        &renderObjectManager, VulkanRenderObjectCreateContext{
+    TRY(createVulkanEntity(&renderObjectManager,
+        VulkanRenderObjectCreateContext{
             &objectManager,
             &assetManager,
             &device,
@@ -50,20 +50,24 @@ Expected<void> VulkanRenderer::init(
         }
     ));
 
+    TRY(createVulkanEntity(&frameCuller, device, storageBufferManager, _framesInFlight));
+
     // Pipeline creation
     TRY(createVulkanEntity(&shaderProgramManager, logicalDevice));
     TRY(createVulkanEntity(&pipelineManager, logicalDevice));
 
     // Render graph construction
-    TRY(createVulkanEntity(&renderGraph, VulkanRenderGraphCreateContext{
-        &context.getInstance(),
-        &device,
-        &swapchain,
-        &frameResources,
-        &renderResources,
-        &frameDraws,
-        device.getQueryPool()
-    }));
+    TRY(createVulkanEntity(&renderGraph,
+        VulkanRenderGraphCreateContext{
+            &context.getInstance(),
+            &device,
+            &swapchain,
+            &frameResources,
+            &renderResources,
+            &frameCuller,
+            device.getQueryPool()
+        }
+    ));
 
     const std::vector<VulkanRenderPassDescriptor> passes = {
         {"mesh_render", VulkanRenderPassType::MeshRender},
@@ -87,6 +91,7 @@ Expected<void> VulkanRenderer::init(
             renderResources,
             materialManager,
             renderObjectManager,
+            frameCuller,
             shaderProgramManager,
             pipelineManager
         },
@@ -127,7 +132,7 @@ Expected<void> VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
     // Render objects update
     renderObjectManager.updateObjects(currentFrame);
     // Frustum culling
-    frameDraws.cullDraws(renderGraph.getPasses(), uniforms);
+    frameCuller.cull(renderGraph.getPasses(), uniforms);
 
     TRY(recordCurrentCommandBuffer(imageIndex));
     TRY(submitCurrentCommandBuffer(imageIndex));
@@ -166,8 +171,7 @@ Expected<void> VulkanRenderer::onFramebufferResize() {
 Expected<void> VulkanRenderer::recordCommandBuffer(
     const vk::CommandBuffer commandBuffer, const std::uint32_t imageIndex
 ) {
-    constexpr vk::CommandBufferBeginInfo beginInfo{};
-    VK_TRY(commandBuffer.begin(beginInfo));
+    VK_TRY(commandBuffer.begin(vk::CommandBufferBeginInfo{}));
 
     VulkanImage* swapchainImage = context.getSwapchain().getImage(imageIndex);
 
@@ -191,18 +195,15 @@ Expected<void> VulkanRenderer::recordCommandBuffer(
 }
 
 Expected<void> VulkanRenderer::recordCurrentCommandBuffer(const std::uint32_t imageIndex) {
-    const vk::CommandBuffer& currentBuffer = commandManager.getCommandBuffers()[currentFrame];
-    VK_TRY(currentBuffer.reset());
+    const vk::CommandBuffer& currentCommandBuffer = commandManager.getCommandBuffers()[currentFrame];
 
-    TRY(recordCommandBuffer(currentBuffer, imageIndex));
+    VK_TRY(currentCommandBuffer.reset());
 
-    return {};
+    return recordCommandBuffer(currentCommandBuffer, imageIndex);
 }
 
-Expected<void> VulkanRenderer::submitCurrentCommandBuffer(const std::uint32_t imageIndex) {
-    const vk::CommandBuffer& currentBuffer = commandManager.getCommandBuffers()[currentFrame];
+Expected<VulkanSwapchain::SwapchainOpVoid> VulkanRenderer::submitCurrentCommandBuffer(const std::uint32_t imageIndex) {
+    const vk::CommandBuffer& currentCommandBuffer = commandManager.getCommandBuffers()[currentFrame];
 
-    TRY(swapchainManager.submitCommandBuffer(currentBuffer, currentFrame, imageIndex));
-
-    return {};
+    return swapchainManager.submitCommandBuffer(currentCommandBuffer, currentFrame, imageIndex);
 }

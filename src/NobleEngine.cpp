@@ -20,10 +20,12 @@ int main() {
     sceneSponza.addObject("teapot.obj", {1.0f, 4.0f, 0.0f}, {90.0f, 0.0f, 0.0f}, glm::vec3{0.015f});
     sceneSponza.addObject("sponza_old.gltf", {0.0f, 0.0f, 0.0f}, {90.0f, 0.0f, 0.0f}, glm::vec3{1.0f});
 
-    /*
+    Scene sceneBistro;
+    sceneBistro.addObject("bistro.gltf", {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, glm::vec3{1.0f});
+
     Scene sceneDragons;
     static constexpr std::uint32_t dragonsPerAxis = 16;
-    static constexpr float    dragonsOffset  = 5.0f;
+    static constexpr float         dragonsOffset  = 5.0f;
 
     for (std::uint32_t x = 0; x < dragonsPerAxis; x++) {
         for (std::uint32_t y = 0; y < dragonsPerAxis; y++) {
@@ -35,7 +37,6 @@ int main() {
             );
         }
     }
-    */
 
     Runtime runtime(sceneSponza, Engine::running);
 

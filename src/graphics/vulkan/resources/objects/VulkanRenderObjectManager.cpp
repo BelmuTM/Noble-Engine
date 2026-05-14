@@ -11,12 +11,6 @@ Expected<void> VulkanRenderObjectManager::create(const VulkanRenderObjectCreateC
         context.device->getLogicalDevice(), getDescriptorScheme(), context.framesInFlight, MAX_RENDER_OBJECTS
     ));
 
-    // Create indirection buffer
-    VK_TRY_ASSIGN(
-        _indirectionBuffer,
-        context.storageBufferManager->allocateBuffer(MAX_RENDER_OBJECTS * sizeof(uint32_t))
-    );
-
     // Create object buffer
     VK_TRY_ASSIGN(
         _objectBuffer,
@@ -25,8 +19,7 @@ Expected<void> VulkanRenderObjectManager::create(const VulkanRenderObjectCreateC
 
     TRY(_descriptorManager.allocate(_objectDescriptors));
 
-    _objectDescriptors->updatePerFrameSSBODescriptorSets(*_indirectionBuffer, 0);
-    _objectDescriptors->updatePerFrameSSBODescriptorSets(*_objectBuffer, 1);
+    _objectDescriptors->updatePerFrameSSBODescriptorSets(*_objectBuffer, 0);
 
     // Load textures
     Logger::debug("Loading object textures");
@@ -86,7 +79,6 @@ Expected<void> VulkanRenderObjectManager::createRenderObjects(const ObjectManage
 }
 
 void VulkanRenderObjectManager::updateObjects(const std::uint32_t frameIndex) const {
-    std::vector<uint32_t>      indices(_renderObjects.size());
     std::vector<ObjectDataGPU> dataToGPU(_renderObjects.size());
 
     // Batched object data update
@@ -95,10 +87,12 @@ void VulkanRenderObjectManager::updateObjects(const std::uint32_t frameIndex) co
 
         renderObject.update();
 
-        indices[i]   = i;
         dataToGPU[i] = renderObject.gpuData;
     }
 
-    _indirectionBuffer->updateMemory(frameIndex, indices.data());
-    _objectBuffer->updateMemory(frameIndex, dataToGPU.data());
+    _objectBuffer->updateMemory(
+        frameIndex,
+        dataToGPU.data(),
+        dataToGPU.size() * sizeof(ObjectDataGPU)
+    );
 }

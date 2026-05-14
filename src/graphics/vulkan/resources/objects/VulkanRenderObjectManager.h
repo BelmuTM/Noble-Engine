@@ -35,8 +35,7 @@ public:
 
     [[nodiscard]] static VulkanDescriptorScheme getDescriptorScheme() noexcept {
         static const VulkanDescriptorScheme scheme = {
-            {0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex},
-            {1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex}
+            {0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex}
         };
         return scheme;
     }
@@ -52,8 +51,6 @@ private:
 
     VulkanDescriptorManager _descriptorManager{};
 
-    VulkanStorageBuffer* _objectBuffer      = nullptr;
-    VulkanStorageBuffer* _indirectionBuffer = nullptr;
-
+    VulkanStorageBuffer*  _objectBuffer      = nullptr;
     VulkanDescriptorSets* _objectDescriptors = nullptr;
 };

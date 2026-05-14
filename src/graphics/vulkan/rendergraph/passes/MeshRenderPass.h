@@ -10,11 +10,14 @@
 #include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 
+#include "graphics/vulkan/rendergraph/draw/VulkanFrameCuller.h"
+
 struct MeshRenderPassCreateContext {
     const VulkanFrameResources&  frameResources;
     const VulkanRenderResources& renderResources;
     VulkanMaterialManager&       materialManager;
     VulkanRenderObjectManager&   renderObjectManager;
+    VulkanFrameCuller&           frameCuller;
 
     VulkanShaderProgramManager&  shaderProgramManager;
 
@@ -24,6 +27,7 @@ struct MeshRenderPassCreateContext {
             context.renderResources,
             context.materialManager,
             context.renderObjectManager,
+            context.frameCuller,
             context.shaderProgramManager
         };
     }

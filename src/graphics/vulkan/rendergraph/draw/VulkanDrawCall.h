@@ -21,7 +21,9 @@ public:
         vk::CommandBuffer          commandBuffer,
         vk::Extent2D               extent,
         vk::PipelineLayout         pipelineLayout,
-        const VulkanShaderProgram* shaderProgram
+        const VulkanShaderProgram* shaderProgram,
+        std::uint32_t              instanceCount = 1,
+        std::uint32_t              firstInstance = 0
     ) const;
 
     void pushConstants(
@@ -34,25 +36,40 @@ public:
     [[nodiscard]] vk::Rect2D resolveScissor(vk::Extent2D extent) const;
 
     [[nodiscard]] const std::string& getName() const noexcept { return _name; }
-    [[nodiscard]] const VulkanMesh* getMesh() const noexcept { return _mesh; }
+    [[nodiscard]] const VulkanRenderMesh& getRenderMesh() const noexcept { return _renderMesh; }
+    [[nodiscard]] const VulkanInstanceHandle& getInstanceHandle() const noexcept { return _instanceHandle; }
     [[nodiscard]] const glm::mat4* getModelMatrix() const noexcept { return _modelMatrix; }
     [[nodiscard]] const std::vector<const VulkanDescriptorSets*>& getDescriptorSets() const noexcept {
         return _descriptorSets;
     }
 
     VulkanDrawCall& setName(const std::string& name) noexcept { _name = name; return *this; }
-    VulkanDrawCall& setMesh(const VulkanMesh* mesh) noexcept { _mesh = mesh; return *this; }
+
+    VulkanDrawCall& setRenderMesh(const VulkanRenderMesh& renderMesh) noexcept {
+        _renderMesh = renderMesh;
+        return *this;
+    }
+
+    VulkanDrawCall& setInstanceHandle(const VulkanInstanceHandle& instanceHandle) noexcept {
+        _instanceHandle = instanceHandle;
+        return *this;
+    }
+
     VulkanDrawCall& setModelMatrix(const glm::mat4& modelMatrix) noexcept { _modelMatrix = &modelMatrix; return *this; }
+
     VulkanDrawCall& setViewport(const vk::Viewport& viewport) noexcept { _viewport = viewport; return *this; }
     VulkanDrawCall& setScissor(const vk::Rect2D scissor) noexcept { _scissor = scissor; return *this; }
+
     VulkanDrawCall& setDescriptorSets(const std::vector<const VulkanDescriptorSets*>& descriptorSets) noexcept {
         _descriptorSets = descriptorSets;
         return *this;
     }
+
     VulkanDrawCall& addDescriptorSets(const VulkanDescriptorSets* descriptorSets) {
         _descriptorSets.push_back(descriptorSets);
         return *this;
     }
+
     template<typename PushConstantType>
     VulkanDrawCall& setPushConstant(const std::string& name, const PushConstantType* data) noexcept {
         _pushConstants[name] = std::make_unique<VulkanPushConstant<PushConstantType>>(data);
@@ -62,7 +79,8 @@ public:
 private:
     std::string _name = "Undefined_Drawcall";
 
-    const VulkanMesh* _mesh = nullptr;
+    VulkanRenderMesh     _renderMesh{};
+    VulkanInstanceHandle _instanceHandle{};
 
     const glm::mat4* _modelMatrix = nullptr;
 

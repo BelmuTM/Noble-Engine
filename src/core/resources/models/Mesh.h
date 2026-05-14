@@ -18,6 +18,13 @@ public:
     Mesh(Mesh&&)            noexcept = default;
     Mesh& operator=(Mesh&&) noexcept = default;
 
+    bool operator==(const Mesh& other) const noexcept {
+        return _vertices.size()  == other._vertices.size()
+            && _indices.size()   == other._indices.size()
+            && _vertices.front() == other._vertices.front()
+            && _vertices.back()  == other._vertices.back();
+    }
+
     // Generates averaged normals for a given range of vertices and indices
     void generateSmoothNormals(std::size_t vertexStart, std::size_t vertexEnd, std::size_t indexStart, std::size_t indexEnd);
     // Generates averaged normals for the entire mesh
@@ -58,4 +65,21 @@ protected:
     Math::AABB _aabb{};
 
     Material _material{};
+};
+
+struct MeshHash {
+    std::size_t operator()(const Mesh& mesh) const noexcept {
+        std::size_t hash = 0;
+
+        HashUtils::combine(hash, mesh.getVertices().size());
+        HashUtils::combine(hash, mesh.getIndices().size());
+
+        // Hash first and last vertex as a cheap fingerprint
+        if (!mesh.getVertices().empty()) {
+            HashUtils::combine(hash, mesh.getVertices().front());
+            HashUtils::combine(hash, mesh.getVertices().back());
+        }
+
+        return hash;
+    }
 };

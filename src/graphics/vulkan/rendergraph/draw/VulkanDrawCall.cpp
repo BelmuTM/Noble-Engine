@@ -4,31 +4,37 @@ void VulkanDrawCall::record(
     const vk::CommandBuffer    commandBuffer,
     const vk::Extent2D         extent,
     const vk::PipelineLayout   pipelineLayout,
-    const VulkanShaderProgram* shaderProgram
+    const VulkanShaderProgram* shaderProgram,
+    const std::uint32_t        instanceCount,
+    const std::uint32_t        firstInstance
 ) const {
-    if (!_mesh) return;
+    if (!_renderMesh.mesh) return;
 
     commandBuffer.setViewport(0, resolveViewport(extent));
     commandBuffer.setScissor(0, resolveScissor(extent));
 
     pushConstants(commandBuffer, pipelineLayout, shaderProgram);
 
-    if (!_mesh->isBufferless() && _mesh->getVertexBuffer()) {
-        const vk::Buffer&    vertexBuffer = _mesh->getVertexBuffer()->handle();
-        const vk::DeviceSize vertexOffset = _mesh->getVertexOffset();
+    const VulkanMesh& mesh = *_renderMesh.mesh;
+
+    if (!mesh.isBufferless() && mesh.getVertexBuffer()) {
+        const vk::Buffer&    vertexBuffer = mesh.getVertexBuffer()->handle();
+        const vk::DeviceSize vertexOffset = mesh.getVertexOffset();
 
         commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &vertexOffset);
 
-        if (_mesh->getIndexBuffer()) {
-            const vk::Buffer& indexBuffer    = _mesh->getIndexBuffer()->handle();
-            const vk::DeviceSize indexOffset = _mesh->getIndexOffset();
+        if (mesh.getIndexBuffer()) {
+            const vk::Buffer& indexBuffer    = mesh.getIndexBuffer()->handle();
+            const vk::DeviceSize indexOffset = mesh.getIndexOffset();
 
             commandBuffer.bindIndexBuffer(indexBuffer, indexOffset, vk::IndexType::eUint32);
 
-            commandBuffer.drawIndexed(static_cast<std::uint32_t>(_mesh->getIndices().size()), 1, 0, 0, 0);
+            commandBuffer.drawIndexed(
+                static_cast<std::uint32_t>(mesh.getIndices().size()), instanceCount, 0, 0, firstInstance
+            );
         }
     } else {
-        commandBuffer.draw(static_cast<std::uint32_t> (_mesh->getVertices().size()), 1, 0, 0);
+        commandBuffer.draw(static_cast<std::uint32_t> (mesh.getVertices().size()), 1, 0, 0);
     }
 }
 

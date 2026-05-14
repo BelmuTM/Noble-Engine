@@ -15,9 +15,9 @@ Expected<void> CompositePass::create(const std::string& path, const CompositePas
     setPipelineDescriptor(pipelineDescriptor);
     setBindPoint(vk::PipelineBindPoint::eGraphics);
 
-    const VulkanMesh* fullscreenMesh = context.meshManager.allocateMesh(VulkanMesh::makeFullscreenTriangle());
+    VulkanMesh* fullscreenMesh = context.meshManager.allocateMesh(VulkanMesh::makeFullscreenTriangle());
 
-    emplaceDrawCall().setMesh(fullscreenMesh);
+    emplaceDrawCall().setRenderMesh({fullscreenMesh});
 
     return {};
 }

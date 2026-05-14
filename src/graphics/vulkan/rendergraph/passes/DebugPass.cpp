@@ -49,7 +49,7 @@ Expected<void> DebugPass::create(const std::string& path, const DebugPassCreateC
 
         emplaceDrawCall()
             .setName(renderObject->object->getModel().name + "_Debug")
-            .setMesh(aabbMeshPtr)
+            .setRenderMesh({aabbMeshPtr})
             .setModelMatrix(renderObject->object->getModelMatrix())
             .setPushConstant("object", &renderObject->gpuData);
     }

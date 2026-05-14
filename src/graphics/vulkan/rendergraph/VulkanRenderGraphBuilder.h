@@ -29,6 +29,8 @@ struct VulkanRenderGraphBuilderContext {
     VulkanMaterialManager&      materialManager;
     VulkanRenderObjectManager&  renderObjectManager;
 
+    VulkanFrameCuller&          frameCuller;
+
     VulkanShaderProgramManager& shaderProgramManager;
     VulkanPipelineManager&      pipelineManager;
 };

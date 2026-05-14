@@ -62,4 +62,6 @@ private:
 
     std::size_t _vertexBufferSize = 0;
     std::size_t _indexBufferSize  = 0;
+
+    std::unordered_map<Mesh, VulkanMesh*, MeshHash> _meshCache{};
 };

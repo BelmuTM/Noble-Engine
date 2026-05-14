@@ -5,6 +5,8 @@
 #include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
 #include "graphics/vulkan/rendergraph/resources/VulkanRenderResources.h"
 
+#include "draw/VulkanDrawBatchBuilder.h"
+
 #include <ranges>
 
 Expected<void> VulkanRenderGraph::create(const VulkanRenderGraphCreateContext& context) noexcept {
@@ -105,7 +107,7 @@ Expected<void> prepareDepthAttachment(
 void executeDrawCalls(
     const vk::CommandBuffer                  commandBuffer,
     const VulkanRenderPass&                  pass,
-    const VulkanFrameDraws*                  frameDraws,
+    const VulkanFrameCuller*                 frameCuller,
     const VulkanFrameResources*              frame,
     const vk::Extent2D                       extent,
     const vk::detail::DispatchLoaderDynamic& dispatchLoader
@@ -119,7 +121,20 @@ void executeDrawCalls(
 
     commandBuffer.bindPipeline(pass.getBindPoint(), pass.getPipeline()->handle());
 
-    for (const auto& drawCall : frameDraws->getDrawCalls(&pass)) {
+    VulkanDrawBatchBuilder batchBuilder;
+    batchBuilder.build(frameCuller->getDrawCalls(&pass));
+
+    const auto& indirectionData = batchBuilder.getIndirectionData();
+
+    if (pass.getType() == VulkanRenderPassType::MeshRender) {
+        frameCuller->getIndirectionBuffer()->updateMemory(
+            frameIndex,
+            indirectionData.data(),
+            indirectionData.size() * sizeof(uint32_t)
+        );
+    }
+
+    for (const auto& [drawCall, firstInstance, instanceCount] : batchBuilder.getBuiltDrawBatches()) {
         const auto& draw = *drawCall;
 
 #if defined(VULKAN_DEBUG_UTILS)
@@ -148,7 +163,7 @@ void executeDrawCalls(
 
         // Draw mesh
 
-        draw.record(commandBuffer, extent, pipelineLayout, shaderProgram);
+        draw.record(commandBuffer, extent, pipelineLayout, shaderProgram, instanceCount, firstInstance);
 
 #if defined(VULKAN_DEBUG_UTILS)
         VulkanDebugger::endLabel(commandBuffer, dispatchLoader);
@@ -205,7 +220,7 @@ Expected<void> VulkanRenderGraph::executePass(
             commandBuffer.beginQuery(_context.queryPool, 0, {});
 
         // Draw calls
-        executeDrawCalls(commandBuffer, pass, _context.frameDraws, _context.frame, extent, _context.dispatchLoader);
+        executeDrawCalls(commandBuffer, pass, _context.frameCuller, _context.frame, extent, _context.dispatchLoader);
 
         if (isMeshPass)
             commandBuffer.endQuery(_context.queryPool, 0);
