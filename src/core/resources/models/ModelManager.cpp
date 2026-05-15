@@ -328,8 +328,6 @@ void ModelManager::processMeshPrimitives_glTF(
         hasTextureCoords ? getAttributeData(glTFModel, attributes.at("TEXCOORD_0")) : AttributeData{};
 
     // Process vertices
-    Math::AABB aabb{};
-
     for (std::size_t i = 0; i < indexData.accessor->count; i++) {
         std::uint32_t vertexIndex = 0;
 
@@ -379,16 +377,10 @@ void ModelManager::processMeshPrimitives_glTF(
             vertex.textureCoords = {textureCoordsPtr[0], textureCoordsPtr[1]};
         }
 
-        // Progressively find the bounds of the mesh
-        aabb.minBound = glm::min(aabb.minBound, vertex.position);
-        aabb.maxBound = glm::max(aabb.maxBound, vertex.position);
-
         // Add vertex and corresponding index to the mesh
         mesh.addVertex(vertex);
         mesh.addIndex(static_cast<std::uint32_t>(i));
     }
-
-    mesh.setAABB(aabb);
 
     if (!hasNormals) {
         mesh.generateSmoothNormals();
@@ -471,6 +463,8 @@ void ModelManager::processNode_glTF(
         for (const auto& glTFPrimitive : glTFMesh.primitives) {
             Mesh mesh = createMesh_glTF(model.name, glTFModel, glTFPrimitive);
 
+            Math::AABB aabb{};
+
             // Apply the transform to the mesh's vertices
             for (auto& vertex : mesh.getVertices()) {
                 vertex.position = glm::vec3(worldTransform * glm::vec4(vertex.position, 1.0f));
@@ -482,9 +476,13 @@ void ModelManager::processNode_glTF(
                     glm::normalize(normalMatrix * glm::vec3(vertex.tangent)),
                     vertex.tangent.w * handedness
                 );
+
+                // Progressively find the bounds of the mesh
+                aabb.minBound = glm::min(aabb.minBound, vertex.position);
+                aabb.maxBound = glm::max(aabb.maxBound, vertex.position);
             }
 
-            mesh.setAABB(mesh.getAABB().transform(worldTransform));
+            mesh.setAABB(aabb);
 
             model.addMesh(mesh);
         }
@@ -544,6 +542,16 @@ Expected<void> ModelManager::load_glTF(Model& model, const std::string& path, co
             Mesh mesh = createMesh_glTF(model.name, glTFModel, glTFPrimitive);
 
             if (!mesh.getVertices().empty()) {
+                // Progressively find the bounds of the mesh
+                Math::AABB aabb{};
+
+                for (auto& vertex : mesh.getVertices()) {
+                    aabb.minBound = glm::min(aabb.minBound, vertex.position);
+                    aabb.maxBound = glm::max(aabb.maxBound, vertex.position);
+                }
+
+                mesh.setAABB(aabb);
+
                 model.addMesh(mesh);
             }
         }

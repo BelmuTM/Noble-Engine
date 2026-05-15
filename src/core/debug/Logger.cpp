@@ -13,6 +13,8 @@
 #include <queue>
 #include <thread>
 
+// #define DISPLAY_YEAR
+
 namespace {
 
 constexpr std::size_t MAX_LOG_QUEUE_SIZE = 256;
@@ -46,7 +48,13 @@ void writeLog(Stream& os, const LogEvent& log) {
 
     Utility::localtime(tm, &time);
 
-    const auto         timeString  = std::put_time(&tm, "(%Y-%m-%d %H:%M:%S)");
+#ifdef DISPLAY_YEAR
+    static constexpr auto dateFormat = "(%Y-%m-%d %H:%M:%S)";
+#else
+    static constexpr auto dateFormat = "(%H:%M:%S)";
+#endif
+
+    const auto         timeString  = std::put_time(&tm, dateFormat);
     const std::string& levelString = Logger::levelStrings[static_cast<std::size_t>(log.level)];
 
     std::ostringstream prefixStream;
