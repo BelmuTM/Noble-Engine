@@ -2,6 +2,8 @@
 
 #include "common/Utility.h"
 
+#include "core/multithreading/ThreadRegistry.h"
+
 #include <array>
 #include <atomic>
 #include <chrono>
@@ -23,6 +25,8 @@ struct LogEvent {
     Logger::Level level = Logger::Level::DEBUG;
 
     std::string message;
+
+    std::string threadName;
     std::string domain;
 
     std::chrono::system_clock::time_point timestamp;
@@ -60,6 +64,9 @@ void writeLog(Stream& os, const LogEvent& log) {
     std::ostringstream prefixStream;
     prefixStream << timeString << " [";
 
+    if (!log.threadName.empty())
+        prefixStream << log.threadName << " / ";
+
     if (!log.domain.empty())
         prefixStream << log.domain << " / ";
 
@@ -87,6 +94,8 @@ void writeLog(Stream& os, const LogEvent& log) {
 }
 
 void logWorker() {
+    ThreadScope logScope("LoggerThread");
+
     while (running.load() || !logQueue.empty()) {
         LogEvent entry;
         {
@@ -187,17 +196,28 @@ namespace Logger {
     }
 
     void log(const Level level, const std::string& message) {
-        return enqueueLogEvent(LogEvent{level, message, "", std::chrono::system_clock::now()});
+        return enqueueLogEvent(
+            LogEvent{
+                level,
+                message,
+                ThreadRegistry::currentName(),
+                "", // TODO: Add regular (non-failure) log domain overload
+                std::chrono::system_clock::now()
+            }
+        );
     }
 
     void log(const Level level, const Failure& failure) {
-        return enqueueLogEvent(LogEvent{
-            level,
-            failure.error.message,
-            failure.error.domain,
-            std::chrono::system_clock::now(),
-            failure
-        });
+        return enqueueLogEvent(
+            LogEvent{
+                level,
+                failure.error.message,
+                ThreadRegistry::currentName(),
+                failure.error.domain,
+                std::chrono::system_clock::now(),
+                failure
+            }
+        );
     }
 
     void debug  (const std::string& message) { log(Level::DEBUG, message); }

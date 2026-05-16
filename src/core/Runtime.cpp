@@ -1,13 +1,13 @@
 #include "Runtime.h"
 
-#include "engine/Engine.h"
+#include "entities/camera/CameraFreeFly.h"
+
+#include "multithreading/ThreadRegistry.h"
 
 #include "graphics/vulkan/VulkanRenderer.h"
 
 #include <chrono>
 #include <thread>
-
-#include "entities/camera/CameraFreeFly.h"
 
 Runtime::Runtime(const Scene& scene, std::atomic<bool>& runningFlag)
     : _running(runningFlag),
@@ -40,9 +40,9 @@ Expected<void> Runtime::init() {
 
     _objectManager.createObjects();
 
-    TRY(_renderer.init(_window, _assetManager, _objectManager));
-
     _cameraBehavior = std::make_unique<CameraFreeFly>(_camera, _inputManager, _window.handle());
+
+    TRY(_renderer.init(_window, _assetManager, _objectManager));
 
     return {};
 }
@@ -54,33 +54,25 @@ void Runtime::shutdown() {
 }
 
 void Runtime::run() {
-    // Engine thread (draws, inputs, updates)
-    _engineThread = std::thread(&Runtime::engineLoop, this);
+    _renderThread = std::thread(&Runtime::renderLoop, this);
 
-    // Window events polling in the main thread
-    while (_running && !_window.shouldClose()) {
-        _window.pollEvents();
-    }
-
-    _running.store(false, std::memory_order_relaxed);
-
-    if (_engineThread.joinable()) {
-        _engineThread.join();
-    }
-}
-
-void Runtime::engineLoop() {
     using highResolutionClock = std::chrono::high_resolution_clock;
 
-    auto previousTime  = highResolutionClock::now();
-    auto lastFpsUpdate = previousTime;
+    auto previousTime = highResolutionClock::now();
 
-    int frameCount = 0;
-    int framerate  = 0;
+    std::uint32_t frameIndex = 0;
 
-    while (_running) {
-        auto         currentTime = highResolutionClock::now();
-        const double deltaTime   = std::chrono::duration<double>(currentTime - previousTime).count();
+    while (_running && !_window.shouldClose()) {
+        _window.pollEvents();
+
+        while (_producedFrame - _consumedFrame.load(std::memory_order_acquire) >= Engine::MAX_FRAMES_IN_FLIGHT) {
+            std::this_thread::yield();
+        }
+
+        auto currentTime = highResolutionClock::now();
+
+        const float deltaTime = std::chrono::duration<float>(currentTime - previousTime).count();
+
         previousTime = currentTime;
 
         if (_inputManager.isPressed(InputAction::ToggleDebugView)) {
@@ -94,27 +86,71 @@ void Runtime::engineLoop() {
         int windowWidth, windowHeight;
         _window.getFramebufferSize(windowWidth, windowHeight);
 
+        _window.setTitle(
+            "Noble Engine | " + std::to_string(_framerate.load(std::memory_order_relaxed)) + " FPS | " +
+            std::to_string(_renderer.primitiveCount) + " Triangles"
+        );
+
         _cameraBehavior->update(deltaTime);
+
         _camera.setAspectRatio(static_cast<float>(windowWidth) / static_cast<float>(windowHeight));
-        _uniforms.update(_camera, windowWidth, windowHeight, _debugState);
 
-        auto frameDraw = _renderer.drawFrame(_uniforms);
-        if (frameDraw.failed()) Logger::error(frameDraw.failure());
+        auto& framePacket = _framePackets[frameIndex % Engine::MAX_FRAMES_IN_FLIGHT];
 
-        ++frameCount;
+        framePacket.uniforms.update(
+            _camera,
+            windowWidth,
+            windowHeight,
+            _debugState
+        );
 
-        const double timeSinceLastUpdate = std::chrono::duration<double>(currentTime - lastFpsUpdate).count();
-        if (timeSinceLastUpdate >= 1) {
-            framerate     = static_cast<int>(frameCount / timeSinceLastUpdate);
-            frameCount    = 0;
-            lastFpsUpdate = currentTime;
+        _producedFrame.fetch_add(1, std::memory_order_release);
 
-            _window.setTitle(
-                "Noble Engine | " + std::to_string(framerate) + " FPS" + " | " +
-                std::to_string(_renderer.primitiveCount) + " Triangles"
-            );
+        ++frameIndex;
+    }
+
+    _running.store(false, std::memory_order_relaxed);
+
+    if (_renderThread.joinable()) {
+        _renderThread.join();
+    }
+}
+
+void Runtime::renderLoop() {
+    ThreadScope renderScope("RenderThread");
+
+    using highResolutionClock = std::chrono::high_resolution_clock;
+
+    auto lastFpsUpdate = highResolutionClock::now();
+
+    int frameCount = 0;
+    uint32_t frameIndex = 0;
+
+    while (_running) {
+        // Wait for engine to produce a frame
+        while (_consumedFrame >= _producedFrame.load(std::memory_order_acquire)) {
+            if (!_running) return;
+            std::this_thread::yield();
         }
 
-        std::this_thread::yield();
+        const auto& framePacket = _framePackets[frameIndex % Engine::MAX_FRAMES_IN_FLIGHT];
+
+        auto frameDraw = _renderer.drawFrame(framePacket.uniforms);
+        if (frameDraw.failed()) Logger::error(frameDraw.failure());
+
+        _consumedFrame.fetch_add(1, std::memory_order_release);
+
+        ++frameIndex;
+        ++frameCount;
+
+        const auto   currentTime         = highResolutionClock::now();
+        const double timeSinceLastUpdate = std::chrono::duration<double>(currentTime - lastFpsUpdate).count();
+
+        if (timeSinceLastUpdate >= 1) {
+            _framerate.store(static_cast<int>(frameCount / timeSinceLastUpdate), std::memory_order_relaxed);
+
+            frameCount    = 0;
+            lastFpsUpdate = currentTime;
+        }
     }
 }

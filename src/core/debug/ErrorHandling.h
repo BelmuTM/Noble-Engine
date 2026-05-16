@@ -41,6 +41,9 @@ struct ErrorFrame {
     int         line;
 };
 
+#define MAKE_ERROR_FRAME() \
+    ErrorFrame{__FUNCTION__, __FILE__, __LINE__}
+
 struct [[nodiscard]] Failure {
     static constexpr std::size_t MAX_FRAMES = 16;
 
@@ -81,7 +84,7 @@ struct [[nodiscard]] Unexpected {
 };
 
 #define FAIL(msg, domain) \
-    Unexpected(Failure(Error{msg, domain}, {__FUNCTION__, __FILE__, __LINE__}))
+    Unexpected(Failure(Error{msg, domain}, MAKE_ERROR_FRAME()))
 
 template<typename T>
 class [[nodiscard]] Expected {
@@ -154,9 +157,6 @@ public:
 private:
     std::optional<Failure> _failure;
 };
-
-#define MAKE_ERROR_FRAME() \
-    {__FUNCTION__, __FILE__, __LINE__}
 
 #define TRY(expr)                                      \
     do {                                               \

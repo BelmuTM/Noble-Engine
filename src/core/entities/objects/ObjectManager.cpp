@@ -21,6 +21,7 @@ void ObjectManager::addScene(const Scene& scene) {
 }
 
 void ObjectManager::createObjects() {
+
 #if MULTITHREADED_OBJECTS_LOAD
 
     // Multithreaded objects loading (models, textures) using a thread pool
@@ -125,4 +126,5 @@ void ObjectManager::createObjects() {
     }
 
 #endif
+
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "engine/Engine.h"
+
 #include "platform/Window.h"
 #include "platform/WindowContext.h"
 
@@ -28,7 +30,7 @@ public:
     void run();
 
 private:
-    void engineLoop();
+    void renderLoop();
 
     std::atomic<bool>& _running;
 
@@ -41,11 +43,21 @@ private:
     Camera                           _camera{};
     std::unique_ptr<ICameraBehavior> _cameraBehavior{};
 
-    FrameUniforms  _uniforms{};
+    struct FramePacket {
+        FrameUniforms uniforms;
+    };
+
+    std::array<FramePacket, Engine::MAX_FRAMES_IN_FLIGHT> _framePackets{};
+
+    std::atomic<std::uint32_t> _producedFrame{0};
+    std::atomic<std::uint32_t> _consumedFrame{0};
+
+    std::atomic<std::uint32_t> _framerate;
+
     VulkanRenderer _renderer{};
 
     AssetManager  _assetManager{};
     ObjectManager _objectManager{_assetManager};
 
-    std::thread _engineThread;
+    std::thread _renderThread;
 };
