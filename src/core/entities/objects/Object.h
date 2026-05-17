@@ -14,6 +14,7 @@ struct ObjectDescriptor {
 struct alignas(16) ObjectDataGPU {
     glm::mat4 modelMatrix;
     glm::mat4 normalMatrix;
+    glm::vec3 debugColor = {1.0f, 1.0f, 1.0f};
 };
 
 class Object {

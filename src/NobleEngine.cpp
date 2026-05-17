@@ -27,21 +27,28 @@ int main() {
     sceneBistro.addObject("bistro.gltf", {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, glm::vec3{1.0f});
 
     Scene sceneDragons;
-    static constexpr std::uint32_t dragonsPerAxis = 16;
-    static constexpr float         dragonsOffset  = 5.0f;
 
-    for (std::uint32_t x = 0; x < dragonsPerAxis; x++) {
-        for (std::uint32_t y = 0; y < dragonsPerAxis; y++) {
-            float xPosition = (x - (dragonsPerAxis - 1) / 2.0f) * dragonsOffset;
-            float yPosition = (y - (dragonsPerAxis - 1) / 2.0f) * dragonsOffset;
+    std::default_random_engine gen;
+    std::uniform_real_distribution<float> distribution(0.0, 1.0);
 
-            sceneDragons.addObject(
-                "stanford_dragon.obj", {xPosition, yPosition, 0.0f}, {0.0f, 180.0f, 60.0f}, glm::vec3{1.0f}
-            );
-        }
+    static constexpr float maxRange = 128.0f;
+    static constexpr float maxAngle = 360.0f;
+
+    for (std::uint32_t x = 0; x < 2048; x++) {
+        float xPosition = distribution(gen) * maxRange - maxRange * 0.5;
+        float yPosition = distribution(gen) * maxRange - maxRange * 0.5;
+        float zPosition = distribution(gen) * maxRange - maxRange * 0.5;
+
+        float xRotation = distribution(gen) * maxAngle;
+        float yRotation = distribution(gen) * maxAngle;
+        float zRotation = distribution(gen) * maxAngle;
+
+        sceneDragons.addObject(
+            "stanford_dragon.obj", {xPosition, yPosition, zPosition}, {xRotation, yRotation, zRotation}, glm::vec3{1.0f}
+        );
     }
 
-    Runtime runtime(sceneSponza, Engine::running);
+    Runtime runtime(sceneDragons, Engine::running);
 
     Engine::fatalOnFail(runtime.init());
 

@@ -124,23 +124,16 @@ void executeDrawCalls(
 
     commandBuffer.bindPipeline(pipelineBindPoint, pipeline->handle());
 
+    const std::uint32_t indirectionOffset = frameCuller->getIndirectionOffset(&pass);
+
     VulkanDrawBatchBuilder batchBuilder;
-    batchBuilder.build(frameCuller->getDrawCalls(&pass));
+    batchBuilder.build(frameCuller->getDrawCalls(&pass), indirectionOffset);
 
-    const std::uint32_t* indirectionOffset = nullptr;
+    const auto& indirectionData = batchBuilder.getIndirectionData();
 
-    if (pass.getPassDescriptor().type == VulkanRenderPassType::MeshRender) {
-        const auto& indirectionData = batchBuilder.getIndirectionData();
-
-        indirectionOffset = &frameCuller->getIndirectionOffset(&pass);
-
-        frameCuller->getIndirectionBuffer()->updateMemory(
-            frameIndex,
-            indirectionData.data(),
-            indirectionData.size() * sizeof(uint32_t),
-            *indirectionOffset
-        );
-    }
+    frameCuller->getIndirectionBuffer()->updateArrayMemory(
+        frameIndex, indirectionData.data(), indirectionData.size(), indirectionOffset
+    );
 
     for (auto& [drawCall, firstInstance, instanceCount] : batchBuilder.getBuiltDrawBatches()) {
         auto& draw = *drawCall;
@@ -148,10 +141,6 @@ void executeDrawCalls(
 #if defined(VULKAN_DEBUG_UTILS)
         VulkanDebugger::beginLabel(commandBuffer, dispatchLoader, draw.getName());
 #endif
-
-        if (pass.getPassDescriptor().type == VulkanRenderPassType::MeshRender) {
-            draw.setPushConstant("indirectionOffset", indirectionOffset);
-        }
 
         // Bind descriptor sets
 

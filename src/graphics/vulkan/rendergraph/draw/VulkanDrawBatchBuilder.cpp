@@ -2,7 +2,7 @@
 
 #include <ranges>
 
-void VulkanDrawBatchBuilder::build(const std::vector<VulkanDrawCall*>& drawCalls) {
+void VulkanDrawBatchBuilder::build(const std::vector<VulkanDrawCall*>& drawCalls, const std::uint32_t indirectionOffset) {
     _drawBatchMap.clear();
     _indirectionData.clear();
     _builtDrawBatches.clear();
@@ -18,7 +18,7 @@ void VulkanDrawBatchBuilder::build(const std::vector<VulkanDrawCall*>& drawCalls
     }
 
     // Flatten into indirection data and built batches
-    std::uint32_t firstInstance = 0;
+    std::uint32_t firstInstance = indirectionOffset;
 
     for (auto& [rep, handles] : _drawBatchMap | std::views::values) {
 

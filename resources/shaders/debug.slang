@@ -12,8 +12,11 @@ struct VSInput {
 struct ObjectData {
     float4x4 modelMatrix;
     float4x4 normalMatrix;
+    float3   debugColor;
 };
-[[vk::push_constant]] ObjectData object;
+
+[[vk::binding(0, 1)]] StructuredBuffer<ObjectData> objects;
+[[vk::binding(0, 2)]] StructuredBuffer<uint> objectIndices;
 
 struct VSOutput {
     float4 position : SV_Position;
@@ -21,10 +24,16 @@ struct VSOutput {
 };
 
 [shader("vertex")]
-VSOutput vertMain(VSInput input) {
+VSOutput vertMain(VSInput input, uint instanceID : SV_InstanceID, uint baseInstance : SV_StartInstanceLocation) {
+    uint objectIndex  = objectIndices[baseInstance + instanceID];
+    ObjectData object = objects[objectIndex];
+
+    float4 worldPosition = mul(object.modelMatrix, float4(input.position, 1.0));
+
     VSOutput output;
-    output.position = mul(uniforms.projection, mul(uniforms.view, mul(object.modelMatrix, float4(input.position, 1.0))));
-    output.color    = input.color;
+    output.position = mul(uniforms.projection, mul(uniforms.view, worldPosition));
+    output.color    = object.debugColor;
+
     return output;
 }
 

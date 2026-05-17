@@ -8,7 +8,9 @@ Expected<void> DebugPass::create(const DebugPassCreateContext& context) {
     const VulkanPipelineDescriptor pipelineDescriptor{
         getShaderProgram(),
         {
-            context.frameResources.getDescriptorManager().getLayout()
+            context.frameResources.getDescriptorManager().getLayout(),
+            context.renderObjectManager.getDescriptorManager().getLayout(),
+            context.frameCuller.getDescriptorManager().getLayout()
         }
     };
 
@@ -27,26 +29,28 @@ Expected<void> DebugPass::create(const DebugPassCreateContext& context) {
             HashUtils::combine(meshHash, &mesh);
 
             for (const auto& corner : mesh.getAABB().getCorners()) {
-                Vertex vertex{};
-                vertex.position = corner;
-                vertex.color    = Utility::instanceColor(meshHash);
-
-                aabbMesh.addVertex(vertex);
+                aabbMesh.addVertex(Vertex{corner});
             }
 
             const auto& indices = Math::AABB::getLineIndices(vertexOffset);
             aabbMesh.getIndices().insert(aabbMesh.getIndices().end(), indices.begin(), indices.end());
 
+            aabbMesh.setAABB(mesh.getAABB());
+
             vertexOffset += 8;
         }
+
+        renderObject->gpuData.debugColor = Utility::instanceColor(meshHash);
 
         VulkanMesh* aabbMeshPtr = context.meshManager.allocateMesh(aabbMesh);
 
         emplaceDrawCall()
             .setName(renderObject->object->getModel().name + "_Debug")
             .setRenderMesh({aabbMeshPtr})
+            .setInstanceHandle(renderObject->instanceHandle)
             .setModelMatrix(renderObject->object->getModelMatrix())
-            .setPushConstant("object", &renderObject->gpuData);
+            .addDescriptorSets(context.renderObjectManager.getDescriptorSets())
+            .addDescriptorSets(context.frameCuller.getDescriptorSets());
     }
 
     return {};

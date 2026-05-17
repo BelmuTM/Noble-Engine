@@ -28,7 +28,7 @@ public:
     VulkanDrawBatchBuilder(VulkanDrawBatchBuilder&&)            = delete;
     VulkanDrawBatchBuilder& operator=(VulkanDrawBatchBuilder&&) = delete;
 
-    void build(const std::vector<VulkanDrawCall*>& drawCalls);
+    void build(const std::vector<VulkanDrawCall*>& drawCalls, std::uint32_t indirectionOffset);
 
     [[nodiscard]] const VulkanDrawBatchMap& getDrawBatchMap() const noexcept { return _drawBatchMap; }
 

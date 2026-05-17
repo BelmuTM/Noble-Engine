@@ -50,7 +50,7 @@ public:
         const std::uint32_t      frameIndex,
         const StorageBufferType* data,
         const std::size_t        count,
-        const vk::DeviceSize     offset = 0
+        const std::uint32_t      offset = 0
     ) const {
         _storageBuffers[frameIndex].updateArrayMemory(data, count, offset);
     }

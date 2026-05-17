@@ -81,9 +81,9 @@ public:
     void updateArrayMemory(
         const BufferDataType* data,
         const std::size_t     count,
-        const vk::DeviceSize  offset = 0
+        const std::uint32_t   offset = 0
     ) const {
-        updateMemory(data, count * sizeof(BufferDataType), offset);
+        updateMemory(data, count * sizeof(BufferDataType), offset * sizeof(BufferDataType));
     }
 
     static vk::DeviceSize align(const vk::DeviceSize size, const vk::DeviceSize alignment) noexcept {

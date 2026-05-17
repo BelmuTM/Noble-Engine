@@ -18,6 +18,8 @@ struct DebugPassCreateContext {
 
     VulkanRenderObjectManager&   renderObjectManager;
 
+    VulkanFrameCuller&           frameCuller;
+
     VulkanShaderProgramManager&  shaderProgramManager;
 
     static DebugPassCreateContext build(const VulkanRenderGraphBuilderContext& context) {
@@ -26,6 +28,7 @@ struct DebugPassCreateContext {
             context.frameResources,
             context.renderResources,
             context.renderObjectManager,
+            context.frameCuller,
             context.shaderProgramManager
         };
     }

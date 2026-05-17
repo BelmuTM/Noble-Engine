@@ -1,7 +1,6 @@
 #include "VulkanFrameCuller.h"
 
 #include "core/render/FrustumCuller.h"
-#include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 
 Expected<void> VulkanFrameCuller::create(
     const VulkanDevice&         device,
@@ -42,24 +41,32 @@ Expected<void> VulkanFrameCuller::cull(
 
         visibleDraws.clear();
 
-        _indirectionOffsets[pass.get()] = currentIndirectionOffset;
+        // Check visibility for passes with culling enabled
+        if (pass->getPassDescriptor().cullMode == VulkanRenderPassCullMode::None) {
+            for (auto& draw : pass->getDrawCalls())
+                visibleDraws.push_back(&draw);
 
-        for (auto& drawCall : pass->getDrawCalls()) {
+        } else {
+            for (auto& drawCall : pass->getDrawCalls()) {
 
-            bool visible = true;
+                bool visible = true;
 
-            if (drawCall.getModelMatrix()) {
-                Math::AABB worldAABB = drawCall.getRenderMesh().mesh->getAABB().transform(*drawCall.getModelMatrix());
+                if (drawCall.getModelMatrix()) {
+                    Math::AABB worldAABB = drawCall.getRenderMesh().mesh->getAABB().transform(*drawCall.getModelMatrix());
 
-                visible = FrustumCuller::testVisibility(worldAABB, frustumPlanes);
-            }
+                    visible = FrustumCuller::testVisibility(worldAABB, frustumPlanes);
+                }
 
-            if (visible) {
-                visibleDraws.push_back(&drawCall);
+                if (visible) {
+                    visibleDraws.push_back(&drawCall);
+                }
             }
         }
 
-        currentIndirectionOffset += static_cast<std::uint32_t>(visibleDraws.size());
+        // Keep track of the indirection offset
+        _indirectionOffsets[pass.get()] = currentIndirectionOffset;
+
+        currentIndirectionOffset += static_cast<std::uint32_t>(pass->getDrawCalls().size());
 
         if (currentIndirectionOffset > MAX_DRAWS) {
             return VK_FAIL("Failed to cull frame: exceeded maximum draws.");

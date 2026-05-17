@@ -1,7 +1,6 @@
 #include "VulkanRenderObjectManager.h"
 
 #include "core/debug/Logger.h"
-#include "graphics/vulkan/common/VulkanDebugger.h"
 
 Expected<void> VulkanRenderObjectManager::create(const VulkanRenderObjectCreateContext& context) noexcept {
     _context = context;
@@ -90,9 +89,5 @@ void VulkanRenderObjectManager::updateObjects(const std::uint32_t frameIndex) co
         dataToGPU[i] = renderObject.gpuData;
     }
 
-    _objectBuffer->updateMemory(
-        frameIndex,
-        dataToGPU.data(),
-        dataToGPU.size() * sizeof(ObjectDataGPU)
-    );
+    _objectBuffer->updateArrayMemory(frameIndex, dataToGPU.data(), dataToGPU.size());
 }

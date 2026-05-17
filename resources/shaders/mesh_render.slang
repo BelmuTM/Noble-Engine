@@ -3,33 +3,32 @@
 
 struct VSInput {
     float3 position  : POSITION;
-    float3 normal    : TEXCOORD0;
-    float4 tangent   : TEXCOORD1;
-    float3 color     : TEXCOORD2;
-    float2 texCoords : TEXCOORD3;
+    float3 normal    : NORMAL;
+    float4 tangent   : TANGENT;
+    float3 color     : COLOR;
+    float2 texCoords : TEXCOORD0;
 }
 
 struct ObjectData {
     float4x4 modelMatrix;
     float4x4 normalMatrix;
+    float3   debugColor;
 };
-
-[[vk::push_constant]] uint indirectionOffset;
 
 [[vk::binding(0, 1)]] StructuredBuffer<ObjectData> objects;
 [[vk::binding(0, 2)]] StructuredBuffer<uint> objectIndices;
 
 struct VSOutput {
     float4 position  : SV_Position;
-    float3 normal    : TEXCOORD0;
-    float4 tangent   : TEXCOORD1;
-    float3 color     : TEXCOORD2;
-    float2 texCoords : TEXCOORD3;
+    float3 normal    : NORMAL;
+    float4 tangent   : TANGENT;
+    float3 color     : COLOR;
+    float2 texCoords : TEXCOORD0;
 };
 
 [shader("vertex")]
 VSOutput vertMain(VSInput input, uint instanceID : SV_InstanceID, uint baseInstance : SV_StartInstanceLocation) {
-    uint objectIndex  = objectIndices[baseInstance + instanceID + indirectionOffset];
+    uint objectIndex  = objectIndices[baseInstance + instanceID];
     ObjectData object = objects[objectIndex];
 
     float4 worldPosition = mul(object.modelMatrix, float4(input.position, 1.0));
