@@ -26,6 +26,8 @@ struct CompositePassCreateContext {
 };
 
 class CompositePass final : public VulkanRenderPass {
+    using VulkanRenderPass::VulkanRenderPass;
+
 public:
-    [[nodiscard]] Expected<void> create(const std::string& path, const CompositePassCreateContext& context);
+    [[nodiscard]] Expected<void> create(const CompositePassCreateContext& context);
 };

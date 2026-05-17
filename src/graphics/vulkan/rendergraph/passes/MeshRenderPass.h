@@ -34,6 +34,8 @@ struct MeshRenderPassCreateContext {
 };
 
 class MeshRenderPass final : public VulkanRenderPass {
+    using VulkanRenderPass::VulkanRenderPass;
+
 public:
-    [[nodiscard]] Expected<void> create(const std::string& path, const MeshRenderPassCreateContext& context);
+    [[nodiscard]] Expected<void> create(const MeshRenderPassCreateContext& context);
 };

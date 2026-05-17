@@ -3,11 +3,20 @@
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 Expected<void> VulkanRenderGraphBuilder::build(const std::vector<VulkanRenderPassDescriptor>& passDescriptors) const {
-    TRY(createPasses(passDescriptors));
-    TRY(createColorBuffers());
+
+    for (const auto& passDescriptor : passDescriptors) {
+        VulkanRenderPass* pass;
+        TRY_ASSIGN(pass, createPass(passDescriptor));
+
+        TRY(createColorBuffers(pass));
+    }
+
     TRY(attachSwapchainOutput());
-    TRY(allocateDescriptors());
-    TRY(createPipelines());
+
+    for (auto& pass : _context.renderGraph.getPasses()) {
+        TRY(allocateDescriptors(pass.get()));
+        TRY(createPipeline(pass.get()));
+    }
 
     scheduleDepthLoadOps();
     scheduleResourceTransitions();
@@ -15,31 +24,33 @@ Expected<void> VulkanRenderGraphBuilder::build(const std::vector<VulkanRenderPas
     return {};
 }
 
-Expected<void> VulkanRenderGraphBuilder::createPasses(
-    const std::vector<VulkanRenderPassDescriptor>& passDescriptors
-) const {
-    for (const auto& [path, type] : passDescriptors) {
-        std::unique_ptr<VulkanRenderPass> pass;
-        VK_TRY_ASSIGN(pass, _passFactory.createPass(path, type, _context));
+Expected<VulkanRenderPass*> VulkanRenderGraphBuilder::createPass(const VulkanRenderPassDescriptor& passDescriptor) const {
+    std::unique_ptr<VulkanRenderPass> pass;
+    TRY_ASSIGN(pass, _passFactory.createPass(passDescriptor, _context));
 
-        _context.renderGraph.addPass(std::move(pass));
-    }
+    _context.renderGraph.addPass(std::move(pass));
+
+    return Expected(_context.renderGraph.getPasses().back().get());
+}
+
+Expected<void> VulkanRenderGraphBuilder::createColorBuffers(VulkanRenderPass* pass) const {
+    TRY(_context.renderResources.createColorBuffers(pass));
 
     return {};
 }
 
-Expected<void> VulkanRenderGraphBuilder::createColorBuffers() const {
-    for (auto& pass : _context.renderGraph.getPasses()) {
-        TRY(_context.renderResources.createColorBuffers(pass.get()));
-    }
+Expected<void> VulkanRenderGraphBuilder::allocateDescriptors(VulkanRenderPass* pass) const {
+    TRY(_context.renderResources.allocateDescriptors(pass));
 
     return {};
 }
 
-Expected<void> VulkanRenderGraphBuilder::allocateDescriptors() const {
-    for (const auto& pass : _context.renderGraph.getPasses()) {
-        TRY(_context.renderResources.allocateDescriptors(pass.get()));
-    }
+Expected<void> VulkanRenderGraphBuilder::createPipeline(VulkanRenderPass* pass) const {
+    VulkanGraphicsPipeline* pipeline = _context.pipelineManager.allocatePipeline();
+
+    TRY(_context.pipelineManager.createGraphicsPipeline(pipeline, *pass));
+
+    pass->setPipeline(pipeline);
 
     return {};
 }
@@ -73,18 +84,6 @@ Expected<void> VulkanRenderGraphBuilder::attachSwapchainOutput() const {
 
     // Attach the swapchain output to the first declared color attachment of the last executing pass
     lastPass->getColorAttachments().at(0) = std::make_unique<VulkanRenderPassAttachment>(swapchainAttachment);
-
-    return {};
-}
-
-Expected<void> VulkanRenderGraphBuilder::createPipelines() const {
-    for (const auto& pass : _context.renderGraph.getPasses()) {
-        VulkanGraphicsPipeline* pipeline = _context.pipelineManager.allocatePipeline();
-
-        TRY(_context.pipelineManager.createGraphicsPipeline(pipeline, *pass));
-
-        pass->setPipeline(pipeline);
-    }
 
     return {};
 }

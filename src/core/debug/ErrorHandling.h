@@ -183,3 +183,11 @@ private:
             };                                         \
         }                                              \
     } while (0)
+
+#define TRY_ASSIGN(varOut, expr)                                    \
+    do {                                                            \
+        auto _resultUnwrap_ = (expr);                               \
+        if (!_resultUnwrap_)                                        \
+            return Unexpected{std::move(_resultUnwrap_.failure())}; \
+        varOut = std::move(_resultUnwrap_.value());                 \
+    } while (0)

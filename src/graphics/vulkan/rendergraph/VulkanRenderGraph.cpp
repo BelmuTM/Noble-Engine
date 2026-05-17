@@ -114,34 +114,46 @@ void executeDrawCalls(
 ) {
     const std::uint32_t frameIndex = frame->getFrameIndex();
 
-    const VulkanShaderProgram* shaderProgram  = pass.getPipelineDescriptor().shaderProgram;
-    const vk::PipelineLayout   pipelineLayout = pass.getPipeline()->getLayout();
+    const VulkanShaderProgram* shaderProgram = pass.getPipelineDescriptor().shaderProgram;
+
+    const VulkanGraphicsPipeline* pipeline          = pass.getPipeline();
+    const vk::PipelineLayout&     pipelineLayout    = pass.getPipeline()->getLayout();
+    const vk::PipelineBindPoint&  pipelineBindPoint = pass.getPipeline()->getBindPoint();
 
     // Bind pipeline
 
-    commandBuffer.bindPipeline(pass.getBindPoint(), pass.getPipeline()->handle());
+    commandBuffer.bindPipeline(pipelineBindPoint, pipeline->handle());
 
     VulkanDrawBatchBuilder batchBuilder;
     batchBuilder.build(frameCuller->getDrawCalls(&pass));
 
-    const auto& indirectionData = batchBuilder.getIndirectionData();
+    const std::uint32_t* indirectionOffset = nullptr;
 
-    if (pass.getType() == VulkanRenderPassType::MeshRender) {
+    if (pass.getPassDescriptor().type == VulkanRenderPassType::MeshRender) {
+        const auto& indirectionData = batchBuilder.getIndirectionData();
+
+        indirectionOffset = &frameCuller->getIndirectionOffset(&pass);
+
         frameCuller->getIndirectionBuffer()->updateMemory(
             frameIndex,
             indirectionData.data(),
-            indirectionData.size() * sizeof(uint32_t)
+            indirectionData.size() * sizeof(uint32_t),
+            *indirectionOffset
         );
     }
 
-    for (const auto& [drawCall, firstInstance, instanceCount] : batchBuilder.getBuiltDrawBatches()) {
-        const auto& draw = *drawCall;
+    for (auto& [drawCall, firstInstance, instanceCount] : batchBuilder.getBuiltDrawBatches()) {
+        auto& draw = *drawCall;
 
 #if defined(VULKAN_DEBUG_UTILS)
         VulkanDebugger::beginLabel(commandBuffer, dispatchLoader, draw.getName());
 #endif
 
-        // Bind descriptors
+        if (pass.getPassDescriptor().type == VulkanRenderPassType::MeshRender) {
+            draw.setPushConstant("indirectionOffset", indirectionOffset);
+        }
+
+        // Bind descriptor sets
 
         // TODO: Use a pre-allocated temporary vector + std::span for scalability (owned by VulkanFrameResources).
         std::vector<vk::DescriptorSet> descriptorSets{};
@@ -156,9 +168,7 @@ void executeDrawCalls(
         }
 
         if (!descriptorSets.empty()) {
-            commandBuffer.bindDescriptorSets(
-                pass.getBindPoint(), pipelineLayout, 0, descriptorSets, nullptr
-            );
+            commandBuffer.bindDescriptorSets(pipelineBindPoint, pipelineLayout, 0, descriptorSets, nullptr);
         }
 
         // Draw mesh
@@ -188,9 +198,9 @@ Expected<void> VulkanRenderGraph::executePass(
 ) const {
     const vk::Extent2D extent = _context.swapchain->getExtent();
 
-    const bool isMeshPass = pass.getType() == VulkanRenderPassType::MeshRender;
+    const bool isMeshPass = pass.getPassDescriptor().type == VulkanRenderPassType::MeshRender;
 
-    if (pass.getBindPoint() == vk::PipelineBindPoint::eGraphics) {
+    if (pass.getPipeline()->getBindPoint() == vk::PipelineBindPoint::eGraphics) {
         // Color attachments
         std::vector<vk::RenderingAttachmentInfo> colorAttachments{};
         TRY(prepareColorAttachments(commandBuffer, pass, colorAttachments));
@@ -211,7 +221,7 @@ Expected<void> VulkanRenderGraph::executePass(
 
         // Start rendering
 #if defined(VULKAN_DEBUG_UTILS)
-        VulkanDebugger::beginLabel(commandBuffer, _context.dispatchLoader, pass.getName());
+        VulkanDebugger::beginLabel(commandBuffer, _context.dispatchLoader, pass.getPassDescriptor().name);
 #endif
 
         commandBuffer.beginRendering(renderingInfo);

@@ -1,19 +1,14 @@
 #include "CompositePass.h"
 
-Expected<void> CompositePass::create(const std::string& path, const CompositePassCreateContext& context) {
-    TRY(context.shaderProgramManager.load(getShaderProgram(), path));
-
-    const std::string& passName = std::filesystem::path(path).stem().string();
+Expected<void> CompositePass::create(const CompositePassCreateContext& context) {
+    TRY(context.shaderProgramManager.load(getShaderProgram(), getPassDescriptor().programPath));
 
     const VulkanPipelineDescriptor pipelineDescriptor{
         getShaderProgram(),
         {context.frameResources.getDescriptorManager().getLayout()}
     };
 
-    setType(VulkanRenderPassType::Composite);
-    setName(passName + "_CompositePass");
     setPipelineDescriptor(pipelineDescriptor);
-    setBindPoint(vk::PipelineBindPoint::eGraphics);
 
     VulkanMesh* fullscreenMesh = context.meshManager.allocateMesh(VulkanMesh::makeFullscreenTriangle());
 

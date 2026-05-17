@@ -40,7 +40,7 @@ struct VulkanRenderObject {
 
             // Load material
             VulkanMaterial* material;
-            VK_TRY_ASSIGN(material, materialManager->getOrCreateMaterial(mesh.getMaterial()));
+            TRY_ASSIGN(material, materialManager->getOrCreateMaterial(mesh.getMaterial()));
 
             submesh.material = material;
             submesh.material->bindDescriptorSets();

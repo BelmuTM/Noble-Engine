@@ -2,10 +2,8 @@
 
 #include "common/Utility.h"
 
-Expected<void> DebugPass::create(const std::string& path, const DebugPassCreateContext& context) {
-    TRY(context.shaderProgramManager.load(getShaderProgram(), path));
-
-    const std::string& passName = std::filesystem::path(path).stem().string();
+Expected<void> DebugPass::create(const DebugPassCreateContext& context) {
+    TRY(context.shaderProgramManager.load(getShaderProgram(), getPassDescriptor().programPath));
 
     const VulkanPipelineDescriptor pipelineDescriptor{
         getShaderProgram(),
@@ -14,10 +12,7 @@ Expected<void> DebugPass::create(const std::string& path, const DebugPassCreateC
         }
     };
 
-    setType(VulkanRenderPassType::Debug);
-    setName(passName + "_DebugPass");
     setPipelineDescriptor(pipelineDescriptor);
-    setBindPoint(vk::PipelineBindPoint::eGraphics);
     setDepthAttachment(context.renderResources.getDepthBufferAttachment());
 
     std::size_t meshHash = 0;
@@ -45,7 +40,7 @@ Expected<void> DebugPass::create(const std::string& path, const DebugPassCreateC
             vertexOffset += 8;
         }
 
-        VulkanMesh* aabbMeshPtr = _meshManager.allocateMesh(aabbMesh);
+        VulkanMesh* aabbMeshPtr = context.meshManager.allocateMesh(aabbMesh);
 
         emplaceDrawCall()
             .setName(renderObject->object->getModel().name + "_Debug")
@@ -54,14 +49,5 @@ Expected<void> DebugPass::create(const std::string& path, const DebugPassCreateC
             .setPushConstant("object", &renderObject->gpuData);
     }
 
-    TRY(_meshManager.create(context.device, context.commandManager));
-    TRY(_meshManager.fillBuffers());
-
     return {};
-}
-
-void DebugPass::destroy() noexcept {
-    VulkanRenderPass::destroy();
-
-    _meshManager.destroy();
 }

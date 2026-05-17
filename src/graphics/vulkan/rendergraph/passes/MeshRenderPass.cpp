@@ -1,9 +1,7 @@
 #include "MeshRenderPass.h"
 
-Expected<void> MeshRenderPass::create(const std::string& path, const MeshRenderPassCreateContext& context) {
-    TRY(context.shaderProgramManager.load(getShaderProgram(), path));
-
-    const std::string& passName = std::filesystem::path(path).stem().string();
+Expected<void> MeshRenderPass::create(const MeshRenderPassCreateContext& context) {
+    TRY(context.shaderProgramManager.load(getShaderProgram(), getPassDescriptor().programPath));
 
     const VulkanPipelineDescriptor pipelineDescriptor{
         getShaderProgram(),
@@ -15,10 +13,7 @@ Expected<void> MeshRenderPass::create(const std::string& path, const MeshRenderP
         }
     };
 
-    setType(VulkanRenderPassType::MeshRender);
-    setName(passName + "_MeshRenderPass");
     setPipelineDescriptor(pipelineDescriptor);
-    setBindPoint(vk::PipelineBindPoint::eGraphics);
     setDepthAttachment(context.renderResources.getDepthBufferAttachment());
 
     for (const auto& renderObject : context.renderObjectManager.getRenderObjects()) {
@@ -32,7 +27,6 @@ Expected<void> MeshRenderPass::create(const std::string& path, const MeshRenderP
                 .addDescriptorSets(context.renderObjectManager.getDescriptorSets())
                 .addDescriptorSets(context.frameCuller.getDescriptorSets())
                 .addDescriptorSets(renderMesh.material->getDescriptorSets());
-                //.setPushConstant("object", &renderObject->gpuData);
         }
     }
 

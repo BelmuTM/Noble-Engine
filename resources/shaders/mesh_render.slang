@@ -13,7 +13,8 @@ struct ObjectData {
     float4x4 modelMatrix;
     float4x4 normalMatrix;
 };
-//[[vk::push_constant]] ObjectData object;
+
+[[vk::push_constant]] uint indirectionOffset;
 
 [[vk::binding(0, 1)]] StructuredBuffer<ObjectData> objects;
 [[vk::binding(0, 2)]] StructuredBuffer<uint> objectIndices;
@@ -28,11 +29,11 @@ struct VSOutput {
 
 [shader("vertex")]
 VSOutput vertMain(VSInput input, uint instanceID : SV_InstanceID, uint baseInstance : SV_StartInstanceLocation) {
-    uint       objectIndex = objectIndices[baseInstance + instanceID];
-    ObjectData objectData  = objects[objectIndex];
+    uint objectIndex  = objectIndices[baseInstance + instanceID + indirectionOffset];
+    ObjectData object = objects[objectIndex];
 
-    float4 worldPosition = mul(objectData.modelMatrix, float4(input.position, 1.0));
-    float3 worldNormal   = normalize(mul(float3x3(objectData.normalMatrix), input.normal));
+    float4 worldPosition = mul(object.modelMatrix, float4(input.position, 1.0));
+    float3 worldNormal   = normalize(mul(float3x3(object.normalMatrix), input.normal));
 
     VSOutput output;
     output.position  = mul(uniforms.projection, mul(uniforms.view, worldPosition));

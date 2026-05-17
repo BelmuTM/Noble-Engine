@@ -27,6 +27,8 @@ public:
 
     [[nodiscard]] const vk::PipelineLayout& getLayout() const noexcept { return _pipelineLayout; }
 
+    [[nodiscard]] const vk::PipelineBindPoint& getBindPoint() const noexcept { return _pipelineBindPoint; }
+
 private:
     [[nodiscard]] Expected<void> createPipelineLayout(
         const vk::Device& device, const VulkanPipelineDescriptor& descriptor
@@ -38,4 +40,6 @@ private:
 
     vk::Pipeline       _pipeline{};
     vk::PipelineLayout _pipelineLayout{};
+
+    vk::PipelineBindPoint _pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
 };

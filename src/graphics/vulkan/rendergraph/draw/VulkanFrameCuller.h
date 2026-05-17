@@ -26,10 +26,14 @@ public:
 
     void destroy() noexcept;
 
-    void cull(const std::vector<std::unique_ptr<VulkanRenderPass>>& passes, const FrameUniforms& uniforms);
+    Expected<void> cull(const std::vector<std::unique_ptr<VulkanRenderPass>>& passes, const FrameUniforms& uniforms);
 
-    [[nodiscard]] const std::vector<const VulkanDrawCall*>& getDrawCalls(const VulkanRenderPass* pass) const {
+    [[nodiscard]] const std::vector<VulkanDrawCall*>& getDrawCalls(const VulkanRenderPass* pass) const {
         return _visibleDrawCalls.at(pass);
+    }
+
+    [[nodiscard]] const std::uint32_t& getIndirectionOffset(const VulkanRenderPass* pass) const {
+        return _indirectionOffsets.at(pass);
     }
 
     [[nodiscard]] static VulkanDescriptorScheme getDescriptorScheme() noexcept {
@@ -46,7 +50,9 @@ public:
     [[nodiscard]] const VulkanDescriptorSets* getDescriptorSets() const noexcept { return _indirectionDescriptors; }
 
 private:
-    std::unordered_map<const VulkanRenderPass*, std::vector<const VulkanDrawCall*>> _visibleDrawCalls{};
+    std::unordered_map<const VulkanRenderPass*, std::vector<VulkanDrawCall*>> _visibleDrawCalls{};
+
+    std::unordered_map<const VulkanRenderPass*, std::uint32_t> _indirectionOffsets{};
 
     VulkanDescriptorManager _descriptorManager{};
 

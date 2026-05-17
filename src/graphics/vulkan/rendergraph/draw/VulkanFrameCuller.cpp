@@ -12,7 +12,7 @@ Expected<void> VulkanFrameCuller::create(
     TRY(_descriptorManager.create(device.getLogicalDevice(), getDescriptorScheme(), framesInFlight, MAX_DRAWS));
 
     // Create indirection buffer
-    VK_TRY_ASSIGN(_indirectionBuffer, storageBufferManager.allocateBuffer(MAX_DRAWS * sizeof(uint32_t)));
+    TRY_ASSIGN(_indirectionBuffer, storageBufferManager.allocateBuffer(MAX_DRAWS * sizeof(uint32_t)));
 
     TRY(_descriptorManager.allocate(_indirectionDescriptors));
 
@@ -25,7 +25,7 @@ void VulkanFrameCuller::destroy() noexcept {
     _descriptorManager.destroy();
 }
 
-void VulkanFrameCuller::cull(
+Expected<void> VulkanFrameCuller::cull(
     const std::vector<std::unique_ptr<VulkanRenderPass>>& passes, const FrameUniforms& uniforms
 ) {
     const glm::mat4& viewProjectionMatrix = uniforms.projectionMatrix * uniforms.viewMatrix;
@@ -35,11 +35,16 @@ void VulkanFrameCuller::cull(
     _visibleDrawCalls.clear();
     _visibleDrawCalls.reserve(passes.size());
 
+    std::uint32_t currentIndirectionOffset = 0;
+
     for (const auto& pass : passes) {
         auto& visibleDraws = _visibleDrawCalls[pass.get()];
+
         visibleDraws.clear();
 
-        for (const auto& drawCall : pass->getDrawCalls()) {
+        _indirectionOffsets[pass.get()] = currentIndirectionOffset;
+
+        for (auto& drawCall : pass->getDrawCalls()) {
 
             bool visible = true;
 
@@ -53,5 +58,13 @@ void VulkanFrameCuller::cull(
                 visibleDraws.push_back(&drawCall);
             }
         }
+
+        currentIndirectionOffset += static_cast<std::uint32_t>(visibleDraws.size());
+
+        if (currentIndirectionOffset > MAX_DRAWS) {
+            return VK_FAIL("Failed to cull frame: exceeded maximum draws.");
+        }
     }
+
+    return {};
 }

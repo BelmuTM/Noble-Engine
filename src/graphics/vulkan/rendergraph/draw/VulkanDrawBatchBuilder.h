@@ -11,12 +11,12 @@
 class VulkanDrawBatchBuilder {
 public:
     struct BuiltDrawBatch {
-        const VulkanDrawCall* drawCall;
-        std::uint32_t         firstInstance;
-        std::uint32_t         instanceCount;
+        VulkanDrawCall* drawCall;
+        std::uint32_t   firstInstance;
+        std::uint32_t   instanceCount;
     };
 
-    using BatchValue         = std::pair<const VulkanDrawCall*, std::vector<VulkanInstanceHandle>>;
+    using BatchValue         = std::pair<VulkanDrawCall*, std::vector<VulkanInstanceHandle>>;
     using VulkanDrawBatchMap = std::unordered_map<VulkanDrawBatch, BatchValue>;
 
     VulkanDrawBatchBuilder()  = default;
@@ -28,11 +28,11 @@ public:
     VulkanDrawBatchBuilder(VulkanDrawBatchBuilder&&)            = delete;
     VulkanDrawBatchBuilder& operator=(VulkanDrawBatchBuilder&&) = delete;
 
-    void build(const std::vector<const VulkanDrawCall*>& drawCalls);
+    void build(const std::vector<VulkanDrawCall*>& drawCalls);
 
     [[nodiscard]] const VulkanDrawBatchMap& getDrawBatchMap() const noexcept { return _drawBatchMap; }
 
-    [[nodiscard]] const std::vector<BuiltDrawBatch>& getBuiltDrawBatches() const noexcept { return _builtDrawBatches; }
+    [[nodiscard]] std::vector<BuiltDrawBatch>& getBuiltDrawBatches() noexcept { return _builtDrawBatches; }
 
     [[nodiscard]] const std::vector<std::uint32_t>& getIndirectionData() const noexcept { return _indirectionData; }
 

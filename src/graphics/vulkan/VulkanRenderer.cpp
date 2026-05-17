@@ -70,10 +70,10 @@ Expected<void> VulkanRenderer::init(
     ));
 
     const std::vector<VulkanRenderPassDescriptor> passes = {
-        {"mesh_render", VulkanRenderPassType::MeshRender},
-        {"debug",       VulkanRenderPassType::Debug     },
-        {"composite_0", VulkanRenderPassType::Composite },
-        {"composite_1", VulkanRenderPassType::Composite }
+        {"Gbuffer_Pass", "mesh_render", VulkanRenderPassType::MeshRender, VulkanRenderPassCullMode::Frustum},
+        {"Debug_Pass", "debug", VulkanRenderPassType::Debug},
+        {"Composite0_Pass", "composite_0", VulkanRenderPassType::Composite},
+        {"Composite1_Pass", "composite_1", VulkanRenderPassType::Composite}
     };
 
     VulkanRenderPassFactory passFactory{};
@@ -119,7 +119,7 @@ Expected<void> VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
     TRY(onFramebufferResize());
 
     VulkanSwapchain::SwapchainOp<uint32_t> imageAcquireResult;
-    VK_TRY_ASSIGN(imageAcquireResult, swapchainManager.acquireNextImage(currentFrame));
+    TRY_ASSIGN(imageAcquireResult, swapchainManager.acquireNextImage(currentFrame));
 
     if (!imageAcquireResult.value.has_value()) {
         return {};
@@ -132,7 +132,7 @@ Expected<void> VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
     // Render objects update
     renderObjectManager.updateObjects(currentFrame);
     // Frustum culling
-    frameCuller.cull(renderGraph.getPasses(), uniforms);
+    TRY(frameCuller.cull(renderGraph.getPasses(), uniforms));
 
     TRY(recordCurrentCommandBuffer(imageIndex));
     TRY(submitCurrentCommandBuffer(imageIndex));

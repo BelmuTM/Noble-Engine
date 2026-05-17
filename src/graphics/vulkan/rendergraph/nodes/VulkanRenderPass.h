@@ -9,8 +9,7 @@
 
 #include <memory>
 #include <ranges>
-
-// TODO: Separate into VulkanRenderPassDescription (immutable) and VulkanRenderPassState (mutable) for hot reloading.
+#include <utility>
 
 class VulkanGraphicsPipeline;
 
@@ -25,18 +24,25 @@ struct VulkanPassTransition {
 
 enum class VulkanRenderPassType : std::uint8_t { None, MeshRender, Composite, Debug };
 
+enum class VulkanRenderPassCullMode : std::uint8_t { None, Frustum };
+
+// Immutable, describes the pass identity
 struct VulkanRenderPassDescriptor {
-    std::string          path;
-    VulkanRenderPassType type;
+    std::string              name = "Undefined_Pass";
+    std::string              programPath;
+    VulkanRenderPassType     type     = VulkanRenderPassType::None;
+    VulkanRenderPassCullMode cullMode = VulkanRenderPassCullMode::None;
 };
 
+// Mutable, describes the pass state (data subject to hot reloading)
 class VulkanRenderPass {
 public:
     using DescriptorSetsMap     = std::unordered_map<std::uint32_t, VulkanDescriptorSets*>;
     using DescriptorManagersMap = std::unordered_map<std::uint32_t, std::unique_ptr<VulkanDescriptorManager>>;
 
-    VulkanRenderPass()          = default;
-    virtual ~VulkanRenderPass() = default;
+    explicit VulkanRenderPass(VulkanRenderPassDescriptor passDescriptor) : _passDescriptor(std::move(passDescriptor)) {}
+
+    ~VulkanRenderPass() = default;
 
     VulkanRenderPass(const VulkanRenderPass&)            = delete;
     VulkanRenderPass& operator=(const VulkanRenderPass&) = delete;
@@ -44,13 +50,11 @@ public:
     VulkanRenderPass(VulkanRenderPass&&)            = delete;
     VulkanRenderPass& operator=(VulkanRenderPass&&) = delete;
 
-    virtual void destroy() noexcept;
+    void destroy() noexcept;
 
     // Getters
 
-    [[nodiscard]] VulkanRenderPassType getType() const noexcept { return _type; }
-
-    [[nodiscard]] const std::string& getName() const noexcept { return _name; }
+    [[nodiscard]] const VulkanRenderPassDescriptor& getPassDescriptor() const noexcept { return _passDescriptor; }
 
     [[nodiscard]]       VulkanShaderProgram*& getShaderProgram()       noexcept { return _shaderProgram; }
     [[nodiscard]] const VulkanShaderProgram*  getShaderProgram() const noexcept { return _shaderProgram; }
@@ -59,8 +63,6 @@ public:
     [[nodiscard]] const VulkanPipelineDescriptor& getPipelineDescriptor() const noexcept { return _pipelineDescriptor; }
 
     [[nodiscard]] const VulkanGraphicsPipeline* getPipeline() const noexcept { return _pipeline; }
-
-    [[nodiscard]] vk::PipelineBindPoint getBindPoint() const noexcept { return _bindPoint; }
 
     [[nodiscard]]       DescriptorSetsMap& getDescriptorSets()       noexcept { return _descriptorSets; }
     [[nodiscard]] const DescriptorSetsMap& getDescriptorSets() const noexcept { return _descriptorSets; }
@@ -79,6 +81,10 @@ public:
         return _colorAttachments;
     }
 
+    [[nodiscard]] std::vector<VulkanDrawCall>& getDrawCalls() noexcept {
+        return _drawCalls;
+    }
+
     [[nodiscard]] const std::vector<VulkanDrawCall>& getDrawCalls() const noexcept {
         return _drawCalls;
     }
@@ -88,10 +94,6 @@ public:
 
     // Setters
 
-    VulkanRenderPass& setType(const VulkanRenderPassType type) noexcept { _type = type; return *this; }
-
-    VulkanRenderPass& setName(const std::string& name) noexcept { _name = name; return *this; }
-
     VulkanRenderPass& setPipelineDescriptor(const VulkanPipelineDescriptor& pipelineDescriptor) noexcept {
         _pipelineDescriptor = pipelineDescriptor;
         return *this;
@@ -99,11 +101,6 @@ public:
 
     VulkanRenderPass& setPipeline(const VulkanGraphicsPipeline* pipeline) noexcept {
         _pipeline = pipeline;
-        return *this;
-    }
-
-    VulkanRenderPass& setBindPoint(const vk::PipelineBindPoint bindPoint) noexcept {
-        _bindPoint = bindPoint;
         return *this;
     }
 
@@ -141,16 +138,12 @@ public:
     }
 
 private:
-    VulkanRenderPassType _type = VulkanRenderPassType::None;
-
-    std::string _name = "Undefined_Pass";
+    const VulkanRenderPassDescriptor _passDescriptor;
 
     VulkanShaderProgram* _shaderProgram = nullptr;
 
-    VulkanPipelineDescriptor _pipelineDescriptor{};
-
+    VulkanPipelineDescriptor      _pipelineDescriptor{};
     const VulkanGraphicsPipeline* _pipeline  = nullptr;
-    vk::PipelineBindPoint         _bindPoint = vk::PipelineBindPoint::eGraphics;
 
     DescriptorSetsMap     _descriptorSets{};
     DescriptorManagersMap _descriptorManagers{};

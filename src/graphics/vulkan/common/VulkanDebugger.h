@@ -134,14 +134,6 @@ namespace VulkanDebugger {
             return Unexpected{std::move(_resultTry_.failure())};    \
     } while (0)
 
-#define VK_TRY_ASSIGN(varOut, expr)                                 \
-    do {                                                            \
-        auto _resultUnwrap_ = (expr);                               \
-        if (!_resultUnwrap_)                                        \
-            return Unexpected{std::move(_resultUnwrap_.failure())}; \
-        varOut = std::move(_resultUnwrap_.value());                 \
-    } while (0)
-
 #define VK_CREATE(varOut, expr)                                     \
     do {                                                            \
         auto _resultCreate_ = VK_EXPECT(expr);                      \

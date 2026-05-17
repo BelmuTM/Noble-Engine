@@ -52,15 +52,15 @@ public:
     [[nodiscard]] Expected<void> build(const std::vector<VulkanRenderPassDescriptor>& passDescriptors) const;
 
 private:
-    [[nodiscard]] Expected<void> createPasses(const std::vector<VulkanRenderPassDescriptor>& passDescriptors) const;
+    [[nodiscard]] Expected<VulkanRenderPass*> createPass(const VulkanRenderPassDescriptor& passDescriptor) const;
+
+    [[nodiscard]] Expected<void> createColorBuffers(VulkanRenderPass* pass) const;
+
+    [[nodiscard]] Expected<void> allocateDescriptors(VulkanRenderPass* pass) const;
+
+    [[nodiscard]] Expected<void> createPipeline(VulkanRenderPass* pass) const;
 
     [[nodiscard]] Expected<void> attachSwapchainOutput() const;
-
-    [[nodiscard]] Expected<void> createColorBuffers() const;
-
-    [[nodiscard]] Expected<void> allocateDescriptors() const;
-
-    [[nodiscard]] Expected<void> createPipelines() const;
 
     void scheduleDepthLoadOps() const;
     

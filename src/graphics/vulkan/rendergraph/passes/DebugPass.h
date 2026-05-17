@@ -11,8 +11,7 @@
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 
 struct DebugPassCreateContext {
-    const VulkanDevice&          device;
-    const VulkanCommandManager&  commandManager;
+    VulkanMeshManager&           meshManager;
 
     const VulkanFrameResources&  frameResources;
     const VulkanRenderResources& renderResources;
@@ -23,8 +22,7 @@ struct DebugPassCreateContext {
 
     static DebugPassCreateContext build(const VulkanRenderGraphBuilderContext& context) {
         return {
-            context.device,
-            context.commandManager,
+            context.meshManager,
             context.frameResources,
             context.renderResources,
             context.renderObjectManager,
@@ -34,11 +32,8 @@ struct DebugPassCreateContext {
 };
 
 class DebugPass final : public VulkanRenderPass {
+    using VulkanRenderPass::VulkanRenderPass;
+
 public:
-    [[nodiscard]] Expected<void> create(const std::string& path, const DebugPassCreateContext& context);
-
-    void destroy() noexcept override;
-
-private:
-    VulkanMeshManager _meshManager{};
+    [[nodiscard]] Expected<void> create(const DebugPassCreateContext& context);
 };

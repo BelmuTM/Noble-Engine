@@ -15,14 +15,14 @@ void VulkanRenderPassFactory::registerPassTypes() {
 }
 
 Expected<std::unique_ptr<VulkanRenderPass>> VulkanRenderPassFactory::createPass(
-    const std::string&                     path,
-    const VulkanRenderPassType             type,
+    const VulkanRenderPassDescriptor&      descriptor,
     const VulkanRenderGraphBuilderContext& context
 ) const {
-    const auto it = _factories.find(type);
+    const auto it = _factories.find(descriptor.type);
+
     if (it == _factories.end()) {
         return VK_FAIL("Failed to create render pass: no factory registered for pass type.");
     }
 
-    return Expected(it->second(path, context));
+    return Expected(it->second(descriptor, context));
 }

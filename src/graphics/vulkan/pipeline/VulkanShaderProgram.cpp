@@ -2,8 +2,6 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include "core/debug/Logger.h"
-
 #include <filesystem>
 #include <fstream>
 #include <ranges>
@@ -55,7 +53,7 @@ Expected<void> VulkanShaderProgram::loadFromFiles(const std::vector<std::string>
     ScopeGuard guard{[this] { clearShaderModules(); }};
 
     for (const auto& path : paths) {
-        std::string baseErrorMessage = "Failed to load shader stage \"" + path + "\": ";
+        const std::string baseErrorMessage = "Failed to load shader stage \"" + path + "\": ";
 
         std::string stageExtension = extractStageExtension(path);
 
@@ -73,7 +71,7 @@ Expected<void> VulkanShaderProgram::loadFromFiles(const std::vector<std::string>
         }
 
         vk::ShaderModule module;
-        VK_TRY_ASSIGN(module, createShaderModule(bytecode));
+        TRY_ASSIGN(module, createShaderModule(bytecode));
 
         _shaderModules.push_back(module);
 

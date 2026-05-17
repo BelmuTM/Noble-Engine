@@ -12,7 +12,7 @@ Expected<void> VulkanRenderObjectManager::create(const VulkanRenderObjectCreateC
     ));
 
     // Create object buffer
-    VK_TRY_ASSIGN(
+    TRY_ASSIGN(
         _objectBuffer,
         context.storageBufferManager->allocateBuffer(MAX_RENDER_OBJECTS * sizeof(ObjectDataGPU))
     );

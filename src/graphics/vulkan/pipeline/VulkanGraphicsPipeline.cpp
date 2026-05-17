@@ -107,6 +107,8 @@ vk::PipelineDynamicStateCreateInfo makeDynamicState() noexcept {
 }
 
 Expected<void> VulkanGraphicsPipeline::createPipeline(const vk::Device& device, const VulkanRenderPass& pass) {
+    const VulkanRenderPassType& passType = pass.getPassDescriptor().type;
+
     const auto& shaderStages = pass.getPipelineDescriptor().shaderProgram->getStages();
 
     // Color attachment state
@@ -140,7 +142,7 @@ Expected<void> VulkanGraphicsPipeline::createPipeline(const vk::Device& device, 
     const auto& bindingDescription    = VulkanVertex::getBindingDescription();
     const auto& attributeDescriptions = VulkanVertex::getAttributeDescriptions();
 
-    if (pass.getType() == VulkanRenderPassType::MeshRender || pass.getType() == VulkanRenderPassType::Debug) {
+    if (passType == VulkanRenderPassType::MeshRender || passType == VulkanRenderPassType::Debug) {
         vertexInputState
             .setVertexBindingDescriptions(bindingDescription)
             .setVertexAttributeDescriptions(attributeDescriptions);
@@ -151,7 +153,7 @@ Expected<void> VulkanGraphicsPipeline::createPipeline(const vk::Device& device, 
     vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState{};
     inputAssemblyState.setPrimitiveRestartEnable(vk::False);
 
-    if (pass.getType() == VulkanRenderPassType::Debug) {
+    if (passType == VulkanRenderPassType::Debug) {
         inputAssemblyState.setTopology(vk::PrimitiveTopology::eLineList);
     } else {
         inputAssemblyState.setTopology(vk::PrimitiveTopology::eTriangleList);
@@ -172,7 +174,7 @@ Expected<void> VulkanGraphicsPipeline::createPipeline(const vk::Device& device, 
         .setDepthBiasEnable(vk::False)
         .setLineWidth(2.0f);
 
-    switch (pass.getType()) {
+    switch (passType) {
         case VulkanRenderPassType::MeshRender:
             rasterizationState.setCullMode(vk::CullModeFlagBits::eBack);
             break;

@@ -138,7 +138,7 @@ Expected<void> VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface) {
     }
 
     SwapchainSupportInfo supportInfo;
-    VK_TRY_ASSIGN(supportInfo, querySwapchainSupport(_device->getPhysicalDevice(), surface));
+    TRY_ASSIGN(supportInfo, querySwapchainSupport(_device->getPhysicalDevice(), surface));
 
     const vk::SurfaceFormatKHR& surfaceFormat = chooseSurfaceFormat(supportInfo.formats);
     const vk::PresentModeKHR&   presentMode   = choosePresentMode(supportInfo.presentModes);
