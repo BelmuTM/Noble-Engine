@@ -45,14 +45,17 @@ public:
         _storageBuffers[frameIndex].updateMemory(data, offset);
     }
 
-    template<typename StorageBufferType>
+    template<typename StorageBufferContainerType>
+    requires requires(const StorageBufferContainerType& container) {
+        container.data();
+        container.size();
+    }
     void updateArrayMemory(
-        const std::uint32_t      frameIndex,
-        const StorageBufferType* data,
-        const std::size_t        count,
-        const std::uint32_t      offset = 0
+        const std::uint32_t               frameIndex,
+        const StorageBufferContainerType& container,
+        const std::uint32_t               offset = 0
     ) const {
-        _storageBuffers[frameIndex].updateArrayMemory(data, count, offset);
+        _storageBuffers[frameIndex].updateArrayMemory(container.data(), container.size(), offset);
     }
 
     [[nodiscard]] VulkanDescriptorInfo getDescriptorInfo(

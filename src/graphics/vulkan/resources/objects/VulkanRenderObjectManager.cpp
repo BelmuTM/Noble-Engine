@@ -89,5 +89,5 @@ void VulkanRenderObjectManager::updateObjects(const std::uint32_t frameIndex) co
         dataToGPU[i] = renderObject.gpuData;
     }
 
-    _objectBuffer->updateArrayMemory(frameIndex, dataToGPU.data(), dataToGPU.size());
+    _objectBuffer->updateArrayMemory(frameIndex, dataToGPU);
 }

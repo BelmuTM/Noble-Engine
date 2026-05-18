@@ -124,16 +124,13 @@ void executeDrawCalls(
 
     commandBuffer.bindPipeline(pipelineBindPoint, pipeline->handle());
 
+    // Build draw batches and update the indirection buffer
     const std::uint32_t indirectionOffset = frameCuller->getIndirectionOffset(&pass);
 
     VulkanDrawBatchBuilder batchBuilder;
     batchBuilder.build(frameCuller->getDrawCalls(&pass), indirectionOffset);
 
-    const auto& indirectionData = batchBuilder.getIndirectionData();
-
-    frameCuller->getIndirectionBuffer()->updateArrayMemory(
-        frameIndex, indirectionData.data(), indirectionData.size(), indirectionOffset
-    );
+    frameCuller->getIndirectionBuffer()->updateArrayMemory(frameIndex, batchBuilder.getIndirectionData(), indirectionOffset);
 
     for (auto& [drawCall, firstInstance, instanceCount] : batchBuilder.getBuiltDrawBatches()) {
         auto& draw = *drawCall;
