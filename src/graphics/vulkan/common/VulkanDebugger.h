@@ -85,7 +85,7 @@ namespace VulkanDebugger {
         return Expected<T>(std::move(resultValue.value));
     }
 
-#if defined(VULKAN_DEBUG_UTILS)
+#ifdef VULKAN_DEBUG_UTILS
 
     void beginLabel(
         vk::CommandBuffer                        commandBuffer,

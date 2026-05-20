@@ -4,7 +4,7 @@
 
 namespace Utility {
     void localtime(std::tm& tm, const std::time_t* time) {
-#if defined(_WIN32)
+#ifdef _WIN32
         localtime_s(&tm, time);
 #else
         localtime_r(time, &tm);

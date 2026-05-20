@@ -48,7 +48,7 @@ int main() {
         );
     }
 
-    Runtime runtime(sceneDragons, Engine::running);
+    Runtime runtime(sceneSponza, Engine::running);
 
     Engine::fatalOnFail(runtime.init());
 

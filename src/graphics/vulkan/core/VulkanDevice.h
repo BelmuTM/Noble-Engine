@@ -30,10 +30,7 @@ public:
     struct QueueFamilyIndices {
         std::uint32_t graphicsFamily = UINT32_MAX;
         std::uint32_t presentFamily  = UINT32_MAX;
-
-        [[nodiscard]] bool isComplete() const noexcept {
-            return graphicsFamily != UINT32_MAX && presentFamily != UINT32_MAX;
-        }
+        std::uint32_t computeFamily  = UINT32_MAX;
     };
 
     [[nodiscard]] vk::PhysicalDevice getPhysicalDevice() const noexcept { return _physicalDevice; }
@@ -49,6 +46,7 @@ public:
 
     [[nodiscard]] vk::Queue getGraphicsQueue() const noexcept { return _graphicsQueue; }
     [[nodiscard]] vk::Queue getPresentQueue() const noexcept { return _presentQueue; }
+    [[nodiscard]] vk::Queue getComputeQueue() const noexcept { return _computeQueue; }
 
     [[nodiscard]] vk::QueryPool getQueryPool() const noexcept { return _queryPool; }
 
@@ -78,6 +76,7 @@ private:
 
     vk::Queue _graphicsQueue{};
     vk::Queue _presentQueue{};
+    vk::Queue _computeQueue{};
 
     vk::QueryPool _queryPool{};
 };

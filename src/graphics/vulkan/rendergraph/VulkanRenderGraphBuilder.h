@@ -66,7 +66,7 @@ private:
     
     void scheduleResourceTransitions() const;
 
-    const VulkanRenderGraphBuilderContext& _context;
+    const VulkanRenderGraphBuilderContext _context;
 
     const VulkanRenderPassFactory& _passFactory;
 };

@@ -8,16 +8,16 @@
 
 #include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
 
-class VulkanGraphicsPipeline {
+class VulkanComputePipeline {
 public:
-    VulkanGraphicsPipeline()  = default;
-    ~VulkanGraphicsPipeline() = default;
+    VulkanComputePipeline()  = default;
+    ~VulkanComputePipeline() = default;
 
-    VulkanGraphicsPipeline(const VulkanGraphicsPipeline&)            = delete;
-    VulkanGraphicsPipeline& operator=(const VulkanGraphicsPipeline&) = delete;
+    VulkanComputePipeline(const VulkanComputePipeline&)            = delete;
+    VulkanComputePipeline& operator=(const VulkanComputePipeline&) = delete;
 
-    VulkanGraphicsPipeline(VulkanGraphicsPipeline&&)            = delete;
-    VulkanGraphicsPipeline& operator=(VulkanGraphicsPipeline&&) = delete;
+    VulkanComputePipeline(VulkanComputePipeline&&)            = delete;
+    VulkanComputePipeline& operator=(VulkanComputePipeline&&) = delete;
 
     [[nodiscard]] Expected<void> create(const vk::Device& device, const VulkanRenderPass& pass) noexcept;
 
@@ -34,12 +34,12 @@ private:
         const vk::Device& device, const VulkanPipelineDescriptor& descriptor
     );
 
-    [[nodiscard]] Expected<void> createGraphicsPipeline(const vk::Device& device, const VulkanRenderPass& pass);
+    [[nodiscard]] Expected<void> createComputePipeline(const vk::Device& device, const VulkanRenderPass& pass);
 
     vk::Device _device{};
 
     vk::Pipeline       _pipeline{};
     vk::PipelineLayout _pipelineLayout{};
 
-    vk::PipelineBindPoint _pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+    vk::PipelineBindPoint _pipelineBindPoint = vk::PipelineBindPoint::eCompute;
 };

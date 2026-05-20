@@ -8,7 +8,7 @@ namespace VulkanDebugger {
         return expression + " failed: " + vk::to_string(result) + " (error code: " + std::to_string(errorCode) + ").";
     }
 
-#if defined(VULKAN_DEBUG_UTILS)
+#ifdef VULKAN_DEBUG_UTILS
 
     void beginLabel(
         const vk::CommandBuffer                  commandBuffer,

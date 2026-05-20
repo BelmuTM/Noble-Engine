@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(_WIN32)
+#ifdef _WIN32
 #include <Windows.h>
 #undef ERROR
 #endif

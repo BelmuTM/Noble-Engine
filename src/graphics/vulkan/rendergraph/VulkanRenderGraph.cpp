@@ -117,8 +117,8 @@ void executeDrawCalls(
     const VulkanShaderProgram* shaderProgram = pass.getPipelineDescriptor().shaderProgram;
 
     const VulkanGraphicsPipeline* pipeline          = pass.getPipeline();
-    const vk::PipelineLayout&     pipelineLayout    = pass.getPipeline()->getLayout();
-    const vk::PipelineBindPoint&  pipelineBindPoint = pass.getPipeline()->getBindPoint();
+    const vk::PipelineLayout&     pipelineLayout    = pipeline->getLayout();
+    const vk::PipelineBindPoint&  pipelineBindPoint = pipeline->getBindPoint();
 
     // Bind pipeline
 
@@ -135,7 +135,7 @@ void executeDrawCalls(
     for (auto& [drawCall, firstInstance, instanceCount] : batchBuilder.getBuiltDrawBatches()) {
         auto& draw = *drawCall;
 
-#if defined(VULKAN_DEBUG_UTILS)
+#ifdef VULKAN_DEBUG_UTILS
         VulkanDebugger::beginLabel(commandBuffer, dispatchLoader, draw.getName());
 #endif
 
@@ -161,7 +161,7 @@ void executeDrawCalls(
 
         draw.record(commandBuffer, extent, pipelineLayout, shaderProgram, instanceCount, firstInstance);
 
-#if defined(VULKAN_DEBUG_UTILS)
+#ifdef VULKAN_DEBUG_UTILS
         VulkanDebugger::endLabel(commandBuffer, dispatchLoader);
 #endif
     }
@@ -206,7 +206,7 @@ Expected<void> VulkanRenderGraph::executePass(
             renderingInfo.setPDepthAttachment(&depthAttachment);
 
         // Start rendering
-#if defined(VULKAN_DEBUG_UTILS)
+#ifdef VULKAN_DEBUG_UTILS
         VulkanDebugger::beginLabel(commandBuffer, _context.dispatchLoader, pass.getPassDescriptor().name);
 #endif
 
@@ -224,7 +224,7 @@ Expected<void> VulkanRenderGraph::executePass(
         // Stop rendering
         commandBuffer.endRendering();
 
-#if defined(VULKAN_DEBUG_UTILS)
+#ifdef VULKAN_DEBUG_UTILS
         VulkanDebugger::endLabel(commandBuffer, _context.dispatchLoader);
 #endif
 

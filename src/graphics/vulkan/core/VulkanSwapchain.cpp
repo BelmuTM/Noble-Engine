@@ -167,7 +167,7 @@ Expected<void> VulkanSwapchain::createSwapchain(const vk::SurfaceKHR surface) {
         .setClipped(vk::True)
         .setOldSwapchain(nullptr);
 
-    auto [graphicsFamily, presentFamily] = _device->getQueueFamilyIndices();
+    auto [graphicsFamily, presentFamily, computeFamily] = _device->getQueueFamilyIndices();
 
     const std::uint32_t queueFamilyIndices[] = {graphicsFamily, presentFamily};
 

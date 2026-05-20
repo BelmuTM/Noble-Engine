@@ -138,7 +138,7 @@ VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
     QueueFamilyIndices indices;
     const auto& properties = device.getQueueFamilyProperties2();
 
-    const std::uint32_t propertiesSize = static_cast<uint32_t>(properties.size());
+    const auto propertiesSize = static_cast<uint32_t>(properties.size());
 
     // Find a queue family with graphics capabilities
     for (std::uint32_t i = 0; i < propertiesSize; i++) {
@@ -151,7 +151,8 @@ VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
     // Find a queue with presentation capabilities
     // Check if the graphics queue family also supports present
     vk::Bool32 presentSupport = device.getSurfaceSupportKHR(indices.graphicsFamily, surface).value;
-    // If not found, find a queue family that supports present
+
+    // If not found, find a dedicated queue family that supports present
     if (!presentSupport) {
 
         // Find another queue family that support both graphics and present
@@ -181,6 +182,26 @@ VulkanDevice::QueueFamilyIndices VulkanDevice::findQueueFamilies(
         indices.presentFamily = indices.graphicsFamily;
     }
 
+    // Find a dedicated queue family with compute capabilities
+    for (std::uint32_t i = 0; i < propertiesSize; i++) {
+        const auto flags = properties[i].queueFamilyProperties.queueFlags;
+
+        if (flags & vk::QueueFlagBits::eCompute && !(flags & vk::QueueFlagBits::eGraphics)) {
+            indices.computeFamily = i;
+            break;
+        }
+    }
+
+    // If not found, fallback to any queue with compute capabilities
+    if (indices.computeFamily != UINT32_MAX) {
+        for (std::uint32_t i = 0; i < propertiesSize; i++) {
+            if (properties[i].queueFamilyProperties.queueFlags & vk::QueueFlagBits::eCompute) {
+                indices.computeFamily = i;
+                break;
+            }
+        }
+    }
+
     return indices;
 }
 
@@ -188,12 +209,27 @@ Expected<void> VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueF
     // Queue priority is constant and set to one because we are using a single queue
     static constexpr float queuePriority = 1.0f;
 
-    const VkDeviceQueueCreateInfo deviceQueueInfo{
-        .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-        .queueFamilyIndex = queueFamilyIndices.graphicsFamily,
-        .queueCount       = 1,
-        .pQueuePriorities = &queuePriority
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
+
+    std::unordered_set uniqueQueueFamilies{
+        queueFamilyIndices.graphicsFamily,
+        queueFamilyIndices.presentFamily
     };
+
+    if (queueFamilyIndices.computeFamily != UINT32_MAX) {
+        uniqueQueueFamilies.insert(queueFamilyIndices.computeFamily);
+    }
+
+    for (const std::uint32_t& family : uniqueQueueFamilies) {
+        queueCreateInfos.push_back(
+            VkDeviceQueueCreateInfo{
+                .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                .queueFamilyIndex = family,
+                .queueCount       = 1,
+                .pQueuePriorities = &queuePriority
+            }
+        );
+    }
 
     VkPhysicalDeviceFeatures deviceFeatures{
         .fillModeNonSolid        = vk::True,
@@ -224,8 +260,8 @@ Expected<void> VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueF
     VkDeviceCreateInfo deviceInfo{
         .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
         .pNext                   = &deviceDynamicRenderingFeatures,
-        .queueCreateInfoCount    = 1,
-        .pQueueCreateInfos       = &deviceQueueInfo,
+        .queueCreateInfoCount    = static_cast<std::uint32_t>(queueCreateInfos.size()),
+        .pQueueCreateInfos       = queueCreateInfos.data(),
         .enabledExtensionCount   = static_cast<std::uint32_t>(deviceExtensions.size()),
         .ppEnabledExtensionNames = deviceExtensions.data(),
         .pEnabledFeatures        = &deviceFeatures
@@ -244,6 +280,10 @@ Expected<void> VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueF
 
     _graphicsQueue = _logicalDevice.getQueue(queueFamilyIndices.graphicsFamily, 0);
     _presentQueue  = _logicalDevice.getQueue(queueFamilyIndices.presentFamily , 0);
+
+    if (queueFamilyIndices.computeFamily != UINT32_MAX) {
+        _computeQueue = _logicalDevice.getQueue(queueFamilyIndices.computeFamily, 0);
+    }
 
     return {};
 }

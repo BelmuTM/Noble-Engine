@@ -2,7 +2,7 @@
 
 #include "core/debug/Logger.h"
 
-#if defined(_WIN32)
+#ifdef _WIN32
 #include <Windows.h>
 #undef ERROR
 #endif
@@ -21,7 +21,7 @@ void signalHandler(int signal) {
     }
 }
 
-#if defined(_WIN32)
+#ifdef _WIN32
 
 BOOL WINAPI ConsoleHandler(const DWORD ctrlType) {
     switch (ctrlType) {
@@ -53,7 +53,7 @@ void setupHandlers(std::atomic<bool>& runningFlag) {
     std::signal(SIGINT, signalHandler);
     std::signal(SIGTERM, signalHandler);
 
-#if defined(_WIN32)
+#ifdef _WIN32
     setupConsoleHandler();
 #endif
 }

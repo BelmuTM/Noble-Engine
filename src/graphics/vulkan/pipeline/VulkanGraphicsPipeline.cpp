@@ -11,7 +11,7 @@ Expected<void> VulkanGraphicsPipeline::create(const vk::Device& device, const Vu
     _device = device;
 
     TRY(createPipelineLayout(device, pass.getPipelineDescriptor()));
-    TRY(createPipeline(device, pass));
+    TRY(createGraphicsPipeline(device, pass));
 
     return {};
 }
@@ -106,7 +106,7 @@ vk::PipelineDynamicStateCreateInfo makeDynamicState() noexcept {
 
 }
 
-Expected<void> VulkanGraphicsPipeline::createPipeline(const vk::Device& device, const VulkanRenderPass& pass) {
+Expected<void> VulkanGraphicsPipeline::createGraphicsPipeline(const vk::Device& device, const VulkanRenderPass& pass) {
     const VulkanRenderPassType& passType = pass.getPassDescriptor().type;
 
     const auto& shaderStages = pass.getPipelineDescriptor().shaderProgram->getStages();

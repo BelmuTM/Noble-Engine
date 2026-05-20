@@ -240,6 +240,7 @@ std::vector<std::uint32_t> VulkanShaderProgram::readShaderSPIRVBytecode(const st
 
 std::vector<std::string> VulkanShaderProgram::findShaderFilePaths(const std::string& path) {
     std::vector<std::string> paths{};
+
     for (const auto& stageExtension : stageData | std::views::keys) {
         const std::string relativePath = path + "." + stageExtension + ".spv";
 
@@ -247,5 +248,6 @@ std::vector<std::string> VulkanShaderProgram::findShaderFilePaths(const std::str
             paths.push_back(relativePath);
         }
     }
+
     return paths;
 }
