@@ -14,7 +14,7 @@ struct VulkanPushConstantRange {
 struct IVulkanPushConstant {
     virtual ~IVulkanPushConstant() = default;
     virtual void push(
-        const vk::CommandBuffer&       cmdBuffer,
+        const vk::CommandBuffer&       commandBuffer,
         const vk::PipelineLayout&      layout,
         const VulkanPushConstantRange& range
     ) const = 0;
@@ -26,9 +26,10 @@ struct VulkanPushConstant final : IVulkanPushConstant {
 
     explicit VulkanPushConstant(const PushConstantType* data) : ptr(data) {}
 
-    void push(const vk::CommandBuffer&       commandBuffer,
-              const vk::PipelineLayout&      layout,
-              const VulkanPushConstantRange& range
+    void push(
+        const vk::CommandBuffer&       commandBuffer,
+        const vk::PipelineLayout&      layout,
+        const VulkanPushConstantRange& range
     ) const noexcept override {
         if(ptr) {
             commandBuffer.pushConstants(layout, range.stageFlags, range.offset, range.size, ptr);

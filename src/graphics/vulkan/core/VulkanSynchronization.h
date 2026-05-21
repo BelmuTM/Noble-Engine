@@ -3,16 +3,16 @@
 #include "core/debug/ErrorHandling.h"
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-class VulkanSyncObjects {
+class VulkanSynchronization {
 public:
-    VulkanSyncObjects()  = default;
-    ~VulkanSyncObjects() = default;
+    VulkanSynchronization()  = default;
+    ~VulkanSynchronization() = default;
 
-    VulkanSyncObjects(const VulkanSyncObjects&)            = delete;
-    VulkanSyncObjects& operator=(const VulkanSyncObjects&) = delete;
+    VulkanSynchronization(const VulkanSynchronization&)            = delete;
+    VulkanSynchronization& operator=(const VulkanSynchronization&) = delete;
 
-    VulkanSyncObjects(VulkanSyncObjects&&)            = delete;
-    VulkanSyncObjects& operator=(VulkanSyncObjects&&) = delete;
+    VulkanSynchronization(VulkanSynchronization&&)            = delete;
+    VulkanSynchronization& operator=(VulkanSynchronization&&) = delete;
 
     [[nodiscard]] Expected<void> create(
         const vk::Device& device,

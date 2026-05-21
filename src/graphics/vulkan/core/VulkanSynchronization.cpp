@@ -1,8 +1,8 @@
-#include "VulkanSyncObjects.h"
+#include "VulkanSynchronization.h"
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-Expected<void> VulkanSyncObjects::create(
+Expected<void> VulkanSynchronization::create(
     const vk::Device&   device,
     const std::uint32_t framesInFlight,
     const std::uint32_t swapchainImageCount
@@ -16,20 +16,20 @@ Expected<void> VulkanSyncObjects::create(
     return {};
 }
 
-void VulkanSyncObjects::destroy() noexcept {
+void VulkanSynchronization::destroy() noexcept {
     if (!_device) return;
 
     cleanupOldSyncObjects();
     destroySyncObjects();
 }
 
-void VulkanSyncObjects::backup() {
+void VulkanSynchronization::backup() {
     _oldFences.insert(_oldFences.end(), _inFlightFences.begin(), _inFlightFences.end());
     _oldImageAvailable.insert(_oldImageAvailable.end(), _imageAvailableSemaphores.begin(), _imageAvailableSemaphores.end());
     _oldRenderFinished.insert(_oldRenderFinished.end(), _renderFinishedSemaphores.begin(), _renderFinishedSemaphores.end());
 }
 
-Expected<void> VulkanSyncObjects::createSyncObjects(
+Expected<void> VulkanSynchronization::createSyncObjects(
     const std::uint32_t framesInFlight, const std::uint32_t swapchainImageCount
 ) {
     _imageAvailableSemaphores.resize(framesInFlight);
@@ -50,7 +50,7 @@ Expected<void> VulkanSyncObjects::createSyncObjects(
     return {};
 }
 
-void VulkanSyncObjects::destroySyncObjects() {
+void VulkanSynchronization::destroySyncObjects() {
     for (const auto& imageSemaphore : _imageAvailableSemaphores) {
         _device.destroySemaphore(imageSemaphore);
     }
@@ -68,7 +68,7 @@ void VulkanSyncObjects::destroySyncObjects() {
     _inFlightFences.clear();
 }
 
-void VulkanSyncObjects::cleanupOldSyncObjects() {
+void VulkanSynchronization::cleanupOldSyncObjects() {
     for (const auto& imageSemaphore : _oldImageAvailable) {
         _device.destroySemaphore(imageSemaphore);
     }

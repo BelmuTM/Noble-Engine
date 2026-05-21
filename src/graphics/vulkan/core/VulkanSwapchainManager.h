@@ -4,7 +4,7 @@
 #include "core/platform/Window.h"
 
 #include "graphics/vulkan/core/VulkanContext.h"
-#include "graphics/vulkan/core/VulkanSyncObjects.h"
+#include "graphics/vulkan/core/VulkanSynchronization.h"
 
 class VulkanSwapchainManager {
 public:
@@ -46,7 +46,7 @@ private:
     const VulkanDevice*  _device    = nullptr;
     VulkanSwapchain*     _swapchain = nullptr;
 
-    VulkanSyncObjects _syncObjects{};
+    VulkanSynchronization _syncObjects{};
 
     std::uint32_t _framesInFlight = 0;
 };

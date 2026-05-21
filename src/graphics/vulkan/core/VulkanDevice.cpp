@@ -254,12 +254,18 @@ Expected<void> VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueF
     };
 
     VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT deviceDynamicRenderingFeatures{
-        .pNext = &deviceBufferAddressFeatures,
+        .pNext                             = &deviceBufferAddressFeatures,
+        .dynamicRenderingUnusedAttachments = vk::True
+    };
+
+    VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timelineSemaphoreFeatures{
+        .pNext             = &deviceDynamicRenderingFeatures,
+        .timelineSemaphore = vk::True
     };
 
     VkDeviceCreateInfo deviceInfo{
         .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        .pNext                   = &deviceDynamicRenderingFeatures,
+        .pNext                   = &timelineSemaphoreFeatures,
         .queueCreateInfoCount    = static_cast<std::uint32_t>(queueCreateInfos.size()),
         .pQueueCreateInfos       = queueCreateInfos.data(),
         .enabledExtensionCount   = static_cast<std::uint32_t>(deviceExtensions.size()),
