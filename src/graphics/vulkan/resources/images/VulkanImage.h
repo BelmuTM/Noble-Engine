@@ -101,11 +101,15 @@ public:
     [[nodiscard]] vk::Sampler getSampler() const noexcept { return _sampler; }
     [[nodiscard]] vk::Format getFormat() const noexcept { return _format; }
     [[nodiscard]] vk::Extent3D getExtent() const noexcept { return _extent; }
+    [[nodiscard]] vk::ImageUsageFlags getUsageFlags() const noexcept { return _usageFlags; }
+    [[nodiscard]] vk::ImageAspectFlags getAspectFlags() const noexcept { return _aspectFlags; }
     [[nodiscard]] vk::ImageLayout getLayout() const noexcept { return _layout; }
 
     void setHandle(const vk::Image image) noexcept { _image = image; }
     void setImageView(const vk::ImageView imageView) noexcept { _imageView = imageView; }
     void setFormat(const vk::Format format) noexcept { _format = format; }
+    void setUsageFlags(const vk::ImageUsageFlags usageFlags) noexcept { _usageFlags = usageFlags; }
+    void setAspectFlags(const vk::ImageAspectFlags aspectFlags) noexcept { _aspectFlags = aspectFlags; }
     void setExtent(const vk::Extent3D extent) noexcept { _extent = extent; }
     void setLayout(const vk::ImageLayout layout) noexcept { _layout = layout; }
     void setDescriptorType(const vk::DescriptorType descriptorType) noexcept { _descriptorType = descriptorType; }
@@ -143,6 +147,9 @@ private:
 
     vk::Format   _format = vk::Format::eUndefined;
     vk::Extent3D _extent{};
+
+    vk::ImageUsageFlags  _usageFlags  = vk::ImageUsageFlagBits::eColorAttachment;
+    vk::ImageAspectFlags _aspectFlags = vk::ImageAspectFlagBits::eColor;
 
     vk::ImageLayout _layout = vk::ImageLayout::eUndefined;
 

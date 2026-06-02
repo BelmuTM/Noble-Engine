@@ -1,6 +1,6 @@
-#include "CompositePass.h"
+#include "VulkanCompositePass.h"
 
-Expected<void> CompositePass::create(const CompositePassCreateContext& context) {
+Expected<void> VulkanCompositePass::create(const VulkanCompositePassCreateContext& context) {
     TRY(context.shaderProgramManager.load(getShaderProgram(), getPassDescriptor().programPath));
 
     const VulkanPipelineDescriptor pipelineDescriptor{

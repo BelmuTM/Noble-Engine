@@ -17,7 +17,7 @@
 #include "graphics/vulkan/resources/ssbo/VulkanStorageBufferManager.h"
 #include "graphics/vulkan/resources/ubo/VulkanUniformBufferManager.h"
 
-#include "graphics/vulkan/pipeline/VulkanPipelineManager.h"
+#include "graphics/vulkan/pipeline/VulkanGraphicsPipelineManager.h"
 #include "graphics/vulkan/pipeline/VulkanShaderProgramManager.h"
 #include "graphics/vulkan/rendergraph/VulkanRenderGraph.h"
 
@@ -40,9 +40,8 @@ public:
 private:
     [[nodiscard]] Expected<void> onFramebufferResize();
 
-    [[nodiscard]] Expected<void> recordCommandBuffer(vk::CommandBuffer commandBuffer, std::uint32_t imageIndex);
-
-    [[nodiscard]] Expected<void> recordCurrentCommandBuffer(std::uint32_t imageIndex);
+    [[nodiscard]] Expected<void> recordCommandBuffer(vk::CommandBuffer commandBuffer) const;
+    [[nodiscard]] Expected<void> recordCurrentCommandBuffer();
 
     [[nodiscard]] Expected<VulkanSwapchain::SwapchainOpVoid> submitCurrentCommandBuffer(std::uint32_t imageIndex);
 
@@ -62,15 +61,15 @@ private:
     VulkanStorageBufferManager storageBufferManager{};
     VulkanUniformBufferManager uniformBufferManager{};
 
-    VulkanFrameResources       frameResources{};
-    VulkanRenderResources      renderResources{};
+    VulkanFrameResources        frameResources{};
+    VulkanRenderResourceManager renderResources{};
 
     VulkanMaterialManager      materialManager{};
     VulkanRenderObjectManager  renderObjectManager{};
 
     VulkanFrameCuller          frameCuller{};
 
-    VulkanShaderProgramManager shaderProgramManager{};
-    VulkanPipelineManager      pipelineManager{};
-    VulkanRenderGraph          renderGraph{};
+    VulkanShaderProgramManager    shaderProgramManager{};
+    VulkanGraphicsPipelineManager pipelineManager{};
+    VulkanRenderGraph             renderGraph{};
 };

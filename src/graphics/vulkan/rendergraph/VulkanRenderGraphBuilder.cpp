@@ -2,23 +2,22 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-Expected<void> VulkanRenderGraphBuilder::build(const std::vector<VulkanRenderPassDescriptor>& passDescriptors) const {
+#include <ranges>
 
-    for (const auto& passDescriptor : passDescriptors) {
+Expected<void> VulkanRenderGraphBuilder::build() const {
+
+    TRY(allocateResources());
+
+    // Build passes
+    for (const auto& passDescriptor : _passDescriptors) {
         VulkanRenderPass* pass;
         TRY_ASSIGN(pass, createPass(passDescriptor));
 
-        TRY(createColorBuffers(pass));
+        TRY(resolveAttachments(pass));
+        TRY(allocateDescriptors(pass));
+        TRY(createPipeline(pass));
     }
 
-    TRY(attachSwapchainOutput());
-
-    for (auto& pass : _context.renderGraph.getPasses()) {
-        TRY(allocateDescriptors(pass.get()));
-        TRY(createPipeline(pass.get()));
-    }
-
-    scheduleDepthLoadOps();
     scheduleResourceTransitions();
 
     return {};
@@ -33,8 +32,74 @@ Expected<VulkanRenderPass*> VulkanRenderGraphBuilder::createPass(const VulkanRen
     return Expected(_context.renderGraph.getPasses().back().get());
 }
 
-Expected<void> VulkanRenderGraphBuilder::createColorBuffers(VulkanRenderPass* pass) const {
-    TRY(_context.renderResources.createColorBuffers(pass));
+Expected<void> VulkanRenderGraphBuilder::allocateResources() const {
+    for (const auto& resourceDescriptor : _resourceDescriptors) {
+
+        switch (resourceDescriptor.type) {
+            case VulkanRenderPassResourceType::Transient:
+                TRY(_context.renderResources.createResource(resourceDescriptor));
+                break;
+
+            case VulkanRenderPassResourceType::SwapchainOutput: {
+
+                VulkanRenderPassResource swapchainOutput(resourceDescriptor);
+                swapchainOutput.setImageResolver(
+                    [&swapchain = _context.swapchain, &frameResources = _context.frameResources] {
+                        return swapchain.getImage(frameResources.getImageIndex());
+                    }
+                );
+
+                _context.renderResources.addResource(swapchainOutput);
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
+
+    return {};
+}
+
+Expected<void> VulkanRenderGraphBuilder::resolveAttachments(VulkanRenderPass* pass) const {
+    // Color attachments
+    for (const auto& attachmentDescriptor : pass->getPassDescriptor().colorAttachmentDescriptors) {
+        const VulkanRenderPassResource* resource = _context.renderResources.getResource(attachmentDescriptor.name);
+
+        if (!resource) {
+            return VK_FAIL("Failed to resolve color resource \"" + attachmentDescriptor.name + "\".");
+        }
+
+        VulkanRenderPassAttachment attachment(attachmentDescriptor);
+        attachment.setResource(resource);
+
+        pass->addColorAttachment(attachment);
+        _context.renderResources.addResourceWriter(attachmentDescriptor.name, pass);
+    }
+
+    // Depth attachment
+    auto depthDescriptor = pass->getPassDescriptor().depthAttachmentDescriptor;
+
+    if (!depthDescriptor.name.empty()) {
+        const VulkanRenderPassResource* resource = _context.renderResources.getResource(depthDescriptor.name);
+
+        if (!resource) {
+            return VK_FAIL("Failed to resolve depth resource \"" + depthDescriptor.name + "\".");
+        }
+
+        // Determine loadOp based on whether previously built passes write to the depth buffer
+        const auto& writers      = _context.renderResources.getResourceWriters();
+        const bool  wasWrittenTo = writers.contains(depthDescriptor.name) && !writers.at(depthDescriptor.name).empty();
+
+        depthDescriptor.loadOp = wasWrittenTo ? vk::AttachmentLoadOp::eLoad : vk::AttachmentLoadOp::eClear;
+
+        VulkanRenderPassAttachment depthAttachment(depthDescriptor);
+        depthAttachment.setResource(resource);
+
+        pass->setDepthAttachment(depthAttachment);
+
+        _context.renderResources.addResourceWriter(depthDescriptor.name, pass);
+    }
 
     return {};
 }
@@ -46,78 +111,54 @@ Expected<void> VulkanRenderGraphBuilder::allocateDescriptors(VulkanRenderPass* p
 }
 
 Expected<void> VulkanRenderGraphBuilder::createPipeline(VulkanRenderPass* pass) const {
-    VulkanGraphicsPipeline* pipeline = _context.pipelineManager.allocatePipeline();
-
-    TRY(_context.pipelineManager.createGraphicsPipeline(pipeline, *pass));
+    const VulkanGraphicsPipeline* pipeline = nullptr;
+    TRY_ASSIGN(pipeline, _context.pipelineManager.createGraphicsPipeline(*pass));
 
     pass->setPipeline(pipeline);
 
     return {};
 }
 
-Expected<void> VulkanRenderGraphBuilder::attachSwapchainOutput() const {
-    static const std::string SWAPCHAIN_RESOURCE_NAME = "Swapchain_Output";
-
-    const VulkanSwapchain& swapchain      = _context.swapchain;
-    VulkanFrameResources&  frameResources = _context.frameResources;
-
-    VulkanRenderPassResource swapchainOutput{};
-    swapchainOutput
-        .setName(SWAPCHAIN_RESOURCE_NAME)
-        .setType(VulkanRenderPassResourceType::SwapchainOutput)
-        .setImageResolver([&swapchain, &frameResources] {
-            return swapchain.getImage(frameResources.getImageIndex());
-        });
-
-    VulkanRenderPassAttachment swapchainAttachment{};
-    swapchainAttachment
-        .setResource(swapchainOutput)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eStore)
-        .setClearValue(defaultClearColor);
-
-    VulkanRenderPass* lastPass = _context.renderGraph.getPasses().back().get();
-
-    if (lastPass->getColorAttachments().empty()) {
-        return VK_FAIL("Failed to attach swapchain output: last executing pass has no color attachments.");
-    }
-
-    // Attach the swapchain output to the first declared color attachment of the last executing pass
-    lastPass->getColorAttachments().at(0) = std::make_unique<VulkanRenderPassAttachment>(swapchainAttachment);
-
-    return {};
-}
-
-void VulkanRenderGraphBuilder::scheduleDepthLoadOps() const {
-    bool depthWritten = false;
-
-    const VulkanRenderPassAttachment* canonicalDepthAttachment = _context.renderResources.getDepthBufferAttachment();
-
-    for (const auto& pass : _context.renderGraph.getPasses()) {
-        if (!pass->getDepthAttachment()) continue;
-
-        auto depthAttachment = std::make_unique<VulkanRenderPassAttachment>(*canonicalDepthAttachment);
-
-        depthAttachment->setLoadOp(
-            depthWritten ? vk::AttachmentLoadOp::eLoad
-                         : vk::AttachmentLoadOp::eClear
-        );
-
-        pass->setDepthAttachment(std::move(depthAttachment));
-        depthWritten = true;
-    }
-}
-
 void VulkanRenderGraphBuilder::scheduleResourceTransitions() const {
-    for (const auto& [resourceName, writerPasses] : _context.renderResources.getResourceWriters()) {
-        auto it = _context.renderResources.getResources().find(resourceName);
-        if (it == _context.renderResources.getResources().end()) continue;
+    const auto& writers = _context.renderResources.getResourceWriters();
+    const auto& readers = _context.renderResources.getResourceReaders();
 
-        VulkanRenderPassResource* resource = it->second.get();
+    for (const auto& [resourceName, resource] : _context.renderResources.getResources()) {
+        if (!resource || !resource->resolveImage()) continue;
 
-        for (VulkanRenderPass* writerPass : writerPasses) {
-            if (!writerPass) continue;
-            writerPass->addTransition({resource, vk::ImageLayout::eShaderReadOnlyOptimal});
+        const bool isSwapchain = resource->descriptor.type == VulkanRenderPassResourceType::SwapchainOutput;
+        const bool isDepth     = VulkanImage::isDepthBuffer(resource->resolveImage()->getFormat());
+
+        // Entry transitions for writer passes
+        if (writers.contains(resourceName)) {
+            const vk::ImageLayout entryLayout = isDepth
+                ? vk::ImageLayout::eDepthStencilAttachmentOptimal
+                : vk::ImageLayout::eColorAttachmentOptimal;
+
+            for (VulkanRenderPass* pass : writers.at(resourceName)) {
+                if (pass) pass->addEntryTransition({resource.get(), entryLayout});
+            }
+        }
+
+        // Entry transitions for reader passes
+        if (readers.contains(resourceName)) {
+            for (VulkanRenderPass* pass : readers.at(resourceName)) {
+                if (pass) pass->addEntryTransition({resource.get(), vk::ImageLayout::eShaderReadOnlyOptimal});
+            }
+        }
+
+        // Exit transitions for writer passes
+        if (writers.contains(resourceName)) {
+            auto exitLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+
+            if (isSwapchain)
+                exitLayout = vk::ImageLayout::ePresentSrcKHR;
+            else if (isDepth && !readers.contains(resourceName))
+                exitLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+            for (VulkanRenderPass* pass : writers.at(resourceName)) {
+                if (pass) pass->addExitTransition({resource.get(), exitLayout});
+            }
         }
     }
 }

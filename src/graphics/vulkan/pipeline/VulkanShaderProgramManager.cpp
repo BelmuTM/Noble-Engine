@@ -38,9 +38,10 @@ Expected<void> VulkanShaderProgramManager::load(VulkanShaderProgram*& program, c
     // Insert shader program into cache
     std::lock_guard lock(_mutex);
 
-    auto [it, inserted] = _cache.try_emplace(path, std::make_unique<VulkanShaderProgram>(std::move(tempProgram)));
+    auto [cachedProgram, inserted] =
+        _cache.try_emplace(path, std::make_unique<VulkanShaderProgram>(std::move(tempProgram)));
 
-    program = it->second.get();
+    program = cachedProgram->second.get();
 
     return {};
 }

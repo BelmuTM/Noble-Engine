@@ -24,8 +24,8 @@ public:
     void bind(const int key, const InputAction action) noexcept { _keyBindings[key] = action; }
 
     InputAction getAction(const int key) const {
-        const auto it = _keyBindings.find(key);
-        return it != _keyBindings.end() ? it->second : InputAction::None;
+        const auto boundAction = _keyBindings.find(key);
+        return boundAction != _keyBindings.end() ? boundAction->second : InputAction::None;
     }
 
 private:

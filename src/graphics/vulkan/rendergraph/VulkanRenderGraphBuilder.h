@@ -6,7 +6,7 @@
 
 #include "graphics/vulkan/core/VulkanSwapchain.h"
 
-#include "graphics/vulkan/pipeline/VulkanPipelineManager.h"
+#include "graphics/vulkan/pipeline/VulkanGraphicsPipelineManager.h"
 #include "graphics/vulkan/pipeline/VulkanShaderProgramManager.h"
 #include "graphics/vulkan/rendergraph/VulkanRenderGraph.h"
 
@@ -23,16 +23,16 @@ struct VulkanRenderGraphBuilderContext {
     VulkanMeshManager&          meshManager;
     const VulkanImageManager&   imageManager;
 
-    VulkanFrameResources&       frameResources;
-    VulkanRenderResources&      renderResources;
+    VulkanFrameResources&        frameResources;
+    VulkanRenderResourceManager& renderResources;
 
     VulkanMaterialManager&      materialManager;
     VulkanRenderObjectManager&  renderObjectManager;
 
     VulkanFrameCuller&          frameCuller;
 
-    VulkanShaderProgramManager& shaderProgramManager;
-    VulkanPipelineManager&      pipelineManager;
+    VulkanShaderProgramManager&    shaderProgramManager;
+    VulkanGraphicsPipelineManager& pipelineManager;
 };
 
 class VulkanRenderGraphBuilder {
@@ -49,24 +49,36 @@ public:
     VulkanRenderGraphBuilder(VulkanRenderGraphBuilder&&)            = delete;
     VulkanRenderGraphBuilder& operator=(VulkanRenderGraphBuilder&&) = delete;
 
-    [[nodiscard]] Expected<void> build(const std::vector<VulkanRenderPassDescriptor>& passDescriptors) const;
+    [[nodiscard]] Expected<void> build() const;
+
+    VulkanRenderGraphBuilder& registerResource(const VulkanRenderPassResourceDescriptor& descriptor) {
+        _resourceDescriptors.push_back(descriptor);
+        return *this;
+    }
+
+    VulkanRenderGraphBuilder& addPass(const VulkanRenderPassDescriptor& descriptor) {
+        _passDescriptors.push_back(descriptor);
+        return *this;
+    }
 
 private:
     [[nodiscard]] Expected<VulkanRenderPass*> createPass(const VulkanRenderPassDescriptor& passDescriptor) const;
 
-    [[nodiscard]] Expected<void> createColorBuffers(VulkanRenderPass* pass) const;
+    [[nodiscard]] Expected<void> allocateResources() const;
+
+    [[nodiscard]] Expected<void> resolveAttachments(VulkanRenderPass* pass) const;
 
     [[nodiscard]] Expected<void> allocateDescriptors(VulkanRenderPass* pass) const;
 
     [[nodiscard]] Expected<void> createPipeline(VulkanRenderPass* pass) const;
-
-    [[nodiscard]] Expected<void> attachSwapchainOutput() const;
-
-    void scheduleDepthLoadOps() const;
     
     void scheduleResourceTransitions() const;
 
     const VulkanRenderGraphBuilderContext _context;
 
     const VulkanRenderPassFactory& _passFactory;
+
+    std::vector<VulkanRenderPassResourceDescriptor> _resourceDescriptors{};
+
+    std::vector<VulkanRenderPassDescriptor> _passDescriptors{};
 };

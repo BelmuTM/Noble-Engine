@@ -33,7 +33,7 @@ namespace ThreadRegistry {
 
     std::string getName(const std::thread::id id) {
         std::shared_lock lock(mutex);
-        const auto it = threadRegistry.find(id);
-        return it != threadRegistry.end() ? it->second : DEFAULT_THREAD_NAME;
+        const auto registeredThread = threadRegistry.find(id);
+        return registeredThread != threadRegistry.end() ? registeredThread->second : DEFAULT_THREAD_NAME;
     }
 }

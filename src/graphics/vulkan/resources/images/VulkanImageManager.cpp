@@ -35,8 +35,8 @@ Expected<void> VulkanImageManager::loadImage(VulkanImage*& image, const Image* i
         // Fast path: image already in cache
         std::lock_guard lock(_mutex);
 
-        if (const auto it = _imageCache.find(imageData->path); it != _imageCache.end()) {
-            image = it->second.get();
+        if (const auto cachedImage = _imageCache.find(imageData->path); cachedImage != _imageCache.end()) {
+            image = cachedImage->second.get();
             return {};
         }
     }
@@ -84,13 +84,13 @@ Expected<void> VulkanImageManager::loadImage(VulkanImage*& image, const Image* i
         // Insert image into the cache
         std::lock_guard lock(_mutex);
 
-        auto [it, inserted] = _imageCache.try_emplace(imageData->path, nullptr);
+        auto [cachedImage, inserted] = _imageCache.try_emplace(imageData->path, nullptr);
 
         if (inserted) {
-            it->second = std::make_unique<VulkanImage>(std::move(tempImage));
+            cachedImage->second = std::make_unique<VulkanImage>(std::move(tempImage));
         }
 
-        image = it->second.get();
+        image = cachedImage->second.get();
     }
 
     return {};
@@ -147,7 +147,6 @@ Expected<void> VulkanImageManager::loadImages(
     return {};
 }
 
-// TODO: Make this multithreaded.
 Expected<void> VulkanImageManager::loadBatchedImages(const std::vector<const Image*>& images) {
     if (images.empty()) return {};
 

@@ -46,8 +46,8 @@ void VulkanDrawCall::pushConstants(
     if (_pushConstants.empty()) return;
 
     for (const auto& [name, range] : shaderProgram->getPushConstants()) {
-        if (auto it = _pushConstants.find(name); it != _pushConstants.end()) {
-            it->second->push(commandBuffer, pipelineLayout, range);
+        if (auto cachedPushConstant = _pushConstants.find(name); cachedPushConstant != _pushConstants.end()) {
+            cachedPushConstant->second->push(commandBuffer, pipelineLayout, range);
         }
     }
 }

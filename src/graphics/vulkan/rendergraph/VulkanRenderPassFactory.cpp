@@ -4,25 +4,30 @@
 
 #include "VulkanRenderGraphBuilder.h"
 
-#include "passes/CompositePass.h"
-#include "passes/DebugPass.h"
-#include "passes/MeshRenderPass.h"
+#include "nodes/VulkanCompositePass.h"
+#include "nodes/VulkanDebugPass.h"
+#include "nodes/VulkanMeshRenderPass.h"
 
 void VulkanRenderPassFactory::registerPassTypes() {
-    _factories[VulkanRenderPassType::MeshRender] = &createPassFactory<MeshRenderPass, MeshRenderPassCreateContext>;
-    _factories[VulkanRenderPassType::Debug]      = &createPassFactory<DebugPass,      DebugPassCreateContext>;
-    _factories[VulkanRenderPassType::Composite]  = &createPassFactory<CompositePass,  CompositePassCreateContext>;
+    _factories[VulkanRenderPassType::MeshRender] =
+        &createPassFactory<VulkanMeshRenderPass, VulkanMeshRenderPassCreateContext>;
+
+    _factories[VulkanRenderPassType::Debug] =
+        &createPassFactory<VulkanDebugPass, VulkanDebugPassCreateContext>;
+
+    _factories[VulkanRenderPassType::Composite] =
+        &createPassFactory<VulkanCompositePass, VulkanCompositePassCreateContext>;
 }
 
 Expected<std::unique_ptr<VulkanRenderPass>> VulkanRenderPassFactory::createPass(
     const VulkanRenderPassDescriptor&      descriptor,
     const VulkanRenderGraphBuilderContext& context
 ) const {
-    const auto it = _factories.find(descriptor.type);
+    const auto passFactory = _factories.find(descriptor.type);
 
-    if (it == _factories.end()) {
+    if (passFactory == _factories.end()) {
         return VK_FAIL("Failed to create render pass: no factory registered for pass type.");
     }
 
-    return Expected(it->second(descriptor, context));
+    return Expected(passFactory->second(descriptor, context));
 }

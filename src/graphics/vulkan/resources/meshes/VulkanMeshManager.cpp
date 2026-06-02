@@ -20,8 +20,8 @@ void VulkanMeshManager::destroy() noexcept {
 }
 
 VulkanMesh* VulkanMeshManager::allocateMesh(const Mesh& meshData) {
-    if (const auto it = _meshCache.find(meshData); it != _meshCache.end()) {
-        return it->second;
+    if (const auto cachedMesh = _meshCache.find(meshData); cachedMesh != _meshCache.end()) {
+        return cachedMesh->second;
     }
 
     _meshes.push_back(std::make_unique<VulkanMesh>(meshData));

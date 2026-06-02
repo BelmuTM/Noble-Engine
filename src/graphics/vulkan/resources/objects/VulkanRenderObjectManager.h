@@ -3,7 +3,7 @@
 #include "VulkanRenderObject.h"
 #include "VulkanRenderObjectCreateContext.h"
 
-#include "graphics/vulkan/rendergraph/resources/VulkanRenderResources.h"
+#include "graphics/vulkan/rendergraph/resources/VulkanRenderResourceManager.h"
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorInfo.h"
 
 #include "core/entities/objects/ObjectManager.h"

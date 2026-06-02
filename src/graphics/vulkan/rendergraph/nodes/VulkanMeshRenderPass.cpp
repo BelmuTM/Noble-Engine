@@ -1,6 +1,6 @@
-#include "MeshRenderPass.h"
+#include "VulkanMeshRenderPass.h"
 
-Expected<void> MeshRenderPass::create(const MeshRenderPassCreateContext& context) {
+Expected<void> VulkanMeshRenderPass::create(const VulkanMeshRenderPassCreateContext& context) {
     TRY(context.shaderProgramManager.load(getShaderProgram(), getPassDescriptor().programPath));
 
     const VulkanPipelineDescriptor pipelineDescriptor{
@@ -14,7 +14,6 @@ Expected<void> MeshRenderPass::create(const MeshRenderPassCreateContext& context
     };
 
     setPipelineDescriptor(pipelineDescriptor);
-    setDepthAttachment(context.renderResources.getDepthBufferAttachment());
 
     for (const auto& renderObject : context.renderObjectManager.getRenderObjects()) {
         // Each submesh requires its own draw call

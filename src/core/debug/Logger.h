@@ -8,8 +8,6 @@
 namespace Logger {
     enum class Level : std::uint8_t { DEBUG, VERBOSE, INFO, WARNING, ERROR, FATAL, COUNT };
 
-    constexpr std::array levelStrings = {"DEBUG", "VERBOSE", "INFO", "WARNING", "ERROR", "FATAL"};
-
     void init();
     void shutdown();
 

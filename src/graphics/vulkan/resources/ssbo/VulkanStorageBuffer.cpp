@@ -37,7 +37,6 @@ Expected<void> VulkanStorageBuffer::createStorageBuffers() {
     for (std::uint32_t i = 0; i < _framesInFlight; i++) {
         VulkanBuffer storageBuffer;
 
-        // TODO: Add the possibility to decide memory usage.
         TRY(storageBuffer.create(
             getBufferSize(),
             vk::BufferUsageFlagBits::eStorageBuffer,

@@ -10,19 +10,19 @@
 #include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 
-struct DebugPassCreateContext {
-    VulkanMeshManager&           meshManager;
+struct VulkanDebugPassCreateContext {
+    VulkanMeshManager&                 meshManager;
 
-    const VulkanFrameResources&  frameResources;
-    const VulkanRenderResources& renderResources;
+    const VulkanFrameResources&        frameResources;
+    const VulkanRenderResourceManager& renderResources;
 
-    VulkanRenderObjectManager&   renderObjectManager;
+    VulkanRenderObjectManager&         renderObjectManager;
 
-    VulkanFrameCuller&           frameCuller;
+    VulkanFrameCuller&                 frameCuller;
 
-    VulkanShaderProgramManager&  shaderProgramManager;
+    VulkanShaderProgramManager&        shaderProgramManager;
 
-    static DebugPassCreateContext build(const VulkanRenderGraphBuilderContext& context) {
+    static VulkanDebugPassCreateContext build(const VulkanRenderGraphBuilderContext& context) {
         return {
             context.meshManager,
             context.frameResources,
@@ -34,9 +34,9 @@ struct DebugPassCreateContext {
     }
 };
 
-class DebugPass final : public VulkanRenderPass {
+class VulkanDebugPass final : public VulkanRenderPass {
     using VulkanRenderPass::VulkanRenderPass;
 
 public:
-    [[nodiscard]] Expected<void> create(const DebugPassCreateContext& context);
+    [[nodiscard]] Expected<void> create(const VulkanDebugPassCreateContext& context);
 };

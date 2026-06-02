@@ -34,8 +34,6 @@ public:
         return _shaderStages;
     }
 
-    [[nodiscard]] const std::vector<std::string>& getStageOutputs() const noexcept { return _stageOutputs; }
-
     [[nodiscard]] const DescriptorSchemeMap& getDescriptorSchemes() const noexcept {
         return _descriptorSchemes;
     }

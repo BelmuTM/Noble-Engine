@@ -67,6 +67,7 @@ void VulkanSwapchain::createImages() {
         _images[i]->setImageView(_imageViews[i]);
         _images[i]->setFormat(_format);
         _images[i]->setExtent(vk::Extent3D{_extent, 1});
+        _images[i]->setLayout(vk::ImageLayout::eUndefined);
     }
 }
 
@@ -211,7 +212,7 @@ Expected<void> VulkanSwapchain::createImageViews() {
         vk::ImageView imageView;
         VK_CREATE(imageView, logicalDevice.createImageView(imageViewInfo));
 
-        _imageViews.push_back(std::move(imageView));
+        _imageViews.push_back(imageView);
     }
 
     return {};

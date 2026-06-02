@@ -63,23 +63,15 @@ Expected<void> VulkanRenderer::init(
             &device,
             &swapchain,
             &frameResources,
-            &renderResources,
             &frameCuller,
             device.getQueryPool()
         }
     ));
 
-    const std::vector<VulkanRenderPassDescriptor> passes = {
-        {"Gbuffer_Pass", "mesh_render", VulkanRenderPassType::MeshRender, VulkanRenderPassCullMode::Frustum},
-        {"Debug_Pass", "debug", VulkanRenderPassType::Debug},
-        {"Composite0_Pass", "composite_0", VulkanRenderPassType::Composite},
-        {"Composite1_Pass", "composite_1", VulkanRenderPassType::Composite}
-    };
-
     VulkanRenderPassFactory passFactory{};
     passFactory.registerPassTypes();
 
-    const VulkanRenderGraphBuilder renderGraphBuilder(
+    VulkanRenderGraphBuilder renderGraphBuilder(
         VulkanRenderGraphBuilderContext{
             renderGraph,
             device,
@@ -98,7 +90,41 @@ Expected<void> VulkanRenderer::init(
         passFactory
     );
 
-    TRY(renderGraphBuilder.build(passes));
+    renderGraphBuilder
+        .registerResource({"depthBuffer", vk::Format::eD32Sfloat})
+        .registerResource({"albedoBuffer"})
+        .registerResource({"normalBuffer"})
+        .registerResource({"debugBuffer"})
+        .registerResource({"compositeBuffer", vk::Format::eR16G16B16A16Sfloat})
+        .registerResource({"swapchainOutput", vk::Format::eB8G8R8A8Srgb, VulkanRenderPassResourceType::SwapchainOutput})
+        .addPass(
+            {
+                "Gbuffer_Pass", "mesh_render", VulkanRenderPassType::MeshRender, VulkanRenderPassCullMode::Frustum,
+                {{"albedoBuffer"}, {"normalBuffer"}},
+                {"depthBuffer", vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, vk::ClearDepthStencilValue{0.0f, 0}}
+            }
+        )
+        .addPass(
+            {
+                "Debug_Pass", "debug", VulkanRenderPassType::Debug, VulkanRenderPassCullMode::None,
+                {{"debugBuffer"}},
+                {"depthBuffer", vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, vk::ClearDepthStencilValue{0.0f, 0}}
+            }
+        )
+        .addPass(
+            {
+                "Composite0_Pass", "composite_0", VulkanRenderPassType::Composite, VulkanRenderPassCullMode::None,
+                {{"compositeBuffer"}}
+            }
+        )
+        .addPass(
+            {
+                "Composite1_Pass", "composite_1", VulkanRenderPassType::Composite, VulkanRenderPassCullMode::None,
+                {{"swapchainOutput"}}
+            }
+        );
+
+    TRY(renderGraphBuilder.build());
 
     TRY(meshManager.fillBuffers());
 
@@ -134,7 +160,7 @@ Expected<void> VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
     // Frustum culling
     TRY(frameCuller.cull(renderGraph.getPasses(), uniforms));
 
-    TRY(recordCurrentCommandBuffer(imageIndex));
+    TRY(recordCurrentCommandBuffer());
     TRY(submitCurrentCommandBuffer(imageIndex));
 
     currentFrame = (currentFrame + 1) % _framesInFlight;
@@ -168,42 +194,23 @@ Expected<void> VulkanRenderer::onFramebufferResize() {
     return {};
 }
 
-Expected<void> VulkanRenderer::recordCommandBuffer(
-    const vk::CommandBuffer commandBuffer, const std::uint32_t imageIndex
-) {
+Expected<void> VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer) const {
+    VK_TRY(commandBuffer.reset());
     VK_TRY(commandBuffer.begin(vk::CommandBufferBeginInfo{}));
 
-    VulkanImage* swapchainImage = context.getSwapchain().getImage(imageIndex);
-
-    TRY(swapchainImage->transitionLayout(
-        commandBuffer,
-        vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eColorAttachmentOptimal
-    ));
-
     TRY(renderGraph.execute(commandBuffer));
-
-    TRY(swapchainImage->transitionLayout(
-        commandBuffer,
-        vk::ImageLayout::eColorAttachmentOptimal,
-        vk::ImageLayout::ePresentSrcKHR
-    ));
 
     VK_TRY(commandBuffer.end());
 
     return {};
 }
 
-Expected<void> VulkanRenderer::recordCurrentCommandBuffer(const std::uint32_t imageIndex) {
-    const vk::CommandBuffer& currentCommandBuffer = commandManager.getCommandBuffers()[currentFrame];
-
-    VK_TRY(currentCommandBuffer.reset());
-
-    return recordCommandBuffer(currentCommandBuffer, imageIndex);
+Expected<void> VulkanRenderer::recordCurrentCommandBuffer() {
+    return recordCommandBuffer(commandManager.getCommandBuffers()[currentFrame]);
 }
 
 Expected<VulkanSwapchain::SwapchainOpVoid> VulkanRenderer::submitCurrentCommandBuffer(const std::uint32_t imageIndex) {
-    const vk::CommandBuffer& currentCommandBuffer = commandManager.getCommandBuffers()[currentFrame];
-
-    return swapchainManager.submitCommandBuffer(currentCommandBuffer, currentFrame, imageIndex);
+    return swapchainManager.submitCommandBuffer(
+        commandManager.getCommandBuffers()[currentFrame], currentFrame, imageIndex
+    );
 }

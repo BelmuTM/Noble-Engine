@@ -20,11 +20,11 @@ namespace VulkanImageLayoutTransitions {
     );
 
     [[nodiscard]] Expected<void> transitionImageLayout(
-        vk::CommandBuffer commandBuffer,
-        vk::Image         image,
-        vk::Format        format,
-        vk::ImageLayout   oldLayout,
-        vk::ImageLayout   newLayout,
-        std::uint32_t     mipLevels = 1
+        vk::CommandBuffer    commandBuffer,
+        vk::Image            image,
+        vk::ImageAspectFlags aspectMask,
+        vk::ImageLayout      oldLayout,
+        vk::ImageLayout      newLayout,
+        std::uint32_t        mipLevels = 1
     );
 }

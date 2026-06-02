@@ -19,6 +19,8 @@
 
 namespace {
 
+constexpr std::array levelStrings = {"DEBUG", "VERBOSE", "INFO", "WARNING", "ERROR", "FATAL"};
+
 constexpr std::size_t MAX_LOG_QUEUE_SIZE = 256;
 
 struct LogEvent {
@@ -59,7 +61,7 @@ void writeLog(Stream& os, const LogEvent& log) {
 #endif
 
     const auto         timeString  = std::put_time(&tm, dateFormat);
-    const std::string& levelString = Logger::levelStrings[static_cast<std::size_t>(log.level)];
+    const std::string& levelString = levelStrings[static_cast<std::size_t>(log.level)];
 
     std::ostringstream prefixStream;
     prefixStream << timeString << " [";

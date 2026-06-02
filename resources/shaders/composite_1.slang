@@ -23,7 +23,7 @@ VSOutput vertMain(VSInput input) {
     return output;
 }
 
-layout (location = 0) out float4 output;
+layout (location = 0) out float4 swapchainOutput;
 
 layout (set = 1, binding = 0) Sampler2D depthBuffer;
 layout (set = 1, binding = 1) Sampler2D albedoBuffer;
@@ -90,5 +90,5 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
 
     color = linearToSrgb(color);
 
-    output = float4(color, 1.0);
+    swapchainOutput = float4(color, 1.0);
 }

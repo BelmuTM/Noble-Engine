@@ -4,14 +4,14 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "VulkanPipelineDescriptor.h"
+#include "VulkanPipeline.h"
 
 #include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
 
-class VulkanGraphicsPipeline {
+class VulkanGraphicsPipeline : public VulkanPipeline {
 public:
-    VulkanGraphicsPipeline()  = default;
-    ~VulkanGraphicsPipeline() = default;
+    VulkanGraphicsPipeline()           = default;
+    ~VulkanGraphicsPipeline() override = default;
 
     VulkanGraphicsPipeline(const VulkanGraphicsPipeline&)            = delete;
     VulkanGraphicsPipeline& operator=(const VulkanGraphicsPipeline&) = delete;
@@ -21,25 +21,10 @@ public:
 
     [[nodiscard]] Expected<void> create(const vk::Device& device, const VulkanRenderPass& pass) noexcept;
 
-    void destroy() noexcept;
-
-    [[nodiscard]] vk::Pipeline handle() const noexcept { return _pipeline; }
-
-    [[nodiscard]] const vk::PipelineLayout& getLayout() const noexcept { return _pipelineLayout; }
-
-    [[nodiscard]] const vk::PipelineBindPoint& getBindPoint() const noexcept { return _pipelineBindPoint; }
+    [[nodiscard]] static vk::PipelineBindPoint getBindPoint() noexcept {
+        return vk::PipelineBindPoint::eGraphics;
+    }
 
 private:
-    [[nodiscard]] Expected<void> createPipelineLayout(
-        const vk::Device& device, const VulkanPipelineDescriptor& descriptor
-    );
-
     [[nodiscard]] Expected<void> createGraphicsPipeline(const vk::Device& device, const VulkanRenderPass& pass);
-
-    vk::Device _device{};
-
-    vk::Pipeline       _pipeline{};
-    vk::PipelineLayout _pipelineLayout{};
-
-    vk::PipelineBindPoint _pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
 };

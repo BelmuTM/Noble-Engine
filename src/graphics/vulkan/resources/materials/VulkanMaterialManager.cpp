@@ -19,20 +19,22 @@ void VulkanMaterialManager::destroy() noexcept {
 }
 
 Expected<VulkanMaterial*> VulkanMaterialManager::getOrCreateMaterial(const Material& sourceMaterial) {
-    if (const auto it = _materials.find(sourceMaterial); it != _materials.end()) {
-        return Expected(it->second.get());
+    // If material is already cached, return it
+    if (const auto cachedMaterial = _materials.find(sourceMaterial); cachedMaterial != _materials.end()) {
+        return Expected(cachedMaterial->second.get());
     }
 
-    auto [it, inserted] = _materials.emplace(sourceMaterial, std::make_unique<VulkanMaterial>());
+    // Otherwise, insert and create material
+    auto [cachedMaterial, inserted] = _materials.emplace(sourceMaterial, std::make_unique<VulkanMaterial>());
 
     if (inserted) {
         TRY_CATCH(
-            it->second->create(sourceMaterial, _imageManager, _descriptorManager),
-            _materials.erase(it)
+            cachedMaterial->second->create(sourceMaterial, _imageManager, _descriptorManager),
+            _materials.erase(cachedMaterial)
         );
     }
 
-    return Expected(it->second.get());
+    return Expected(cachedMaterial->second.get());
 }
 
 Expected<void> VulkanMaterialManager::loadTextures(const AssetManager::TexturesMap& textures) const {

@@ -105,32 +105,23 @@ namespace VulkanImageLayoutTransitions {
     }
 
     Expected<void> transitionImageLayout(
-        const vk::CommandBuffer commandBuffer,
-        const vk::Image         image,
-        const vk::Format        format,
-        const vk::ImageLayout   oldLayout,
-        const vk::ImageLayout   newLayout,
-        const std::uint32_t     mipLevels
+        const vk::CommandBuffer    commandBuffer,
+        const vk::Image            image,
+        const vk::ImageAspectFlags aspectMask,
+        const vk::ImageLayout      oldLayout,
+        const vk::ImageLayout      newLayout,
+        const std::uint32_t        mipLevels
     ) {
         if (oldLayout == newLayout) return {};
 
         // Specify which region of the image to transition
         vk::ImageSubresourceRange subresourceRange{};
         subresourceRange
+            .setAspectMask(aspectMask)
             .setBaseMipLevel(0)
             .setLevelCount(mipLevels)
             .setBaseArrayLayer(0)
             .setLayerCount(1);
-
-        if (VulkanImage::isDepthBuffer(format)) {
-            subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
-
-            if (VulkanImage::hasStencilComponent(format)) {
-                subresourceRange.aspectMask |= vk::ImageAspectFlagBits::eStencil;
-            }
-        } else {
-            subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-        }
 
         // Define how the transition operates and what to change
         const auto transition = getLayoutTransition(oldLayout, newLayout);

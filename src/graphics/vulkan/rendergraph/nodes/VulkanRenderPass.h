@@ -1,11 +1,9 @@
 #pragma once
 
-#include "VulkanRenderPassAttachment.h"
-
 #include "graphics/vulkan/pipeline/VulkanPipelineDescriptor.h"
 
 #include "graphics/vulkan/rendergraph/draw/VulkanDrawCall.h"
-#include "graphics/vulkan/resources/objects/VulkanRenderObject.h"
+#include "graphics/vulkan/rendergraph/resources/VulkanRenderPassAttachment.h"
 
 #include <memory>
 #include <ranges>
@@ -32,13 +30,22 @@ struct VulkanRenderPassDescriptor {
     std::string              programPath;
     VulkanRenderPassType     type     = VulkanRenderPassType::None;
     VulkanRenderPassCullMode cullMode = VulkanRenderPassCullMode::None;
+
+    std::vector<VulkanRenderPassAttachmentDescriptor> colorAttachmentDescriptors{};
+    VulkanRenderPassAttachmentDescriptor              depthAttachmentDescriptor{};
 };
 
 // Mutable, describes the pass state (data subject to hot reloading)
 class VulkanRenderPass {
 public:
+    using DepthAttachment   = std::unique_ptr<VulkanRenderPassAttachment>;
+    using AttachmentsVector = std::vector<std::unique_ptr<VulkanRenderPassAttachment>>;
+    using TransitionsVector = std::vector<VulkanPassTransition>;
+
     using DescriptorSetsMap     = std::unordered_map<std::uint32_t, VulkanDescriptorSets*>;
     using DescriptorManagersMap = std::unordered_map<std::uint32_t, std::unique_ptr<VulkanDescriptorManager>>;
+
+    using DrawCallsVector = std::vector<VulkanDrawCall>;
 
     explicit VulkanRenderPass(VulkanRenderPassDescriptor passDescriptor) : _passDescriptor(std::move(passDescriptor)) {}
 
@@ -67,30 +74,22 @@ public:
     [[nodiscard]]       DescriptorSetsMap& getDescriptorSets()       noexcept { return _descriptorSets; }
     [[nodiscard]] const DescriptorSetsMap& getDescriptorSets() const noexcept { return _descriptorSets; }
 
-    [[nodiscard]] DescriptorManagersMap& getDescriptorManagers() noexcept { return _descriptorManagers; }
+    [[nodiscard]]       DescriptorManagersMap& getDescriptorManagers()       noexcept { return _descriptorManagers; }
+    [[nodiscard]] const DescriptorManagersMap& getDescriptorManagers() const noexcept { return _descriptorManagers; }
 
-    [[nodiscard]] VulkanRenderPassAttachment* getDepthAttachment() const noexcept {
-        return _depthAttachment.get();
-    }
+    [[nodiscard]] VulkanRenderPassAttachment* getDepthAttachment() const noexcept { return _depthAttachment.get(); }
 
-    [[nodiscard]] std::vector<std::unique_ptr<VulkanRenderPassAttachment>>& getColorAttachments() noexcept {
-        return _colorAttachments;
-    }
+    [[nodiscard]]       AttachmentsVector& getColorAttachments()       noexcept { return _colorAttachments; }
+    [[nodiscard]] const AttachmentsVector& getColorAttachments() const noexcept { return _colorAttachments; }
 
-    [[nodiscard]] const std::vector<std::unique_ptr<VulkanRenderPassAttachment>>& getColorAttachments() const noexcept {
-        return _colorAttachments;
-    }
+    [[nodiscard]]       DrawCallsVector& getDrawCalls()       noexcept { return _drawCalls; }
+    [[nodiscard]] const DrawCallsVector& getDrawCalls() const noexcept { return _drawCalls; }
 
-    [[nodiscard]] std::vector<VulkanDrawCall>& getDrawCalls() noexcept {
-        return _drawCalls;
-    }
+    [[nodiscard]]       TransitionsVector& getEntryTransitions()       noexcept { return _entryTransitions; }
+    [[nodiscard]] const TransitionsVector& getEntryTransitions() const noexcept { return _entryTransitions; }
 
-    [[nodiscard]] const std::vector<VulkanDrawCall>& getDrawCalls() const noexcept {
-        return _drawCalls;
-    }
-
-    [[nodiscard]]       std::vector<VulkanPassTransition>& getTransitions()       noexcept { return _transitions; }
-    [[nodiscard]] const std::vector<VulkanPassTransition>& getTransitions() const noexcept { return _transitions; }
+    [[nodiscard]]       TransitionsVector& getExitTransitions()       noexcept { return _exitTransitions; }
+    [[nodiscard]] const TransitionsVector& getExitTransitions() const noexcept { return _exitTransitions; }
 
     // Setters
 
@@ -109,8 +108,8 @@ public:
         return *this;
     }
 
-    VulkanRenderPass& setDepthAttachment(const VulkanRenderPassAttachment* prototype) noexcept {
-        _depthAttachment = std::make_unique<VulkanRenderPassAttachment>(*prototype);
+    VulkanRenderPass& setDepthAttachment(const VulkanRenderPassAttachment& depthAttachment) noexcept {
+        _depthAttachment = std::make_unique<VulkanRenderPassAttachment>(depthAttachment);
         return *this;
     }
 
@@ -119,20 +118,22 @@ public:
         return *this;
     }
 
-    VulkanRenderPass& addColorAttachmentAtIndex(const long index, const VulkanRenderPassAttachment& colorAttachment) {
-        _colorAttachments.insert(
-            _colorAttachments.begin() + index, std::make_unique<VulkanRenderPassAttachment>(colorAttachment)
-        );
-        return *this;
-    }
-
     VulkanDrawCall& emplaceDrawCall() noexcept {
         return _drawCalls.emplace_back();
     }
 
-    VulkanRenderPass& addTransition(const VulkanPassTransition& transition) {
-        if (const auto it = std::ranges::find(_transitions, transition); it == _transitions.end()) {
-            _transitions.push_back(transition);
+    VulkanRenderPass& addEntryTransition(const VulkanPassTransition& entryTransition) {
+        const auto cachedTransition = std::ranges::find(_entryTransitions, entryTransition);
+        if (cachedTransition == _entryTransitions.end()) {
+            _entryTransitions.push_back(entryTransition);
+        }
+        return *this;
+    }
+
+    VulkanRenderPass& addExitTransition(const VulkanPassTransition& exitTransition) {
+        const auto cachedTransition = std::ranges::find(_exitTransitions, exitTransition);
+        if (cachedTransition == _exitTransitions.end()) {
+            _exitTransitions.push_back(exitTransition);
         }
         return *this;
     }
@@ -145,13 +146,14 @@ private:
     VulkanPipelineDescriptor      _pipelineDescriptor{};
     const VulkanGraphicsPipeline* _pipeline  = nullptr;
 
+    DepthAttachment   _depthAttachment{};
+    AttachmentsVector _colorAttachments{};
+
     DescriptorSetsMap     _descriptorSets{};
     DescriptorManagersMap _descriptorManagers{};
 
-    std::unique_ptr<VulkanRenderPassAttachment> _depthAttachment{};
+    DrawCallsVector _drawCalls{};
 
-    std::vector<std::unique_ptr<VulkanRenderPassAttachment>> _colorAttachments{};
-    std::vector<VulkanPassTransition>                        _transitions{};
-
-    std::vector<VulkanDrawCall> _drawCalls{};
+    TransitionsVector _entryTransitions{};
+    TransitionsVector _exitTransitions{};
 };

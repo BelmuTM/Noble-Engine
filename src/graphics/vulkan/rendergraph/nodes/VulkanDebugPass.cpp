@@ -1,8 +1,8 @@
-#include "DebugPass.h"
+#include "VulkanDebugPass.h"
 
 #include "common/Utility.h"
 
-Expected<void> DebugPass::create(const DebugPassCreateContext& context) {
+Expected<void> VulkanDebugPass::create(const VulkanDebugPassCreateContext& context) {
     TRY(context.shaderProgramManager.load(getShaderProgram(), getPassDescriptor().programPath));
 
     const VulkanPipelineDescriptor pipelineDescriptor{
@@ -15,7 +15,6 @@ Expected<void> DebugPass::create(const DebugPassCreateContext& context) {
     };
 
     setPipelineDescriptor(pipelineDescriptor);
-    setDepthAttachment(context.renderResources.getDepthBufferAttachment());
 
     std::size_t meshHash = 0;
 

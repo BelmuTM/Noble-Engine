@@ -46,8 +46,8 @@ public:
     [[nodiscard]] Expected<void> loadBatchedImages(const std::vector<const Image*>& images);
 
     [[nodiscard]] VulkanImage* getImage(const std::string& path) const {
-        const auto it = _imageCache.find(path);
-        return it != _imageCache.end() ? it->second.get() : nullptr;
+        const auto cachedImage = _imageCache.find(path);
+        return cachedImage != _imageCache.end() ? cachedImage->second.get() : nullptr;
     }
 
 private:

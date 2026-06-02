@@ -41,10 +41,10 @@ public:
     ResourceType* get(const std::string& path) {
         std::shared_lock lock(_mutex);
 
-        auto it = _cache.find(path);
-        if (it == _cache.end()) return nullptr;
+        auto cachedResource = _cache.find(path);
+        if (cachedResource == _cache.end()) return nullptr;
 
-        if (auto handle = it->second) {
+        if (auto handle = cachedResource->second) {
             if (handle->isReady())
                 return handle->resource.get();
         }
@@ -56,10 +56,10 @@ public:
     const ResourceType* get(const std::string& path) const {
         std::shared_lock lock(_mutex);
 
-        auto it = _cache.find(path);
-        if (it == _cache.end()) return nullptr;
+        auto cachedResource = _cache.find(path);
+        if (cachedResource == _cache.end()) return nullptr;
 
-        if (auto handle = it->second) {
+        if (auto handle = cachedResource->second) {
             if (handle->isReady())
                 return handle->resource.get();
         }
@@ -84,16 +84,16 @@ protected:
         // Fast path: resource already in cache
         {
             std::shared_lock readLock(_mutex);
-            if (auto it = _cache.find(path); it != _cache.end()) {
-                return it->second;
+            if (auto cachedResource = _cache.find(path); cachedResource != _cache.end()) {
+                return cachedResource->second;
             }
         }
 
         // Slow path: insert a pending resource handle before releasing the write lock
         std::unique_lock writeLock(_mutex);
         // Another thread won the race
-        if (auto it = _cache.find(path); it != _cache.end()) {
-            return it->second;
+        if (auto cachedResource = _cache.find(path); cachedResource != _cache.end()) {
+            return cachedResource->second;
         }
 
         // Cache a placeholder while the resource is loading

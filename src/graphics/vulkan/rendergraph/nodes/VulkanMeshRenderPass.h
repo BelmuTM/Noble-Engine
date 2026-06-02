@@ -12,16 +12,17 @@
 
 #include "graphics/vulkan/rendergraph/draw/VulkanFrameCuller.h"
 
-struct MeshRenderPassCreateContext {
-    const VulkanFrameResources&  frameResources;
-    const VulkanRenderResources& renderResources;
-    VulkanMaterialManager&       materialManager;
-    VulkanRenderObjectManager&   renderObjectManager;
-    VulkanFrameCuller&           frameCuller;
+struct VulkanMeshRenderPassCreateContext {
+    const VulkanFrameResources&        frameResources;
+    const VulkanRenderResourceManager& renderResources;
 
-    VulkanShaderProgramManager&  shaderProgramManager;
+    VulkanMaterialManager&             materialManager;
+    VulkanRenderObjectManager&         renderObjectManager;
+    VulkanFrameCuller&                 frameCuller;
 
-    static MeshRenderPassCreateContext build(const VulkanRenderGraphBuilderContext& context) {
+    VulkanShaderProgramManager&        shaderProgramManager;
+
+    static VulkanMeshRenderPassCreateContext build(const VulkanRenderGraphBuilderContext& context) {
         return {
             context.frameResources,
             context.renderResources,
@@ -33,9 +34,9 @@ struct MeshRenderPassCreateContext {
     }
 };
 
-class MeshRenderPass final : public VulkanRenderPass {
+class VulkanMeshRenderPass final : public VulkanRenderPass {
     using VulkanRenderPass::VulkanRenderPass;
 
 public:
-    [[nodiscard]] Expected<void> create(const MeshRenderPassCreateContext& context);
+    [[nodiscard]] Expected<void> create(const VulkanMeshRenderPassCreateContext& context);
 };

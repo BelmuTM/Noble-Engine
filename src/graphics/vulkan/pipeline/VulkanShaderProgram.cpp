@@ -40,7 +40,7 @@ Expected<vk::ShaderModule> VulkanShaderProgram::createShaderModule(const std::ve
     vk::ShaderModule shaderModule;
     VK_CREATE(shaderModule, _device.createShaderModule(shaderModuleInfo));
 
-    return Expected(std::move(shaderModule));
+    return Expected(vk::ShaderModule(shaderModule));
 }
 
 Expected<void> VulkanShaderProgram::loadFromFiles(const std::vector<std::string>& paths, const vk::Device& device) {
@@ -57,13 +57,13 @@ Expected<void> VulkanShaderProgram::loadFromFiles(const std::vector<std::string>
 
         std::string stageExtension = extractStageExtension(path);
 
-        const auto it = stageData.find(stageExtension);
+        const auto cachedStage = stageData.find(stageExtension);
 
-        if (stageExtension.empty() || it == stageData.end()) {
+        if (stageExtension.empty() || cachedStage == stageData.end()) {
             return VK_FAIL(baseErrorMessage + "incorrect file extension \"" + stageExtension + "\".");
         }
 
-        const auto [stage, entryPoint] = it->second;
+        const auto [stage, entryPoint] = cachedStage->second;
 
         const std::vector<std::uint32_t>& bytecode = readShaderSPIRVBytecode(path);
         if (bytecode.empty()) {
@@ -107,38 +107,6 @@ Expected<void> VulkanShaderProgram::reflectShaderResources(
 
     if (result != SPV_REFLECT_RESULT_SUCCESS) {
         return VK_FAIL("Failed to reflect SPIR-V shaders: invalid shader bytecode.");
-    }
-
-    constexpr SpvReflectTypeFlags floatVectorFlags = SPV_REFLECT_TYPE_FLAG_VECTOR | SPV_REFLECT_TYPE_FLAG_FLOAT;
-
-    // Stage outputs
-    //Logger::debug("--> Stage Outputs <--");
-
-    std::uint32_t outputCount = 0;
-    result = spvReflectEnumerateOutputVariables(&module, &outputCount, nullptr);
-    assert(result == SPV_REFLECT_RESULT_SUCCESS);
-    std::vector<SpvReflectInterfaceVariable*> outputs(outputCount);
-    result = spvReflectEnumerateOutputVariables(&module, &outputCount, outputs.data());
-    assert(result == SPV_REFLECT_RESULT_SUCCESS);
-
-    for (const auto& output : outputs) {
-        if (!output->name) continue;
-
-        std::string cleanName = output->name;
-
-        if (cleanName.rfind("entryPointParam_", 0) == 0) {
-            const std::size_t pos = cleanName.rfind('.');
-            if (pos != std::string::npos) {
-                cleanName = cleanName.substr(pos + 1);
-            }
-        }
-
-        if (stage & vk::ShaderStageFlagBits::eFragment) {
-            if (output->type_description->type_flags == floatVectorFlags) {
-                //Logger::debug("location=" + std::to_string(output->location) + " : " + cleanName);
-                _stageOutputs.emplace_back(cleanName);
-            }
-        }
     }
 
     // Descriptors

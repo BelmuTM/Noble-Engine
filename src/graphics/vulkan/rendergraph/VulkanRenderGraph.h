@@ -12,16 +12,14 @@
 #include "draw/VulkanFrameCuller.h"
 #include "nodes/VulkanRenderPass.h"
 
-class VulkanRenderResources;
+class VulkanRenderResourceManager;
 
 struct VulkanRenderGraphCreateContext {
     const VulkanInstance*             instance    = nullptr;
     const VulkanDevice*               device      = nullptr;
     const VulkanSwapchain*            swapchain   = nullptr;
 
-    VulkanFrameResources*             frame     = nullptr;
-    VulkanRenderResources*            resources = nullptr;
-
+    VulkanFrameResources*             frame       = nullptr;
     const VulkanFrameCuller*          frameCuller = nullptr;
 
     vk::QueryPool                     queryPool;

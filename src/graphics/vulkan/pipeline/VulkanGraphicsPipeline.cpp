@@ -1,53 +1,15 @@
 #include "VulkanGraphicsPipeline.h"
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
+#include "graphics/vulkan/rendergraph/resources/VulkanRenderResourceManager.h"
 
-#include "graphics/vulkan/rendergraph/resources/VulkanRenderResources.h"
 #include "graphics/vulkan/resources/meshes/VulkanVertex.h"
-
-#include <ranges>
 
 Expected<void> VulkanGraphicsPipeline::create(const vk::Device& device, const VulkanRenderPass& pass) noexcept {
     _device = device;
 
     TRY(createPipelineLayout(device, pass.getPipelineDescriptor()));
     TRY(createGraphicsPipeline(device, pass));
-
-    return {};
-}
-
-void VulkanGraphicsPipeline::destroy() noexcept {
-    if (!_device) return;
-
-    if (_pipeline) {
-        _device.destroyPipeline(_pipeline);
-        _pipeline = VK_NULL_HANDLE;
-    }
-
-    if (_pipelineLayout) {
-        _device.destroyPipelineLayout(_pipelineLayout);
-        _pipelineLayout = VK_NULL_HANDLE;
-    }
-
-    _device = VK_NULL_HANDLE;
-}
-
-Expected<void> VulkanGraphicsPipeline::createPipelineLayout(
-    const vk::Device&               device,
-    const VulkanPipelineDescriptor& descriptor
-) {
-    std::vector<vk::PushConstantRange> _pushConstantRanges{};
-
-    for (const auto& [stageFlags, offset, size] : descriptor.shaderProgram->getPushConstants() | std::views::values) {
-        _pushConstantRanges.emplace_back(stageFlags, offset, size);
-    }
-
-    vk::PipelineLayoutCreateInfo layoutInfo{};
-    layoutInfo
-        .setSetLayouts(descriptor.descriptorLayouts)
-        .setPushConstantRanges(_pushConstantRanges);
-
-    VK_CREATE(_pipelineLayout, device.createPipelineLayout(layoutInfo));
 
     return {};
 }
@@ -124,16 +86,18 @@ Expected<void> VulkanGraphicsPipeline::createGraphicsPipeline(const vk::Device& 
     colorBlendAttachments.reserve(colorAttachments.size());
 
     for (const auto& colorAttachment : colorAttachments) {
-        colorAttachmentFormats.push_back(colorAttachment->resource.resolveImage()->getFormat());
+        colorAttachmentFormats.push_back(colorAttachment->resource->resolveImage()->getFormat());
         colorBlendAttachments.push_back(colorBlendAttachmentState);
     }
 
     // Rendering info
 
     vk::PipelineRenderingCreateInfo renderingInfo{};
-    renderingInfo
-        .setColorAttachmentFormats(colorAttachmentFormats)
-        .setDepthAttachmentFormat(VulkanRenderResources::DEPTH_BUFFER_FORMAT);
+    renderingInfo.setColorAttachmentFormats(colorAttachmentFormats);
+
+    if (pass.getDepthAttachment()) {
+        renderingInfo.setDepthAttachmentFormat(pass.getDepthAttachment()->resource->resolveImage()->getFormat());
+    }
 
     // Vertex input state
 

@@ -36,7 +36,7 @@ Expected<void> VulkanImage::transitionLayout(
     TRY(VulkanImageLayoutTransitions::transitionImageLayout(
         commandBuffer,
         _image,
-        _format,
+        _aspectFlags,
         oldLayout,
         newLayout,
         mipLevels
@@ -71,7 +71,7 @@ Expected<void> VulkanImage::transitionLayout(
     TRY(VulkanImageLayoutTransitions::transitionImageLayout(
         commandBuffer,
         _image,
-        _format,
+        _aspectFlags,
         _layout,
         newLayout,
         mipLevels
@@ -363,28 +363,21 @@ Expected<void> VulkanImage::createFromBuffer(
     const vk::CommandBuffer commandBuffer,
     const VulkanDevice*     device
 ) {
+    const bool hasMipmaps = mipLevels > 1;
+
     _device = device;
 
     _format         = format;
     _extent         = extent;
+    _aspectFlags    = vk::ImageAspectFlagBits::eColor;
     _descriptorType = vk::DescriptorType::eCombinedImageSampler;
 
-    const bool hasMipmaps = mipLevels > 1;
-
-    vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+    _usageFlags = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
     if (hasMipmaps) {
-        usageFlags |= vk::ImageUsageFlagBits::eTransferSrc;
+        _usageFlags |= vk::ImageUsageFlagBits::eTransferSrc;
     }
 
-    TRY(createImage(
-        vk::ImageType::e2D,
-        format,
-        extent,
-        mipLevels,
-        usageFlags,
-        VMA_MEMORY_USAGE_GPU_ONLY,
-        device
-    ));
+    TRY(createImage(vk::ImageType::e2D, format, extent, mipLevels, _usageFlags, VMA_MEMORY_USAGE_GPU_ONLY, device));
 
     TRY(transitionLayout(commandBuffer, vk::ImageLayout::eTransferDstOptimal, mipLevels));
 
@@ -398,13 +391,7 @@ Expected<void> VulkanImage::createFromBuffer(
         TRY(transitionLayout(commandBuffer, vk::ImageLayout::eShaderReadOnlyOptimal, mipLevels));
     }
 
-    TRY(createImageView(
-        vk::ImageViewType::e2D,
-        format,
-        vk::ImageAspectFlagBits::eColor,
-        mipLevels,
-        device
-    ));
+    TRY(createImageView(vk::ImageViewType::e2D, format, _aspectFlags, mipLevels, device));
 
     TRY(createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eRepeat, device));
 

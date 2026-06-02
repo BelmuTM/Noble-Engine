@@ -7,27 +7,35 @@
 #include <string>
 #include <variant>
 
-template<typename Func>
+template<typename Function>
 struct ScopeGuard {
-    std::decay_t<Func> func;
-
-    bool active = true;
-
-    explicit ScopeGuard(Func f) : func(std::move(f)) {}
-
-    ScopeGuard(ScopeGuard&& other) noexcept
-        : func(std::move(other.func)), active(other.active) {
-        other.active = false;
-    }
+    explicit ScopeGuard(Function func) : _func(std::move(func)) {}
 
     ScopeGuard(const ScopeGuard&)            = delete;
     ScopeGuard& operator=(const ScopeGuard&) = delete;
 
-    ~ScopeGuard() noexcept {
-        if (active) func();
+    ScopeGuard(ScopeGuard&& other) noexcept
+        : _func(std::move(other._func)), _active(other._active)
+    {
+        other._active = false;
     }
 
-    void release() { active = false; }
+    ScopeGuard& operator=(ScopeGuard&&) = delete;
+
+    ~ScopeGuard() noexcept {
+        if (_active) {
+            _func();
+        }
+    }
+
+    void release() noexcept {
+        _active = false;
+    }
+
+private:
+    std::decay_t<Function> _func;
+
+    bool _active = true;
 };
 
 struct Error {
@@ -36,9 +44,9 @@ struct Error {
 };
 
 struct ErrorFrame {
-    const char* function;
-    const char* file;
-    int         line;
+    const char*   function;
+    const char*   file;
+    std::uint32_t line;
 };
 
 #define MAKE_ERROR_FRAME() \
@@ -68,7 +76,7 @@ struct [[nodiscard]] Failure {
             frames[count++] = frame;
         } else {
             // Shift all frames one unit to the left
-            for (std::size_t i = 1; i < MAX_FRAMES; i++)
+            for (std::size_t i = 1; i < MAX_FRAMES; ++i)
                 frames[i - 1] = frames[i];
 
             frames[MAX_FRAMES - 1] = frame;
@@ -184,10 +192,14 @@ private:
         }                                              \
     } while (0)
 
-#define TRY_ASSIGN(varOut, expr)                                    \
-    do {                                                            \
-        auto _resultUnwrap_ = (expr);                               \
-        if (!_resultUnwrap_)                                        \
-            return Unexpected{std::move(_resultUnwrap_.failure())}; \
-        varOut = std::move(_resultUnwrap_.value());                 \
+#define TRY_ASSIGN(varOut, expr)                          \
+    do {                                                  \
+        auto _resultUnwrap_ = (expr);                     \
+        if (!_resultUnwrap_)                              \
+            return Unexpected{                            \
+                std::move(_resultUnwrap_.failure()).push( \
+                    MAKE_ERROR_FRAME()                    \
+                )                                         \
+            };                                            \
+        varOut = std::move(_resultUnwrap_.value());       \
     } while (0)

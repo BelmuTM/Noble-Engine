@@ -152,7 +152,7 @@ function (compile_slang TARGET)
     add_slang_shader_target(
         SlangShaders
         SOURCES ${SHADERS_SOURCES}
-        ENTRIES "fragMain=fragment" "vertMain=vertex"
+        ENTRIES "vertMain=vertex" "fragMain=fragment"
     )
 
     add_dependencies(${TARGET} SlangShaders)

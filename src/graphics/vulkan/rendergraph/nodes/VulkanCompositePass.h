@@ -10,13 +10,13 @@
 #include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"
 
-struct CompositePassCreateContext {
+struct VulkanCompositePassCreateContext {
     VulkanMeshManager&          meshManager;
     const VulkanFrameResources& frameResources;
 
     VulkanShaderProgramManager& shaderProgramManager;
 
-    static CompositePassCreateContext build(const VulkanRenderGraphBuilderContext& context) {
+    static VulkanCompositePassCreateContext build(const VulkanRenderGraphBuilderContext& context) {
         return {
             context.meshManager,
             context.frameResources,
@@ -25,9 +25,9 @@ struct CompositePassCreateContext {
     }
 };
 
-class CompositePass final : public VulkanRenderPass {
+class VulkanCompositePass final : public VulkanRenderPass {
     using VulkanRenderPass::VulkanRenderPass;
 
 public:
-    [[nodiscard]] Expected<void> create(const CompositePassCreateContext& context);
+    [[nodiscard]] Expected<void> create(const VulkanCompositePassCreateContext& context);
 };

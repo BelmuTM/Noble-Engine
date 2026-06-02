@@ -3,7 +3,7 @@
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 #include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
-#include "graphics/vulkan/rendergraph/resources/VulkanRenderResources.h"
+#include "graphics/vulkan/rendergraph/resources/VulkanRenderResourceManager.h"
 
 #include "draw/VulkanDrawBatchBuilder.h"
 
@@ -40,65 +40,13 @@ Expected<void> VulkanRenderGraph::execute(const vk::CommandBuffer commandBuffer)
 
 namespace {
 
-Expected<void> prepareColorAttachments(
-    const vk::CommandBuffer                   commandBuffer,
-    const VulkanRenderPass&                   pass,
-    std::vector<vk::RenderingAttachmentInfo>& colorAttachments
+Expected<void> executePassTransitions(
+    const vk::CommandBuffer commandBuffer, const VulkanRenderPass::TransitionsVector& transitions
 ) {
-    for (const auto& colorAttachment : pass.getColorAttachments()) {
-        auto& colorResource = colorAttachment->resource;
-
-        if (VulkanImage* colorImage = colorResource.resolveImage()) {
-            // Color attachment transition
-            TRY(colorImage->transitionLayout(
-                commandBuffer,
-                vk::ImageLayout::eColorAttachmentOptimal
-            ));
-
-            colorAttachments.push_back(
-                vk::RenderingAttachmentInfo{}
-                    .setImageView(colorImage->getImageView())
-                    .setImageLayout(colorImage->getLayout())
-                    .setLoadOp(colorAttachment->loadOp)
-                    .setStoreOp(colorAttachment->storeOp)
-                    .setClearValue(colorAttachment->clearValue)
-            );
+    for (const auto& [resource, targetLayout] : transitions) {
+        if (VulkanImage* resourceImage = resource->resolveImage()) {
+            TRY(resourceImage->transitionLayout(commandBuffer, targetLayout));
         }
-    }
-
-    return {};
-}
-
-Expected<void> prepareDepthAttachment(
-    const vk::CommandBuffer      commandBuffer,
-    const VulkanRenderPass&      pass,
-    const VulkanRenderResources* resources,
-    vk::RenderingAttachmentInfo& depthAttachment
-) {
-    const VulkanRenderPassAttachment* depthAttachmentPtr = pass.getDepthAttachment();
-
-    VulkanImage* depthImage = resources->getDepthBufferAttachment()->resource.image;
-
-    vk::ImageLayout targetDepthLayout;
-
-    if (depthAttachmentPtr) {
-        // Pass writes depth
-        targetDepthLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-    } else {
-        // Pass reads depth
-        targetDepthLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-    }
-
-    // Depth image transition
-    TRY(depthImage->transitionLayout(commandBuffer, targetDepthLayout));
-
-    if (depthAttachmentPtr) {
-        depthAttachment
-            .setImageView(depthImage->getImageView())
-            .setImageLayout(depthImage->getLayout())
-            .setLoadOp(depthAttachmentPtr->loadOp)
-            .setStoreOp(depthAttachmentPtr->storeOp)
-            .setClearValue(depthAttachmentPtr->clearValue);
     }
 
     return {};
@@ -118,7 +66,7 @@ void executeDrawCalls(
 
     const VulkanGraphicsPipeline* pipeline          = pass.getPipeline();
     const vk::PipelineLayout&     pipelineLayout    = pipeline->getLayout();
-    const vk::PipelineBindPoint&  pipelineBindPoint = pipeline->getBindPoint();
+    const vk::PipelineBindPoint&  pipelineBindPoint = VulkanGraphicsPipeline::getBindPoint();
 
     // Bind pipeline
 
@@ -167,16 +115,6 @@ void executeDrawCalls(
     }
 }
 
-Expected<void> executePostPassTransitions(const vk::CommandBuffer commandBuffer, const VulkanRenderPass& pass) {
-    for (const auto& [resource, targetLayout] : pass.getTransitions()) {
-        VulkanImage* resourceImage = resource->resolveImage();
-
-        TRY(resourceImage->transitionLayout(commandBuffer, targetLayout));
-    }
-
-    return {};
-}
-
 }
 
 Expected<void> VulkanRenderGraph::executePass(
@@ -186,51 +124,53 @@ Expected<void> VulkanRenderGraph::executePass(
 
     const bool isMeshPass = pass.getPassDescriptor().type == VulkanRenderPassType::MeshRender;
 
-    if (pass.getPipeline()->getBindPoint() == vk::PipelineBindPoint::eGraphics) {
-        // Color attachments
-        std::vector<vk::RenderingAttachmentInfo> colorAttachments{};
-        TRY(prepareColorAttachments(commandBuffer, pass, colorAttachments));
+    // Transition resources for current pass
+    TRY(executePassTransitions(commandBuffer, pass.getEntryTransitions()));
 
-        // Depth attachment
-        vk::RenderingAttachmentInfo depthAttachment{};
-        TRY(prepareDepthAttachment(commandBuffer, pass, _context.resources, depthAttachment));
-
-        // Rendering info
-        vk::RenderingInfo renderingInfo{};
-        renderingInfo
-            .setRenderArea({{0, 0}, extent})
-            .setLayerCount(1)
-            .setColorAttachments(colorAttachments);
-
-        if (pass.getDepthAttachment())
-            renderingInfo.setPDepthAttachment(&depthAttachment);
-
-        // Start rendering
-#ifdef VULKAN_DEBUG_UTILS
-        VulkanDebugger::beginLabel(commandBuffer, _context.dispatchLoader, pass.getPassDescriptor().name);
-#endif
-
-        commandBuffer.beginRendering(renderingInfo);
-
-        if (isMeshPass)
-            commandBuffer.beginQuery(_context.queryPool, 0, {});
-
-        // Draw calls
-        executeDrawCalls(commandBuffer, pass, _context.frameCuller, _context.frame, extent, _context.dispatchLoader);
-
-        if (isMeshPass)
-            commandBuffer.endQuery(_context.queryPool, 0);
-
-        // Stop rendering
-        commandBuffer.endRendering();
-
-#ifdef VULKAN_DEBUG_UTILS
-        VulkanDebugger::endLabel(commandBuffer, _context.dispatchLoader);
-#endif
-
-        // Transition resources for next pass
-        TRY(executePostPassTransitions(commandBuffer, pass));
+    // Color attachments
+    std::vector<vk::RenderingAttachmentInfo> colorAttachments{};
+    for (const auto& colorAttachment : pass.getColorAttachments()) {
+        colorAttachments.push_back(colorAttachment->getInfo());
     }
+
+    // Rendering info
+    vk::RenderingInfo renderingInfo{};
+    renderingInfo
+        .setRenderArea({{0, 0}, extent})
+        .setLayerCount(1)
+        .setColorAttachments(colorAttachments);
+
+    // Depth attachment
+    if (pass.getDepthAttachment()) {
+        vk::RenderingAttachmentInfo depthAttachment = pass.getDepthAttachment()->getInfo();
+        renderingInfo.setPDepthAttachment(&depthAttachment);
+    }
+
+    // Start rendering
+#ifdef VULKAN_DEBUG_UTILS
+    VulkanDebugger::beginLabel(commandBuffer, _context.dispatchLoader, pass.getPassDescriptor().name);
+#endif
+
+    commandBuffer.beginRendering(renderingInfo);
+
+    if (isMeshPass)
+        commandBuffer.beginQuery(_context.queryPool, 0, {});
+
+    // Draw calls
+    executeDrawCalls(commandBuffer, pass, _context.frameCuller, _context.frame, extent, _context.dispatchLoader);
+
+    if (isMeshPass)
+        commandBuffer.endQuery(_context.queryPool, 0);
+
+    // Stop rendering
+    commandBuffer.endRendering();
+
+#ifdef VULKAN_DEBUG_UTILS
+    VulkanDebugger::endLabel(commandBuffer, _context.dispatchLoader);
+#endif
+
+    // Transition resources for next pass
+    TRY(executePassTransitions(commandBuffer, pass.getExitTransitions()));
 
     return {};
 }

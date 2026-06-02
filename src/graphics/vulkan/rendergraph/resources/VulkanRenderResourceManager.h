@@ -8,9 +8,7 @@
 #include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 
 #include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
-#include "graphics/vulkan/rendergraph/nodes/VulkanRenderPassResource.h"
-
-#include "VulkanRenderPassBufferFactory.h"
+#include "graphics/vulkan/rendergraph/resources/VulkanRenderPassResource.h"
 
 #include <memory>
 #include <string>
@@ -19,26 +17,20 @@
 
 class VulkanRenderGraph;
 
-class VulkanRenderResources {
+class VulkanRenderResourceManager {
 public:
-    // WARNING: case-sensitive keyword reserved for the depth buffer resource
-    static constexpr std::string_view DEPTH_BUFFER_RESOURCE_NAME = "depthBuffer";
-    static constexpr auto             DEPTH_BUFFER_FORMAT        = vk::Format::eD32Sfloat;
-
-    // TODO: Eventually replace this with a function parameter
-    static constexpr auto COLOR_BUFFER_FORMAT = vk::Format::eR16G16B16A16Sfloat;
-
     using ResourcesMap         = std::unordered_map<std::string, std::unique_ptr<VulkanRenderPassResource>>;
     using ResourceAccessorsMap = std::unordered_map<std::string, std::vector<VulkanRenderPass*>>;
+    using ResourceImagesMap    = std::unordered_map<std::string, std::unique_ptr<VulkanImage>>;
 
-    VulkanRenderResources()  = default;
-    ~VulkanRenderResources() = default;
+    VulkanRenderResourceManager()  = default;
+    ~VulkanRenderResourceManager() = default;
 
-    VulkanRenderResources(const VulkanRenderResources&)            = delete;
-    VulkanRenderResources& operator=(const VulkanRenderResources&) = delete;
+    VulkanRenderResourceManager(const VulkanRenderResourceManager&)            = delete;
+    VulkanRenderResourceManager& operator=(const VulkanRenderResourceManager&) = delete;
 
-    VulkanRenderResources(VulkanRenderResources&&)            = delete;
-    VulkanRenderResources& operator=(VulkanRenderResources&&) = delete;
+    VulkanRenderResourceManager(VulkanRenderResourceManager&&)            = delete;
+    VulkanRenderResourceManager& operator=(VulkanRenderResourceManager&&) = delete;
 
     [[nodiscard]] Expected<void> create(
         const VulkanDevice&         device,
@@ -51,9 +43,7 @@ public:
 
     [[nodiscard]] Expected<void> recreate(VulkanRenderGraph& renderGraph);
 
-    [[nodiscard]] Expected<void> createDepthBuffer();
-
-    [[nodiscard]] Expected<void> createColorBuffers(VulkanRenderPass* pass);
+    [[nodiscard]] Expected<void> createResource(const VulkanRenderPassResourceDescriptor& descriptor);
 
     [[nodiscard]] Expected<void> allocateDescriptors(VulkanRenderPass* pass);
 
@@ -65,13 +55,14 @@ public:
     [[nodiscard]]       ResourceAccessorsMap& getResourceWriters()       noexcept { return _resourceWriters; }
     [[nodiscard]] const ResourceAccessorsMap& getResourceWriters() const noexcept { return _resourceWriters; }
 
-    [[nodiscard]] VulkanRenderPassAttachment* getDepthBufferAttachment() const noexcept {
-        return _depthBufferAttachment.get();
+    [[nodiscard]] VulkanRenderPassResource* getResource(const std::string& name) noexcept {
+        const auto cachedRenderResource = _resources.find(name);
+        return cachedRenderResource != _resources.end() ? cachedRenderResource->second.get() : nullptr;
     }
 
     void addResource(const VulkanRenderPassResource& resource) {
-        if (!_resources.contains(resource.name)) {
-            _resources[resource.name] = std::make_unique<VulkanRenderPassResource>(resource);
+        if (!_resources.contains(resource.descriptor.name)) {
+            _resources[resource.descriptor.name] = std::make_unique<VulkanRenderPassResource>(resource);
         }
     }
 
@@ -84,6 +75,14 @@ public:
     }
 
 private:
+    [[nodiscard]] static Expected<void> createResourceImage(
+        VulkanImage&                resourceImage,
+        vk::Format                  format,
+        vk::Extent2D                extent,
+        const VulkanDevice*         device,
+        const VulkanCommandManager* commandManager
+    );
+
     void bindDescriptors(const VulkanDescriptorSets* descriptorSets, const VulkanDescriptorScheme& scheme);
 
     void rebindDescriptors(VulkanRenderGraph& renderGraph);
@@ -92,8 +91,6 @@ private:
     const VulkanSwapchain*      _swapchain      = nullptr;
     const VulkanCommandManager* _commandManager = nullptr;
 
-    VulkanRenderPassBufferFactory _bufferFactory{};
-
     std::uint32_t _framesInFlight = 0;
 
     // Global resources and resource accessors cache
@@ -101,10 +98,6 @@ private:
     ResourceAccessorsMap _resourceReaders{};
     ResourceAccessorsMap _resourceWriters{};
 
-    // Depth buffer
-    std::unique_ptr<VulkanImage>                _depthBuffer{};
-    std::unique_ptr<VulkanRenderPassAttachment> _depthBufferAttachment{};
-
-    // Color buffers
-    std::vector<std::unique_ptr<VulkanImage>> _colorBuffers{};
+    // Instances of the images that resources hold pointers of
+    ResourceImagesMap _resourceImages{};
 };
