@@ -160,20 +160,23 @@ Expected<void> VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
     // Frustum culling
     TRY(frameCuller.cull(renderGraph.getPasses(), uniforms));
 
-    TRY(recordCurrentCommandBuffer());
-    TRY(submitCurrentCommandBuffer(imageIndex));
+    // Command buffer record and submit
+    const vk::CommandBuffer currentCommandBuffer = commandManager.getCommandBuffers()[currentFrame];
+
+    TRY(commandManager.record(
+        currentCommandBuffer,
+        [this](const vk::CommandBuffer cmd) -> Expected<void> {
+            return renderGraph.execute(cmd);
+        }
+    ));
+
+    TRY(swapchainManager.submitCommandBuffer(currentCommandBuffer, currentFrame, imageIndex));
 
     currentFrame = (currentFrame + 1) % _framesInFlight;
 
     // Queried drawn triangles count
-    VK_FIRE_AND_FORGET(context.getDevice().getLogicalDevice().getQueryPoolResults(
-        context.getDevice().getQueryPool(),
-        0, 1,
-        sizeof(std::uint64_t),
-        &primitiveCount,
-        sizeof(std::uint64_t),
-        vk::QueryResultFlagBits::eWait |
-        vk::QueryResultFlagBits::e64
+    TRY(context.getDevice().getQueryPoolResults<std::uint64_t>(
+        &primitiveCount, vk::QueryResultFlagBits::eWait | vk::QueryResultFlagBits::e64
     ));
 
     return {};
@@ -192,25 +195,4 @@ Expected<void> VulkanRenderer::onFramebufferResize() {
     _window->setFramebufferResized(false);
 
     return {};
-}
-
-Expected<void> VulkanRenderer::recordCommandBuffer(const vk::CommandBuffer commandBuffer) const {
-    VK_TRY(commandBuffer.reset());
-    VK_TRY(commandBuffer.begin(vk::CommandBufferBeginInfo{}));
-
-    TRY(renderGraph.execute(commandBuffer));
-
-    VK_TRY(commandBuffer.end());
-
-    return {};
-}
-
-Expected<void> VulkanRenderer::recordCurrentCommandBuffer() {
-    return recordCommandBuffer(commandManager.getCommandBuffers()[currentFrame]);
-}
-
-Expected<VulkanSwapchain::SwapchainOpVoid> VulkanRenderer::submitCurrentCommandBuffer(const std::uint32_t imageIndex) {
-    return swapchainManager.submitCommandBuffer(
-        commandManager.getCommandBuffers()[currentFrame], currentFrame, imageIndex
-    );
 }

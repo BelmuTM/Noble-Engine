@@ -84,3 +84,17 @@ Expected<void> VulkanCommandManager::endSingleTimeCommands(vk::CommandBuffer& co
 
     return {};
 }
+
+Expected<void> VulkanCommandManager::record(
+    const vk::CommandBuffer                                 commandBuffer,
+    const std::function<Expected<void>(vk::CommandBuffer)>& func
+) {
+    VK_TRY(commandBuffer.reset());
+    VK_TRY(commandBuffer.begin(vk::CommandBufferBeginInfo{}));
+
+    TRY(func(commandBuffer));
+
+    VK_TRY(commandBuffer.end());
+
+    return {};
+}

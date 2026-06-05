@@ -96,24 +96,6 @@ public:
         const VulkanDevice* device
     );
 
-    [[nodiscard]] vk::Image handle() const noexcept { return _image; }
-    [[nodiscard]] vk::ImageView getImageView() const noexcept { return _imageView; }
-    [[nodiscard]] vk::Sampler getSampler() const noexcept { return _sampler; }
-    [[nodiscard]] vk::Format getFormat() const noexcept { return _format; }
-    [[nodiscard]] vk::Extent3D getExtent() const noexcept { return _extent; }
-    [[nodiscard]] vk::ImageUsageFlags getUsageFlags() const noexcept { return _usageFlags; }
-    [[nodiscard]] vk::ImageAspectFlags getAspectFlags() const noexcept { return _aspectFlags; }
-    [[nodiscard]] vk::ImageLayout getLayout() const noexcept { return _layout; }
-
-    void setHandle(const vk::Image image) noexcept { _image = image; }
-    void setImageView(const vk::ImageView imageView) noexcept { _imageView = imageView; }
-    void setFormat(const vk::Format format) noexcept { _format = format; }
-    void setUsageFlags(const vk::ImageUsageFlags usageFlags) noexcept { _usageFlags = usageFlags; }
-    void setAspectFlags(const vk::ImageAspectFlags aspectFlags) noexcept { _aspectFlags = aspectFlags; }
-    void setExtent(const vk::Extent3D extent) noexcept { _extent = extent; }
-    void setLayout(const vk::ImageLayout layout) noexcept { _layout = layout; }
-    void setDescriptorType(const vk::DescriptorType descriptorType) noexcept { _descriptorType = descriptorType; }
-
     [[nodiscard]] static bool isDepthBuffer(const vk::Format format) {
         return format == vk::Format::eD16Unorm
             || format == vk::Format::eD32Sfloat
@@ -134,6 +116,30 @@ public:
             .imageInfo = {_sampler, _imageView, vk::ImageLayout::eShaderReadOnlyOptimal},
             .binding   = binding
         };
+    }
+
+    [[nodiscard]] vk::Image handle() const noexcept { return _image; }
+    [[nodiscard]] vk::ImageView getImageView() const noexcept { return _imageView; }
+    [[nodiscard]] vk::Sampler getSampler() const noexcept { return _sampler; }
+    [[nodiscard]] vk::Format getFormat() const noexcept { return _format; }
+    [[nodiscard]] vk::Extent3D getExtent() const noexcept { return _extent; }
+    [[nodiscard]] vk::ImageUsageFlags getUsageFlags() const noexcept { return _usageFlags; }
+    [[nodiscard]] vk::ImageAspectFlags getAspectFlags() const noexcept { return _aspectFlags; }
+    [[nodiscard]] vk::ImageLayout getLayout() const noexcept { return _layout; }
+
+    VulkanImage& setHandle(const vk::Image image) noexcept { _image = image; return *this; }
+    VulkanImage& setImageView(const vk::ImageView imageView) noexcept { _imageView = imageView; return *this; }
+    VulkanImage& setFormat(const vk::Format format) noexcept { _format = format; return *this; }
+    VulkanImage& setUsageFlags(const vk::ImageUsageFlags usageFlags) noexcept {
+        _usageFlags = usageFlags; return *this;
+    }
+    VulkanImage& setAspectFlags(const vk::ImageAspectFlags aspectFlags) noexcept {
+        _aspectFlags = aspectFlags; return *this;
+    }
+    VulkanImage& setExtent(const vk::Extent3D extent) noexcept { _extent = extent; return *this; }
+    VulkanImage& setLayout(const vk::ImageLayout layout) noexcept { _layout = layout; return *this; }
+    VulkanImage& setDescriptorType(const vk::DescriptorType descriptorType) noexcept {
+        _descriptorType = descriptorType; return *this;
     }
 
 private:

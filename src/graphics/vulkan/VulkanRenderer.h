@@ -21,7 +21,7 @@
 #include "graphics/vulkan/pipeline/VulkanShaderProgramManager.h"
 #include "graphics/vulkan/rendergraph/VulkanRenderGraph.h"
 
-class VulkanRenderer : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {
+class VulkanRenderer final : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {
 public:
     explicit VulkanRenderer(std::uint32_t framesInFlight = 2);
 
@@ -35,15 +35,10 @@ public:
 
     Expected<void> drawFrame(const FrameUniforms& uniforms) override;
 
-    std::uint32_t primitiveCount = 0;
+    std::uint64_t primitiveCount = 0;
 
 private:
     [[nodiscard]] Expected<void> onFramebufferResize();
-
-    [[nodiscard]] Expected<void> recordCommandBuffer(vk::CommandBuffer commandBuffer) const;
-    [[nodiscard]] Expected<void> recordCurrentCommandBuffer();
-
-    [[nodiscard]] Expected<VulkanSwapchain::SwapchainOpVoid> submitCurrentCommandBuffer(std::uint32_t imageIndex);
 
     Window* _window = nullptr;
 

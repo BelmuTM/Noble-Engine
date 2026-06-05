@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/debug/ErrorHandling.h"
+#include "graphics/vulkan/common/VulkanDebugger.h"
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
@@ -49,6 +50,26 @@ public:
     [[nodiscard]] vk::Queue getComputeQueue() const noexcept { return _computeQueue; }
 
     [[nodiscard]] vk::QueryPool getQueryPool() const noexcept { return _queryPool; }
+
+    template<typename QueryDataType>
+    [[nodiscard]] Expected<void> getQueryPoolResults(
+        QueryDataType*             pData,
+        const vk::QueryResultFlags flags,
+        const std::uint32_t        firstQuery = 0,
+        const std::uint32_t        queryCount = 1
+    ) const {
+        VK_TRY(_logicalDevice.getQueryPoolResults(
+            _queryPool,
+            firstQuery,
+            queryCount,
+            sizeof(QueryDataType) * queryCount,
+            pData,
+            sizeof(QueryDataType),
+            flags
+        ));
+
+        return {};
+    }
 
 private:
     static bool isPhysicalDeviceSuitable(vk::PhysicalDevice device);

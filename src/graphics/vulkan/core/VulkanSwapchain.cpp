@@ -58,16 +58,17 @@ Expected<void> VulkanSwapchain::recreate(const vk::SurfaceKHR surface) {
 void VulkanSwapchain::createImages() {
     _images.resize(_imageHandles.size());
 
-    for (std::uint32_t i = 0; i < _imageHandles.size(); i++) {
+    for (std::size_t i = 0; i < _imageHandles.size(); i++) {
         if (!_images[i]) {
             _images[i] = std::make_unique<VulkanImage>();
         }
 
-        _images[i]->setHandle(_imageHandles[i]);
-        _images[i]->setImageView(_imageViews[i]);
-        _images[i]->setFormat(_format);
-        _images[i]->setExtent(vk::Extent3D{_extent, 1});
-        _images[i]->setLayout(vk::ImageLayout::eUndefined);
+        _images[i]
+            ->setHandle(_imageHandles[i])
+            .setImageView(_imageViews[i])
+            .setFormat(_format)
+            .setExtent(vk::Extent3D{_extent, 1})
+            .setLayout(vk::ImageLayout::eUndefined);
     }
 }
 

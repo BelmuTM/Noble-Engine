@@ -101,11 +101,12 @@ Expected<void> VulkanRenderResourceManager::createResourceImage(
         aspectFlags |= vk::ImageAspectFlagBits::eStencil;
     }
 
-    resourceImage.setFormat(format);
-    resourceImage.setExtent(extent3D);
-    resourceImage.setUsageFlags(usageFlags);
-    resourceImage.setAspectFlags(aspectFlags);
-    resourceImage.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+    resourceImage
+        .setFormat(format)
+        .setExtent(extent3D)
+        .setUsageFlags(usageFlags)
+        .setAspectFlags(aspectFlags)
+        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
 
     TRY(resourceImage.createImage(
         vk::ImageType::e2D, format, extent3D, 1, usageFlags, VMA_MEMORY_USAGE_GPU_ONLY, device

@@ -34,6 +34,11 @@ public:
     [[nodiscard]]       std::vector<vk::CommandBuffer>& getCommandBuffers()       noexcept { return _commandBuffers; }
     [[nodiscard]] const std::vector<vk::CommandBuffer>& getCommandBuffers() const noexcept { return _commandBuffers; }
 
+    [[nodiscard]] static Expected<void> record(
+        vk::CommandBuffer                                       commandBuffer,
+        const std::function<Expected<void>(vk::CommandBuffer)>& func
+    );
+
 private:
     Expected<void> createCommandPool();
 

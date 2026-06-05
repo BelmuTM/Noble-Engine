@@ -9,11 +9,11 @@
 int main() {
     SignalHandlers::setupHandlers(Engine::running);
 
+    ThreadScope mainScope("MainThread");
+
     Logger::Manager loggerManager;
 
     Engine::fatalOnFail(Platform::init());
-
-    ThreadScope mainScope("MainThread");
 
     Scene sceneSponza;
     sceneSponza.addObject("lucy.obj", {-1.0f, 1.0f, 1.47f}, {0.0f, 0.0f, -30.0f}, glm::vec3{0.0025f});
