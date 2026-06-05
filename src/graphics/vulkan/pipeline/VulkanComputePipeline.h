@@ -8,7 +8,12 @@
 
 #include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
 
-class VulkanComputePipeline : public VulkanPipeline {
+struct VulkanComputePipelineDescriptor {
+    VulkanPipelineLayoutDescriptor                 layout{};
+    std::vector<vk::PipelineShaderStageCreateInfo> shaderStages{};
+};
+
+class VulkanComputePipeline final : public VulkanPipeline {
 public:
     VulkanComputePipeline()           = default;
     ~VulkanComputePipeline() override = default;
@@ -19,12 +24,16 @@ public:
     VulkanComputePipeline(VulkanComputePipeline&&)            = delete;
     VulkanComputePipeline& operator=(VulkanComputePipeline&&) = delete;
 
-    [[nodiscard]] Expected<void> create(const vk::Device& device, const VulkanRenderPass& pass) noexcept;
+    [[nodiscard]] Expected<void> create(
+        const vk::Device& device, const VulkanComputePipelineDescriptor& descriptor
+    ) noexcept;
 
     [[nodiscard]] static vk::PipelineBindPoint getBindPoint() noexcept {
         return vk::PipelineBindPoint::eCompute;
     }
 
 private:
-    [[nodiscard]] Expected<void> createComputePipeline(const vk::Device& device, const VulkanRenderPass& pass);
+    [[nodiscard]] Expected<void> createComputePipeline(
+        const vk::Device& device, const VulkanComputePipelineDescriptor& descriptor
+    );
 };

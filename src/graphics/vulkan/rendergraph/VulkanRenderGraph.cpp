@@ -62,8 +62,6 @@ void executeDrawCalls(
 ) {
     const std::uint32_t frameIndex = frame->getFrameIndex();
 
-    const VulkanShaderProgram* shaderProgram = pass.getPipelineDescriptor().shaderProgram;
-
     const VulkanGraphicsPipeline* pipeline          = pass.getPipeline();
     const vk::PipelineLayout&     pipelineLayout    = pipeline->getLayout();
     const vk::PipelineBindPoint&  pipelineBindPoint = VulkanGraphicsPipeline::getBindPoint();
@@ -107,7 +105,7 @@ void executeDrawCalls(
 
         // Draw mesh
 
-        draw.record(commandBuffer, extent, pipelineLayout, shaderProgram, instanceCount, firstInstance);
+        draw.record(commandBuffer, extent, pipelineLayout, instanceCount, firstInstance);
 
 #ifdef VULKAN_DEBUG_UTILS
         VulkanDebugger::endLabel(commandBuffer, dispatchLoader);

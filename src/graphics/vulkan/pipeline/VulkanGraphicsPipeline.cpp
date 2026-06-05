@@ -5,11 +5,13 @@
 
 #include "graphics/vulkan/resources/meshes/VulkanVertex.h"
 
-Expected<void> VulkanGraphicsPipeline::create(const vk::Device& device, const VulkanRenderPass& pass) noexcept {
+Expected<void> VulkanGraphicsPipeline::create(
+    const vk::Device& device, const VulkanGraphicsPipelineDescriptor& descriptor
+) noexcept {
     _device = device;
 
-    TRY(createPipelineLayout(device, pass.getPipelineDescriptor()));
-    TRY(createGraphicsPipeline(device, pass));
+    TRY(createPipelineLayout(device, descriptor.layout));
+    TRY(createGraphicsPipeline(device, descriptor));
 
     return {};
 }
@@ -68,36 +70,26 @@ vk::PipelineDynamicStateCreateInfo makeDynamicState() noexcept {
 
 }
 
-Expected<void> VulkanGraphicsPipeline::createGraphicsPipeline(const vk::Device& device, const VulkanRenderPass& pass) {
-    const VulkanRenderPassType& passType = pass.getPassDescriptor().type;
-
-    const auto& shaderStages = pass.getPipelineDescriptor().shaderProgram->getStages();
-
+Expected<void> VulkanGraphicsPipeline::createGraphicsPipeline(
+    const vk::Device& device, const VulkanGraphicsPipelineDescriptor& descriptor
+) {
     // Color attachment state
 
     const auto colorBlendAttachmentState = makeColorBlendAttachmentState();
 
-    std::vector<vk::Format>                            colorAttachmentFormats{};
     std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments{};
+    colorBlendAttachments.reserve(descriptor.colorAttachmentFormats.size());
 
-    const auto& colorAttachments = pass.getColorAttachments();
-
-    colorAttachmentFormats.reserve(colorAttachments.size());
-    colorBlendAttachments.reserve(colorAttachments.size());
-
-    for (const auto& colorAttachment : colorAttachments) {
-        colorAttachmentFormats.push_back(colorAttachment->resource->resolveImage()->getFormat());
+    for (const auto& _ : descriptor.colorAttachmentFormats) {
         colorBlendAttachments.push_back(colorBlendAttachmentState);
     }
 
     // Rendering info
 
     vk::PipelineRenderingCreateInfo renderingInfo{};
-    renderingInfo.setColorAttachmentFormats(colorAttachmentFormats);
-
-    if (pass.getDepthAttachment()) {
-        renderingInfo.setDepthAttachmentFormat(pass.getDepthAttachment()->resource->resolveImage()->getFormat());
-    }
+    renderingInfo
+        .setColorAttachmentFormats(descriptor.colorAttachmentFormats)
+        .setDepthAttachmentFormat(descriptor.depthAttachmentFormat);
 
     // Vertex input state
 
@@ -106,7 +98,7 @@ Expected<void> VulkanGraphicsPipeline::createGraphicsPipeline(const vk::Device& 
     const auto& bindingDescription    = VulkanVertex::getBindingDescription();
     const auto& attributeDescriptions = VulkanVertex::getAttributeDescriptions();
 
-    if (passType == VulkanRenderPassType::MeshRender || passType == VulkanRenderPassType::Debug) {
+    if (descriptor.passType == VulkanRenderPassType::MeshRender || descriptor.passType == VulkanRenderPassType::Debug) {
         vertexInputState
             .setVertexBindingDescriptions(bindingDescription)
             .setVertexAttributeDescriptions(attributeDescriptions);
@@ -117,7 +109,7 @@ Expected<void> VulkanGraphicsPipeline::createGraphicsPipeline(const vk::Device& 
     vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState{};
     inputAssemblyState.setPrimitiveRestartEnable(vk::False);
 
-    if (passType == VulkanRenderPassType::Debug) {
+    if (descriptor.passType == VulkanRenderPassType::Debug) {
         inputAssemblyState.setTopology(vk::PrimitiveTopology::eLineList);
     } else {
         inputAssemblyState.setTopology(vk::PrimitiveTopology::eTriangleList);
@@ -138,7 +130,7 @@ Expected<void> VulkanGraphicsPipeline::createGraphicsPipeline(const vk::Device& 
         .setDepthBiasEnable(vk::False)
         .setLineWidth(2.0f);
 
-    switch (passType) {
+    switch (descriptor.passType) {
         case VulkanRenderPassType::MeshRender:
             rasterizationState.setCullMode(vk::CullModeFlagBits::eBack);
             break;
@@ -185,7 +177,7 @@ Expected<void> VulkanGraphicsPipeline::createGraphicsPipeline(const vk::Device& 
     vk::GraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo
         .setPNext(&renderingInfo)
-        .setStages(shaderStages)
+        .setStages(descriptor.shaderStages)
         .setPVertexInputState(&vertexInputState)
         .setPInputAssemblyState(&inputAssemblyState)
         .setPViewportState(&viewportState)

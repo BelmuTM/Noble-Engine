@@ -24,7 +24,9 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] Expected<VulkanComputePipeline*> createComputePipeline(const VulkanRenderPass& pass);
+    [[nodiscard]] Expected<VulkanComputePipeline*> createComputePipeline(
+        const VulkanComputePipelineDescriptor& descriptor
+    );
 
 private:
     vk::Device _device{};

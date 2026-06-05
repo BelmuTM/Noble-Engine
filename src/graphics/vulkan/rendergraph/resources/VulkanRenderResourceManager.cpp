@@ -124,6 +124,7 @@ Expected<void> VulkanRenderResourceManager::createResourceImage(
 Expected<void> VulkanRenderResourceManager::allocateDescriptors(VulkanRenderPass* pass) {
     // Allocate per-pass descriptor sets keyed by set index
     for (const auto& [set, scheme] : pass->getShaderProgram()->getDescriptorSchemes()) {
+
         // Create one manager (pool, layout) per descriptor scheme
         auto descriptorManager = std::make_unique<VulkanDescriptorManager>();
         TRY(descriptorManager->create(_device->getLogicalDevice(), scheme, _framesInFlight, 1));
@@ -139,7 +140,7 @@ Expected<void> VulkanRenderResourceManager::allocateDescriptors(VulkanRenderPass
     }
 
     // Attach the layouts belonging to this pass
-    auto& descriptorLayouts = pass->getPipelineDescriptor().descriptorLayouts;
+    auto& descriptorLayouts = pass->getPipelineLayoutDescriptor().descriptorLayouts;
 
     for (const auto& manager : pass->getDescriptorManagers() | std::views::values) {
         vk::DescriptorSetLayout layout = manager->getLayout();

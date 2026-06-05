@@ -3,18 +3,12 @@
 #include "common/Utility.h"
 
 Expected<void> VulkanDebugPass::create(const VulkanDebugPassCreateContext& context) {
-    TRY(context.shaderProgramManager.load(getShaderProgram(), getPassDescriptor().programPath));
 
-    const VulkanPipelineDescriptor pipelineDescriptor{
-        getShaderProgram(),
-        {
-            context.frameResources.getDescriptorManager().getLayout(),
-            context.renderObjectManager.getDescriptorManager().getLayout(),
-            context.frameCuller.getDescriptorManager().getLayout()
-        }
+    getPipelineLayoutDescriptor().descriptorLayouts = {
+        context.frameResources.getDescriptorManager().getLayout(),
+        context.renderObjectManager.getDescriptorManager().getLayout(),
+        context.frameCuller.getDescriptorManager().getLayout()
     };
-
-    setPipelineDescriptor(pipelineDescriptor);
 
     std::size_t meshHash = 0;
 
@@ -41,11 +35,9 @@ Expected<void> VulkanDebugPass::create(const VulkanDebugPassCreateContext& conte
 
         renderObject->gpuData.debugColor = Utility::instanceColor(meshHash);
 
-        VulkanMesh* aabbMeshPtr = context.meshManager.allocateMesh(aabbMesh);
-
         emplaceDrawCall()
             .setName(renderObject->object->getModel().name + "_Debug")
-            .setRenderMesh({aabbMeshPtr})
+            .setRenderMesh({context.meshManager.allocateMesh(aabbMesh)})
             .setInstanceHandle(renderObject->instanceHandle)
             .setModelMatrix(renderObject->object->getModelMatrix())
             .addDescriptorSets(context.renderObjectManager.getDescriptorSets())

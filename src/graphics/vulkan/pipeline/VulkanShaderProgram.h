@@ -14,6 +14,7 @@
 class VulkanShaderProgram {
 public:
     using DescriptorSchemeMap = std::unordered_map<std::uint32_t, VulkanDescriptorScheme>;
+    using PushConstantsMap    = std::unordered_map<std::string, VulkanPushConstantRange>;
 
     VulkanShaderProgram()  = default;
     ~VulkanShaderProgram() = default;

@@ -14,10 +14,12 @@ void VulkanComputePipelineManager::destroy() noexcept {
     _device = VK_NULL_HANDLE;
 }
 
-Expected<VulkanComputePipeline*> VulkanComputePipelineManager::createComputePipeline(const VulkanRenderPass& pass) {
+Expected<VulkanComputePipeline*> VulkanComputePipelineManager::createComputePipeline(
+    const VulkanComputePipelineDescriptor& descriptor
+) {
     _computePipelines.emplace_back(std::make_unique<VulkanComputePipeline>());
 
-    TRY(_computePipelines.back()->create(_device, pass));
+    TRY(_computePipelines.back()->create(_device, descriptor));
 
     return Expected(_computePipelines.back().get());
 }

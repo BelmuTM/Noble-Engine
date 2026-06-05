@@ -14,10 +14,12 @@ void VulkanGraphicsPipelineManager::destroy() noexcept {
     _device = VK_NULL_HANDLE;
 }
 
-Expected<VulkanGraphicsPipeline*> VulkanGraphicsPipelineManager::createGraphicsPipeline(const VulkanRenderPass& pass) {
+Expected<VulkanGraphicsPipeline*> VulkanGraphicsPipelineManager::createGraphicsPipeline(
+    const VulkanGraphicsPipelineDescriptor& descriptor
+) {
     _graphicsPipelines.emplace_back(std::make_unique<VulkanGraphicsPipeline>());
 
-    TRY(_graphicsPipelines.back()->create(_device, pass));
+    TRY(_graphicsPipelines.back()->create(_device, descriptor));
 
     return Expected(_graphicsPipelines.back().get());
 }

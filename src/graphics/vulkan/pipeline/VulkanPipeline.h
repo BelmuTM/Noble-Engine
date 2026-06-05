@@ -4,7 +4,12 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "VulkanPipelineDescriptor.h"
+#include "graphics/vulkan/pipeline/shader_interface/VulkanPushConstant.h"
+
+struct VulkanPipelineLayoutDescriptor {
+    std::vector<vk::DescriptorSetLayout> descriptorLayouts{};
+    std::vector<VulkanPushConstantRange> pushConstantRanges{};
+};
 
 class VulkanPipeline {
 public:
@@ -20,7 +25,7 @@ public:
     void destroy() noexcept;
 
     [[nodiscard]] Expected<void> createPipelineLayout(
-        const vk::Device& device, const VulkanPipelineDescriptor& descriptor
+        const vk::Device& device, const VulkanPipelineLayoutDescriptor& descriptor
     );
 
     [[nodiscard]] vk::Pipeline handle() const noexcept { return _pipeline; }

@@ -1,13 +1,12 @@
 #pragma once
 
-#include "graphics/vulkan/pipeline/VulkanPipelineDescriptor.h"
+#include "graphics/vulkan/pipeline/VulkanPipeline.h"
 
 #include "graphics/vulkan/rendergraph/draw/VulkanDrawCall.h"
 #include "graphics/vulkan/rendergraph/resources/VulkanRenderPassAttachment.h"
 
 #include <memory>
 #include <ranges>
-#include <utility>
 
 class VulkanGraphicsPipeline;
 
@@ -20,6 +19,7 @@ struct VulkanPassTransition {
     }
 };
 
+// TODO: Make graphics API agnostic
 enum class VulkanRenderPassType : std::uint8_t { None, MeshRender, Composite, Debug };
 
 enum class VulkanRenderPassCullMode : std::uint8_t { None, Frustum };
@@ -70,8 +70,12 @@ public:
     [[nodiscard]]       VulkanShaderProgram*& getShaderProgram()       noexcept { return _shaderProgram; }
     [[nodiscard]] const VulkanShaderProgram*  getShaderProgram() const noexcept { return _shaderProgram; }
 
-    [[nodiscard]]       VulkanPipelineDescriptor& getPipelineDescriptor()       noexcept { return _pipelineDescriptor; }
-    [[nodiscard]] const VulkanPipelineDescriptor& getPipelineDescriptor() const noexcept { return _pipelineDescriptor; }
+    [[nodiscard]] VulkanPipelineLayoutDescriptor& getPipelineLayoutDescriptor() noexcept {
+        return _pipelineLayoutDescriptor;
+    }
+    [[nodiscard]] const VulkanPipelineLayoutDescriptor& getPipelineLayoutDescriptor() const noexcept {
+        return _pipelineLayoutDescriptor;
+    }
 
     [[nodiscard]] const VulkanGraphicsPipeline* getPipeline() const noexcept { return _pipeline; }
 
@@ -97,8 +101,10 @@ public:
 
     // Setters
 
-    VulkanRenderPass& setPipelineDescriptor(const VulkanPipelineDescriptor& pipelineDescriptor) noexcept {
-        _pipelineDescriptor = pipelineDescriptor;
+    VulkanRenderPass& setPipelineLayoutDescriptor(
+        const VulkanPipelineLayoutDescriptor& pipelineLayoutDescriptor
+    ) noexcept {
+        _pipelineLayoutDescriptor = pipelineLayoutDescriptor;
         return *this;
     }
 
@@ -147,8 +153,8 @@ private:
 
     VulkanShaderProgram* _shaderProgram = nullptr;
 
-    VulkanPipelineDescriptor      _pipelineDescriptor{};
-    const VulkanGraphicsPipeline* _pipeline  = nullptr;
+    VulkanPipelineLayoutDescriptor _pipelineLayoutDescriptor{};
+    const VulkanGraphicsPipeline*  _pipeline = nullptr;
 
     DepthAttachment   _depthAttachment{};
     AttachmentsVector _colorAttachments{};

@@ -2,13 +2,10 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include <unordered_map>
-#include <string>
-
 struct VulkanPushConstantRange {
     vk::ShaderStageFlags stageFlags;
-    std::uint32_t offset = 0;
-    std::uint32_t size   = 0;
+    std::uint32_t        offset = 0;
+    std::uint32_t        size   = 0;
 };
 
 struct IVulkanPushConstant {
@@ -36,5 +33,3 @@ struct VulkanPushConstant final : IVulkanPushConstant {
         }
     }
 };
-
-using PushConstantsMap = std::unordered_map<std::string, VulkanPushConstantRange>;

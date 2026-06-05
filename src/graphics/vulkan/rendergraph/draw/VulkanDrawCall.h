@@ -18,12 +18,11 @@ public:
     VulkanDrawCall& operator=(VulkanDrawCall&&) noexcept = default;
 
     void record(
-        vk::CommandBuffer          commandBuffer,
-        vk::Extent2D               extent,
-        vk::PipelineLayout         pipelineLayout,
-        const VulkanShaderProgram* shaderProgram,
-        std::uint32_t              instanceCount = 1,
-        std::uint32_t              firstInstance = 0
+        vk::CommandBuffer  commandBuffer,
+        vk::Extent2D       extent,
+        vk::PipelineLayout pipelineLayout,
+        std::uint32_t      instanceCount = 1,
+        std::uint32_t      firstInstance = 0
     ) const;
 
     void pushConstants(

@@ -1,19 +1,13 @@
 #include "VulkanMeshRenderPass.h"
 
 Expected<void> VulkanMeshRenderPass::create(const VulkanMeshRenderPassCreateContext& context) {
-    TRY(context.shaderProgramManager.load(getShaderProgram(), getPassDescriptor().programPath));
 
-    const VulkanPipelineDescriptor pipelineDescriptor{
-        getShaderProgram(),
-        {
-            context.frameResources.getDescriptorManager().getLayout(),
-            context.renderObjectManager.getDescriptorManager().getLayout(),
-            context.frameCuller.getDescriptorManager().getLayout(),
-            context.materialManager.getDescriptorManager().getLayout()
-        }
+    getPipelineLayoutDescriptor().descriptorLayouts = {
+        context.frameResources.getDescriptorManager().getLayout(),
+        context.renderObjectManager.getDescriptorManager().getLayout(),
+        context.frameCuller.getDescriptorManager().getLayout(),
+        context.materialManager.getDescriptorManager().getLayout()
     };
-
-    setPipelineDescriptor(pipelineDescriptor);
 
     for (const auto& renderObject : context.renderObjectManager.getRenderObjects()) {
         // Each submesh requires its own draw call

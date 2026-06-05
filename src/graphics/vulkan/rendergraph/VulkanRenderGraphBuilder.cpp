@@ -13,6 +13,8 @@ Expected<void> VulkanRenderGraphBuilder::build() const {
         VulkanRenderPass* pass;
         TRY_ASSIGN(pass, createPass(passDescriptor));
 
+        TRY(_context.shaderProgramManager.load(pass->getShaderProgram(), passDescriptor.programPath));
+
         TRY(resolveAttachments(pass));
         TRY(allocateDescriptors(pass));
         TRY(createPipeline(pass));
@@ -116,8 +118,35 @@ Expected<void> VulkanRenderGraphBuilder::allocateDescriptors(VulkanRenderPass* p
 }
 
 Expected<void> VulkanRenderGraphBuilder::createPipeline(VulkanRenderPass* pass) const {
+    VulkanGraphicsPipelineDescriptor descriptor{};
+
+    descriptor.shaderStages = pass->getShaderProgram()->getStages();
+    descriptor.passType     = pass->getPassDescriptor().type;
+
+    // Descriptor layouts
+    descriptor.layout = pass->getPipelineLayoutDescriptor();
+
+    for (const auto& manager : pass->getDescriptorManagers() | std::views::values) {
+        descriptor.layout.descriptorLayouts.push_back(manager->getLayout());
+    }
+
+    // Push constants
+    for (const auto& [stageFlags, offset, size] : pass->getShaderProgram()->getPushConstants() | std::views::values) {
+        descriptor.layout.pushConstantRanges.push_back({stageFlags, offset, size});
+    }
+
+    // Color attachment formats
+    for (const auto& colorAttachment : pass->getColorAttachments()) {
+        descriptor.colorAttachmentFormats.push_back(colorAttachment->resource->resolveImage()->getFormat());
+    }
+
+    // Depth attachment format
+    if (pass->getDepthAttachment()) {
+        descriptor.depthAttachmentFormat = pass->getDepthAttachment()->resource->resolveImage()->getFormat();
+    }
+
     const VulkanGraphicsPipeline* pipeline = nullptr;
-    TRY_ASSIGN(pipeline, _context.pipelineManager.createGraphicsPipeline(*pass));
+    TRY_ASSIGN(pipeline, _context.pipelineManager.createGraphicsPipeline(descriptor));
 
     pass->setPipeline(pipeline);
 

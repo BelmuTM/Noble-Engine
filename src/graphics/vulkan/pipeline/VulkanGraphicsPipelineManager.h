@@ -24,7 +24,9 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] Expected<VulkanGraphicsPipeline*> createGraphicsPipeline(const VulkanRenderPass& pass);
+    [[nodiscard]] Expected<VulkanGraphicsPipeline*> createGraphicsPipeline(
+        const VulkanGraphicsPipelineDescriptor& descriptor
+    );
 
 private:
     vk::Device _device{};

@@ -2,8 +2,6 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include <ranges>
-
 void VulkanPipeline::destroy() noexcept {
     if (!_device) return;
 
@@ -21,18 +19,18 @@ void VulkanPipeline::destroy() noexcept {
 }
 
 Expected<void> VulkanPipeline::createPipelineLayout(
-    const vk::Device& device, const VulkanPipelineDescriptor& descriptor
+    const vk::Device& device, const VulkanPipelineLayoutDescriptor& descriptor
 ) {
-    std::vector<vk::PushConstantRange> _pushConstantRanges{};
+    std::vector<vk::PushConstantRange> pushConstantRanges{};
 
-    for (const auto& [stageFlags, offset, size] : descriptor.shaderProgram->getPushConstants() | std::views::values) {
-        _pushConstantRanges.emplace_back(stageFlags, offset, size);
+    for (const auto& [stageFlags, offset, size] : descriptor.pushConstantRanges) {
+        pushConstantRanges.emplace_back(stageFlags, offset, size);
     }
 
     vk::PipelineLayoutCreateInfo layoutInfo{};
     layoutInfo
         .setSetLayouts(descriptor.descriptorLayouts)
-        .setPushConstantRanges(_pushConstantRanges);
+        .setPushConstantRanges(pushConstantRanges);
 
     VK_CREATE(_pipelineLayout, device.createPipelineLayout(layoutInfo));
 

@@ -2,20 +2,24 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-Expected<void> VulkanComputePipeline::create(const vk::Device& device, const VulkanRenderPass& pass) noexcept {
+Expected<void> VulkanComputePipeline::create(
+    const vk::Device& device, const VulkanComputePipelineDescriptor& descriptor
+) noexcept {
     _device = device;
 
-    TRY(createPipelineLayout(device, pass.getPipelineDescriptor()));
-    TRY(createComputePipeline(device, pass));
+    TRY(createPipelineLayout(device, descriptor.layout));
+    TRY(createComputePipeline(device, descriptor));
 
     return {};
 }
 
-Expected<void> VulkanComputePipeline::createComputePipeline(const vk::Device& device, const VulkanRenderPass& pass) {
+Expected<void> VulkanComputePipeline::createComputePipeline(
+    const vk::Device& device, const VulkanComputePipelineDescriptor& descriptor
+) {
     vk::ComputePipelineCreateInfo pipelineInfo{};
     pipelineInfo
         // TODO: Fetch stage info by flag
-        .setStage(pass.getPipelineDescriptor().shaderProgram->getStages().at(0))
+        .setStage(descriptor.shaderStages[0])
         .setLayout(_pipelineLayout);
 
     VK_CREATE(_pipeline, device.createComputePipeline(nullptr, pipelineInfo));

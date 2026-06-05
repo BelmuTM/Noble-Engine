@@ -1,19 +1,18 @@
 #include "VulkanDrawCall.h"
 
 void VulkanDrawCall::record(
-    const vk::CommandBuffer    commandBuffer,
-    const vk::Extent2D         extent,
-    const vk::PipelineLayout   pipelineLayout,
-    const VulkanShaderProgram* shaderProgram,
-    const std::uint32_t        instanceCount,
-    const std::uint32_t        firstInstance
+    const vk::CommandBuffer  commandBuffer,
+    const vk::Extent2D       extent,
+    const vk::PipelineLayout pipelineLayout,
+    const std::uint32_t      instanceCount,
+    const std::uint32_t      firstInstance
 ) const {
     if (!_renderMesh.mesh) return;
 
     commandBuffer.setViewport(0, resolveViewport(extent));
     commandBuffer.setScissor(0, resolveScissor(extent));
 
-    pushConstants(commandBuffer, pipelineLayout, shaderProgram);
+    //pushConstants(commandBuffer, pipelineLayout, shaderProgram);
 
     const VulkanMesh& mesh = *_renderMesh.mesh;
 
