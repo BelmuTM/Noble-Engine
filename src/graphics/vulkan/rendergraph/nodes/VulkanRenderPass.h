@@ -26,13 +26,17 @@ enum class VulkanRenderPassCullMode : std::uint8_t { None, Frustum };
 
 // Immutable, describes the pass identity
 struct VulkanRenderPassDescriptor {
-    std::string              name = "Undefined_Pass";
-    std::string              programPath;
+    std::string name = "Undefined_Pass";
+
+    std::string programPath;
+
     VulkanRenderPassType     type     = VulkanRenderPassType::None;
     VulkanRenderPassCullMode cullMode = VulkanRenderPassCullMode::None;
 
-    std::vector<VulkanRenderPassAttachmentDescriptor> colorAttachmentDescriptors{};
-    VulkanRenderPassAttachmentDescriptor              depthAttachmentDescriptor{};
+    std::vector<VulkanRenderPassAttachmentDescriptor> readDescriptors{};
+    std::vector<VulkanRenderPassAttachmentDescriptor> writeDescriptors{};
+
+    VulkanRenderPassAttachmentDescriptor depthAttachmentDescriptor{};
 };
 
 // Mutable, describes the pass state (data subject to hot reloading)

@@ -122,15 +122,6 @@ Expected<void> VulkanRenderResourceManager::createResourceImage(
 }
 
 Expected<void> VulkanRenderResourceManager::allocateDescriptors(VulkanRenderPass* pass) {
-    // Register resource reader passes
-    for (const auto& scheme : pass->getShaderProgram()->getDescriptorSchemes() | std::views::values) {
-        for (const auto& descriptor : scheme) {
-            if (_resources.contains(descriptor.name)) {
-                addResourceReader(descriptor.name, pass);
-            }
-        }
-    }
-
     // Allocate per-pass descriptor sets keyed by set index
     for (const auto& [set, scheme] : pass->getShaderProgram()->getDescriptorSchemes()) {
         // Create one manager (pool, layout) per descriptor scheme

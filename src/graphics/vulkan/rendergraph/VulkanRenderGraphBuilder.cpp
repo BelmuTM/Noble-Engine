@@ -62,8 +62,13 @@ Expected<void> VulkanRenderGraphBuilder::allocateResources() const {
 }
 
 Expected<void> VulkanRenderGraphBuilder::resolveAttachments(VulkanRenderPass* pass) const {
-    // Color attachments
-    for (const auto& attachmentDescriptor : pass->getPassDescriptor().colorAttachmentDescriptors) {
+    // Reads
+    for (const auto& readDescriptor : pass->getPassDescriptor().readDescriptors) {
+        _context.renderResources.addResourceReader(readDescriptor.name, pass);
+    }
+
+    // Writes (color attachments)
+    for (const auto& attachmentDescriptor : pass->getPassDescriptor().writeDescriptors) {
         const VulkanRenderPassResource* resource = _context.renderResources.getResource(attachmentDescriptor.name);
 
         if (!resource) {

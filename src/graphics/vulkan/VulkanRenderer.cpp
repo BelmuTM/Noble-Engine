@@ -100,6 +100,7 @@ Expected<void> VulkanRenderer::init(
         .addPass(
             {
                 "Gbuffer_Pass", "mesh_render", VulkanRenderPassType::MeshRender, VulkanRenderPassCullMode::Frustum,
+                {{"albedoTexture"}, {"normalTexture"}, {"specularTexture"}},
                 {{"albedoBuffer"}, {"normalBuffer"}},
                 {"depthBuffer", vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, vk::ClearDepthStencilValue{0.0f, 0}}
             }
@@ -107,6 +108,7 @@ Expected<void> VulkanRenderer::init(
         .addPass(
             {
                 "Debug_Pass", "debug", VulkanRenderPassType::Debug, VulkanRenderPassCullMode::None,
+                {},
                 {{"debugBuffer"}},
                 {"depthBuffer", vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, vk::ClearDepthStencilValue{0.0f, 0}}
             }
@@ -114,12 +116,14 @@ Expected<void> VulkanRenderer::init(
         .addPass(
             {
                 "Composite0_Pass", "composite_0", VulkanRenderPassType::Composite, VulkanRenderPassCullMode::None,
+                {{"depthBuffer"}, {"albedoBuffer"}, {"normalBuffer"}},
                 {{"compositeBuffer"}}
             }
         )
         .addPass(
             {
                 "Composite1_Pass", "composite_1", VulkanRenderPassType::Composite, VulkanRenderPassCullMode::None,
+                {{"compositeBuffer"}},
                 {{"swapchainOutput"}}
             }
         );
