@@ -101,6 +101,11 @@ public:
 
     // Setters
 
+    VulkanRenderPass& setShaderProgram(VulkanShaderProgram* shaderProgram) noexcept {
+        _shaderProgram = shaderProgram;
+        return *this;
+    }
+
     VulkanRenderPass& setPipelineLayoutDescriptor(
         const VulkanPipelineLayoutDescriptor& pipelineLayoutDescriptor
     ) noexcept {
@@ -129,7 +134,8 @@ public:
     }
 
     VulkanDrawCall& emplaceDrawCall() noexcept {
-        return _drawCalls.emplace_back();
+        return _drawCalls.emplace_back()
+            .bindPipelineLayoutDescriptor(&_pipelineLayoutDescriptor);
     }
 
     VulkanRenderPass& addEntryTransition(const VulkanPassTransition& entryTransition) {

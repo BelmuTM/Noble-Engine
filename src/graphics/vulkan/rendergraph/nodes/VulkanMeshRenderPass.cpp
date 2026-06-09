@@ -1,5 +1,7 @@
 #include "VulkanMeshRenderPass.h"
 
+constexpr auto hihi = glm::vec3(1.0f, 0.0f, 1.0f);
+
 Expected<void> VulkanMeshRenderPass::create(const VulkanMeshRenderPassCreateContext& context) {
 
     getPipelineLayoutDescriptor().descriptorLayouts = {
@@ -20,6 +22,7 @@ Expected<void> VulkanMeshRenderPass::create(const VulkanMeshRenderPassCreateCont
                 .addDescriptorSets(context.renderObjectManager.getDescriptorSets())
                 .addDescriptorSets(context.frameCuller.getDescriptorSets())
                 .addDescriptorSets(renderMesh.material->getDescriptorSets());
+                //.setPushConstant("meow", &hihi);
         }
     }
 

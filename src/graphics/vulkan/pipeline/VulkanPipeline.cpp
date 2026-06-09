@@ -2,6 +2,8 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
+#include <ranges>
+
 void VulkanPipeline::destroy() noexcept {
     if (!_device) return;
 
@@ -23,7 +25,7 @@ Expected<void> VulkanPipeline::createPipelineLayout(
 ) {
     std::vector<vk::PushConstantRange> pushConstantRanges{};
 
-    for (const auto& [stageFlags, offset, size] : descriptor.pushConstantRanges) {
+    for (const auto& [stageFlags, offset, size] : descriptor.pushConstantRanges | std::views::values) {
         pushConstantRanges.emplace_back(stageFlags, offset, size);
     }
 

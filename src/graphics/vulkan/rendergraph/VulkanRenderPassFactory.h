@@ -10,29 +10,23 @@ class VulkanRenderPassFactory {
 public:
     void registerPassTypes();
 
-    [[nodiscard]] Expected<std::unique_ptr<VulkanRenderPass>> createPass(
-        const VulkanRenderPassDescriptor&      descriptor,
+    [[nodiscard]] Expected<void> createPass(
+        VulkanRenderPass* pass,
         const VulkanRenderGraphBuilderContext& context
     ) const;
 
 private:
     template<typename PassType, typename PassCreateContext>
-    [[nodiscard]] static Expected<std::unique_ptr<VulkanRenderPass>> createPassFactory(
-        const VulkanRenderPassDescriptor&      descriptor,
-        const VulkanRenderGraphBuilderContext& context
+    [[nodiscard]] static Expected<void> createPassFactory(
+        VulkanRenderPass* pass, const VulkanRenderGraphBuilderContext& context
     ) {
-        auto pass = std::make_unique<PassType>(descriptor);
+        TRY(static_cast<PassType*>(pass)->create(PassCreateContext::build(context)));
 
-        TRY(pass->create(PassCreateContext::build(context)));
-
-        return Expected<std::unique_ptr<VulkanRenderPass>>(std::move(pass));
+        return {};
     }
 
     using PassFactoryFunction = std::function<
-        Expected<std::unique_ptr<VulkanRenderPass>>(
-            const VulkanRenderPassDescriptor&,
-            const VulkanRenderGraphBuilderContext&
-        )
+        Expected<void>(VulkanRenderPass*, const VulkanRenderGraphBuilderContext&)
     >;
 
     std::unordered_map<VulkanRenderPassType, PassFactoryFunction> _factories{};

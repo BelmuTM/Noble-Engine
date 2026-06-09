@@ -97,7 +97,8 @@
       "name": "base-debug",
       "hidden": true,
       "configuration": "Debug",
-      "cleanFirst": false
+      "cleanFirst": false,
+      "jobs": 4
     },
     {
       "name": "base-release",

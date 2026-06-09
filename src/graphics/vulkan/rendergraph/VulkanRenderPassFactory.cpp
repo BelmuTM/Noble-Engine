@@ -19,15 +19,16 @@ void VulkanRenderPassFactory::registerPassTypes() {
         &createPassFactory<VulkanCompositePass, VulkanCompositePassCreateContext>;
 }
 
-Expected<std::unique_ptr<VulkanRenderPass>> VulkanRenderPassFactory::createPass(
-    const VulkanRenderPassDescriptor&      descriptor,
-    const VulkanRenderGraphBuilderContext& context
+Expected<void> VulkanRenderPassFactory::createPass(
+    VulkanRenderPass* pass, const VulkanRenderGraphBuilderContext& context
 ) const {
-    const auto passFactory = _factories.find(descriptor.type);
+    const auto passFactory = _factories.find(pass->getPassDescriptor().type);
 
     if (passFactory == _factories.end()) {
         return VK_FAIL("Failed to create render pass: no factory registered for pass type.");
     }
 
-    return Expected(passFactory->second(descriptor, context));
+    TRY(Expected(passFactory->second(pass, context)));
+
+    return {};
 }

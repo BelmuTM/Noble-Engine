@@ -14,7 +14,6 @@
 class VulkanShaderProgram {
 public:
     using DescriptorSchemeMap = std::unordered_map<std::uint32_t, VulkanDescriptorScheme>;
-    using PushConstantsMap    = std::unordered_map<std::string, VulkanPushConstantRange>;
 
     VulkanShaderProgram()  = default;
     ~VulkanShaderProgram() = default;
@@ -39,7 +38,7 @@ public:
         return _descriptorSchemes;
     }
 
-    [[nodiscard]] const PushConstantsMap& getPushConstants() const noexcept {
+    [[nodiscard]] const VulkanPushConstantsMap& getPushConstants() const noexcept {
         return _pushConstants;
     }
 
@@ -65,5 +64,5 @@ private:
 
     std::vector<std::string> _stageOutputs{};
     DescriptorSchemeMap      _descriptorSchemes{};
-    PushConstantsMap         _pushConstants{};
+    VulkanPushConstantsMap   _pushConstants{};
 };

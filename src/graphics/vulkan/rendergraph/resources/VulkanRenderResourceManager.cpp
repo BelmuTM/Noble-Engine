@@ -139,17 +139,6 @@ Expected<void> VulkanRenderResourceManager::allocateDescriptors(VulkanRenderPass
         bindDescriptors(descriptorSets, scheme);
     }
 
-    // Attach the layouts belonging to this pass
-    auto& descriptorLayouts = pass->getPipelineLayoutDescriptor().descriptorLayouts;
-
-    for (const auto& manager : pass->getDescriptorManagers() | std::views::values) {
-        vk::DescriptorSetLayout layout = manager->getLayout();
-
-        if (std::ranges::find(descriptorLayouts, layout) == descriptorLayouts.end()) {
-            descriptorLayouts.push_back(layout);
-        }
-    }
-
     return {};
 }
 

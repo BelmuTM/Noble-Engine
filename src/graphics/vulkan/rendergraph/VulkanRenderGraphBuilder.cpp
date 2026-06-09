@@ -6,14 +6,18 @@
 
 Expected<void> VulkanRenderGraphBuilder::build() const {
 
+    auto startTime = std::chrono::high_resolution_clock::now();
+
     TRY(allocateResources());
 
     // Build passes
     for (const auto& passDescriptor : _passDescriptors) {
         VulkanRenderPass* pass;
-        TRY_ASSIGN(pass, createPass(passDescriptor));
+        TRY_ASSIGN(pass, allocatePass(passDescriptor));
 
-        TRY(_context.shaderProgramManager.load(pass->getShaderProgram(), passDescriptor.programPath));
+        TRY_ASSIGN(pass->getShaderProgram(), _context.shaderProgramManager.load(passDescriptor.programPath));
+
+        TRY(_passFactory.createPass(pass, _context));
 
         TRY(resolveAttachments(pass));
         TRY(allocateDescriptors(pass));
@@ -22,17 +26,21 @@ Expected<void> VulkanRenderGraphBuilder::build() const {
 
     scheduleResourceTransitions();
 
+    auto endTime = std::chrono::high_resolution_clock::now();
+
+    auto loadDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+
+    Logger::debug("Built render graph in " + std::to_string(loadDuration) + "ms");
+
     return {};
 }
 
-Expected<VulkanRenderPass*> VulkanRenderGraphBuilder::createPass(const VulkanRenderPassDescriptor& passDescriptor) const {
-    std::unique_ptr<VulkanRenderPass> pass;
-    TRY_ASSIGN(pass, _passFactory.createPass(passDescriptor, _context));
-
-    _context.renderGraph.addPass(std::move(pass));
+Expected<VulkanRenderPass*> VulkanRenderGraphBuilder::allocatePass(const VulkanRenderPassDescriptor& descriptor) const {
+    _context.renderGraph.addPass(std::make_unique<VulkanRenderPass>(descriptor));
 
     return Expected(_context.renderGraph.getPasses().back().get());
 }
+
 
 Expected<void> VulkanRenderGraphBuilder::allocateResources() const {
     for (const auto& resourceDescriptor : _resourceDescriptors) {
@@ -64,13 +72,15 @@ Expected<void> VulkanRenderGraphBuilder::allocateResources() const {
 }
 
 Expected<void> VulkanRenderGraphBuilder::resolveAttachments(VulkanRenderPass* pass) const {
+    const VulkanRenderPassDescriptor& passDescriptor = pass->getPassDescriptor();
+
     // Reads
-    for (const auto& readDescriptor : pass->getPassDescriptor().readDescriptors) {
+    for (const auto& readDescriptor : passDescriptor.readDescriptors) {
         _context.renderResources.addResourceReader(readDescriptor.name, pass);
     }
 
     // Writes (color attachments)
-    for (const auto& attachmentDescriptor : pass->getPassDescriptor().writeDescriptors) {
+    for (const auto& attachmentDescriptor : passDescriptor.writeDescriptors) {
         const VulkanRenderPassResource* resource = _context.renderResources.getResource(attachmentDescriptor.name);
 
         if (!resource) {
@@ -85,7 +95,7 @@ Expected<void> VulkanRenderGraphBuilder::resolveAttachments(VulkanRenderPass* pa
     }
 
     // Depth attachment
-    auto depthDescriptor = pass->getPassDescriptor().depthAttachmentDescriptor;
+    auto depthDescriptor = passDescriptor.depthAttachmentDescriptor;
 
     if (!depthDescriptor.name.empty()) {
         const VulkanRenderPassResource* resource = _context.renderResources.getResource(depthDescriptor.name);
@@ -123,16 +133,16 @@ Expected<void> VulkanRenderGraphBuilder::createPipeline(VulkanRenderPass* pass) 
     descriptor.shaderStages = pass->getShaderProgram()->getStages();
     descriptor.passType     = pass->getPassDescriptor().type;
 
-    // Descriptor layouts
     descriptor.layout = pass->getPipelineLayoutDescriptor();
 
+    // Descriptor layouts (reflected from shaders)
     for (const auto& manager : pass->getDescriptorManagers() | std::views::values) {
         descriptor.layout.descriptorLayouts.push_back(manager->getLayout());
     }
 
     // Push constants
-    for (const auto& [stageFlags, offset, size] : pass->getShaderProgram()->getPushConstants() | std::views::values) {
-        descriptor.layout.pushConstantRanges.push_back({stageFlags, offset, size});
+    for (const auto& pushConstant : pass->getShaderProgram()->getPushConstants()) {
+        pass->getPipelineLayoutDescriptor().pushConstantRanges.emplace(pushConstant);
     }
 
     // Color attachment formats

@@ -166,6 +166,8 @@ Expected<void> VulkanShaderProgram::reflectShaderResources(
         };
 
         _pushConstants[name] = pushConstantRange;
+
+        //Logger::debug(name);
     }
 
     spvReflectDestroyShaderModule(&module);

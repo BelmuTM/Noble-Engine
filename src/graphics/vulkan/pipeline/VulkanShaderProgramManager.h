@@ -25,12 +25,12 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] Expected<void> load(VulkanShaderProgram*& program, const std::string& path);
+    [[nodiscard]] Expected<VulkanShaderProgram*> load(const std::string& path);
 
 private:
     vk::Device _device{};
 
-    std::unordered_map<std::string, std::unique_ptr<VulkanShaderProgram>> _cache{};
+    std::unordered_map<std::string, std::unique_ptr<VulkanShaderProgram>> _programCache{};
 
     std::mutex _mutex{};
 };

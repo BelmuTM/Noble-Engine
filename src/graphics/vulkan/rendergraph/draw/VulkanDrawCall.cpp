@@ -1,5 +1,7 @@
 #include "VulkanDrawCall.h"
 
+#include <ranges>
+
 void VulkanDrawCall::record(
     const vk::CommandBuffer  commandBuffer,
     const vk::Extent2D       extent,
@@ -12,7 +14,7 @@ void VulkanDrawCall::record(
     commandBuffer.setViewport(0, resolveViewport(extent));
     commandBuffer.setScissor(0, resolveScissor(extent));
 
-    //pushConstants(commandBuffer, pipelineLayout, shaderProgram);
+    pushConstants(commandBuffer, pipelineLayout);
 
     const VulkanMesh& mesh = *_renderMesh.mesh;
 
@@ -38,16 +40,12 @@ void VulkanDrawCall::record(
 }
 
 void VulkanDrawCall::pushConstants(
-    const vk::CommandBuffer    commandBuffer,
-    const vk::PipelineLayout   pipelineLayout,
-    const VulkanShaderProgram* shaderProgram
+    const vk::CommandBuffer commandBuffer, const vk::PipelineLayout pipelineLayout
 ) const noexcept {
     if (_pushConstants.empty()) return;
 
-    for (const auto& [name, range] : shaderProgram->getPushConstants()) {
-        if (auto cachedPushConstant = _pushConstants.find(name); cachedPushConstant != _pushConstants.end()) {
-            cachedPushConstant->second->push(commandBuffer, pipelineLayout, range);
-        }
+    for (const auto& [data, range] : _pushConstants | std::views::values) {
+        commandBuffer.pushConstants(pipelineLayout, range.stageFlags, range.offset, range.size, data);
     }
 }
 

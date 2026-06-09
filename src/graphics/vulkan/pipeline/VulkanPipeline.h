@@ -8,7 +8,7 @@
 
 struct VulkanPipelineLayoutDescriptor {
     std::vector<vk::DescriptorSetLayout> descriptorLayouts{};
-    std::vector<VulkanPushConstantRange> pushConstantRanges{};
+    VulkanPushConstantsMap               pushConstantRanges{};
 };
 
 class VulkanPipeline {

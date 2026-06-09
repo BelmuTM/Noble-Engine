@@ -62,7 +62,7 @@ public:
     }
 
 private:
-    [[nodiscard]] Expected<VulkanRenderPass*> createPass(const VulkanRenderPassDescriptor& passDescriptor) const;
+    [[nodiscard]] Expected<VulkanRenderPass*> allocatePass(const VulkanRenderPassDescriptor& descriptor) const;
 
     [[nodiscard]] Expected<void> allocateResources() const;
 

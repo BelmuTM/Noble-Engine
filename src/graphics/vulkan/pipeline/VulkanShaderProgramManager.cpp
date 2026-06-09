@@ -11,21 +11,20 @@ Expected<void> VulkanShaderProgramManager::create(const vk::Device& device) noex
 }
 
 void VulkanShaderProgramManager::destroy() noexcept {
-    for (const auto& shaderProgram : _cache | std::views::values) {
+    for (const auto& shaderProgram : _programCache | std::views::values) {
         shaderProgram->destroy();
     }
 
     _device = VK_NULL_HANDLE;
 }
 
-Expected<void> VulkanShaderProgramManager::load(VulkanShaderProgram*& program, const std::string& path) {
+Expected<VulkanShaderProgram*> VulkanShaderProgramManager::load(const std::string& path) {
     {
         // Fast path: shader program already in cache
         std::lock_guard lock(_mutex);
 
-        if (_cache.contains(path)) {
-            program = _cache.at(path).get();
-            return {};
+        if (const auto cachedProgram = _programCache.find(path); cachedProgram != _programCache.end()) {
+            return Expected(cachedProgram->second.get());
         }
     }
 
@@ -39,9 +38,7 @@ Expected<void> VulkanShaderProgramManager::load(VulkanShaderProgram*& program, c
     std::lock_guard lock(_mutex);
 
     auto [cachedProgram, inserted] =
-        _cache.try_emplace(path, std::make_unique<VulkanShaderProgram>(std::move(tempProgram)));
+        _programCache.try_emplace(path, std::make_unique<VulkanShaderProgram>(std::move(tempProgram)));
 
-    program = cachedProgram->second.get();
-
-    return {};
+    return Expected(cachedProgram->second.get());
 }
