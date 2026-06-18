@@ -27,11 +27,11 @@ public:
     void bindDescriptorSets() const;
 
     [[nodiscard]] VulkanImage* getTexture(const TextureType type) const {
-        return _textureMaps.textures[static_cast<std::size_t>(type)];
+        return _textureMap.textures[static_cast<std::size_t>(type)];
     }
 
     void setTexture(const TextureType type, VulkanImage* image) {
-        _textureMaps.textures[static_cast<std::size_t>(type)] = image;
+        _textureMap.textures[static_cast<std::size_t>(type)] = image;
     }
 
     [[nodiscard]] const VulkanDescriptorSets* getDescriptorSets() const noexcept { return _descriptorSets; }
@@ -48,7 +48,7 @@ private:
 
     Material _sourceMaterial{};
 
-    VulkanMaterialTextures _textureMaps{};
+    VulkanMaterialTextures _textureMap{};
 
     VulkanDescriptorSets* _descriptorSets = nullptr;
 };

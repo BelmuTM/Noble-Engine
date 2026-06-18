@@ -95,7 +95,7 @@ Expected<void> VulkanRenderer::init(
         .registerResource({"albedoBuffer"})
         .registerResource({"normalBuffer"})
         .registerResource({"debugBuffer"})
-        .registerResource({"compositeBuffer", vk::Format::eR16G16B16A16Sfloat})
+        .registerResource({"compositeBuffer", vk::Format::eR8G8B8A8Unorm})
         .registerResource({"swapchainOutput", vk::Format::eB8G8R8A8Srgb, VulkanRenderPassResourceType::SwapchainOutput})
         .addPass(
             {

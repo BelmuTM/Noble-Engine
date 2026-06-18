@@ -3,6 +3,7 @@
 #include "core/debug/ErrorHandling.h"
 
 #include "graphics/GraphicsAPI.h"
+
 #include "graphics/vulkan/common/VulkanEntityOwner.h"
 
 #include "graphics/vulkan/core/VulkanCommandManager.h"
@@ -17,8 +18,9 @@
 #include "graphics/vulkan/resources/ssbo/VulkanStorageBufferManager.h"
 #include "graphics/vulkan/resources/ubo/VulkanUniformBufferManager.h"
 
-#include "graphics/vulkan/pipeline/VulkanGraphicsPipelineManager.h"
-#include "graphics/vulkan/pipeline/VulkanShaderProgramManager.h"
+#include "graphics/vulkan/pipeline/graphics/VulkanGraphicsPipelineManager.h"
+#include "graphics/vulkan/pipeline/shaders/VulkanShaderProgramManager.h"
+
 #include "graphics/vulkan/rendergraph/VulkanRenderGraph.h"
 
 class VulkanRenderer final : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {

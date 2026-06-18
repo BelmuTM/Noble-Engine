@@ -1,11 +1,13 @@
 #pragma once
 
 #include "graphics/vulkan/common/VulkanHeader.h"
-#include "graphics/vulkan/pipeline/VulkanPipeline.h"
 
-#include "graphics/vulkan/pipeline/VulkanShaderProgram.h"
-#include "graphics/vulkan/resources/meshes/VulkanMesh.h"
-#include "graphics/vulkan/resources/objects/VulkanRenderObject.h"
+#include "graphics/vulkan/pipeline/VulkanPipeline.h"
+#include "graphics/vulkan/pipeline/shaders/VulkanShaderProgram.h"
+
+#include "graphics/vulkan/resources/meshes/VulkanRenderMesh.h"
+
+#include "graphics/vulkan/rendergraph/draw/VulkanInstanceHandle.h"
 
 struct VulkanPipelineLayoutDescriptor;
 

@@ -43,10 +43,10 @@ Expected<void> VulkanMaterial::loadTextures(VulkanImageManager* imageManager) {
 }
 
 void VulkanMaterial::bindDescriptorSets() const {
-    for (std::size_t i = 0; i < _textureMaps.textures.size(); i++) {
-        if (_descriptorSets && _textureMaps.textures[i]) {
+    for (std::size_t i = 0; i < _textureMap.textures.size(); i++) {
+        if (_descriptorSets && _textureMap.textures[i]) {
             _descriptorSets->updatePerFrameDescriptorSets(
-                _textureMaps.textures[i]->getDescriptorInfo(static_cast<std::uint32_t>(i))
+                _textureMap.textures[i]->getDescriptorInfo(static_cast<std::uint32_t>(i))
             );
         }
     }

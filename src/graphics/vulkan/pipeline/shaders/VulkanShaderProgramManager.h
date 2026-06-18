@@ -4,7 +4,7 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "graphics/vulkan/pipeline/VulkanShaderProgram.h"
+#include "VulkanShaderProgram.h"
 
 #include <memory>
 #include <mutex>

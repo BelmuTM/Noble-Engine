@@ -2,13 +2,13 @@
 
 #include "core/debug/ErrorHandling.h"
 
-#include "VulkanRenderPassFactory.h"
+#include "graphics/vulkan/rendergraph/VulkanRenderGraph.h"
+#include "graphics/vulkan/rendergraph/VulkanRenderPassFactory.h"
 
 #include "graphics/vulkan/core/VulkanSwapchain.h"
 
-#include "graphics/vulkan/pipeline/VulkanGraphicsPipelineManager.h"
-#include "graphics/vulkan/pipeline/VulkanShaderProgramManager.h"
-#include "graphics/vulkan/rendergraph/VulkanRenderGraph.h"
+#include "graphics/vulkan/pipeline/graphics/VulkanGraphicsPipelineManager.h"
+#include "graphics/vulkan/pipeline/shaders/VulkanShaderProgramManager.h"
 
 #include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"

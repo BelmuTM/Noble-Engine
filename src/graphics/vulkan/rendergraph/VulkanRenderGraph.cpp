@@ -2,7 +2,7 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include "graphics/vulkan/pipeline/VulkanGraphicsPipeline.h"
+#include "graphics/vulkan/pipeline/graphics/VulkanGraphicsPipeline.h"
 #include "graphics/vulkan/rendergraph/resources/VulkanRenderResourceManager.h"
 
 #include "draw/VulkanDrawBatchBuilder.h"

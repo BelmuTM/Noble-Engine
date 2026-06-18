@@ -4,7 +4,7 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "VulkanPipeline.h"
+#include "graphics/vulkan/pipeline/VulkanPipeline.h"
 
 #include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
 
