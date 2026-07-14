@@ -43,7 +43,6 @@ struct VulkanRenderObject {
             TRY_ASSIGN(material, materialManager->getOrCreateMaterial(mesh.getMaterial()));
 
             submesh.material = material;
-            submesh.material->bindDescriptorSets();
 
             meshes.push_back(submesh);
         }

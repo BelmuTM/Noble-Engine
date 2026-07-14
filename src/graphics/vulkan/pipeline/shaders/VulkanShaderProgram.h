@@ -4,8 +4,6 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
-
 #include "graphics/vulkan/pipeline/shader_interface/VulkanPushConstant.h"
 
 #include <unordered_map>
@@ -13,8 +11,6 @@
 
 class VulkanShaderProgram {
 public:
-    using DescriptorSchemeMap = std::unordered_map<std::uint32_t, VulkanDescriptorScheme>;
-
     VulkanShaderProgram()  = default;
     ~VulkanShaderProgram() = default;
 
@@ -32,10 +28,6 @@ public:
 
     [[nodiscard]] const std::vector<vk::PipelineShaderStageCreateInfo>& getStages() const noexcept {
         return _shaderStages;
-    }
-
-    [[nodiscard]] const DescriptorSchemeMap& getDescriptorSchemes() const noexcept {
-        return _descriptorSchemes;
     }
 
     [[nodiscard]] const VulkanPushConstantsMap& getPushConstants() const noexcept {
@@ -63,6 +55,5 @@ private:
     std::vector<vk::PipelineShaderStageCreateInfo> _shaderStages{};
 
     std::vector<std::string> _stageOutputs{};
-    DescriptorSchemeMap      _descriptorSchemes{};
     VulkanPushConstantsMap   _pushConstants{};
 };

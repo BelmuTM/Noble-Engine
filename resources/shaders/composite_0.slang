@@ -23,9 +23,9 @@ VSOutput vertMain(VSInput input) {
 
 layout (location = 0) out float4 compositeBuffer;
 
-layout (set = 1, binding = 0) Sampler2D depthBuffer;
-layout (set = 1, binding = 1) Sampler2D albedoBuffer;
-layout (set = 1, binding = 2) Sampler2D normalBuffer;
+layout (set = 3, binding = 0) Sampler2D depthBuffer;
+layout (set = 3, binding = 1) Sampler2D albedoBuffer;
+layout (set = 3, binding = 2) Sampler2D normalBuffer;
 
 #define TAU 2.0 * 3.14159
 

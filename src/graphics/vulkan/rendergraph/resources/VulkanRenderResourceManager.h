@@ -83,7 +83,9 @@ private:
         const VulkanCommandManager* commandManager
     );
 
-    void bindDescriptors(const VulkanDescriptorSets* descriptorSets, const VulkanDescriptorScheme& scheme);
+    void bindDescriptors(
+        const VulkanDescriptorSets* descriptorSets, const std::vector<VulkanRenderPassAttachmentDescriptor>& reads
+    );
 
     void rebindDescriptors(VulkanRenderGraph& renderGraph);
 

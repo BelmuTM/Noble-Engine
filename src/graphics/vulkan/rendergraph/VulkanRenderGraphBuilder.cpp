@@ -1,10 +1,15 @@
 #include "VulkanRenderGraphBuilder.h"
 
+#include "core/render/BindingSlots.h"
+
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 #include <ranges>
 
-Expected<void> VulkanRenderGraphBuilder::build() const {
+Expected<void> VulkanRenderGraphBuilder::build() {
+
+    vk::DescriptorSetLayoutCreateInfo emptyInfo{};
+    VK_CREATE(_emptyDescriptorLayout, _context.device.getLogicalDevice().createDescriptorSetLayout(emptyInfo));
 
     auto startTime = std::chrono::high_resolution_clock::now();
 
@@ -21,6 +26,7 @@ Expected<void> VulkanRenderGraphBuilder::build() const {
 
         TRY(resolveAttachments(pass));
         TRY(allocateDescriptors(pass));
+        TRY(resolveDescriptorLayouts(pass));
         TRY(createPipeline(pass));
     }
 
@@ -127,18 +133,31 @@ Expected<void> VulkanRenderGraphBuilder::allocateDescriptors(VulkanRenderPass* p
     return {};
 }
 
+Expected<void> VulkanRenderGraphBuilder::resolveDescriptorLayouts(VulkanRenderPass* pass) const {
+    auto& layouts = pass->getPipelineLayoutDescriptor().descriptorLayouts;
+    layouts.resize(BindingSlots::MaterialData + 1);
+
+    layouts[BindingSlots::FrameData]    = _context.frameResources.getDescriptorManager().getLayout();
+
+    layouts[BindingSlots::ObjectData]   = _context.renderObjectManager.getDescriptorManager().getLayout();
+
+    layouts[BindingSlots::CullingData]  = _context.frameCuller.getDescriptorManager().getLayout();
+
+    layouts[BindingSlots::PassData]     = pass->getPassDescriptor().readDescriptors.empty()
+        ? _emptyDescriptorLayout
+        : pass->getDescriptorManager()->getLayout();
+
+    layouts[BindingSlots::MaterialData] = _context.materialManager.getDescriptorManager().getLayout();
+
+    return {};
+}
+
 Expected<void> VulkanRenderGraphBuilder::createPipeline(VulkanRenderPass* pass) const {
     VulkanGraphicsPipelineDescriptor descriptor{};
 
     descriptor.shaderStages = pass->getShaderProgram()->getStages();
     descriptor.passType     = pass->getPassDescriptor().type;
-
-    descriptor.layout = pass->getPipelineLayoutDescriptor();
-
-    // Descriptor layouts (reflected from shaders)
-    for (const auto& manager : pass->getDescriptorManagers() | std::views::values) {
-        descriptor.layout.descriptorLayouts.push_back(manager->getLayout());
-    }
+    descriptor.layout       = pass->getPipelineLayoutDescriptor();
 
     // Push constants
     for (const auto& pushConstant : pass->getShaderProgram()->getPushConstants()) {

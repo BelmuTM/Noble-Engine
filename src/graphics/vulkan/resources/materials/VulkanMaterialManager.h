@@ -35,6 +35,7 @@ public:
     [[nodiscard]] static VulkanDescriptorScheme getDescriptorScheme() noexcept {
         VulkanDescriptorScheme scheme{};
 
+        // Include all possible texture types in the descriptor scheme
         for (std::size_t i = 0; i < static_cast<std::size_t>(TextureType::Count); i++) {
             scheme.emplace_back(i, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment);
         }

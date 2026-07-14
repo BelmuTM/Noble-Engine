@@ -49,7 +49,7 @@ public:
     VulkanRenderGraphBuilder(VulkanRenderGraphBuilder&&)            = delete;
     VulkanRenderGraphBuilder& operator=(VulkanRenderGraphBuilder&&) = delete;
 
-    [[nodiscard]] Expected<void> build() const;
+    [[nodiscard]] Expected<void> build();
 
     VulkanRenderGraphBuilder& registerResource(const VulkanRenderPassResourceDescriptor& descriptor) {
         _resourceDescriptors.push_back(descriptor);
@@ -70,6 +70,8 @@ private:
 
     [[nodiscard]] Expected<void> allocateDescriptors(VulkanRenderPass* pass) const;
 
+    [[nodiscard]] Expected<void> resolveDescriptorLayouts(VulkanRenderPass* pass) const;
+
     [[nodiscard]] Expected<void> createPipeline(VulkanRenderPass* pass) const;
     
     void scheduleResourceTransitions() const;
@@ -81,4 +83,7 @@ private:
     std::vector<VulkanRenderPassResourceDescriptor> _resourceDescriptors{};
 
     std::vector<VulkanRenderPassDescriptor> _passDescriptors{};
+
+    // Placeholder descriptor layout for passes with no incoming data
+    vk::DescriptorSetLayout _emptyDescriptorLayout{};
 };

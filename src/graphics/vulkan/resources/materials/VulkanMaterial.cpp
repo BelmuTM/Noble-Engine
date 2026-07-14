@@ -13,6 +13,8 @@ Expected<void> VulkanMaterial::create(
     // Allocate descriptor sets
     TRY(descriptorManager.allocate(_descriptorSets));
 
+    bindDescriptorSets();
+
     return {};
 }
 

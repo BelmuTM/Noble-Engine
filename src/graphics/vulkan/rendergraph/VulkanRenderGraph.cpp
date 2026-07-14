@@ -7,7 +7,7 @@
 
 #include "draw/VulkanDrawBatchBuilder.h"
 
-#include <ranges>
+#include "core/render/BindingSlots.h"
 
 Expected<void> VulkanRenderGraph::create(const VulkanRenderGraphCreateContext& context) noexcept {
     _context = context;
@@ -55,10 +55,11 @@ Expected<void> executePassTransitions(
 void executeDrawCalls(
     const vk::CommandBuffer                  commandBuffer,
     const VulkanRenderPass&                  pass,
-    const VulkanFrameCuller*                 frameCuller,
-    const VulkanFrameResources*              frame,
     const vk::Extent2D                       extent,
-    const vk::detail::DispatchLoaderDynamic& dispatchLoader
+    const vk::detail::DispatchLoaderDynamic& dispatchLoader,
+    const VulkanFrameResources*              frame,
+    const VulkanFrameCuller*                 frameCuller,
+    const VulkanRenderObjectManager*         renderObjectManager
 ) {
     const std::uint32_t frameIndex = frame->getFrameIndex();
 
@@ -78,6 +79,23 @@ void executeDrawCalls(
 
     frameCuller->getIndirectionBuffer()->updateArrayMemory(frameIndex, batchBuilder.getIndirectionData(), indirectionOffset);
 
+    const std::array fixedSets = {
+        frame->getDescriptorSets()->getSet(frameIndex),               // slot 0: FrameData
+        renderObjectManager->getDescriptorSets()->getSet(frameIndex), // slot 1: ObjectData
+        frameCuller->getDescriptorSets()->getSet(frameIndex),         // slot 2: CullingData
+    };
+    commandBuffer.bindDescriptorSets(pipelineBindPoint, pipelineLayout, 0, fixedSets, nullptr);
+
+    // slot 3: PassData
+    if (const VulkanDescriptorSets* passDataSets = pass.getDescriptorSets()) {
+        commandBuffer.bindDescriptorSets(
+            pipelineBindPoint, pipelineLayout,
+            BindingSlots::PassData,
+            passDataSets->getSet(frameIndex),
+            nullptr
+        );
+    }
+
     for (auto& [drawCall, firstInstance, instanceCount] : batchBuilder.getBuiltDrawBatches()) {
         auto& draw = *drawCall;
 
@@ -85,22 +103,12 @@ void executeDrawCalls(
         VulkanDebugger::beginLabel(commandBuffer, dispatchLoader, draw.getName());
 #endif
 
-        // Bind descriptor sets
-
-        // TODO: Use a pre-allocated temporary vector + std::span for scalability (owned by VulkanFrameResources).
-        std::vector<vk::DescriptorSet> descriptorSets{};
-        descriptorSets.push_back(frame->getDescriptorSets()->getSet(frameIndex));
-
-        for (const auto& drawDescriptorSets : draw.getDescriptorSets()) {
-            descriptorSets.push_back(drawDescriptorSets->getSet(frameIndex));
-        }
-
-        for (const auto& passDescriptorSets : pass.getDescriptorSets() | std::views::values) {
-            descriptorSets.push_back(passDescriptorSets->getSet(frameIndex));
-        }
-
-        if (!descriptorSets.empty()) {
-            commandBuffer.bindDescriptorSets(pipelineBindPoint, pipelineLayout, 0, descriptorSets, nullptr);
+        // slot 4: MaterialData
+        if (const VulkanMaterial* material = draw.getRenderMesh().material) {
+            const vk::DescriptorSet materialSet = material->getDescriptorSets()->getSet(frameIndex);
+            commandBuffer.bindDescriptorSets(
+                pipelineBindPoint, pipelineLayout, BindingSlots::MaterialData, materialSet, nullptr
+            );
         }
 
         // Draw mesh
@@ -155,7 +163,7 @@ Expected<void> VulkanRenderGraph::executePass(
         commandBuffer.beginQuery(_context.queryPool, 0, {});
 
     // Draw calls
-    executeDrawCalls(commandBuffer, pass, _context.frameCuller, _context.frame, extent, _context.dispatchLoader);
+    executeDrawCalls(commandBuffer, pass, extent, _context.dispatchLoader, _context.frame, _context.frameCuller, _context.renderObjectManager);
 
     if (isMeshPass)
         commandBuffer.endQuery(_context.queryPool, 0);

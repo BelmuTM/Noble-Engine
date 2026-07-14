@@ -39,9 +39,6 @@ public:
     [[nodiscard]] const VulkanRenderMesh& getRenderMesh() const noexcept { return _renderMesh; }
     [[nodiscard]] const VulkanInstanceHandle& getInstanceHandle() const noexcept { return _instanceHandle; }
     [[nodiscard]] const glm::mat4* getModelMatrix() const noexcept { return _modelMatrix; }
-    [[nodiscard]] const std::vector<const VulkanDescriptorSets*>& getDescriptorSets() const noexcept {
-        return _descriptorSets;
-    }
 
     VulkanDrawCall& setName(const std::string& name) noexcept { _name = name; return *this; }
 
@@ -59,16 +56,6 @@ public:
 
     VulkanDrawCall& setViewport(const vk::Viewport& viewport) noexcept { _viewport = viewport; return *this; }
     VulkanDrawCall& setScissor(const vk::Rect2D scissor) noexcept { _scissor = scissor; return *this; }
-
-    VulkanDrawCall& setDescriptorSets(const std::vector<const VulkanDescriptorSets*>& descriptorSets) noexcept {
-        _descriptorSets = descriptorSets;
-        return *this;
-    }
-
-    VulkanDrawCall& addDescriptorSets(const VulkanDescriptorSets* descriptorSets) {
-        _descriptorSets.push_back(descriptorSets);
-        return *this;
-    }
 
     VulkanDrawCall& bindPipelineLayoutDescriptor(const VulkanPipelineLayoutDescriptor* descriptor) noexcept {
         _pipelineLayoutDescriptor = descriptor;
@@ -94,8 +81,6 @@ private:
     VulkanInstanceHandle _instanceHandle{};
 
     const glm::mat4* _modelMatrix = nullptr;
-
-    std::vector<const VulkanDescriptorSets*> _descriptorSets{};
 
     // WARNING: Mutable, should store copy instead of pointer if layout ever changes during runtime
     // (e.g.: interface-breaking hot reloads).

@@ -64,6 +64,7 @@ Expected<void> VulkanRenderer::init(
             &swapchain,
             &frameResources,
             &frameCuller,
+            &renderObjectManager,
             device.getQueryPool()
         }
     ));
@@ -94,13 +95,13 @@ Expected<void> VulkanRenderer::init(
         .registerResource({"depthBuffer", vk::Format::eD32Sfloat})
         .registerResource({"albedoBuffer"})
         .registerResource({"normalBuffer"})
-        .registerResource({"debugBuffer"})
-        .registerResource({"compositeBuffer", vk::Format::eR8G8B8A8Unorm})
+        .registerResource({"debugBuffer", vk::Format::eR32G32B32A32Sfloat})
+        .registerResource({"compositeBuffer", vk::Format::eR16G16B16A16Sfloat})
         .registerResource({"swapchainOutput", vk::Format::eB8G8R8A8Srgb, VulkanRenderPassResourceType::SwapchainOutput})
         .addPass(
             {
                 "Gbuffer_Pass", "mesh_render", VulkanRenderPassType::MeshRender, VulkanRenderPassCullMode::Frustum,
-                {{"albedoTexture"}, {"normalTexture"}, {"specularTexture"}},
+                {},
                 {{"albedoBuffer"}, {"normalBuffer"}},
                 {"depthBuffer", vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, vk::ClearDepthStencilValue{0.0f, 0}}
             }
@@ -123,7 +124,7 @@ Expected<void> VulkanRenderer::init(
         .addPass(
             {
                 "Composite1_Pass", "composite_1", VulkanRenderPassType::Composite, VulkanRenderPassCullMode::None,
-                {{"compositeBuffer"}},
+                {{"depthBuffer"}, {"albedoBuffer"}, {"normalBuffer"}, {"debugBuffer"}, {"compositeBuffer"}},
                 {{"swapchainOutput"}}
             }
         );

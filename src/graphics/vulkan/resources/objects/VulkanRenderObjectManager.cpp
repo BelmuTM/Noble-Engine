@@ -21,6 +21,7 @@ Expected<void> VulkanRenderObjectManager::create(const VulkanRenderObjectCreateC
     _objectDescriptors->updatePerFrameSSBODescriptorSets(*_objectBuffer, 0);
 
     // Load textures
+
     Logger::debug("Loading object textures");
 
     auto startTime = std::chrono::high_resolution_clock::now();
@@ -34,17 +35,8 @@ Expected<void> VulkanRenderObjectManager::create(const VulkanRenderObjectCreateC
     Logger::debug("Loaded object textures in " + std::to_string(loadDuration) + " ms");
 
     // Create render objects
-    Logger::debug("Creating objects");
-
-    startTime = std::chrono::high_resolution_clock::now();
 
     TRY(createRenderObjects(context.objectManager->getObjects()));
-
-    endTime = std::chrono::high_resolution_clock::now();
-
-    loadDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
-
-    Logger::debug("Created objects in " + std::to_string(loadDuration) + " ms");
 
     return {};
 }

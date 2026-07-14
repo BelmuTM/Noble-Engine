@@ -46,9 +46,6 @@ public:
     using AttachmentsVector = std::vector<std::unique_ptr<VulkanRenderPassAttachment>>;
     using TransitionsVector = std::vector<VulkanPassTransition>;
 
-    using DescriptorSetsMap     = std::unordered_map<std::uint32_t, VulkanDescriptorSets*>;
-    using DescriptorManagersMap = std::unordered_map<std::uint32_t, std::unique_ptr<VulkanDescriptorManager>>;
-
     using DrawCallsVector = std::vector<VulkanDrawCall>;
 
     explicit VulkanRenderPass(VulkanRenderPassDescriptor passDescriptor) : _passDescriptor(std::move(passDescriptor)) {}
@@ -61,7 +58,7 @@ public:
     VulkanRenderPass(VulkanRenderPass&&)            = delete;
     VulkanRenderPass& operator=(VulkanRenderPass&&) = delete;
 
-    void destroy() noexcept;
+    void destroy() const noexcept;
 
     // Getters
 
@@ -69,6 +66,12 @@ public:
 
     [[nodiscard]]       VulkanShaderProgram*& getShaderProgram()       noexcept { return _shaderProgram; }
     [[nodiscard]] const VulkanShaderProgram*  getShaderProgram() const noexcept { return _shaderProgram; }
+
+    [[nodiscard]]       VulkanDescriptorManager* getDescriptorManager()       noexcept { return _descriptorManager.get(); }
+    [[nodiscard]] const VulkanDescriptorManager* getDescriptorManager() const noexcept { return _descriptorManager.get(); }
+
+    [[nodiscard]]       VulkanDescriptorSets* getDescriptorSets()       noexcept { return _descriptorSets; }
+    [[nodiscard]] const VulkanDescriptorSets* getDescriptorSets() const noexcept { return _descriptorSets; }
 
     [[nodiscard]] VulkanPipelineLayoutDescriptor& getPipelineLayoutDescriptor() noexcept {
         return _pipelineLayoutDescriptor;
@@ -78,12 +81,6 @@ public:
     }
 
     [[nodiscard]] const VulkanGraphicsPipeline* getPipeline() const noexcept { return _pipeline; }
-
-    [[nodiscard]]       DescriptorSetsMap& getDescriptorSets()       noexcept { return _descriptorSets; }
-    [[nodiscard]] const DescriptorSetsMap& getDescriptorSets() const noexcept { return _descriptorSets; }
-
-    [[nodiscard]]       DescriptorManagersMap& getDescriptorManagers()       noexcept { return _descriptorManagers; }
-    [[nodiscard]] const DescriptorManagersMap& getDescriptorManagers() const noexcept { return _descriptorManagers; }
 
     [[nodiscard]] VulkanRenderPassAttachment* getDepthAttachment() const noexcept { return _depthAttachment.get(); }
 
@@ -103,6 +100,16 @@ public:
 
     VulkanRenderPass& setShaderProgram(VulkanShaderProgram* shaderProgram) noexcept {
         _shaderProgram = shaderProgram;
+        return *this;
+    }
+
+    VulkanRenderPass& setDescriptorManager(std::unique_ptr<VulkanDescriptorManager> descriptorManager) noexcept {
+        _descriptorManager = std::move(descriptorManager);
+        return *this;
+    }
+
+    VulkanRenderPass& setDescriptorSets(VulkanDescriptorSets* descriptorSets) noexcept {
+        _descriptorSets = descriptorSets;
         return *this;
     }
 
@@ -159,14 +166,14 @@ private:
 
     VulkanShaderProgram* _shaderProgram = nullptr;
 
+    std::unique_ptr<VulkanDescriptorManager> _descriptorManager{};
+    VulkanDescriptorSets*                    _descriptorSets = nullptr;
+
     VulkanPipelineLayoutDescriptor _pipelineLayoutDescriptor{};
     const VulkanGraphicsPipeline*  _pipeline = nullptr;
 
     DepthAttachment   _depthAttachment{};
     AttachmentsVector _colorAttachments{};
-
-    DescriptorSetsMap     _descriptorSets{};
-    DescriptorManagersMap _descriptorManagers{};
 
     DrawCallsVector _drawCalls{};
 

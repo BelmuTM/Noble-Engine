@@ -4,12 +4,6 @@
 
 Expected<void> VulkanDebugPass::create(const VulkanDebugPassCreateContext& context) {
 
-    getPipelineLayoutDescriptor().descriptorLayouts = {
-        context.frameResources.getDescriptorManager().getLayout(),
-        context.renderObjectManager.getDescriptorManager().getLayout(),
-        context.frameCuller.getDescriptorManager().getLayout()
-    };
-
     std::size_t meshHash = 0;
 
     for (const auto& renderObject : context.renderObjectManager.getRenderObjects()) {
@@ -39,9 +33,7 @@ Expected<void> VulkanDebugPass::create(const VulkanDebugPassCreateContext& conte
             .setName(renderObject->object->getModel().name + "_Debug")
             .setRenderMesh({context.meshManager.allocateMesh(aabbMesh)})
             .setInstanceHandle(renderObject->instanceHandle)
-            .setModelMatrix(renderObject->object->getModelMatrix())
-            .addDescriptorSets(context.renderObjectManager.getDescriptorSets())
-            .addDescriptorSets(context.frameCuller.getDescriptorSets());
+            .setModelMatrix(renderObject->object->getModelMatrix());
     }
 
     return {};

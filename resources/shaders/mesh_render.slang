@@ -48,9 +48,9 @@ layout (location = 0) out float4 albedoBuffer;
 layout (location = 1) out float4 normalBuffer;
 // layout (location = 2) out float4 debugViewBuffer;
 
-layout (set = 3, binding = 0) Sampler2D albedoTexture;
-layout (set = 3, binding = 1) Sampler2D normalTexture;
-layout (set = 3, binding = 2) Sampler2D specularTexture;
+layout (set = 4, binding = 0) Sampler2D albedoTexture;
+layout (set = 4, binding = 1) Sampler2D normalTexture;
+layout (set = 4, binding = 2) Sampler2D specularTexture;
 
 [shader("fragment")]
 void fragMain(VSOutput vertIn) : SV_TARGET {

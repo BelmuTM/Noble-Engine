@@ -5,24 +5,14 @@
 #include "graphics/vulkan/rendergraph/VulkanRenderGraphBuilder.h"
 #include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
 
-#include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 
-#include "graphics/vulkan/rendergraph/draw/VulkanFrameCuller.h"
-
 struct VulkanMeshRenderPassCreateContext {
-    const VulkanFrameResources& frameResources;
-
-    VulkanMaterialManager&      materialManager;
-    VulkanRenderObjectManager&  renderObjectManager;
-    VulkanFrameCuller&          frameCuller;
+    VulkanRenderObjectManager& renderObjectManager;
 
     static VulkanMeshRenderPassCreateContext build(const VulkanRenderGraphBuilderContext& context) {
         return {
-            context.frameResources,
-            context.materialManager,
             context.renderObjectManager,
-            context.frameCuller
         };
     }
 };

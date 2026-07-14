@@ -7,7 +7,6 @@ struct VulkanDescriptorBindingInfo {
     vk::DescriptorType   type;
     vk::ShaderStageFlags stageFlags;
     std::uint32_t        count = 1;
-    std::string          name  = "Undefined_Descriptor_Binding";
 };
 
 using VulkanDescriptorScheme = std::vector<VulkanDescriptorBindingInfo>;

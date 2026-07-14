@@ -71,7 +71,7 @@ void VulkanDescriptorManager::buildDescriptorScheme(const VulkanDescriptorScheme
     _bindings.reserve(descriptorScheme.size());
     _poolSizes.reserve(descriptorScheme.size());
 
-    for (const auto& [binding, type, stageFlags, count, name] : descriptorScheme) {
+    for (const auto& [binding, type, stageFlags, count] : descriptorScheme) {
         _bindings.emplace_back(binding, type, count, stageFlags, nullptr);
         _poolSizes.emplace_back(type, count * _setCount);
     }

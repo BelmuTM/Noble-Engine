@@ -122,50 +122,51 @@ Expected<void> VulkanRenderResourceManager::createResourceImage(
 }
 
 Expected<void> VulkanRenderResourceManager::allocateDescriptors(VulkanRenderPass* pass) {
-    // Allocate per-pass descriptor sets keyed by set index
-    for (const auto& [set, scheme] : pass->getShaderProgram()->getDescriptorSchemes()) {
+    const auto& reads = pass->getPassDescriptor().readDescriptors;
+    if (reads.empty()) return {};
 
-        // Create one manager (pool, layout) per descriptor scheme
-        auto descriptorManager = std::make_unique<VulkanDescriptorManager>();
-        TRY(descriptorManager->create(_device->getLogicalDevice(), scheme, _framesInFlight, 1));
+    // Building the descriptor scheme for the resources read in this pass
+    VulkanDescriptorScheme scheme{};
+    scheme.reserve(reads.size());
 
-        VulkanDescriptorSets* descriptorSets = nullptr;
-        TRY(descriptorManager->allocate(descriptorSets));
-
-        // Store descriptor manager and sets keyed by set index
-        pass->getDescriptorManagers()[set] = std::move(descriptorManager);
-        pass->getDescriptorSets()[set]     = descriptorSets;
-
-        bindDescriptors(descriptorSets, scheme);
+    for (std::size_t i = 0; i < reads.size(); i++) {
+        scheme.emplace_back(i, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment);
     }
+
+    // Create a descriptor manager for this pass
+    auto descriptorManager = std::make_unique<VulkanDescriptorManager>();
+    TRY(descriptorManager->create(_device->getLogicalDevice(), scheme, _framesInFlight, 1));
+
+    VulkanDescriptorSets* descriptorSets = nullptr;
+    TRY(descriptorManager->allocate(descriptorSets));
+
+    bindDescriptors(descriptorSets, reads);
+
+    pass->setDescriptorManager(std::move(descriptorManager));
+    pass->setDescriptorSets(descriptorSets);
 
     return {};
 }
 
 void VulkanRenderResourceManager::bindDescriptors(
-    const VulkanDescriptorSets* descriptorSets, const VulkanDescriptorScheme& scheme
+    const VulkanDescriptorSets* descriptorSets, const std::vector<VulkanRenderPassAttachmentDescriptor>& reads
 ) {
-    for (const auto& descriptor : scheme) {
-        const VulkanRenderPassResource* resource = getResource(descriptor.name);
+    for (std::uint32_t i = 0; i < reads.size(); i++) {
+        const VulkanRenderPassResource* resource = getResource(reads[i].name);
         if (!resource || !resource->image) continue;
 
         // Bind resource for each frame in flight
-        descriptorSets->updatePerFrameDescriptorSets(resource->image->getDescriptorInfo(descriptor.binding));
+        descriptorSets->updatePerFrameDescriptorSets(resource->image->getDescriptorInfo(i));
     }
 }
 
 void VulkanRenderResourceManager::rebindDescriptors(VulkanRenderGraph& renderGraph) {
     for (const auto& pass : renderGraph.getPasses()) {
+        const auto& reads = pass->getPassDescriptor().readDescriptors;
+        if (reads.empty()) continue;
 
-        for (const auto& [set, scheme] : pass->getShaderProgram()->getDescriptorSchemes()) {
-            auto cachedSets = pass->getDescriptorSets().find(set);
-            if (cachedSets == pass->getDescriptorSets().end()) continue;
-
-            const VulkanDescriptorSets* descriptorSets = cachedSets->second;
-            if (!descriptorSets) continue;
-
-            bindDescriptors(descriptorSets, scheme);
+        if (const VulkanDescriptorSets* sets = pass->getDescriptorSets()) {
+            bindDescriptors(sets, reads);
         }
-
     }
 }

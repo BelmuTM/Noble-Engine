@@ -1,7 +1,5 @@
 #include "VulkanFrameResources.h"
 
-#include "graphics/vulkan/common/VulkanDebugger.h"
-
 #include "graphics/vulkan/resources/images/VulkanImageLayoutTransitions.h"
 
 Expected<void> VulkanFrameResources::create(

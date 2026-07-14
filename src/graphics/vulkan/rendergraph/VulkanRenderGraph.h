@@ -12,6 +12,8 @@
 #include "draw/VulkanFrameCuller.h"
 #include "nodes/VulkanRenderPass.h"
 
+#include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
+
 class VulkanRenderResourceManager;
 
 struct VulkanRenderGraphCreateContext {
@@ -19,8 +21,9 @@ struct VulkanRenderGraphCreateContext {
     const VulkanDevice*               device      = nullptr;
     const VulkanSwapchain*            swapchain   = nullptr;
 
-    VulkanFrameResources*             frame       = nullptr;
-    const VulkanFrameCuller*          frameCuller = nullptr;
+    VulkanFrameResources*             frame               = nullptr;
+    const VulkanFrameCuller*          frameCuller         = nullptr;
+    const VulkanRenderObjectManager*  renderObjectManager = nullptr;
 
     vk::QueryPool                     queryPool;
     vk::detail::DispatchLoaderDynamic dispatchLoader{};
