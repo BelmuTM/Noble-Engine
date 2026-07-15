@@ -22,6 +22,7 @@ int main() {
     sceneSponza.addObject("happy.obj", {-4.5f, -0.4f, -0.36f}, {90.0f, 120.0f, 0.0f}, glm::vec3{7.0f});
     sceneSponza.addObject("teapot.obj", {1.0f, 4.0f, 0.0f}, {90.0f, 0.0f, 0.0f}, glm::vec3{0.015f});
     sceneSponza.addObject("sponza_old.gltf", {0.0f, 0.0f, 0.0f}, {90.0f, 0.0f, 0.0f}, glm::vec3{1.0f});
+    //sceneSponza.addObject("sponza_curtains.gltf", {0.0f, 0.0f, 0.0f}, {90.0f, 0.0f, 0.0f}, glm::vec3{1.0f});
 
     Scene sceneBistro;
     sceneBistro.addObject("bistro.gltf", {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, glm::vec3{1.0f});

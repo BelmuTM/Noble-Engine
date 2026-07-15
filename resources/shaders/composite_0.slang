@@ -56,7 +56,7 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     float dist0 = length(lightPosition0 - worldPosition.xyz);
     float dist1 = length(lightPosition1 - worldPosition.xyz);
 
-    const float lightIntensity0 = 3.0;
+    const float lightIntensity0 = 8.0;
     const float lightIntensity1 = 1.0;
 
     float attenuation0 = lightIntensity0 / (dist0 * dist0);

@@ -72,6 +72,8 @@ private:
 
     [[nodiscard]] Expected<void> resolveDescriptorLayouts(VulkanRenderPass* pass) const;
 
+    [[nodiscard]] static Expected<void> resolvePushConstantRanges(VulkanRenderPass* pass);
+
     [[nodiscard]] Expected<void> createPipeline(VulkanRenderPass* pass) const;
     
     void scheduleResourceTransitions() const;

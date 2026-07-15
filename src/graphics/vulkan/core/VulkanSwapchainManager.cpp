@@ -2,6 +2,8 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
+#include "VulkanQueueSubmitter.h"
+
 #include <thread>
 
 Expected<void> VulkanSwapchainManager::create(
@@ -131,28 +133,16 @@ Expected<VulkanSwapchain::SwapchainOpVoid> VulkanSwapchainManager::submitCommand
 
     constexpr vk::PipelineStageFlags2 waitDestinationStageMask(vk::PipelineStageFlagBits2::eColorAttachmentOutput);
 
-    vk::SemaphoreSubmitInfo imageAvailableSemaphoreInfo{};
-    imageAvailableSemaphoreInfo
-        .setSemaphore(imageAvailableSemaphore)
-        .setStageMask(waitDestinationStageMask);
-
-    vk::SemaphoreSubmitInfo renderFinishedSemaphoreInfo{};
-    renderFinishedSemaphoreInfo
-        .setSemaphore(renderFinishedSemaphore)
-        .setStageMask(waitDestinationStageMask);
-
-    vk::CommandBufferSubmitInfo commandBufferInfo{};
-    commandBufferInfo.setCommandBuffer(commandBuffer);
-
-    vk::SubmitInfo2 submitInfo{};
-    submitInfo
-        .setWaitSemaphoreInfos(imageAvailableSemaphoreInfo)
-        .setCommandBufferInfos(commandBufferInfo)
-        .setSignalSemaphoreInfos(renderFinishedSemaphoreInfo);
+    const std::array waits{
+        vk::SemaphoreSubmitInfo{imageAvailableSemaphore, 0, waitDestinationStageMask}
+    };
+    const std::array signals{
+        vk::SemaphoreSubmitInfo{renderFinishedSemaphore, 0, waitDestinationStageMask}
+    };
 
     VK_TRY(_device->getLogicalDevice().resetFences(1, &inFlightFence));
 
-    VK_TRY(_device->getGraphicsQueue().submit2(submitInfo, inFlightFence));
+    TRY(VulkanQueueSubmitter::submit(_device->getGraphicsQueue(), commandBuffer, waits, signals, inFlightFence));
 
     const vk::PresentInfoKHR presentInfo(renderFinishedSemaphore, _swapchain->handle(), imageIndex);
 

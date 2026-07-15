@@ -4,8 +4,6 @@
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include <ranges>
-
 Expected<void> VulkanRenderGraphBuilder::build() {
 
     vk::DescriptorSetLayoutCreateInfo emptyInfo{};
@@ -21,6 +19,8 @@ Expected<void> VulkanRenderGraphBuilder::build() {
         TRY_ASSIGN(pass, allocatePass(passDescriptor));
 
         TRY_ASSIGN(pass->getShaderProgram(), _context.shaderProgramManager.load(passDescriptor.programPath));
+
+        TRY(resolvePushConstantRanges(pass));
 
         TRY(_passFactory.createPass(pass, _context));
 
@@ -154,17 +154,20 @@ Expected<void> VulkanRenderGraphBuilder::resolveDescriptorLayouts(VulkanRenderPa
     return {};
 }
 
+Expected<void> VulkanRenderGraphBuilder::resolvePushConstantRanges(VulkanRenderPass* pass) {
+    for (const auto& pushConstant : pass->getShaderProgram()->getPushConstants()) {
+        pass->getPipelineLayoutDescriptor().pushConstantRanges.emplace(pushConstant);
+    }
+
+    return {};
+}
+
 Expected<void> VulkanRenderGraphBuilder::createPipeline(VulkanRenderPass* pass) const {
     VulkanGraphicsPipelineDescriptor descriptor{};
 
     descriptor.shaderStages = pass->getShaderProgram()->getStages();
     descriptor.passType     = pass->getPassDescriptor().type;
     descriptor.layout       = pass->getPipelineLayoutDescriptor();
-
-    // Push constants
-    for (const auto& pushConstant : pass->getShaderProgram()->getPushConstants()) {
-        pass->getPipelineLayoutDescriptor().pushConstantRanges.emplace(pushConstant);
-    }
 
     // Color attachment formats
     for (const auto& colorAttachment : pass->getColorAttachments()) {

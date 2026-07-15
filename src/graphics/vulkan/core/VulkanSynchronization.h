@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/debug/ErrorHandling.h"
+
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 class VulkanSynchronization {

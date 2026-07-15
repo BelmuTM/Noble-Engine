@@ -2,6 +2,7 @@
 #include "include/uniforms.slang"
 #include "include/color.slang"
 #include "include/transforms.slang"
+#include "include/palette.slang"
 
 struct VSInput {
     uint id : SV_VertexID;
@@ -31,20 +32,6 @@ layout (set = 3, binding = 2) Sampler2D normalBuffer;
 layout (set = 3, binding = 3) Sampler2D debugBuffer;
 
 layout (set = 3, binding = 4) Sampler2D compositeBuffer;
-
-float bayer2(float2 a) {
-    a = floor(a);
-    return fract(dot(a, float2(0.5, a.y * 0.75)));
-}
-
-#define bayer4(a)   (bayer2(0.5   * (a))  *  0.25 + bayer2(a))
-#define bayer8(a)   (bayer4(0.5   * (a))  *  0.25 + bayer2(a))
-#define bayer16(a)  (bayer8(0.5   * (a))  *  0.25 + bayer2(a))
-#define bayer32(a)  (bayer16(0.5  * (a))  *  0.25 + bayer2(a))
-#define bayer64(a)  (bayer32(0.5  * (a))  *  0.25 + bayer2(a))
-#define bayer128(a) (bayer64(0.5  * (a))  *  0.25 + bayer2(a))
-#define bayer256(a) (bayer128(0.5 * (a))  *  0.25 + bayer2(a))
-#define bayer512(a) (bayer256(0.5 * (a))  *  0.25 + bayer2(a))
 
 void quantizeColor(inout float3 color, float quantizationPeriod) {
     color = floor((color + quantizationPeriod * 0.5) / quantizationPeriod) * quantizationPeriod;
@@ -89,6 +76,8 @@ void fragMain(VSOutput vertIn) : SV_TARGET {
     debugOutput(color, vertIn.uv);
 
     color = linearToSrgb(color);
+
+    //applyColorPalette(color, bayer8(coords));
 
     swapchainOutput = float4(color, 1.0);
 }
