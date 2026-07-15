@@ -1,5 +1,7 @@
 #include "VulkanRenderPass.h"
 
 void VulkanRenderPass::destroy() const noexcept {
-    _descriptorManager->destroy();
+    if (_descriptorManager) {
+        _descriptorManager->destroy();
+    }
 }

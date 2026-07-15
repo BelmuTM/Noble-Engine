@@ -38,6 +38,8 @@ Expected<void> VulkanRenderGraphBuilder::build() {
 
     Logger::debug("Built render graph in " + std::to_string(loadDuration) + "ms");
 
+    // TODO: Add validation step
+
     return {};
 }
 

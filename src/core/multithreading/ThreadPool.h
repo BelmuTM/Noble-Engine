@@ -70,7 +70,7 @@ public:
 
 private:
     void workerLoop(const std::size_t queueIndex) {
-        ThreadScope scope("ThreadPool");
+        ThreadScope scope("ThreadPool Worker " + std::to_string(queueIndex));
 
         std::mt19937 rng(std::random_device{}());
         std::uniform_int_distribution<std::size_t> distribution(0, queues.size() - 1);
