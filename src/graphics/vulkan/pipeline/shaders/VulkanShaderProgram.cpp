@@ -98,7 +98,7 @@ Expected<void> VulkanShaderProgram::load(const std::string& path, const vk::Devi
 Expected<void> VulkanShaderProgram::reflectShaderResources(
     const std::vector<std::uint32_t>& bytecode, const vk::ShaderStageFlags stage
 ) {
-    const void*  bytecodeData = bytecode.data();
+    const void*       bytecodeData = bytecode.data();
     const std::size_t bytecodeSize = bytecode.size() * sizeof(std::uint32_t);
 
     SpvReflectShaderModule module;

@@ -25,7 +25,7 @@ void VulkanFrameCuller::destroy() noexcept {
 }
 
 Expected<void> VulkanFrameCuller::cull(
-    const std::vector<std::unique_ptr<VulkanRenderPass>>& passes, const FrameUniforms& uniforms
+    const std::vector<std::unique_ptr<VulkanGraphicsPass>>& passes, const FrameUniforms& uniforms
 ) {
     const glm::mat4& viewProjectionMatrix = uniforms.projectionMatrix * uniforms.viewMatrix;
 
@@ -42,7 +42,7 @@ Expected<void> VulkanFrameCuller::cull(
         visibleDraws.clear();
 
         // Check visibility for passes with culling enabled
-        if (pass->getPassDescriptor().cullMode == VulkanRenderPassCullMode::None) {
+        if (pass->getGraphicsPassDescriptor().cullMode == VulkanGraphicsPassCullMode::None) {
             for (auto& draw : pass->getDrawCalls())
                 visibleDraws.push_back(&draw);
 

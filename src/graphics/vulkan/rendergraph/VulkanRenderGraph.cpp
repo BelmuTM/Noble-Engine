@@ -41,7 +41,7 @@ Expected<void> VulkanRenderGraph::execute(const vk::CommandBuffer commandBuffer)
 namespace {
 
 Expected<void> executePassTransitions(
-    const vk::CommandBuffer commandBuffer, const VulkanRenderPass::TransitionsVector& transitions
+    const vk::CommandBuffer commandBuffer, const VulkanPass::TransitionsVector& transitions
 ) {
     for (const auto& [resource, targetLayout] : transitions) {
         if (VulkanImage* resourceImage = resource->resolveImage()) {
@@ -54,7 +54,7 @@ Expected<void> executePassTransitions(
 
 void executeDrawCalls(
     const vk::CommandBuffer                  commandBuffer,
-    const VulkanRenderPass&                  pass,
+    const VulkanGraphicsPass&                pass,
     const vk::Extent2D                       extent,
     const vk::detail::DispatchLoaderDynamic& dispatchLoader,
     const VulkanFrameResources*              frame,
@@ -63,7 +63,7 @@ void executeDrawCalls(
 ) {
     const std::uint32_t frameIndex = frame->getFrameIndex();
 
-    const VulkanGraphicsPipeline* pipeline          = pass.getPipeline();
+    const VulkanGraphicsPipeline* pipeline          = pass.getGraphicsPipeline();
     const vk::PipelineLayout&     pipelineLayout    = pipeline->getLayout();
     const vk::PipelineBindPoint&  pipelineBindPoint = VulkanGraphicsPipeline::getBindPoint();
 
@@ -87,7 +87,7 @@ void executeDrawCalls(
     commandBuffer.bindDescriptorSets(pipelineBindPoint, pipelineLayout, 0, fixedSets, nullptr);
 
     // slot 3: PassData
-    if (const VulkanDescriptorSets* passDataSets = pass.getDescriptorSets()) {
+    if (const VulkanDescriptorSets* passDataSets = pass.base().getDescriptorSets()) {
         commandBuffer.bindDescriptorSets(
             pipelineBindPoint, pipelineLayout,
             BindingSlots::PassData,
@@ -124,14 +124,14 @@ void executeDrawCalls(
 }
 
 Expected<void> VulkanRenderGraph::executePass(
-    const vk::CommandBuffer commandBuffer, const VulkanRenderPass& pass
+    const vk::CommandBuffer commandBuffer, const VulkanGraphicsPass& pass
 ) const {
     const vk::Extent2D extent = _context.swapchain->getExtent();
 
-    const bool isMeshPass = pass.getPassDescriptor().type == VulkanRenderPassType::MeshRender;
+    const bool isMeshPass = pass.getGraphicsPassDescriptor().type == VulkanGraphicsPassType::MeshRender;
 
     // Transition resources for current pass
-    TRY(executePassTransitions(commandBuffer, pass.getEntryTransitions()));
+    TRY(executePassTransitions(commandBuffer, pass.base().getEntryTransitions()));
 
     // Color attachments
     std::vector<vk::RenderingAttachmentInfo> colorAttachments{};
@@ -154,7 +154,7 @@ Expected<void> VulkanRenderGraph::executePass(
 
     // Start rendering
 #ifdef VULKAN_DEBUG_UTILS
-    VulkanDebugger::beginLabel(commandBuffer, _context.dispatchLoader, pass.getPassDescriptor().name);
+    VulkanDebugger::beginLabel(commandBuffer, _context.dispatchLoader, pass.getGraphicsPassDescriptor().base.name);
 #endif
 
     commandBuffer.beginRendering(renderingInfo);
@@ -176,7 +176,7 @@ Expected<void> VulkanRenderGraph::executePass(
 #endif
 
     // Transition resources for next pass
-    TRY(executePassTransitions(commandBuffer, pass.getExitTransitions()));
+    TRY(executePassTransitions(commandBuffer, pass.base().getExitTransitions()));
 
     return {};
 }

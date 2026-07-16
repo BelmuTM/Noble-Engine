@@ -10,7 +10,7 @@
 #include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 
 #include "draw/VulkanFrameCuller.h"
-#include "nodes/VulkanRenderPass.h"
+#include "nodes/VulkanPass.h"
 
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 
@@ -46,17 +46,17 @@ public:
 
     Expected<void> execute(vk::CommandBuffer commandBuffer) const;
 
-    Expected<void> executePass(vk::CommandBuffer commandBuffer, const VulkanRenderPass& pass) const;
+    Expected<void> executePass(vk::CommandBuffer commandBuffer, const VulkanGraphicsPass& pass) const;
 
-    [[nodiscard]]       std::vector<std::unique_ptr<VulkanRenderPass>>& getPasses()       noexcept { return _passes; }
-    [[nodiscard]] const std::vector<std::unique_ptr<VulkanRenderPass>>& getPasses() const noexcept { return _passes; }
+    [[nodiscard]]       std::vector<std::unique_ptr<VulkanGraphicsPass>>& getPasses()       noexcept { return _passes; }
+    [[nodiscard]] const std::vector<std::unique_ptr<VulkanGraphicsPass>>& getPasses() const noexcept { return _passes; }
 
-    void addPass(std::unique_ptr<VulkanRenderPass> pass) {
+    void addPass(std::unique_ptr<VulkanGraphicsPass> pass) {
         _passes.push_back(std::move(pass));
     }
 
 private:
     VulkanRenderGraphCreateContext _context{};
 
-    std::vector<std::unique_ptr<VulkanRenderPass>> _passes{};
+    std::vector<std::unique_ptr<VulkanGraphicsPass>> _passes{};
 };

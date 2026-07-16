@@ -2,7 +2,7 @@
 
 #include "core/debug/ErrorHandling.h"
 
-#include "nodes/VulkanRenderPass.h"
+#include "nodes/VulkanGraphicsPass.h"
 
 struct VulkanRenderGraphBuilderContext;
 
@@ -11,14 +11,14 @@ public:
     void registerPassTypes();
 
     [[nodiscard]] Expected<void> createPass(
-        VulkanRenderPass* pass,
+        VulkanGraphicsPass* pass,
         const VulkanRenderGraphBuilderContext& context
     ) const;
 
 private:
     template<typename PassType, typename PassCreateContext>
     [[nodiscard]] static Expected<void> createPassFactory(
-        VulkanRenderPass* pass, const VulkanRenderGraphBuilderContext& context
+        VulkanGraphicsPass* pass, const VulkanRenderGraphBuilderContext& context
     ) {
         TRY(static_cast<PassType*>(pass)->create(PassCreateContext::build(context)));
 
@@ -26,8 +26,8 @@ private:
     }
 
     using PassFactoryFunction = std::function<
-        Expected<void>(VulkanRenderPass*, const VulkanRenderGraphBuilderContext&)
+        Expected<void>(VulkanGraphicsPass*, const VulkanRenderGraphBuilderContext&)
     >;
 
-    std::unordered_map<VulkanRenderPassType, PassFactoryFunction> _factories{};
+    std::unordered_map<VulkanGraphicsPassType, PassFactoryFunction> _factories{};
 };

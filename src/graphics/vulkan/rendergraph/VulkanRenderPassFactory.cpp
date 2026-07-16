@@ -9,20 +9,20 @@
 #include "nodes/VulkanMeshRenderPass.h"
 
 void VulkanRenderPassFactory::registerPassTypes() {
-    _factories[VulkanRenderPassType::MeshRender] =
+    _factories[VulkanGraphicsPassType::MeshRender] =
         &createPassFactory<VulkanMeshRenderPass, VulkanMeshRenderPassCreateContext>;
 
-    _factories[VulkanRenderPassType::Debug] =
+    _factories[VulkanGraphicsPassType::Debug] =
         &createPassFactory<VulkanDebugPass, VulkanDebugPassCreateContext>;
 
-    _factories[VulkanRenderPassType::Composite] =
+    _factories[VulkanGraphicsPassType::Composite] =
         &createPassFactory<VulkanCompositePass, VulkanCompositePassCreateContext>;
 }
 
 Expected<void> VulkanRenderPassFactory::createPass(
-    VulkanRenderPass* pass, const VulkanRenderGraphBuilderContext& context
+    VulkanGraphicsPass* pass, const VulkanRenderGraphBuilderContext& context
 ) const {
-    const auto passFactory = _factories.find(pass->getPassDescriptor().type);
+    const auto passFactory = _factories.find(pass->getGraphicsPassDescriptor().type);
 
     if (passFactory == _factories.end()) {
         return VK_FAIL("Failed to create render pass: no factory registered for pass type.");

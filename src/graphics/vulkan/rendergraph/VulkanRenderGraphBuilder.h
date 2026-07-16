@@ -51,30 +51,30 @@ public:
 
     [[nodiscard]] Expected<void> build();
 
-    VulkanRenderGraphBuilder& registerResource(const VulkanRenderPassResourceDescriptor& descriptor) {
+    VulkanRenderGraphBuilder& registerResource(const VulkanPassResourceDescriptor& descriptor) {
         _resourceDescriptors.push_back(descriptor);
         return *this;
     }
 
-    VulkanRenderGraphBuilder& addPass(const VulkanRenderPassDescriptor& descriptor) {
+    VulkanRenderGraphBuilder& addPass(const VulkanGraphicsPassDescriptor& descriptor) {
         _passDescriptors.push_back(descriptor);
         return *this;
     }
 
 private:
-    [[nodiscard]] Expected<VulkanRenderPass*> allocatePass(const VulkanRenderPassDescriptor& descriptor) const;
+    [[nodiscard]] Expected<VulkanGraphicsPass*> allocatePass(const VulkanGraphicsPassDescriptor& descriptor) const;
 
     [[nodiscard]] Expected<void> allocateResources() const;
 
-    [[nodiscard]] Expected<void> resolveAttachments(VulkanRenderPass* pass) const;
+    [[nodiscard]] Expected<void> resolveAttachments(VulkanGraphicsPass* pass) const;
 
-    [[nodiscard]] Expected<void> allocateDescriptors(VulkanRenderPass* pass) const;
+    [[nodiscard]] Expected<void> allocateDescriptors(VulkanPass* pass) const;
 
-    [[nodiscard]] Expected<void> resolveDescriptorLayouts(VulkanRenderPass* pass) const;
+    [[nodiscard]] Expected<void> resolveDescriptorLayouts(VulkanGraphicsPass* pass) const;
 
-    [[nodiscard]] static Expected<void> resolvePushConstantRanges(VulkanRenderPass* pass);
+    [[nodiscard]] static Expected<void> resolvePushConstantRanges(VulkanGraphicsPass* pass);
 
-    [[nodiscard]] Expected<void> createPipeline(VulkanRenderPass* pass) const;
+    [[nodiscard]] Expected<void> createPipeline(VulkanGraphicsPass* pass) const;
     
     void scheduleResourceTransitions() const;
 
@@ -82,9 +82,9 @@ private:
 
     const VulkanRenderPassFactory& _passFactory;
 
-    std::vector<VulkanRenderPassResourceDescriptor> _resourceDescriptors{};
+    std::vector<VulkanPassResourceDescriptor> _resourceDescriptors{};
 
-    std::vector<VulkanRenderPassDescriptor> _passDescriptors{};
+    std::vector<VulkanGraphicsPassDescriptor> _passDescriptors{};
 
     // Placeholder descriptor layout for passes with no incoming data
     vk::DescriptorSetLayout _emptyDescriptorLayout{};

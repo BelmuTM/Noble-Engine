@@ -98,7 +98,7 @@ Expected<void> VulkanGraphicsPipeline::createGraphicsPipeline(
     const auto& bindingDescription    = VulkanVertex::getBindingDescription();
     const auto& attributeDescriptions = VulkanVertex::getAttributeDescriptions();
 
-    if (descriptor.passType == VulkanRenderPassType::MeshRender || descriptor.passType == VulkanRenderPassType::Debug) {
+    if (descriptor.passType == VulkanGraphicsPassType::MeshRender || descriptor.passType == VulkanGraphicsPassType::Debug) {
         vertexInputState
             .setVertexBindingDescriptions(bindingDescription)
             .setVertexAttributeDescriptions(attributeDescriptions);
@@ -109,7 +109,7 @@ Expected<void> VulkanGraphicsPipeline::createGraphicsPipeline(
     vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState{};
     inputAssemblyState.setPrimitiveRestartEnable(vk::False);
 
-    if (descriptor.passType == VulkanRenderPassType::Debug) {
+    if (descriptor.passType == VulkanGraphicsPassType::Debug) {
         inputAssemblyState.setTopology(vk::PrimitiveTopology::eLineList);
     } else {
         inputAssemblyState.setTopology(vk::PrimitiveTopology::eTriangleList);
@@ -131,13 +131,13 @@ Expected<void> VulkanGraphicsPipeline::createGraphicsPipeline(
         .setLineWidth(2.0f);
 
     switch (descriptor.passType) {
-        case VulkanRenderPassType::MeshRender:
+        case VulkanGraphicsPassType::MeshRender:
             rasterizationState.setCullMode(vk::CullModeFlagBits::eBack);
             break;
-        case VulkanRenderPassType::Composite:
+        case VulkanGraphicsPassType::Composite:
             rasterizationState.setCullMode(vk::CullModeFlagBits::eNone);
             break;
-        case VulkanRenderPassType::Debug:
+        case VulkanGraphicsPassType::Debug:
             rasterizationState
                 .setCullMode(vk::CullModeFlagBits::eBack)
                 .setPolygonMode(vk::PolygonMode::eLine);

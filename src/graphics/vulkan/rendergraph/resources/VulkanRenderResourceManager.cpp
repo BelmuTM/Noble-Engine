@@ -56,7 +56,7 @@ Expected<void> VulkanRenderResourceManager::recreate(VulkanRenderGraph& renderGr
     return {};
 }
 
-Expected<void> VulkanRenderResourceManager::createResource(const VulkanRenderPassResourceDescriptor& descriptor) {
+Expected<void> VulkanRenderResourceManager::createResource(const VulkanPassResourceDescriptor& descriptor) {
     auto [cachedResource, inserted] = _resourceImages.emplace(descriptor.name, std::make_unique<VulkanImage>());
 
     TRY_CATCH(
@@ -66,7 +66,7 @@ Expected<void> VulkanRenderResourceManager::createResource(const VulkanRenderPas
         _resourceImages.erase(cachedResource)
     );
 
-    VulkanRenderPassResource resource(descriptor);
+    VulkanPassResource resource(descriptor);
     resource.setImage(cachedResource->second.get());
 
     addResource(resource);
@@ -121,7 +121,7 @@ Expected<void> VulkanRenderResourceManager::createResourceImage(
     return {};
 }
 
-Expected<void> VulkanRenderResourceManager::allocateDescriptors(VulkanRenderPass* pass) {
+Expected<void> VulkanRenderResourceManager::allocateDescriptors(VulkanPass* pass) {
     const auto& reads = pass->getPassDescriptor().readDescriptors;
     if (reads.empty()) return {};
 
@@ -149,10 +149,10 @@ Expected<void> VulkanRenderResourceManager::allocateDescriptors(VulkanRenderPass
 }
 
 void VulkanRenderResourceManager::bindDescriptors(
-    const VulkanDescriptorSets* descriptorSets, const std::vector<VulkanRenderPassAttachmentDescriptor>& reads
+    const VulkanDescriptorSets* descriptorSets, const std::vector<VulkanGraphicsPassAttachmentDescriptor>& reads
 ) {
     for (std::uint32_t i = 0; i < reads.size(); i++) {
-        const VulkanRenderPassResource* resource = getResource(reads[i].name);
+        const VulkanPassResource* resource = getResource(reads[i].name);
         if (!resource || !resource->image) continue;
 
         // Bind resource for each frame in flight
@@ -162,10 +162,10 @@ void VulkanRenderResourceManager::bindDescriptors(
 
 void VulkanRenderResourceManager::rebindDescriptors(VulkanRenderGraph& renderGraph) {
     for (const auto& pass : renderGraph.getPasses()) {
-        const auto& reads = pass->getPassDescriptor().readDescriptors;
+        const auto& reads = pass->base().getPassDescriptor().readDescriptors;
         if (reads.empty()) continue;
 
-        if (const VulkanDescriptorSets* sets = pass->getDescriptorSets()) {
+        if (const VulkanDescriptorSets* sets = pass->base().getDescriptorSets()) {
             bindDescriptors(sets, reads);
         }
     }

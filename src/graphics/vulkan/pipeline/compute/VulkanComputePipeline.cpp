@@ -18,8 +18,7 @@ Expected<void> VulkanComputePipeline::createComputePipeline(
 ) {
     vk::ComputePipelineCreateInfo pipelineInfo{};
     pipelineInfo
-        // TODO: Fetch stage info by flag
-        .setStage(descriptor.shaderStages[0])
+        .setStage(descriptor.shaderStage)
         .setLayout(_pipelineLayout);
 
     VK_CREATE(_pipeline, device.createComputePipeline(nullptr, pipelineInfo));

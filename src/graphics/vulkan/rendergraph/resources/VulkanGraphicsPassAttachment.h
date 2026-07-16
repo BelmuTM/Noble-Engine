@@ -2,11 +2,11 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "graphics/vulkan/rendergraph/resources/VulkanRenderPassResource.h"
+#include "graphics/vulkan/rendergraph/resources/VulkanPassResource.h"
 
 static constexpr vk::ClearValue defaultClearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
 
-struct VulkanRenderPassAttachmentDescriptor {
+struct VulkanGraphicsPassAttachmentDescriptor {
     std::string name{};
 
     vk::AttachmentLoadOp  loadOp  = vk::AttachmentLoadOp::eClear;
@@ -14,30 +14,30 @@ struct VulkanRenderPassAttachmentDescriptor {
 
     vk::ClearValue clearValue = defaultClearColor;
 
-    VulkanRenderPassAttachmentDescriptor& setName(const std::string& _name) noexcept {
+    VulkanGraphicsPassAttachmentDescriptor& setName(const std::string& _name) noexcept {
         name = _name; return *this;
     }
 
-    VulkanRenderPassAttachmentDescriptor& setLoadOp(const vk::AttachmentLoadOp _loadOp) noexcept {
+    VulkanGraphicsPassAttachmentDescriptor& setLoadOp(const vk::AttachmentLoadOp _loadOp) noexcept {
         loadOp = _loadOp; return *this;
     }
 
-    VulkanRenderPassAttachmentDescriptor& setStoreOp(const vk::AttachmentStoreOp _storeOp) noexcept {
+    VulkanGraphicsPassAttachmentDescriptor& setStoreOp(const vk::AttachmentStoreOp _storeOp) noexcept {
         storeOp = _storeOp; return *this;
     }
 
-    VulkanRenderPassAttachmentDescriptor& setClearValue(const vk::ClearValue _clearValue) noexcept {
+    VulkanGraphicsPassAttachmentDescriptor& setClearValue(const vk::ClearValue _clearValue) noexcept {
         clearValue = _clearValue;
         return *this;
     }
 };
 
-struct VulkanRenderPassAttachment {
-    VulkanRenderPassAttachmentDescriptor descriptor{};
+struct VulkanGraphicsPassAttachment {
+    VulkanGraphicsPassAttachmentDescriptor descriptor{};
 
-    const VulkanRenderPassResource* resource = nullptr;
+    const VulkanPassResource* resource = nullptr;
 
-    explicit VulkanRenderPassAttachment(VulkanRenderPassAttachmentDescriptor _descriptor)
+    explicit VulkanGraphicsPassAttachment(VulkanGraphicsPassAttachmentDescriptor _descriptor)
         : descriptor(std::move(_descriptor)) {}
 
     explicit operator bool() const noexcept {
@@ -55,7 +55,7 @@ struct VulkanRenderPassAttachment {
             .setClearValue(descriptor.clearValue);
     }
 
-    VulkanRenderPassAttachment& setResource(const VulkanRenderPassResource* _resource) noexcept {
+    VulkanGraphicsPassAttachment& setResource(const VulkanPassResource* _resource) noexcept {
         resource = _resource; return *this;
     }
 };

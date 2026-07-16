@@ -6,14 +6,14 @@
 
 #include "graphics/vulkan/pipeline/VulkanPipeline.h"
 
-#include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
+#include "graphics/vulkan/rendergraph/nodes/VulkanGraphicsPass.h"
 
 struct VulkanGraphicsPipelineDescriptor {
     VulkanPipelineLayoutDescriptor layout{};
 
     std::vector<vk::PipelineShaderStageCreateInfo> shaderStages{};
 
-    VulkanRenderPassType passType = VulkanRenderPassType::None;
+    VulkanGraphicsPassType passType = VulkanGraphicsPassType::None;
 
     std::vector<vk::Format> colorAttachmentFormats{};
     vk::Format              depthAttachmentFormat = vk::Format::eUndefined;

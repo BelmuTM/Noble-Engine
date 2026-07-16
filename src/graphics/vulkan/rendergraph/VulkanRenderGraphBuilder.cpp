@@ -9,42 +9,36 @@ Expected<void> VulkanRenderGraphBuilder::build() {
     vk::DescriptorSetLayoutCreateInfo emptyInfo{};
     VK_CREATE(_emptyDescriptorLayout, _context.device.getLogicalDevice().createDescriptorSetLayout(emptyInfo));
 
-    auto startTime = std::chrono::high_resolution_clock::now();
-
     TRY(allocateResources());
 
     // Build passes
     for (const auto& passDescriptor : _passDescriptors) {
-        VulkanRenderPass* pass;
+        VulkanGraphicsPass* pass;
         TRY_ASSIGN(pass, allocatePass(passDescriptor));
 
-        TRY_ASSIGN(pass->getShaderProgram(), _context.shaderProgramManager.load(passDescriptor.programPath));
+        TRY_ASSIGN(pass->base().getShaderProgram(), _context.shaderProgramManager.load(passDescriptor.base.programPath));
 
         TRY(resolvePushConstantRanges(pass));
 
         TRY(_passFactory.createPass(pass, _context));
 
         TRY(resolveAttachments(pass));
-        TRY(allocateDescriptors(pass));
+        TRY(allocateDescriptors(&pass->base()));
         TRY(resolveDescriptorLayouts(pass));
         TRY(createPipeline(pass));
     }
 
     scheduleResourceTransitions();
 
-    auto endTime = std::chrono::high_resolution_clock::now();
-
-    auto loadDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
-
-    Logger::debug("Built render graph in " + std::to_string(loadDuration) + "ms");
+    Logger::debug("Built render graph");
 
     // TODO: Add validation step
 
     return {};
 }
 
-Expected<VulkanRenderPass*> VulkanRenderGraphBuilder::allocatePass(const VulkanRenderPassDescriptor& descriptor) const {
-    _context.renderGraph.addPass(std::make_unique<VulkanRenderPass>(descriptor));
+Expected<VulkanGraphicsPass*> VulkanRenderGraphBuilder::allocatePass(const VulkanGraphicsPassDescriptor& descriptor) const {
+    _context.renderGraph.addPass(std::make_unique<VulkanGraphicsPass>(descriptor));
 
     return Expected(_context.renderGraph.getPasses().back().get());
 }
@@ -54,13 +48,13 @@ Expected<void> VulkanRenderGraphBuilder::allocateResources() const {
     for (const auto& resourceDescriptor : _resourceDescriptors) {
 
         switch (resourceDescriptor.type) {
-            case VulkanRenderPassResourceType::Transient:
+            case VulkanPassResourceType::Transient:
                 TRY(_context.renderResources.createResource(resourceDescriptor));
                 break;
 
-            case VulkanRenderPassResourceType::SwapchainOutput: {
+            case VulkanPassResourceType::SwapchainOutput: {
 
-                VulkanRenderPassResource swapchainOutput(resourceDescriptor);
+                VulkanPassResource swapchainOutput(resourceDescriptor);
                 swapchainOutput.setImageResolver(
                     [&swapchain = _context.swapchain, &frameResources = _context.frameResources] {
                         return swapchain.getImage(frameResources.getImageIndex());
@@ -79,34 +73,34 @@ Expected<void> VulkanRenderGraphBuilder::allocateResources() const {
     return {};
 }
 
-Expected<void> VulkanRenderGraphBuilder::resolveAttachments(VulkanRenderPass* pass) const {
-    const VulkanRenderPassDescriptor& passDescriptor = pass->getPassDescriptor();
+Expected<void> VulkanRenderGraphBuilder::resolveAttachments(VulkanGraphicsPass* pass) const {
+    const VulkanGraphicsPassDescriptor& passDescriptor = pass->getGraphicsPassDescriptor();
 
     // Reads
-    for (const auto& readDescriptor : passDescriptor.readDescriptors) {
-        _context.renderResources.addResourceReader(readDescriptor.name, pass);
+    for (const auto& readDescriptor : passDescriptor.base.readDescriptors) {
+        _context.renderResources.addResourceReader(readDescriptor.name, &pass->base());
     }
 
     // Writes (color attachments)
-    for (const auto& attachmentDescriptor : passDescriptor.writeDescriptors) {
-        const VulkanRenderPassResource* resource = _context.renderResources.getResource(attachmentDescriptor.name);
+    for (const auto& attachmentDescriptor : passDescriptor.base.writeDescriptors) {
+        const VulkanPassResource* resource = _context.renderResources.getResource(attachmentDescriptor.name);
 
         if (!resource) {
             return VK_FAIL("Failed to resolve color resource \"" + attachmentDescriptor.name + "\".");
         }
 
-        VulkanRenderPassAttachment attachment(attachmentDescriptor);
+        VulkanGraphicsPassAttachment attachment(attachmentDescriptor);
         attachment.setResource(resource);
 
         pass->addColorAttachment(attachment);
-        _context.renderResources.addResourceWriter(attachmentDescriptor.name, pass);
+        _context.renderResources.addResourceWriter(attachmentDescriptor.name, &pass->base());
     }
 
     // Depth attachment
     auto depthDescriptor = passDescriptor.depthAttachmentDescriptor;
 
     if (!depthDescriptor.name.empty()) {
-        const VulkanRenderPassResource* resource = _context.renderResources.getResource(depthDescriptor.name);
+        const VulkanPassResource* resource = _context.renderResources.getResource(depthDescriptor.name);
 
         if (!resource) {
             return VK_FAIL("Failed to resolve depth resource \"" + depthDescriptor.name + "\".");
@@ -118,25 +112,25 @@ Expected<void> VulkanRenderGraphBuilder::resolveAttachments(VulkanRenderPass* pa
 
         depthDescriptor.loadOp = wasWrittenTo ? vk::AttachmentLoadOp::eLoad : vk::AttachmentLoadOp::eClear;
 
-        VulkanRenderPassAttachment depthAttachment(depthDescriptor);
+        VulkanGraphicsPassAttachment depthAttachment(depthDescriptor);
         depthAttachment.setResource(resource);
 
         pass->setDepthAttachment(depthAttachment);
 
-        _context.renderResources.addResourceWriter(depthDescriptor.name, pass);
+        _context.renderResources.addResourceWriter(depthDescriptor.name, &pass->base());
     }
 
     return {};
 }
 
-Expected<void> VulkanRenderGraphBuilder::allocateDescriptors(VulkanRenderPass* pass) const {
+Expected<void> VulkanRenderGraphBuilder::allocateDescriptors(VulkanPass* pass) const {
     TRY(_context.renderResources.allocateDescriptors(pass));
 
     return {};
 }
 
-Expected<void> VulkanRenderGraphBuilder::resolveDescriptorLayouts(VulkanRenderPass* pass) const {
-    auto& layouts = pass->getPipelineLayoutDescriptor().descriptorLayouts;
+Expected<void> VulkanRenderGraphBuilder::resolveDescriptorLayouts(VulkanGraphicsPass* pass) const {
+    auto& layouts = pass->base().getPipelineLayoutDescriptor().descriptorLayouts;
     layouts.resize(BindingSlots::MaterialData + 1);
 
     layouts[BindingSlots::FrameData]    = _context.frameResources.getDescriptorManager().getLayout();
@@ -145,29 +139,29 @@ Expected<void> VulkanRenderGraphBuilder::resolveDescriptorLayouts(VulkanRenderPa
 
     layouts[BindingSlots::CullingData]  = _context.frameCuller.getDescriptorManager().getLayout();
 
-    layouts[BindingSlots::PassData]     = pass->getPassDescriptor().readDescriptors.empty()
+    layouts[BindingSlots::PassData]     = pass->base().getPassDescriptor().readDescriptors.empty()
         ? _emptyDescriptorLayout
-        : pass->getDescriptorManager()->getLayout();
+        : pass->base().getDescriptorManager()->getLayout();
 
     layouts[BindingSlots::MaterialData] = _context.materialManager.getDescriptorManager().getLayout();
 
     return {};
 }
 
-Expected<void> VulkanRenderGraphBuilder::resolvePushConstantRanges(VulkanRenderPass* pass) {
-    for (const auto& pushConstant : pass->getShaderProgram()->getPushConstants()) {
-        pass->getPipelineLayoutDescriptor().pushConstantRanges.emplace(pushConstant);
+Expected<void> VulkanRenderGraphBuilder::resolvePushConstantRanges(VulkanGraphicsPass* pass) {
+    for (const auto& pushConstant : pass->base().getShaderProgram()->getPushConstants()) {
+        pass->base().getPipelineLayoutDescriptor().pushConstantRanges.emplace(pushConstant);
     }
 
     return {};
 }
 
-Expected<void> VulkanRenderGraphBuilder::createPipeline(VulkanRenderPass* pass) const {
+Expected<void> VulkanRenderGraphBuilder::createPipeline(VulkanGraphicsPass* pass) const {
     VulkanGraphicsPipelineDescriptor descriptor{};
 
-    descriptor.shaderStages = pass->getShaderProgram()->getStages();
-    descriptor.passType     = pass->getPassDescriptor().type;
-    descriptor.layout       = pass->getPipelineLayoutDescriptor();
+    descriptor.shaderStages = pass->base().getShaderProgram()->getStages();
+    descriptor.passType     = pass->getGraphicsPassDescriptor().type;
+    descriptor.layout       = pass->base().getPipelineLayoutDescriptor();
 
     // Color attachment formats
     for (const auto& colorAttachment : pass->getColorAttachments()) {
@@ -182,7 +176,7 @@ Expected<void> VulkanRenderGraphBuilder::createPipeline(VulkanRenderPass* pass) 
     const VulkanGraphicsPipeline* pipeline = nullptr;
     TRY_ASSIGN(pipeline, _context.pipelineManager.createGraphicsPipeline(descriptor));
 
-    pass->setPipeline(pipeline);
+    pass->setGraphicsPipeline(pipeline);
 
     return {};
 }
@@ -194,7 +188,7 @@ void VulkanRenderGraphBuilder::scheduleResourceTransitions() const {
     for (const auto& [resourceName, resource] : _context.renderResources.getResources()) {
         if (!resource || !resource->resolveImage()) continue;
 
-        const bool isSwapchain = resource->descriptor.type == VulkanRenderPassResourceType::SwapchainOutput;
+        const bool isSwapchain = resource->descriptor.type == VulkanPassResourceType::SwapchainOutput;
         const bool isDepth     = VulkanImage::isDepthBuffer(resource->resolveImage()->getFormat());
 
         // Entry transitions for writer passes
@@ -203,14 +197,14 @@ void VulkanRenderGraphBuilder::scheduleResourceTransitions() const {
                 ? vk::ImageLayout::eDepthStencilAttachmentOptimal
                 : vk::ImageLayout::eColorAttachmentOptimal;
 
-            for (VulkanRenderPass* pass : writers.at(resourceName)) {
+            for (VulkanPass* pass : writers.at(resourceName)) {
                 if (pass) pass->addEntryTransition({resource.get(), entryLayout});
             }
         }
 
         // Entry transitions for reader passes
         if (readers.contains(resourceName)) {
-            for (VulkanRenderPass* pass : readers.at(resourceName)) {
+            for (VulkanPass* pass : readers.at(resourceName)) {
                 if (pass) pass->addEntryTransition({resource.get(), vk::ImageLayout::eShaderReadOnlyOptimal});
             }
         }
@@ -224,7 +218,7 @@ void VulkanRenderGraphBuilder::scheduleResourceTransitions() const {
             else if (isDepth && !readers.contains(resourceName))
                 exitLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
-            for (VulkanRenderPass* pass : writers.at(resourceName)) {
+            for (VulkanPass* pass : writers.at(resourceName)) {
                 if (pass) pass->addExitTransition({resource.get(), exitLayout});
             }
         }

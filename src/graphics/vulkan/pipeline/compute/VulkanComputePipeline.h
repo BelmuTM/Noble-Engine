@@ -6,11 +6,9 @@
 
 #include "graphics/vulkan/pipeline/VulkanPipeline.h"
 
-#include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
-
 struct VulkanComputePipelineDescriptor {
-    VulkanPipelineLayoutDescriptor                 layout{};
-    std::vector<vk::PipelineShaderStageCreateInfo> shaderStages{};
+    VulkanPipelineLayoutDescriptor    layout{};
+    vk::PipelineShaderStageCreateInfo shaderStage;
 };
 
 class VulkanComputePipeline final : public VulkanPipeline {

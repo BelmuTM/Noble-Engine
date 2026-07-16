@@ -7,8 +7,8 @@
 
 #include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 
-#include "graphics/vulkan/rendergraph/nodes/VulkanRenderPass.h"
-#include "graphics/vulkan/rendergraph/resources/VulkanRenderPassResource.h"
+#include "graphics/vulkan/rendergraph/nodes/VulkanPass.h"
+#include "graphics/vulkan/rendergraph/resources/VulkanPassResource.h"
 
 #include <memory>
 #include <string>
@@ -19,8 +19,8 @@ class VulkanRenderGraph;
 
 class VulkanRenderResourceManager {
 public:
-    using ResourcesMap         = std::unordered_map<std::string, std::unique_ptr<VulkanRenderPassResource>>;
-    using ResourceAccessorsMap = std::unordered_map<std::string, std::vector<VulkanRenderPass*>>;
+    using ResourcesMap         = std::unordered_map<std::string, std::unique_ptr<VulkanPassResource>>;
+    using ResourceAccessorsMap = std::unordered_map<std::string, std::vector<VulkanPass*>>;
     using ResourceImagesMap    = std::unordered_map<std::string, std::unique_ptr<VulkanImage>>;
 
     VulkanRenderResourceManager()  = default;
@@ -43,9 +43,9 @@ public:
 
     [[nodiscard]] Expected<void> recreate(VulkanRenderGraph& renderGraph);
 
-    [[nodiscard]] Expected<void> createResource(const VulkanRenderPassResourceDescriptor& descriptor);
+    [[nodiscard]] Expected<void> createResource(const VulkanPassResourceDescriptor& descriptor);
 
-    [[nodiscard]] Expected<void> allocateDescriptors(VulkanRenderPass* pass);
+    [[nodiscard]] Expected<void> allocateDescriptors(VulkanPass* pass);
 
     [[nodiscard]] const ResourcesMap& getResources() const noexcept { return _resources; }
 
@@ -55,22 +55,22 @@ public:
     [[nodiscard]]       ResourceAccessorsMap& getResourceWriters()       noexcept { return _resourceWriters; }
     [[nodiscard]] const ResourceAccessorsMap& getResourceWriters() const noexcept { return _resourceWriters; }
 
-    [[nodiscard]] VulkanRenderPassResource* getResource(const std::string& name) noexcept {
+    [[nodiscard]] VulkanPassResource* getResource(const std::string& name) noexcept {
         const auto cachedRenderResource = _resources.find(name);
         return cachedRenderResource != _resources.end() ? cachedRenderResource->second.get() : nullptr;
     }
 
-    void addResource(const VulkanRenderPassResource& resource) {
+    void addResource(const VulkanPassResource& resource) {
         if (!_resources.contains(resource.descriptor.name)) {
-            _resources[resource.descriptor.name] = std::make_unique<VulkanRenderPassResource>(resource);
+            _resources[resource.descriptor.name] = std::make_unique<VulkanPassResource>(resource);
         }
     }
 
-    void addResourceReader(const std::string& name, VulkanRenderPass* pass) {
+    void addResourceReader(const std::string& name, VulkanPass* pass) {
         _resourceReaders[name].push_back(pass);
     }
 
-    void addResourceWriter(const std::string& name, VulkanRenderPass* pass) {
+    void addResourceWriter(const std::string& name, VulkanPass* pass) {
         _resourceWriters[name].push_back(pass);
     }
 
@@ -84,7 +84,7 @@ private:
     );
 
     void bindDescriptors(
-        const VulkanDescriptorSets* descriptorSets, const std::vector<VulkanRenderPassAttachmentDescriptor>& reads
+        const VulkanDescriptorSets* descriptorSets, const std::vector<VulkanGraphicsPassAttachmentDescriptor>& reads
     );
 
     void rebindDescriptors(VulkanRenderGraph& renderGraph);

@@ -97,35 +97,47 @@ Expected<void> VulkanRenderer::init(
         .registerResource({"normalBuffer"})
         .registerResource({"debugBuffer", vk::Format::eR32G32B32A32Sfloat})
         .registerResource({"compositeBuffer", vk::Format::eR16G16B16A16Sfloat})
-        .registerResource({"swapchainOutput", vk::Format::eB8G8R8A8Srgb, VulkanRenderPassResourceType::SwapchainOutput})
+        .registerResource({"swapchainOutput", vk::Format::eB8G8R8A8Srgb, VulkanPassResourceType::SwapchainOutput})
         .addPass(
             {
-                "Gbuffer_Pass", "mesh_render", VulkanRenderPassType::MeshRender, VulkanRenderPassCullMode::Frustum,
-                {},
-                {{"albedoBuffer"}, {"normalBuffer"}},
-                {"depthBuffer", vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, vk::ClearDepthStencilValue{0.0f, 0}}
+                VulkanPassDescriptor{
+                    "Gbuffer_Pass", "mesh_render",
+                    {},
+                    {{"albedoBuffer"}, {"normalBuffer"}}
+                },
+                VulkanGraphicsPassType::MeshRender, VulkanGraphicsPassCullMode::Frustum,
+                {"depthBuffer"}
             }
         )
         .addPass(
             {
-                "Debug_Pass", "debug", VulkanRenderPassType::Debug, VulkanRenderPassCullMode::None,
-                {},
-                {{"debugBuffer"}},
-                {"depthBuffer", vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, vk::ClearDepthStencilValue{0.0f, 0}}
+                VulkanPassDescriptor{
+                    "Debug_Pass", "debug",
+                    {},
+                    {{"debugBuffer"}}
+                },
+                VulkanGraphicsPassType::Debug, VulkanGraphicsPassCullMode::None,
+                {"depthBuffer"}
             }
         )
         .addPass(
             {
-                "Composite0_Pass", "composite_0", VulkanRenderPassType::Composite, VulkanRenderPassCullMode::None,
-                {{"depthBuffer"}, {"albedoBuffer"}, {"normalBuffer"}},
-                {{"compositeBuffer"}}
+                VulkanPassDescriptor{
+                    "Composite0_Pass", "composite_0",
+                    {{"depthBuffer"}, {"albedoBuffer"}, {"normalBuffer"}},
+                    {{"compositeBuffer"}}
+                },
+                VulkanGraphicsPassType::Composite, VulkanGraphicsPassCullMode::None
             }
         )
         .addPass(
             {
-                "Composite1_Pass", "composite_1", VulkanRenderPassType::Composite, VulkanRenderPassCullMode::None,
-                {{"depthBuffer"}, {"albedoBuffer"}, {"normalBuffer"}, {"debugBuffer"}, {"compositeBuffer"}},
-                {{"swapchainOutput"}}
+                VulkanPassDescriptor{
+                    "Composite1_Pass", "composite_1",
+                    {{"depthBuffer"}, {"albedoBuffer"}, {"normalBuffer"}, {"debugBuffer"}, {"compositeBuffer"}},
+                    {{"swapchainOutput"}}
+                },
+                VulkanGraphicsPassType::Composite, VulkanGraphicsPassCullMode::None,
             }
         );
 
