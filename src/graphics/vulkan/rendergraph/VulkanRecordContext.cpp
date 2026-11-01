@@ -1,50 +1,73 @@
 #include "VulkanRecordContext.h"
 
-#include "core/render/BindingSlots.h"
+#include "graphics/vulkan/pipeline/VulkanPipeline.h"
 
-#include "graphics/vulkan/rendergraph/draw/VulkanFrameCuller.h"
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorSets.h"
-#include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
+#include "graphics/vulkan/resources/materials/VulkanMaterial.h"
 
-void VulkanRecordContext::bindGlobalDescriptors(
-    const vk::PipelineLayout pipelineLayout, const vk::PipelineBindPoint pipelineBindPoint
-) const {
-    const std::array fixedSets = {
-        _frame->getDescriptorSets()->getSet(_frameIndex),                // slot 0: FrameData
-        _renderObjectManager->getDescriptorSets()->getSet(_frameIndex),  // slot 1: ObjectData
-        _frameCuller->getDescriptorSets()->getSet(_frameIndex),          // slot 2: CullingData
+void VulkanRecordContext::bindPipeline() const {
+    _commandBuffer.bindPipeline(_pass.pipeline->getBindPoint(), _pass.pipeline->handle());
+}
+
+void VulkanRecordContext::bindGlobalDescriptors() const {
+    _commandBuffer.bindDescriptorSets(
+        _pass.pipeline->getBindPoint(), _pass.pipeline->getLayout(),
+        BindingSlots::FrameData,
+        _frame.globalSets, nullptr
+    );
+}
+
+void VulkanRecordContext::bindPassDescriptors() const {
+    if (!_pass.sets) return;
+
+    _commandBuffer.bindDescriptorSets(
+        _pass.pipeline->getBindPoint(), _pass.pipeline->getLayout(),
+        BindingSlots::PassData,
+        _pass.sets->getSet(_frame.frameIndex), nullptr
+    );
+}
+
+void VulkanRecordContext::bindMaterial(const VulkanMaterial* material) {
+    if (!material || material == _lastBoundMaterial) return;
+
+    _commandBuffer.bindDescriptorSets(
+        _pass.pipeline->getBindPoint(), _pass.pipeline->getLayout(),
+        BindingSlots::MaterialData,
+        material->getDescriptorSets()->getSet(_frame.frameIndex), nullptr
+    );
+
+    _lastBoundMaterial = material;
+}
+
+void VulkanRecordContext::bindGeometryBuffers() const {
+    _commandBuffer.bindVertexBuffers(0, _frame.vertexBuffer, vk::DeviceSize{0});
+    _commandBuffer.bindIndexBuffer(_frame.indexBuffer, 0, vk::IndexType::eUint32);
+}
+
+void VulkanRecordContext::setViewport() const {
+    const vk::Viewport viewport{
+        0.0f, 0.0f, static_cast<float>(_frame.extent.width), static_cast<float>(_frame.extent.height), 0.0f, 1.0f
     };
 
-    _commandBuffer.bindDescriptorSets(pipelineBindPoint, pipelineLayout, 0, fixedSets, nullptr);
+    _commandBuffer.setViewport(0, viewport);
 }
 
-void VulkanRecordContext::bindPassDescriptors(
-    const vk::PipelineLayout    pipelineLayout,
-    const vk::PipelineBindPoint pipelineBindPoint,
-    const VulkanDescriptorSets* sets
-) const {
-    // slot 3: PassData
-    if (sets) {
-        _commandBuffer.bindDescriptorSets(
-            pipelineBindPoint, pipelineLayout,
-            BindingSlots::PassData,
-            sets->getSet(_frameIndex),
-            nullptr
-        );
-    }
+void VulkanRecordContext::setScissor() const {
+    const vk::Rect2D scissor{vk::Offset2D(0, 0), _frame.extent};
+
+    _commandBuffer.setScissor(0, scissor);
 }
 
-void VulkanRecordContext::bindMaterial(
-    const vk::PipelineLayout    pipelineLayout,
-    const vk::PipelineBindPoint pipelineBindPoint,
-    const VulkanMaterial*       material
+void VulkanRecordContext::pushConstantRaw(
+    const std::string& name, const void* data, const std::uint32_t typeSize
 ) const {
-    if (material) {
-        // slot 4: MaterialData
-        const vk::DescriptorSet materialSet = material->getDescriptorSets()->getSet(_frameIndex);
+    const auto& ranges = _pass.layoutDescriptor->pushConstantRanges;
 
-        _commandBuffer.bindDescriptorSets(
-            pipelineBindPoint, pipelineLayout, BindingSlots::MaterialData, materialSet, nullptr
-        );
-    }
+    const auto rangeIt = ranges.find(name);
+    assert(rangeIt != ranges.end());
+
+    const auto& [stageFlags, offset, size] = rangeIt->second;
+    assert(size == typeSize);
+
+    _commandBuffer.pushConstants(_pass.pipeline->getLayout(), stageFlags, offset, size, data);
 }

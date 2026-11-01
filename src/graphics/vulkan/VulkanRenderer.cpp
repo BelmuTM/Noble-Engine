@@ -6,6 +6,9 @@
 
 #include "graphics/vulkan/rendergraph/VulkanRenderGraphBuilder.h"
 
+#include "graphics/vulkan/rendergraph/VulkanFrameContext.h"
+#include "rendergraph/VulkanRecordContext.h"
+
 VulkanRenderer::VulkanRenderer(const std::uint32_t framesInFlight) : _framesInFlight(framesInFlight) {}
 
 Expected<void> VulkanRenderer::init(
@@ -58,19 +61,6 @@ Expected<void> VulkanRenderer::init(
     TRY(createVulkanEntity(&shaderProgramManager, logicalDevice));
     TRY(createVulkanEntity(&pipelineManager, logicalDevice));
 
-    // Render graph construction
-    TRY(createVulkanEntity(&renderGraph,
-        VulkanRenderGraphCreateContext{
-            &context.getInstance(),
-            &device,
-            &swapchain,
-            &frameResources,
-            &frameCuller,
-            &renderObjectManager,
-            device.getQueryPool()
-        }
-    ));
-
     VulkanRenderGraphBuilder renderGraphBuilder(
         VulkanRenderGraphBuilderContext{
             renderGraph,
@@ -101,7 +91,12 @@ Expected<void> VulkanRenderer::init(
             .base = {
                 .name = "Gbuffer_Pass", .programPath = "mesh_render",
                 .writes = {{"albedoBuffer"}, {"normalBuffer"}},
-                .record = [](VulkanRecordContext&) -> Expected<void> {
+                .record = [](const VulkanRecordContext& ctx) -> Expected<void> {
+                    ctx.bindPipeline();
+                    ctx.bindGlobalDescriptors();
+                    ctx.bindPassDescriptors();
+                    ctx.setViewport();
+                    ctx.setScissor();
                     std::cout << "meow gbuffers" << std::endl;
                     return {};
                 }
@@ -115,7 +110,12 @@ Expected<void> VulkanRenderer::init(
                 .name = "Composite0_Pass", .programPath = "composite_0",
                 .reads  = {{"depthBuffer"}, {"albedoBuffer"}, {"normalBuffer"}},
                 .writes = {{"compositeBuffer"}},
-                .record = [](VulkanRecordContext&) -> Expected<void> {
+                .record = [](const VulkanRecordContext& ctx) -> Expected<void> {
+                    ctx.bindPipeline();
+                    ctx.bindGlobalDescriptors();
+                    ctx.bindPassDescriptors();
+                    ctx.setViewport();
+                    ctx.setScissor();
                     std::cout << "meow composite 0" << std::endl;
                     return {};
                 }
@@ -127,7 +127,12 @@ Expected<void> VulkanRenderer::init(
                 .name = "Composite1_Pass", .programPath = "composite_1",
                 .reads  = {{"depthBuffer"}, {"albedoBuffer"}, {"normalBuffer"}, {"debugBuffer"}, {"compositeBuffer"}},
                 .writes = {{"swapchainOutput"}},
-                .record = [](VulkanRecordContext&) -> Expected<void> {
+                .record = [](const VulkanRecordContext& ctx) -> Expected<void> {
+                    ctx.bindPipeline();
+                    ctx.bindGlobalDescriptors();
+                    ctx.bindPassDescriptors();
+                    ctx.setViewport();
+                    ctx.setScissor();
                     std::cout << "meow composite 1" << std::endl;
                     return {};
                 }
@@ -171,13 +176,28 @@ Expected<void> VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
     // Frustum culling
     TRY(frameCuller.cull(renderObjectManager, uniforms));
 
+    // Frame rendering context
+    const VulkanFrameContext frameContext{
+        .extent     = context.getSwapchain().getExtent(),
+        .frameIndex = currentFrame,
+        .globalSets = {
+            frameResources.getDescriptorSets()->getSet(currentFrame),
+            renderObjectManager.getDescriptorSets()->getSet(currentFrame),
+            frameCuller.getDescriptorSets()->getSet(currentFrame),
+        },
+        .vertexBuffer   = meshManager.getVertexBuffer().handle(),
+        .indexBuffer    = meshManager.getIndexBuffer().handle(),
+        .queryPool      = context.getDevice().getQueryPool(),
+        .dispatchLoader = &context.getDevice().getDispatchLoader()
+    };
+
     // Command buffer record and submit
     const vk::CommandBuffer currentCommandBuffer = commandManager.getCommandBuffers()[currentFrame];
 
     TRY(commandManager.record(
         currentCommandBuffer,
-        [this](const vk::CommandBuffer cmd) -> Expected<void> {
-            return renderGraph.execute(cmd);
+        [this, &frameContext](const vk::CommandBuffer cmd) -> Expected<void> {
+            return renderGraph.execute(cmd, frameContext);
         }
     ));
 

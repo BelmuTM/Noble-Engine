@@ -291,6 +291,11 @@ Expected<void> VulkanDevice::createLogicalDevice(const QueueFamilyIndices queueF
         _computeQueue = _logicalDevice.getQueue(queueFamilyIndices.computeFamily, 0);
     }
 
+    _dispatchLoader = vk::detail::DispatchLoaderDynamic(
+        _instance,      vkGetInstanceProcAddr,
+        _logicalDevice, vkGetDeviceProcAddr
+    );
+
     return {};
 }
 

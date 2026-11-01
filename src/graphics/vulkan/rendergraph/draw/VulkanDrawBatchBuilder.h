@@ -1,7 +1,5 @@
 #pragma once
 
-#include "VulkanDrawCommand.h"
-
 #include "VulkanDrawBatch.h"
 #include "VulkanInstanceHandle.h"
 

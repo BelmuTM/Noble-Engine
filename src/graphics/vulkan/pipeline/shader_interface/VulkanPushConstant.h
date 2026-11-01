@@ -10,9 +10,4 @@ struct VulkanPushConstantRange {
     std::uint32_t        size   = 0;
 };
 
-struct VulkanPushConstant {
-    const void*             data = nullptr;
-    VulkanPushConstantRange range{};
-};
-
-using VulkanPushConstantsMap = std::unordered_map<std::string, VulkanPushConstantRange>;
+using VulkanPushConstantRangesMap = std::unordered_map<std::string, VulkanPushConstantRange>;

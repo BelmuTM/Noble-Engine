@@ -33,7 +33,7 @@ public:
         const vk::Device& device, const VulkanGraphicsPipelineDescriptor& descriptor
     ) noexcept;
 
-    [[nodiscard]] static vk::PipelineBindPoint getBindPoint() noexcept {
+    [[nodiscard]] vk::PipelineBindPoint getBindPoint() const noexcept override {
         return vk::PipelineBindPoint::eGraphics;
     }
 

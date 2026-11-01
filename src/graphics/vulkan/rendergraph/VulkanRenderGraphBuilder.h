@@ -12,6 +12,8 @@
 #include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 
+#include "graphics/vulkan/rendergraph/draw/VulkanFrameCuller.h"
+
 struct VulkanRenderGraphBuilderContext {
     VulkanRenderGraph&          renderGraph;
 

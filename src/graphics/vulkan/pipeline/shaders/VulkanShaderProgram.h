@@ -30,7 +30,7 @@ public:
         return _shaderStages;
     }
 
-    [[nodiscard]] const VulkanPushConstantsMap& getPushConstants() const noexcept {
+    [[nodiscard]] const VulkanPushConstantRangesMap& getPushConstants() const noexcept {
         return _pushConstants;
     }
 
@@ -55,5 +55,5 @@ private:
     std::vector<vk::PipelineShaderStageCreateInfo> _shaderStages{};
 
     std::vector<std::string> _stageOutputs{};
-    VulkanPushConstantsMap   _pushConstants{};
+    VulkanPushConstantRangesMap   _pushConstants{};
 };

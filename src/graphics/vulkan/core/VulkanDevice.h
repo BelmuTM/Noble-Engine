@@ -71,6 +71,10 @@ public:
         return {};
     }
 
+    [[nodiscard]] const vk::detail::DispatchLoaderDynamic& getDispatchLoader() const noexcept {
+        return _dispatchLoader;
+    }
+
 private:
     static bool isPhysicalDeviceSuitable(vk::PhysicalDevice device);
 
@@ -100,4 +104,6 @@ private:
     vk::Queue _computeQueue{};
 
     vk::QueryPool _queryPool{};
+
+    vk::detail::DispatchLoaderDynamic _dispatchLoader{};
 };

@@ -2,32 +2,14 @@
 
 #include "core/debug/ErrorHandling.h"
 
-#include "graphics/vulkan/common/VulkanHeader.h"
+#include "VulkanFrameContext.h"
 
-#include "graphics/vulkan/core/VulkanInstance.h"
-#include "graphics/vulkan/core/VulkanSwapchain.h"
-
-#include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
-
-#include "draw/VulkanFrameCuller.h"
 #include "nodes/VulkanGraphicsPass.h"
 
-#include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
+#include <memory>
+#include <vector>
 
 class VulkanRenderResourceManager;
-
-struct VulkanRenderGraphCreateContext {
-    const VulkanInstance*             instance    = nullptr;
-    const VulkanDevice*               device      = nullptr;
-    const VulkanSwapchain*            swapchain   = nullptr;
-
-    const VulkanFrameResources*       frame               = nullptr;
-    const VulkanFrameCuller*          frameCuller         = nullptr;
-    const VulkanRenderObjectManager*  renderObjectManager = nullptr;
-
-    vk::QueryPool                     queryPool;
-    vk::detail::DispatchLoaderDynamic dispatchLoader{};
-};
 
 class VulkanRenderGraph {
 public:
@@ -40,13 +22,15 @@ public:
     VulkanRenderGraph(VulkanRenderGraph&&)            = delete;
     VulkanRenderGraph& operator=(VulkanRenderGraph&&) = delete;
 
-    [[nodiscard]] Expected<void> create(const VulkanRenderGraphCreateContext& context) noexcept;
+    [[nodiscard]] Expected<void> create() noexcept;
 
     void destroy() noexcept;
 
-    Expected<void> execute(vk::CommandBuffer commandBuffer) const;
+    Expected<void> execute(vk::CommandBuffer commandBuffer, const VulkanFrameContext& frameContext) const;
 
-    Expected<void> executePass(vk::CommandBuffer commandBuffer, const VulkanGraphicsPass& pass) const;
+    static Expected<void> executePass(
+        vk::CommandBuffer commandBuffer, const VulkanFrameContext& frameContext, const VulkanGraphicsPass& pass
+    ) ;
 
     [[nodiscard]]       std::vector<std::unique_ptr<VulkanGraphicsPass>>& getPasses()       noexcept { return _passes; }
     [[nodiscard]] const std::vector<std::unique_ptr<VulkanGraphicsPass>>& getPasses() const noexcept { return _passes; }
@@ -56,7 +40,5 @@ public:
     }
 
 private:
-    VulkanRenderGraphCreateContext _context{};
-
     std::vector<std::unique_ptr<VulkanGraphicsPass>> _passes{};
 };

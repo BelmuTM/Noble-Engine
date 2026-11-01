@@ -8,7 +8,7 @@
 
 struct VulkanPipelineLayoutDescriptor {
     std::vector<vk::DescriptorSetLayout> descriptorLayouts{};
-    VulkanPushConstantsMap               pushConstantRanges{};
+    VulkanPushConstantRangesMap          pushConstantRanges{};
 };
 
 class VulkanPipeline {
@@ -31,6 +31,8 @@ public:
     [[nodiscard]] vk::Pipeline handle() const noexcept { return _pipeline; }
 
     [[nodiscard]] const vk::PipelineLayout& getLayout() const noexcept { return _pipelineLayout; }
+
+    [[nodiscard]] virtual vk::PipelineBindPoint getBindPoint() const noexcept = 0;
 
 protected:
     vk::Device _device{};

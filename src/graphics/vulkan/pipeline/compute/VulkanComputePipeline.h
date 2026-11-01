@@ -26,7 +26,7 @@ public:
         const vk::Device& device, const VulkanComputePipelineDescriptor& descriptor
     ) noexcept;
 
-    [[nodiscard]] static vk::PipelineBindPoint getBindPoint() noexcept {
+    [[nodiscard]] vk::PipelineBindPoint getBindPoint() const noexcept override {
         return vk::PipelineBindPoint::eCompute;
     }
 
