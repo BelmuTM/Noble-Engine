@@ -1,6 +1,7 @@
 #include "VulkanFrameCuller.h"
 
 #include "core/render/FrustumCuller.h"
+#include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 
 Expected<void> VulkanFrameCuller::create(
     const VulkanDevice&         device,
@@ -25,51 +26,24 @@ void VulkanFrameCuller::destroy() noexcept {
 }
 
 Expected<void> VulkanFrameCuller::cull(
-    const std::vector<std::unique_ptr<VulkanGraphicsPass>>& passes, const FrameUniforms& uniforms
+    const VulkanRenderObjectManager& renderObjectManager, const FrameUniforms& uniforms
 ) {
     const glm::mat4& viewProjectionMatrix = uniforms.projectionMatrix * uniforms.viewMatrix;
 
     const std::array<Math::Plane, 6>& frustumPlanes = FrustumCuller::getFrustumPlanes(viewProjectionMatrix);
 
-    _visibleDrawCalls.clear();
-    _visibleDrawCalls.reserve(passes.size());
+    _visibleItems.clear();
 
-    std::uint32_t currentIndirectionOffset = 0;
+    for (const auto& renderObject : renderObjectManager.getRenderObjects()) {
+        for (const auto& renderMesh : renderObject->meshes) {
 
-    for (const auto& pass : passes) {
-        auto& visibleDraws = _visibleDrawCalls[pass.get()];
+            Math::AABB worldAABB = renderMesh.mesh->getAABB().transform(renderObject->object->getModelMatrix());
 
-        visibleDraws.clear();
+            const bool visible = FrustumCuller::testVisibility(worldAABB, frustumPlanes);
 
-        // Check visibility for passes with culling enabled
-        if (pass->getGraphicsPassDescriptor().cullMode == VulkanGraphicsPassCullMode::None) {
-            for (auto& draw : pass->getDrawCalls())
-                visibleDraws.push_back(&draw);
-
-        } else {
-            for (auto& drawCall : pass->getDrawCalls()) {
-
-                bool visible = true;
-
-                if (drawCall.getModelMatrix()) {
-                    Math::AABB worldAABB = drawCall.getRenderMesh().mesh->getAABB().transform(*drawCall.getModelMatrix());
-
-                    visible = FrustumCuller::testVisibility(worldAABB, frustumPlanes);
-                }
-
-                if (visible) {
-                    visibleDraws.push_back(&drawCall);
-                }
+            if (visible) {
+                _visibleItems.emplace_back(renderMesh, renderObject->instanceHandle);
             }
-        }
-
-        // Keep track of the indirection offset
-        _indirectionOffsets[pass.get()] = currentIndirectionOffset;
-
-        currentIndirectionOffset += static_cast<std::uint32_t>(pass->getDrawCalls().size());
-
-        if (currentIndirectionOffset > MAX_DRAWS) {
-            return VK_FAIL("Failed to cull frame: exceeded maximum draws.");
         }
     }
 

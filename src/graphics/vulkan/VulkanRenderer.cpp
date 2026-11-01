@@ -1,5 +1,7 @@
 #include "VulkanRenderer.h"
 
+#include <iostream>
+
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 #include "graphics/vulkan/rendergraph/VulkanRenderGraphBuilder.h"
@@ -69,9 +71,6 @@ Expected<void> VulkanRenderer::init(
         }
     ));
 
-    VulkanRenderPassFactory passFactory{};
-    passFactory.registerPassTypes();
-
     VulkanRenderGraphBuilder renderGraphBuilder(
         VulkanRenderGraphBuilderContext{
             renderGraph,
@@ -87,8 +86,7 @@ Expected<void> VulkanRenderer::init(
             frameCuller,
             shaderProgramManager,
             pipelineManager
-        },
-        passFactory
+        }
     );
 
     renderGraphBuilder
@@ -98,48 +96,44 @@ Expected<void> VulkanRenderer::init(
         .registerResource({"debugBuffer", vk::Format::eR32G32B32A32Sfloat})
         .registerResource({"compositeBuffer", vk::Format::eR16G16B16A16Sfloat})
         .registerResource({"swapchainOutput", vk::Format::eB8G8R8A8Srgb, VulkanPassResourceType::SwapchainOutput})
-        .addPass(
-            {
-                VulkanPassDescriptor{
-                    "Gbuffer_Pass", "mesh_render",
-                    {},
-                    {{"albedoBuffer"}, {"normalBuffer"}}
-                },
-                VulkanGraphicsPassType::MeshRender, VulkanGraphicsPassCullMode::Frustum,
-                {"depthBuffer"}
-            }
-        )
-        .addPass(
-            {
-                VulkanPassDescriptor{
-                    "Debug_Pass", "debug",
-                    {},
-                    {{"debugBuffer"}}
-                },
-                VulkanGraphicsPassType::Debug, VulkanGraphicsPassCullMode::None,
-                {"depthBuffer"}
-            }
-        )
-        .addPass(
-            {
-                VulkanPassDescriptor{
-                    "Composite0_Pass", "composite_0",
-                    {{"depthBuffer"}, {"albedoBuffer"}, {"normalBuffer"}},
-                    {{"compositeBuffer"}}
-                },
-                VulkanGraphicsPassType::Composite, VulkanGraphicsPassCullMode::None
-            }
-        )
-        .addPass(
-            {
-                VulkanPassDescriptor{
-                    "Composite1_Pass", "composite_1",
-                    {{"depthBuffer"}, {"albedoBuffer"}, {"normalBuffer"}, {"debugBuffer"}, {"compositeBuffer"}},
-                    {{"swapchainOutput"}}
-                },
-                VulkanGraphicsPassType::Composite, VulkanGraphicsPassCullMode::None,
-            }
-        );
+
+        .addPass({
+            .base = {
+                .name = "Gbuffer_Pass", .programPath = "mesh_render",
+                .writes = {{"albedoBuffer"}, {"normalBuffer"}},
+                .record = [](VulkanRecordContext&) -> Expected<void> {
+                    std::cout << "meow gbuffers" << std::endl;
+                    return {};
+                }
+            },
+            .cullMode = VulkanGraphicsPassCullMode::Frustum,
+            .depthAttachmentDescriptor = {"depthBuffer"},
+            .countPrimitives = true
+        })
+        .addPass({
+            .base = {
+                .name = "Composite0_Pass", .programPath = "composite_0",
+                .reads  = {{"depthBuffer"}, {"albedoBuffer"}, {"normalBuffer"}},
+                .writes = {{"compositeBuffer"}},
+                .record = [](VulkanRecordContext&) -> Expected<void> {
+                    std::cout << "meow composite 0" << std::endl;
+                    return {};
+                }
+            },
+            .pipelineState = { .cullMode = vk::CullModeFlagBits::eNone, .meshVertexInput = false }
+        })
+        .addPass({
+            .base = {
+                .name = "Composite1_Pass", .programPath = "composite_1",
+                .reads  = {{"depthBuffer"}, {"albedoBuffer"}, {"normalBuffer"}, {"debugBuffer"}, {"compositeBuffer"}},
+                .writes = {{"swapchainOutput"}},
+                .record = [](VulkanRecordContext&) -> Expected<void> {
+                    std::cout << "meow composite 1" << std::endl;
+                    return {};
+                }
+            },
+            .pipelineState = { .cullMode = vk::CullModeFlagBits::eNone, .meshVertexInput = false }
+        });
 
     TRY(renderGraphBuilder.build());
 
@@ -175,7 +169,7 @@ Expected<void> VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
     // Render objects update
     renderObjectManager.updateObjects(currentFrame);
     // Frustum culling
-    TRY(frameCuller.cull(renderGraph.getPasses(), uniforms));
+    TRY(frameCuller.cull(renderObjectManager, uniforms));
 
     // Command buffer record and submit
     const vk::CommandBuffer currentCommandBuffer = commandManager.getCommandBuffers()[currentFrame];

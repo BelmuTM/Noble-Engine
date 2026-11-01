@@ -2,20 +2,20 @@
 
 #include "graphics/vulkan/rendergraph/nodes/VulkanPass.h"
 
-#include "graphics/vulkan/rendergraph/draw/VulkanDrawCall.h"
-
-// TODO: Make graphics API agnostic
-enum class VulkanGraphicsPassType : std::uint8_t { None, MeshRender, Composite, Debug };
+#include "graphics/vulkan/pipeline/graphics/VulkanGraphicsPipelineState.h"
 
 enum class VulkanGraphicsPassCullMode : std::uint8_t { None, Frustum };
 
 struct VulkanGraphicsPassDescriptor {
     VulkanPassDescriptor base;
 
-    VulkanGraphicsPassType     type     = VulkanGraphicsPassType::None;
+    VulkanGraphicsPipelineState pipelineState{};
+
     VulkanGraphicsPassCullMode cullMode = VulkanGraphicsPassCullMode::None;
 
     VulkanGraphicsPassAttachmentDescriptor depthAttachmentDescriptor{};
+
+    bool countPrimitives = false;
 };
 
 class VulkanGraphicsPipeline;
@@ -24,8 +24,6 @@ class VulkanGraphicsPass {
 public:
     using AttachmentPointer = std::unique_ptr<VulkanGraphicsPassAttachment>;
     using AttachmentsVector = std::vector<AttachmentPointer>;
-
-    using DrawCallsVector = std::vector<VulkanDrawCall>;
 
     explicit VulkanGraphicsPass(const VulkanGraphicsPassDescriptor& descriptor)
         : _pass(descriptor.base), _graphicsPassDescriptor(descriptor) {}
@@ -56,9 +54,6 @@ public:
     [[nodiscard]]       AttachmentsVector& getColorAttachments()       noexcept { return _colorAttachments; }
     [[nodiscard]] const AttachmentsVector& getColorAttachments() const noexcept { return _colorAttachments; }
 
-    [[nodiscard]]       DrawCallsVector& getDrawCalls()       noexcept { return _drawCalls; }
-    [[nodiscard]] const DrawCallsVector& getDrawCalls() const noexcept { return _drawCalls; }
-
     // Setters
 
     VulkanGraphicsPass& setGraphicsPipeline(const VulkanGraphicsPipeline* graphicsPipeline) noexcept {
@@ -81,11 +76,6 @@ public:
         return *this;
     }
 
-    VulkanDrawCall& emplaceDrawCall() noexcept {
-        return _drawCalls.emplace_back()
-            .bindPipelineLayoutDescriptor(&_pass.getPipelineLayoutDescriptor());
-    }
-
 private:
     VulkanPass _pass;
 
@@ -95,6 +85,4 @@ private:
 
     AttachmentPointer _depthAttachment{};
     AttachmentsVector _colorAttachments{};
-
-    DrawCallsVector _drawCalls{};
 };

@@ -1,7 +1,6 @@
 #include "VulkanGraphicsPipeline.h"
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
-#include "graphics/vulkan/rendergraph/resources/VulkanRenderResourceManager.h"
 
 #include "graphics/vulkan/resources/meshes/VulkanVertex.h"
 
@@ -98,7 +97,7 @@ Expected<void> VulkanGraphicsPipeline::createGraphicsPipeline(
     const auto& bindingDescription    = VulkanVertex::getBindingDescription();
     const auto& attributeDescriptions = VulkanVertex::getAttributeDescriptions();
 
-    if (descriptor.passType == VulkanGraphicsPassType::MeshRender || descriptor.passType == VulkanGraphicsPassType::Debug) {
+    if (descriptor.state.meshVertexInput) {
         vertexInputState
             .setVertexBindingDescriptions(bindingDescription)
             .setVertexAttributeDescriptions(attributeDescriptions);
@@ -107,14 +106,9 @@ Expected<void> VulkanGraphicsPipeline::createGraphicsPipeline(
     // Input assembly state
 
     vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState{};
-    inputAssemblyState.setPrimitiveRestartEnable(vk::False);
-
-    if (descriptor.passType == VulkanGraphicsPassType::Debug) {
-        inputAssemblyState.setTopology(vk::PrimitiveTopology::eLineList);
-    } else {
-        inputAssemblyState.setTopology(vk::PrimitiveTopology::eTriangleList);
-    }
-
+    inputAssemblyState
+        .setPrimitiveRestartEnable(vk::False)
+        .setTopology(descriptor.state.topology);
     // Viewport state
 
     const auto viewportState = makeViewportState();
@@ -125,26 +119,11 @@ Expected<void> VulkanGraphicsPipeline::createGraphicsPipeline(
     rasterizationState
         .setDepthClampEnable(vk::False)
         .setRasterizerDiscardEnable(vk::False)
-        .setPolygonMode(vk::PolygonMode::eFill)
+        .setPolygonMode(descriptor.state.polygonMode)
+        .setCullMode(descriptor.state.cullMode)
         .setFrontFace(vk::FrontFace::eCounterClockwise)
         .setDepthBiasEnable(vk::False)
-        .setLineWidth(2.0f);
-
-    switch (descriptor.passType) {
-        case VulkanGraphicsPassType::MeshRender:
-            rasterizationState.setCullMode(vk::CullModeFlagBits::eBack);
-            break;
-        case VulkanGraphicsPassType::Composite:
-            rasterizationState.setCullMode(vk::CullModeFlagBits::eNone);
-            break;
-        case VulkanGraphicsPassType::Debug:
-            rasterizationState
-                .setCullMode(vk::CullModeFlagBits::eBack)
-                .setPolygonMode(vk::PolygonMode::eLine);
-            break;
-        default:
-            return VK_FAIL("Failed to create graphics pipeline: unknown pass type.");
-    }
+        .setLineWidth(descriptor.state.lineWidth);
 
     // Multisample state
 

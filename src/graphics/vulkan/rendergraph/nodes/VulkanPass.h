@@ -8,6 +8,8 @@
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorSets.h"
 
+class VulkanRecordContext;
+
 #include <memory>
 #include <ranges>
 
@@ -26,8 +28,10 @@ struct VulkanPassDescriptor {
 
     std::string programPath;
 
-    std::vector<VulkanGraphicsPassAttachmentDescriptor> readDescriptors{};
-    std::vector<VulkanGraphicsPassAttachmentDescriptor> writeDescriptors{};
+    std::vector<VulkanGraphicsPassAttachmentDescriptor> reads{};
+    std::vector<VulkanGraphicsPassAttachmentDescriptor> writes{};
+
+    std::function<Expected<void>(VulkanRecordContext&)> record;
 };
 
 // Mutable, describes the pass state (data subject to hot reloading)

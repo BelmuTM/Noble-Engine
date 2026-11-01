@@ -10,7 +10,7 @@
 #include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 
 #include "draw/VulkanFrameCuller.h"
-#include "nodes/VulkanPass.h"
+#include "nodes/VulkanGraphicsPass.h"
 
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 
@@ -21,7 +21,7 @@ struct VulkanRenderGraphCreateContext {
     const VulkanDevice*               device      = nullptr;
     const VulkanSwapchain*            swapchain   = nullptr;
 
-    VulkanFrameResources*             frame               = nullptr;
+    const VulkanFrameResources*       frame               = nullptr;
     const VulkanFrameCuller*          frameCuller         = nullptr;
     const VulkanRenderObjectManager*  renderObjectManager = nullptr;
 

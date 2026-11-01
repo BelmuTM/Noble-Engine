@@ -19,9 +19,6 @@ Expected<void> VulkanRenderGraphBuilder::build() {
         TRY_ASSIGN(pass->base().getShaderProgram(), _context.shaderProgramManager.load(passDescriptor.base.programPath));
 
         TRY(resolvePushConstantRanges(pass));
-
-        TRY(_passFactory.createPass(pass, _context));
-
         TRY(resolveAttachments(pass));
         TRY(allocateDescriptors(&pass->base()));
         TRY(resolveDescriptorLayouts(pass));
@@ -77,12 +74,12 @@ Expected<void> VulkanRenderGraphBuilder::resolveAttachments(VulkanGraphicsPass* 
     const VulkanGraphicsPassDescriptor& passDescriptor = pass->getGraphicsPassDescriptor();
 
     // Reads
-    for (const auto& readDescriptor : passDescriptor.base.readDescriptors) {
+    for (const auto& readDescriptor : passDescriptor.base.reads) {
         _context.renderResources.addResourceReader(readDescriptor.name, &pass->base());
     }
 
     // Writes (color attachments)
-    for (const auto& attachmentDescriptor : passDescriptor.base.writeDescriptors) {
+    for (const auto& attachmentDescriptor : passDescriptor.base.writes) {
         const VulkanPassResource* resource = _context.renderResources.getResource(attachmentDescriptor.name);
 
         if (!resource) {
@@ -139,7 +136,7 @@ Expected<void> VulkanRenderGraphBuilder::resolveDescriptorLayouts(VulkanGraphics
 
     layouts[BindingSlots::CullingData]  = _context.frameCuller.getDescriptorManager().getLayout();
 
-    layouts[BindingSlots::PassData]     = pass->base().getPassDescriptor().readDescriptors.empty()
+    layouts[BindingSlots::PassData]     = pass->base().getPassDescriptor().reads.empty()
         ? _emptyDescriptorLayout
         : pass->base().getDescriptorManager()->getLayout();
 
@@ -160,7 +157,7 @@ Expected<void> VulkanRenderGraphBuilder::createPipeline(VulkanGraphicsPass* pass
     VulkanGraphicsPipelineDescriptor descriptor{};
 
     descriptor.shaderStages = pass->base().getShaderProgram()->getStages();
-    descriptor.passType     = pass->getGraphicsPassDescriptor().type;
+    descriptor.state        = pass->getGraphicsPassDescriptor().pipelineState;
     descriptor.layout       = pass->base().getPipelineLayoutDescriptor();
 
     // Color attachment formats
@@ -198,14 +195,18 @@ void VulkanRenderGraphBuilder::scheduleResourceTransitions() const {
                 : vk::ImageLayout::eColorAttachmentOptimal;
 
             for (VulkanPass* pass : writers.at(resourceName)) {
-                if (pass) pass->addEntryTransition({resource.get(), entryLayout});
+                if (pass) pass->addEntryTransition(VulkanPassTransition(resource.get(), entryLayout));
             }
         }
 
         // Entry transitions for reader passes
         if (readers.contains(resourceName)) {
             for (VulkanPass* pass : readers.at(resourceName)) {
-                if (pass) pass->addEntryTransition({resource.get(), vk::ImageLayout::eShaderReadOnlyOptimal});
+                if (pass) {
+                    pass->addEntryTransition(
+                        VulkanPassTransition(resource.get(), vk::ImageLayout::eShaderReadOnlyOptimal)
+                    );
+                }
             }
         }
 
@@ -219,7 +220,7 @@ void VulkanRenderGraphBuilder::scheduleResourceTransitions() const {
                 exitLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
             for (VulkanPass* pass : writers.at(resourceName)) {
-                if (pass) pass->addExitTransition({resource.get(), exitLayout});
+                if (pass) pass->addExitTransition(VulkanPassTransition(resource.get(), exitLayout));
             }
         }
     }

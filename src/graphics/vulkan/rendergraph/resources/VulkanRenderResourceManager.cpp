@@ -122,7 +122,7 @@ Expected<void> VulkanRenderResourceManager::createResourceImage(
 }
 
 Expected<void> VulkanRenderResourceManager::allocateDescriptors(VulkanPass* pass) {
-    const auto& reads = pass->getPassDescriptor().readDescriptors;
+    const auto& reads = pass->getPassDescriptor().reads;
     if (reads.empty()) return {};
 
     // Building the descriptor scheme for the resources read in this pass
@@ -162,7 +162,7 @@ void VulkanRenderResourceManager::bindDescriptors(
 
 void VulkanRenderResourceManager::rebindDescriptors(VulkanRenderGraph& renderGraph) {
     for (const auto& pass : renderGraph.getPasses()) {
-        const auto& reads = pass->base().getPassDescriptor().readDescriptors;
+        const auto& reads = pass->base().getPassDescriptor().reads;
         if (reads.empty()) continue;
 
         if (const VulkanDescriptorSets* sets = pass->base().getDescriptorSets()) {

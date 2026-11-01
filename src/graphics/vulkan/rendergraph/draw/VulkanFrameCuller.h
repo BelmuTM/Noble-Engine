@@ -1,13 +1,16 @@
 #pragma once
 
-#include "graphics/vulkan/rendergraph/nodes/VulkanGraphicsPass.h"
-
+#include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 #include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/ssbo/VulkanStorageBufferManager.h"
+
+#include "VulkanRenderItem.h"
 
 class VulkanFrameCuller {
 public:
     static constexpr std::uint32_t MAX_DRAWS = 5'000'000;
+
+    using VisibilityResult = std::vector<VulkanRenderItem>;
 
     VulkanFrameCuller()  = default;
     ~VulkanFrameCuller() = default;
@@ -26,15 +29,9 @@ public:
 
     void destroy() noexcept;
 
-    Expected<void> cull(const std::vector<std::unique_ptr<VulkanGraphicsPass>>& passes, const FrameUniforms& uniforms);
+    Expected<void> cull(const VulkanRenderObjectManager& renderObjectManager, const FrameUniforms& uniforms);
 
-    [[nodiscard]] const std::vector<VulkanDrawCall*>& getDrawCalls(const VulkanGraphicsPass* pass) const {
-        return _visibleDrawCalls.at(pass);
-    }
-
-    [[nodiscard]] const std::uint32_t& getIndirectionOffset(const VulkanGraphicsPass* pass) const {
-        return _indirectionOffsets.at(pass);
-    }
+    [[nodiscard]] const VisibilityResult& getVisibleItems() const noexcept { return _visibleItems; }
 
     [[nodiscard]] static VulkanDescriptorScheme getDescriptorScheme() noexcept {
         static const VulkanDescriptorScheme scheme = {
@@ -50,9 +47,7 @@ public:
     [[nodiscard]] const VulkanDescriptorSets* getDescriptorSets() const noexcept { return _indirectionDescriptors; }
 
 private:
-    std::unordered_map<const VulkanGraphicsPass*, std::vector<VulkanDrawCall*>> _visibleDrawCalls{};
-
-    std::unordered_map<const VulkanGraphicsPass*, std::uint32_t> _indirectionOffsets{};
+    VisibilityResult _visibleItems{};
 
     VulkanDescriptorManager _descriptorManager{};
 

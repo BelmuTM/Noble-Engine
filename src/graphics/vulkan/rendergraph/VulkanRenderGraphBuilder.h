@@ -3,7 +3,6 @@
 #include "core/debug/ErrorHandling.h"
 
 #include "graphics/vulkan/rendergraph/VulkanRenderGraph.h"
-#include "graphics/vulkan/rendergraph/VulkanRenderPassFactory.h"
 
 #include "graphics/vulkan/core/VulkanSwapchain.h"
 
@@ -37,9 +36,7 @@ struct VulkanRenderGraphBuilderContext {
 
 class VulkanRenderGraphBuilder {
 public:
-    explicit VulkanRenderGraphBuilder(
-        const VulkanRenderGraphBuilderContext& context, const VulkanRenderPassFactory& passFactory
-    ) : _context(context), _passFactory(passFactory) {}
+    explicit VulkanRenderGraphBuilder(const VulkanRenderGraphBuilderContext& context) : _context(context) {}
 
     ~VulkanRenderGraphBuilder() = default;
 
@@ -79,8 +76,6 @@ private:
     void scheduleResourceTransitions() const;
 
     const VulkanRenderGraphBuilderContext _context;
-
-    const VulkanRenderPassFactory& _passFactory;
 
     std::vector<VulkanPassResourceDescriptor> _resourceDescriptors{};
 

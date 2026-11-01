@@ -26,6 +26,8 @@ public:
 
     void bindDescriptorSets() const;
 
+    [[nodiscard]] const std::string& getName() const noexcept { return _sourceMaterial.name; }
+
     [[nodiscard]] VulkanImage* getTexture(const TextureType type) const {
         return _textureMap.textures[static_cast<std::size_t>(type)];
     }

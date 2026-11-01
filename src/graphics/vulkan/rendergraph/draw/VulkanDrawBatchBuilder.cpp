@@ -1,32 +1,30 @@
 #include "VulkanDrawBatchBuilder.h"
 
-#include <ranges>
-
-void VulkanDrawBatchBuilder::build(const std::vector<VulkanDrawCall*>& drawCalls, const std::uint32_t indirectionOffset) {
+void VulkanDrawBatchBuilder::build(const std::vector<VulkanRenderItem>& renderItems, const std::uint32_t indirectionOffset) {
     _drawBatchMap.clear();
     _indirectionData.clear();
     _builtDrawBatches.clear();
 
-    // Group by {mesh, material}, store representative
-    for (auto* drawCall : drawCalls) {
-        const auto& [mesh, material] = drawCall->getRenderMesh();
+    // Group by {mesh, material}
+    for (const auto& [renderMesh, instanceHandle] : renderItems) {
+        const VulkanDrawBatch key(renderMesh.mesh, renderMesh.material);
 
-        auto& [rep, handles] = _drawBatchMap[{mesh, material}];
-        if (!rep) rep = drawCall;
-
-        handles.push_back(drawCall->getInstanceHandle());
+        _drawBatchMap[key].push_back(instanceHandle);
     }
 
     // Flatten into indirection data and built batches
     std::uint32_t firstInstance = indirectionOffset;
 
-    for (auto& [rep, handles] : _drawBatchMap | std::views::values) {
-
+    for (const auto& [key, handles] : _drawBatchMap) {
         for (const auto& [objectIndex] : handles) {
             _indirectionData.push_back(objectIndex);
         }
 
-        _builtDrawBatches.push_back({rep, firstInstance, static_cast<std::uint32_t>(handles.size())});
+        _builtDrawBatches.push_back(VulkanBuiltDrawBatch{
+            .batch         = key,
+            .firstInstance = firstInstance,
+            .instanceCount = static_cast<std::uint32_t>(handles.size())
+        });
 
         firstInstance += static_cast<std::uint32_t>(handles.size());
     }

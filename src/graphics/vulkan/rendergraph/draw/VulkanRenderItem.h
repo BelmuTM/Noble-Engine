@@ -5,8 +5,6 @@
 #include "graphics/vulkan/rendergraph/draw/VulkanInstanceHandle.h"
 
 struct VulkanRenderItem {
-    VulkanRenderMesh     _renderMesh{};
-    VulkanInstanceHandle _instanceHandle{};
-
-    const glm::mat4* _modelMatrix = nullptr;
+    VulkanRenderMesh     renderMesh{};
+    VulkanInstanceHandle instanceHandle{};
 };
