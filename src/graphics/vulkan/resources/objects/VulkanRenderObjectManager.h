@@ -3,8 +3,7 @@
 #include "VulkanRenderObject.h"
 #include "VulkanRenderObjectCreateContext.h"
 
-#include "graphics/vulkan/rendergraph/resources/VulkanRenderResourceManager.h"
-#include "graphics/vulkan/resources/descriptors/VulkanDescriptorInfo.h"
+#include "graphics/vulkan/rendergraph/draw/VulkanRenderItem.h"
 
 #include "core/entities/objects/ObjectManager.h"
 
@@ -13,6 +12,7 @@ public:
     static constexpr std::uint32_t MAX_RENDER_OBJECTS = 2048;
 
     using RenderObjectsVector = std::vector<std::unique_ptr<VulkanRenderObject>>;
+    using RenderItemsVector   = std::vector<VulkanRenderItem>;
 
     VulkanRenderObjectManager()  = default;
     ~VulkanRenderObjectManager() = default;
@@ -25,32 +25,25 @@ public:
 
     [[nodiscard]] Expected<void> create(const VulkanRenderObjectCreateContext& context) noexcept;
 
+    void destroy() noexcept;
+
     [[nodiscard]] Expected<void> createRenderObjects(const ObjectManager::ObjectsVector& objects);
 
-    void destroy() noexcept;
+    void rebuildRenderItems();
 
     void updateObjects(std::uint32_t frameIndex) const;
 
     [[nodiscard]] const RenderObjectsVector& getRenderObjects() const noexcept { return _renderObjects; }
 
-    [[nodiscard]] static VulkanDescriptorScheme getDescriptorScheme() noexcept {
-        static const VulkanDescriptorScheme scheme = {
-            {0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex}
-        };
-        return scheme;
-    }
+    [[nodiscard]] const RenderItemsVector& getRenderItems() const noexcept { return _renderItems; }
 
-    [[nodiscard]] const VulkanDescriptorManager& getDescriptorManager() const noexcept { return _descriptorManager; }
-
-    [[nodiscard]] const VulkanDescriptorSets* getDescriptorSets() const noexcept { return _objectDescriptors; }
+    [[nodiscard]] const VulkanStorageBuffer* getObjectBuffer() const noexcept { return _objectBuffer; }
 
 private:
     VulkanRenderObjectCreateContext _context{};
 
     RenderObjectsVector _renderObjects{};
+    RenderItemsVector   _renderItems{};
 
-    VulkanDescriptorManager _descriptorManager{};
-
-    VulkanStorageBuffer*  _objectBuffer      = nullptr;
-    VulkanDescriptorSets* _objectDescriptors = nullptr;
+    VulkanStorageBuffer* _objectBuffer = nullptr;
 };

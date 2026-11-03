@@ -1,13 +1,11 @@
 #include "VulkanRenderer.h"
 
-#include <iostream>
-
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 #include "graphics/vulkan/rendergraph/VulkanRenderGraphBuilder.h"
 
 #include "graphics/vulkan/rendergraph/VulkanFrameContext.h"
-#include "rendergraph/VulkanRecordContext.h"
+#include "graphics/vulkan/rendergraph/record/VulkanGraphicsRecordContext.h"
 
 VulkanRenderer::VulkanRenderer(const std::uint32_t framesInFlight) : _framesInFlight(framesInFlight) {}
 
@@ -47,15 +45,17 @@ Expected<void> VulkanRenderer::init(
         VulkanRenderObjectCreateContext{
             &objectManager,
             &assetManager,
-            &device,
             &meshManager,
             &materialManager,
-            &storageBufferManager,
-            _framesInFlight
+            &storageBufferManager
         }
     ));
 
-    TRY(createVulkanEntity(&frameCuller, device, storageBufferManager, _framesInFlight));
+    TRY(
+        createVulkanEntity(
+            &drawBatchBuilder, device, storageBufferManager, renderObjectManager.getObjectBuffer(), _framesInFlight
+        )
+    );
 
     // Pipeline creation
     TRY(createVulkanEntity(&shaderProgramManager, logicalDevice));
@@ -73,11 +73,27 @@ Expected<void> VulkanRenderer::init(
             renderResources,
             materialManager,
             renderObjectManager,
-            frameCuller,
+            drawBatchBuilder,
             shaderProgramManager,
             pipelineManager
         }
     );
+
+    const auto recordMeshBatches = [](VulkanGraphicsRecordContext& ctx) -> Expected<void> {
+        ctx.bindPipeline(); ctx.bindGlobalDescriptors(); ctx.bindPassDescriptors();
+        ctx.setViewport(); ctx.setScissor();
+        ctx.drawBatches();
+        return {};
+    };
+
+    const auto recordFullscreen = [](const VulkanGraphicsRecordContext& ctx) -> Expected<void> {
+        ctx.bindPipeline(); ctx.bindGlobalDescriptors(); ctx.bindPassDescriptors();
+        ctx.setViewport(); ctx.setScissor();
+        ctx.bindGeometryBuffers();
+        ctx.draw(3);
+        return {};
+    };
+
 
     renderGraphBuilder
         .registerResource({"depthBuffer", vk::Format::eD32Sfloat})
@@ -90,53 +106,30 @@ Expected<void> VulkanRenderer::init(
         .addPass({
             .base = {
                 .name = "Gbuffer_Pass", .programPath = "mesh_render",
-                .writes = {{"albedoBuffer"}, {"normalBuffer"}},
-                .record = [](const VulkanRecordContext& ctx) -> Expected<void> {
-                    ctx.bindPipeline();
-                    ctx.bindGlobalDescriptors();
-                    ctx.bindPassDescriptors();
-                    ctx.setViewport();
-                    ctx.setScissor();
-                    std::cout << "meow gbuffers" << std::endl;
-                    return {};
-                }
+                .writes = {{"albedoBuffer"}, {"normalBuffer"}}
             },
+            .record = recordMeshBatches,
             .cullMode = VulkanGraphicsPassCullMode::Frustum,
             .depthAttachmentDescriptor = {"depthBuffer"},
+            .drawFlags = DrawFlags::Bit::Opaque,
             .countPrimitives = true
         })
         .addPass({
             .base = {
                 .name = "Composite0_Pass", .programPath = "composite_0",
                 .reads  = {{"depthBuffer"}, {"albedoBuffer"}, {"normalBuffer"}},
-                .writes = {{"compositeBuffer"}},
-                .record = [](const VulkanRecordContext& ctx) -> Expected<void> {
-                    ctx.bindPipeline();
-                    ctx.bindGlobalDescriptors();
-                    ctx.bindPassDescriptors();
-                    ctx.setViewport();
-                    ctx.setScissor();
-                    std::cout << "meow composite 0" << std::endl;
-                    return {};
-                }
+                .writes = {{"compositeBuffer"}}
             },
+            .record = recordFullscreen,
             .pipelineState = { .cullMode = vk::CullModeFlagBits::eNone, .meshVertexInput = false }
         })
         .addPass({
             .base = {
                 .name = "Composite1_Pass", .programPath = "composite_1",
                 .reads  = {{"depthBuffer"}, {"albedoBuffer"}, {"normalBuffer"}, {"debugBuffer"}, {"compositeBuffer"}},
-                .writes = {{"swapchainOutput"}},
-                .record = [](const VulkanRecordContext& ctx) -> Expected<void> {
-                    ctx.bindPipeline();
-                    ctx.bindGlobalDescriptors();
-                    ctx.bindPassDescriptors();
-                    ctx.setViewport();
-                    ctx.setScissor();
-                    std::cout << "meow composite 1" << std::endl;
-                    return {};
-                }
+                .writes = {{"swapchainOutput"}}
             },
+            .record = recordFullscreen,
             .pipelineState = { .cullMode = vk::CullModeFlagBits::eNone, .meshVertexInput = false }
         });
 
@@ -174,21 +167,31 @@ Expected<void> VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
     // Render objects update
     renderObjectManager.updateObjects(currentFrame);
     // Frustum culling
-    TRY(frameCuller.cull(renderObjectManager, uniforms));
+    frameCuller.cull(renderObjectManager, uniforms);
+
+    // Build draw commands
+    TRY(
+        drawBatchBuilder.build(
+            renderGraph.getPasses(),
+            renderObjectManager.getRenderItems(),
+            frameCuller.getVisibleItems(),
+            currentFrame
+        )
+    );
 
     // Frame rendering context
     const VulkanFrameContext frameContext{
         .extent     = context.getSwapchain().getExtent(),
         .frameIndex = currentFrame,
         .globalSets = {
-            frameResources.getDescriptorSets()->getSet(currentFrame),
-            renderObjectManager.getDescriptorSets()->getSet(currentFrame),
-            frameCuller.getDescriptorSets()->getSet(currentFrame),
+            frameResources     .getDescriptorSets()->getSet(currentFrame),
+            drawBatchBuilder   .getDescriptorSets()->getSet(currentFrame)
         },
-        .vertexBuffer   = meshManager.getVertexBuffer().handle(),
-        .indexBuffer    = meshManager.getIndexBuffer().handle(),
-        .queryPool      = context.getDevice().getQueryPool(),
-        .dispatchLoader = &context.getDevice().getDispatchLoader()
+        .vertexBuffer     = meshManager.getVertexBuffer().handle(),
+        .indexBuffer      = meshManager.getIndexBuffer().handle(),
+        .queryPool        = context.getDevice().getQueryPool(),
+        .dispatchLoader   = &context.getDevice().getDispatchLoader(),
+        .drawBatchBuilder = &drawBatchBuilder
     };
 
     // Command buffer record and submit

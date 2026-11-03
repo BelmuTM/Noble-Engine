@@ -36,11 +36,10 @@ public:
     [[nodiscard]] std::uint32_t getFrameIndex() const noexcept { return _frameIndex; }
     [[nodiscard]] std::uint32_t getImageIndex() const noexcept { return _imageIndex; }
 
-    [[nodiscard]] static const VulkanDescriptorScheme& getDescriptorScheme() noexcept {
-        static const VulkanDescriptorScheme scheme = {
-            {0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eAllGraphics}
+    [[nodiscard]] static VulkanDescriptorScheme getDescriptorScheme() noexcept {
+        return {
+            {.binding = 0, .type = vk::DescriptorType::eUniformBuffer, .stageFlags = vk::ShaderStageFlagBits::eAllGraphics}
         };
-        return scheme;
     }
 
     [[nodiscard]] const VulkanDescriptorManager& getDescriptorManager() const noexcept { return _descriptorManager; }

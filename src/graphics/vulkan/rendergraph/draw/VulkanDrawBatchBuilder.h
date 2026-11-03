@@ -1,21 +1,21 @@
 #pragma once
 
-#include "VulkanDrawBatch.h"
-#include "VulkanInstanceHandle.h"
+#include "graphics/vulkan/rendergraph/draw/VulkanDrawCommand.h"
+#include "graphics/vulkan/rendergraph/draw/VulkanRenderItem.h"
+#include "graphics/vulkan/rendergraph/nodes/VulkanGraphicsPass.h"
 
-#include "VulkanRenderItem.h"
+#include "graphics/vulkan/rendergraph/resources/VulkanRenderResourceManager.h"
 
-#include <unordered_map>
+#include "graphics/vulkan/resources/meshes/VulkanRenderMesh.h"
+#include "graphics/vulkan/resources/ssbo/VulkanStorageBufferManager.h"
+
+#include <span>
 #include <vector>
-
-struct VulkanBuiltDrawBatch {
-    VulkanDrawBatch batch{};
-    std::uint32_t   firstInstance = 0;
-    std::uint32_t   instanceCount = 0;
-};
 
 class VulkanDrawBatchBuilder {
 public:
+    static constexpr std::uint32_t MAX_INSTANCES = 5'000'000;
+
     VulkanDrawBatchBuilder()  = default;
     ~VulkanDrawBatchBuilder() = default;
 
@@ -25,16 +25,51 @@ public:
     VulkanDrawBatchBuilder(VulkanDrawBatchBuilder&&)            = delete;
     VulkanDrawBatchBuilder& operator=(VulkanDrawBatchBuilder&&) = delete;
 
-    void build(const std::vector<VulkanRenderItem>& renderItems, std::uint32_t indirectionOffset);
+    [[nodiscard]] Expected<void> create(
+        const VulkanDevice&         device,
+        VulkanStorageBufferManager& storageBufferManager,
+        const VulkanStorageBuffer*  objectBuffer,
+        std::uint32_t               framesInFlight
+    ) noexcept;
 
-    [[nodiscard]] std::vector<VulkanBuiltDrawBatch>& getBuiltDrawBatches() noexcept { return _builtDrawBatches; }
+    void destroy() noexcept;
 
-    [[nodiscard]] const std::vector<std::uint32_t>& getIndirectionData() const noexcept { return _indirectionData; }
+    [[nodiscard]] Expected<void> build(
+        std::span<const std::unique_ptr<VulkanGraphicsPass>> passes,
+        std::span<const VulkanRenderItem>                    allItems,
+        std::span<const VulkanRenderItem>                    visibleItems,
+        std::uint32_t                                        frameIndex
+   );
+
+    [[nodiscard]] const VulkanDrawCommandsVector& getDrawBatch(const VulkanGraphicsPass& pass) const {
+        return _drawBatches[pass.base().getIndex()];
+    }
+
+    [[nodiscard]] static VulkanDescriptorScheme getDescriptorScheme() noexcept {
+        return {
+            {.binding = 0, .type = vk::DescriptorType::eStorageBuffer, .stageFlags = vk::ShaderStageFlagBits::eVertex},
+            {.binding = 1, .type = vk::DescriptorType::eStorageBuffer, .stageFlags = vk::ShaderStageFlagBits::eVertex}
+        };
+    }
+
+    [[nodiscard]] const VulkanDescriptorManager& getDescriptorManager() const noexcept { return _descriptorManager; }
+
+    [[nodiscard]] const VulkanDescriptorSets* getDescriptorSets() const noexcept { return _descriptors; }
 
 private:
-    std::unordered_map<VulkanDrawBatch, std::vector<VulkanInstanceHandle>> _drawBatchMap{};
+    struct Entry {
+        std::uint64_t key = 0;
+        std::uint32_t objectIndex = 0;
 
-    std::vector<VulkanBuiltDrawBatch> _builtDrawBatches{};
+        VulkanRenderMesh renderMesh{};
+    };
 
-    std::vector<std::uint32_t> _indirectionData{};
+    std::vector<VulkanDrawCommandsVector> _drawBatches{};
+    std::vector<Entry>                    _entries{};
+    std::vector<std::uint32_t>            _indirection{};
+
+    VulkanDescriptorManager _descriptorManager{};
+    VulkanDescriptorSets*   _descriptors = nullptr;
+
+    VulkanStorageBuffer* _indirectionBuffer = nullptr;
 };

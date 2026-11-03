@@ -8,8 +8,6 @@
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorSets.h"
 
-class VulkanRecordContext;
-
 #include <memory>
 #include <ranges>
 
@@ -30,8 +28,6 @@ struct VulkanPassDescriptor {
 
     std::vector<VulkanGraphicsPassAttachmentDescriptor> reads{};
     std::vector<VulkanGraphicsPassAttachmentDescriptor> writes{};
-
-    std::function<Expected<void>(VulkanRecordContext&)> record;
 };
 
 // Mutable, describes the pass state (data subject to hot reloading)
@@ -52,6 +48,8 @@ public:
     void destroy() const noexcept;
 
     // Getters
+
+    [[nodiscard]] std::uint32_t getIndex() const noexcept { return _index; }
 
     [[nodiscard]] const VulkanPassDescriptor& getPassDescriptor() const noexcept { return _passDescriptor; }
 
@@ -78,6 +76,8 @@ public:
     [[nodiscard]] const TransitionsVector& getExitTransitions() const noexcept { return _exitTransitions; }
 
     // Setters
+
+    void setIndex(const std::uint32_t index) noexcept { _index = index; }
 
     VulkanPass& setShaderProgram(VulkanShaderProgram* shaderProgram) noexcept {
         _shaderProgram = shaderProgram;
@@ -119,6 +119,8 @@ public:
 
 private:
     const VulkanPassDescriptor _passDescriptor;
+
+    std::uint32_t _index = 0;
 
     VulkanShaderProgram* _shaderProgram = nullptr;
 

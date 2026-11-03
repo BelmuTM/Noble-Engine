@@ -5,32 +5,20 @@
 Expected<void> VulkanRenderObjectManager::create(const VulkanRenderObjectCreateContext& context) noexcept {
     _context = context;
 
-    // Create descriptor manager
-    TRY(_descriptorManager.create(
-        context.device->getLogicalDevice(), getDescriptorScheme(), context.framesInFlight, MAX_RENDER_OBJECTS
-    ));
-
     // Create object buffer
-    TRY_ASSIGN(
-        _objectBuffer,
-        context.storageBufferManager->allocateBuffer(MAX_RENDER_OBJECTS * sizeof(ObjectDataGPU))
-    );
-
-    TRY(_descriptorManager.allocate(_objectDescriptors));
-
-    _objectDescriptors->updatePerFrameSSBODescriptorSets(*_objectBuffer, 0);
+    TRY_ASSIGN(_objectBuffer, context.storageBufferManager->allocateBuffer(MAX_RENDER_OBJECTS * sizeof(ObjectDataGPU)));
 
     // Load textures
 
     Logger::debug("Loading object textures");
 
-    auto startTime = std::chrono::high_resolution_clock::now();
+    const auto startTime = std::chrono::high_resolution_clock::now();
 
     TRY(context.materialManager->loadTextures(context.assetManager->getTextures()));
 
-    auto endTime = std::chrono::high_resolution_clock::now();
+    const auto endTime = std::chrono::high_resolution_clock::now();
 
-    auto loadDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+    const auto loadDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
 
     Logger::debug("Loaded object textures in " + std::to_string(loadDuration) + " ms");
 
@@ -41,22 +29,18 @@ Expected<void> VulkanRenderObjectManager::create(const VulkanRenderObjectCreateC
     return {};
 }
 
-void VulkanRenderObjectManager::destroy() noexcept {
-    _descriptorManager.destroy();
-}
+void VulkanRenderObjectManager::destroy() noexcept {}
 
 Expected<void> VulkanRenderObjectManager::createRenderObjects(const ObjectManager::ObjectsVector& objects) {
+
     _renderObjects.reserve(objects.size());
 
-    std::uint32_t meshCount = 0;
-
     for (std::uint32_t i = 0; i < objects.size(); i++) {
-        meshCount += objects[i]->getModel().meshes.size();
 
-        if (meshCount >= MAX_RENDER_OBJECTS) {
+        if (i >= MAX_RENDER_OBJECTS) {
             Logger::warning(
-                "Reached descriptor pool capacity (" + std::to_string(MAX_RENDER_OBJECTS) +
-                "), remaining submeshes for object \"" + objects[i]->getModel().name + "\" will be skipped"
+                "Reached object buffer capacity (" + std::to_string(MAX_RENDER_OBJECTS) +
+                "), skipping \"" + objects[i]->getModel().name + "\" and all following objects"
             );
             break;
         }
@@ -66,7 +50,19 @@ Expected<void> VulkanRenderObjectManager::createRenderObjects(const ObjectManage
         TRY(_renderObjects.back()->create(i, objects[i].get(), _context.meshManager, _context.materialManager));
     }
 
+    rebuildRenderItems();
+
     return {};
+}
+
+void VulkanRenderObjectManager::rebuildRenderItems() {
+    _renderItems.clear();
+
+    for (const auto& renderObject : _renderObjects) {
+        for (const VulkanRenderMesh& renderMesh : renderObject->meshes) {
+            _renderItems.emplace_back(renderMesh, renderObject->instanceHandle);
+        }
+    }
 }
 
 void VulkanRenderObjectManager::updateObjects(const std::uint32_t frameIndex) const {

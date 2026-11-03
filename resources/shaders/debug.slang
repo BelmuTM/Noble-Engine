@@ -16,7 +16,7 @@ struct ObjectData {
 };
 
 [[vk::binding(0, 1)]] StructuredBuffer<ObjectData> objects;
-[[vk::binding(0, 2)]] StructuredBuffer<uint> objectIndices;
+[[vk::binding(1, 1)]] StructuredBuffer<uint> objectIndices;
 
 struct VSOutput {
     float4 position : SV_Position;

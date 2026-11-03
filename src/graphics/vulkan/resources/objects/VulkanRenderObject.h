@@ -2,8 +2,6 @@
 
 #include "core/debug/ErrorHandling.h"
 
-#include "graphics/vulkan/common/VulkanDebugger.h"
-
 #include "graphics/vulkan/resources/meshes/VulkanRenderMesh.h"
 
 #include "graphics/vulkan/resources/materials/VulkanMaterialManager.h"

@@ -26,6 +26,9 @@ public:
 
     void bindDescriptorSets() const;
 
+    [[nodiscard]] std::uint32_t getId() const noexcept { return _id; }
+    void setId(const std::uint32_t id) noexcept { _id = id; }
+
     [[nodiscard]] const std::string& getName() const noexcept { return _sourceMaterial.name; }
 
     [[nodiscard]] VulkanImage* getTexture(const TextureType type) const {
@@ -47,6 +50,8 @@ private:
     );
 
     Expected<void> loadTextures(VulkanImageManager* imageManager);
+
+    std::uint32_t _id = 0;
 
     Material _sourceMaterial{};
 

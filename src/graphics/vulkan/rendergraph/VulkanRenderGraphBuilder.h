@@ -12,7 +12,7 @@
 #include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 
-#include "graphics/vulkan/rendergraph/draw/VulkanFrameCuller.h"
+#include "graphics/vulkan/rendergraph/draw/VulkanDrawBatchBuilder.h"
 
 struct VulkanRenderGraphBuilderContext {
     VulkanRenderGraph&          renderGraph;
@@ -30,7 +30,7 @@ struct VulkanRenderGraphBuilderContext {
     VulkanMaterialManager&      materialManager;
     VulkanRenderObjectManager&  renderObjectManager;
 
-    VulkanFrameCuller&          frameCuller;
+    VulkanDrawBatchBuilder& drawBatchBuilder;
 
     VulkanShaderProgramManager&    shaderProgramManager;
     VulkanGraphicsPipelineManager& pipelineManager;

@@ -4,6 +4,8 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
+class VulkanDrawBatchBuilder;
+
 struct VulkanFrameContext {
     vk::Extent2D extent{};
 
@@ -17,4 +19,6 @@ struct VulkanFrameContext {
     vk::QueryPool queryPool{};
 
     const vk::detail::DispatchLoaderDynamic* dispatchLoader = nullptr;
+
+    const VulkanDrawBatchBuilder* drawBatchBuilder = nullptr;
 };

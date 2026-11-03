@@ -12,6 +12,7 @@
 
 #include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/images/VulkanImageManager.h"
+#include "graphics/vulkan/resources/materials/VulkanMaterialManager.h"
 #include "graphics/vulkan/resources/meshes/VulkanMeshManager.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
 
@@ -22,7 +23,9 @@
 #include "graphics/vulkan/pipeline/shaders/VulkanShaderProgramManager.h"
 
 #include "graphics/vulkan/rendergraph/VulkanRenderGraph.h"
+#include "graphics/vulkan/rendergraph/draw/VulkanDrawBatchBuilder.h"
 #include "graphics/vulkan/rendergraph/draw/VulkanFrameCuller.h"
+#include "graphics/vulkan/rendergraph/resources/VulkanRenderResourceManager.h"
 
 class VulkanRenderer final : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {
 public:
@@ -51,10 +54,10 @@ private:
 
     VulkanContext context{};
 
-    VulkanSwapchainManager     swapchainManager{};
-    VulkanCommandManager       commandManager{};
-    VulkanMeshManager          meshManager{};
-    VulkanImageManager         imageManager{};
+    VulkanSwapchainManager swapchainManager{};
+    VulkanCommandManager   commandManager{};
+    VulkanMeshManager      meshManager{};
+    VulkanImageManager     imageManager{};
 
     VulkanStorageBufferManager storageBufferManager{};
     VulkanUniformBufferManager uniformBufferManager{};
@@ -62,10 +65,11 @@ private:
     VulkanFrameResources        frameResources{};
     VulkanRenderResourceManager renderResources{};
 
-    VulkanMaterialManager      materialManager{};
-    VulkanRenderObjectManager  renderObjectManager{};
+    VulkanMaterialManager     materialManager{};
+    VulkanRenderObjectManager renderObjectManager{};
 
-    VulkanFrameCuller          frameCuller{};
+    VulkanFrameCuller      frameCuller{};
+    VulkanDrawBatchBuilder drawBatchBuilder{};
 
     VulkanShaderProgramManager    shaderProgramManager{};
     VulkanGraphicsPipelineManager pipelineManager{};

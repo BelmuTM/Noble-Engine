@@ -1,9 +1,12 @@
 #include "Math.h"
 
 #include <array>
+#include <cfloat>
+#include <cstdint>
 
-Math::AABB Math::AABB::transform(const glm::mat4& m) const {
+Math::AABB Math::AABB::transform(const glm::mat4& m) const noexcept {
     AABB newAABB{};
+
     for (const auto& corner : getCorners()) {
         glm::vec4 transformedCorner = m * glm::vec4(corner, 1.0f);
 
@@ -14,7 +17,7 @@ Math::AABB Math::AABB::transform(const glm::mat4& m) const {
     return newAABB;
 }
 
-std::array<glm::vec3, 8> Math::AABB::getCorners() const {
+std::array<glm::vec3, 8> Math::AABB::getCorners() const noexcept {
     return {
         glm::vec3(minBound.x, minBound.y, minBound.z), // 0: left-bottom-back
         glm::vec3(maxBound.x, minBound.y, minBound.z), // 1: right-bottom-back
@@ -27,7 +30,7 @@ std::array<glm::vec3, 8> Math::AABB::getCorners() const {
     };
 }
 
-std::array<std::uint32_t, 24> Math::AABB::getLineIndices(const std::uint32_t startIndex) {
+std::array<std::uint32_t, 24> Math::AABB::getLineIndices(const std::uint32_t startIndex) noexcept {
     return {
         startIndex + 0, startIndex + 1,  // back-bottom
         startIndex + 1, startIndex + 2,  // back-right
@@ -44,8 +47,4 @@ std::array<std::uint32_t, 24> Math::AABB::getLineIndices(const std::uint32_t sta
         startIndex + 2, startIndex + 6,  // right-top edge
         startIndex + 3, startIndex + 7   // left-top edge
     };
-}
-
-bool Math::within(const float value, const float minBound, const float maxBound) {
-    return value >= minBound && value <= maxBound;
 }

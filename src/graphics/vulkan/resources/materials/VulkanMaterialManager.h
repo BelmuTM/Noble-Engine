@@ -32,13 +32,22 @@ public:
 
     [[nodiscard]] Expected<void> loadTextures(const AssetManager::TexturesMap& textures) const;
 
-    [[nodiscard]] static VulkanDescriptorScheme getDescriptorScheme() noexcept {
-        VulkanDescriptorScheme scheme{};
+    [[nodiscard]] static const VulkanDescriptorScheme& getDescriptorScheme() noexcept {
 
-        // Include all possible texture types in the descriptor scheme
-        for (std::size_t i = 0; i < static_cast<std::size_t>(TextureType::Count); i++) {
-            scheme.emplace_back(i, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment);
-        }
+        static const VulkanDescriptorScheme scheme = [] {
+            VulkanDescriptorScheme result;
+
+            // Include all possible texture types in the descriptor scheme
+            for (std::size_t i = 0; i < static_cast<std::size_t>(TextureType::Count); i++) {
+                result.emplace_back(
+                    i,
+                    vk::DescriptorType::eCombinedImageSampler,
+                    vk::ShaderStageFlagBits::eFragment
+                );
+            }
+
+            return result;
+        }();
 
         return scheme;
     }
@@ -51,4 +60,6 @@ private:
     VulkanDescriptorManager _descriptorManager{};
 
     std::unordered_map<Material, std::unique_ptr<VulkanMaterial>, MaterialHash> _materials;
+
+    std::uint32_t _nextMaterialId = 0;
 };

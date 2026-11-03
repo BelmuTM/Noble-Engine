@@ -10,12 +10,11 @@ public:
         glm::vec3 minBound = { FLT_MAX,  FLT_MAX,  FLT_MAX};
         glm::vec3 maxBound = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
 
-        [[nodiscard]] AABB transform(const glm::mat4& m) const;
+        [[nodiscard]] AABB transform(const glm::mat4& m) const noexcept;
 
-        [[nodiscard]] std::array<glm::vec3, 8> getCorners() const;
+        [[nodiscard]] std::array<glm::vec3, 8> getCorners() const noexcept;
 
-        static std::array<std::uint32_t, 24> getLineIndices(std::uint32_t startIndex = 0);
-
+        [[nodiscard]] static std::array<std::uint32_t, 24> getLineIndices(std::uint32_t startIndex = 0) noexcept;
     };
 
     struct Plane {
@@ -23,5 +22,7 @@ public:
         float d;
     };
 
-    [[nodiscard]] static bool within(float value, float minBound, float maxBound);
+    [[nodiscard]] static constexpr bool within(const float value, const float minBound, const float maxBound) noexcept {
+        return value >= minBound && value <= maxBound;
+    }
 };

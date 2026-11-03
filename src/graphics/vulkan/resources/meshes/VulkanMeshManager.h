@@ -39,9 +39,7 @@ private:
     void queryVertexBufferSize();
     void queryIndexBufferSize();
 
-    void uploadMeshData(const VulkanBuffer& buffer);
-
-    void assignBuffersToMeshes() const;
+    void uploadMeshData(const VulkanBuffer& buffer) const;
 
     Expected<void> createMeshStagingBuffer();
 
@@ -56,9 +54,6 @@ private:
     VulkanBuffer _indexBuffer{};
 
     std::vector<std::unique_ptr<VulkanMesh>> _meshes{};
-
-    std::size_t _currentVertexOffset = 0;
-    std::size_t _currentIndexOffset  = 0;
 
     std::size_t _vertexBufferSize = 0;
     std::size_t _indexBufferSize  = 0;

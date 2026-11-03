@@ -1,10 +1,11 @@
 #include "VulkanRenderGraph.h"
 
+#include "draw/VulkanDrawBatchBuilder.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 #include "graphics/vulkan/pipeline/graphics/VulkanGraphicsPipeline.h"
 
-#include "graphics/vulkan/rendergraph/VulkanRecordContext.h"
+#include "graphics/vulkan/rendergraph/record/VulkanGraphicsRecordContext.h"
 
 Expected<void> VulkanRenderGraph::create() noexcept {
     return {};
@@ -32,17 +33,17 @@ Expected<void> VulkanRenderGraph::execute(
 
 namespace {
 
-    Expected<void> executePassTransitions(
-        const vk::CommandBuffer commandBuffer, const VulkanPass::TransitionsVector& transitions
-    ) {
-        for (const auto& [resource, targetLayout] : transitions) {
-            if (VulkanImage* resourceImage = resource->resolveImage()) {
-                TRY(resourceImage->transitionLayout(commandBuffer, targetLayout));
-            }
+Expected<void> executePassTransitions(
+    const vk::CommandBuffer commandBuffer, const VulkanPass::TransitionsVector& transitions
+) {
+    for (const auto& [resource, targetLayout] : transitions) {
+        if (VulkanImage* resourceImage = resource->resolveImage()) {
+            TRY(resourceImage->transitionLayout(commandBuffer, targetLayout));
         }
-
-        return {};
     }
+
+    return {};
+}
 
 }
 
@@ -56,10 +57,11 @@ Expected<void> VulkanRenderGraph::executePass(
         pass.base().getDescriptorSets()
     };
 
-    VulkanRecordContext recordContext(
+    VulkanGraphicsRecordContext recordContext(
         commandBuffer,
         frameContext,
-        passBindings
+        passBindings,
+        frameContext.drawBatchBuilder->getDrawBatch(pass)
     );
 
     // Transition resources for current pass
@@ -96,7 +98,7 @@ Expected<void> VulkanRenderGraph::executePass(
 
     if (passDescriptor.countPrimitives) commandBuffer.beginQuery(frameContext.queryPool, 0, {});
 
-    TRY(passDescriptor.base.record(recordContext));
+    TRY(passDescriptor.record(recordContext));
 
     if (passDescriptor.countPrimitives) commandBuffer.endQuery(frameContext.queryPool, 0);
 

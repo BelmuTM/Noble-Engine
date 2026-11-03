@@ -1,19 +1,27 @@
 #pragma once
 
+#include "core/render/DrawFlags.h"
+
 #include "graphics/vulkan/rendergraph/nodes/VulkanPass.h"
 
 #include "graphics/vulkan/pipeline/graphics/VulkanGraphicsPipelineState.h"
+
+class VulkanGraphicsRecordContext;
 
 enum class VulkanGraphicsPassCullMode : std::uint8_t { None, Frustum };
 
 struct VulkanGraphicsPassDescriptor {
     VulkanPassDescriptor base;
 
+    std::function<Expected<void>(VulkanGraphicsRecordContext&)> record;
+
     VulkanGraphicsPipelineState pipelineState{};
 
     VulkanGraphicsPassCullMode cullMode = VulkanGraphicsPassCullMode::None;
 
     VulkanGraphicsPassAttachmentDescriptor depthAttachmentDescriptor{};
+
+    DrawFlags drawFlags{};
 
     bool countPrimitives = false;
 };

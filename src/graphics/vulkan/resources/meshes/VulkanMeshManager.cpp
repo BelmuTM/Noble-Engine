@@ -20,6 +20,7 @@ void VulkanMeshManager::destroy() noexcept {
 }
 
 VulkanMesh* VulkanMeshManager::allocateMesh(const Mesh& meshData) {
+
     if (const auto cachedMesh = _meshCache.find(meshData); cachedMesh != _meshCache.end()) {
         return cachedMesh->second;
     }
@@ -41,8 +42,6 @@ Expected<void> VulkanMeshManager::fillBuffers() {
     TRY(createVertexBuffer());
     TRY(createIndexBuffer());
 
-    assignBuffersToMeshes();
-
     _stagingBuffer.destroy();
 
     return {};
@@ -50,48 +49,45 @@ Expected<void> VulkanMeshManager::fillBuffers() {
 
 void VulkanMeshManager::queryVertexBufferSize() {
     for (const auto& mesh : _meshes) {
-        if (!mesh || mesh->isBufferless()) continue;
         _vertexBufferSize += mesh->getVerticesByteSize();
     }
 }
 
 void VulkanMeshManager::queryIndexBufferSize() {
     for (const auto& mesh : _meshes) {
-        if (!mesh || mesh->isBufferless()) continue;
         _indexBufferSize += mesh->getIndicesByteSize();
     }
 }
 
-void VulkanMeshManager::uploadMeshData(const VulkanBuffer& buffer) {
-    _currentIndexOffset = _vertexBufferSize;
+void VulkanMeshManager::uploadMeshData(const VulkanBuffer& buffer) const {
+
+    std::size_t vertexByteOffset = 0;
+    std::size_t indexByteOffset  = _vertexBufferSize;
+
+    std::int32_t  vertexOffset = 0;
+    std::uint32_t firstIndex   = 0;
 
     for (const auto& mesh : _meshes) {
-        if (mesh->isBufferless()) continue;
 
         const std::size_t verticesSize = mesh->getVerticesByteSize();
         const std::size_t indicesSize  = mesh->getIndicesByteSize();
 
-        mesh->setVertexOffset(_currentVertexOffset);
-        mesh->setIndexOffset(_currentIndexOffset - _vertexBufferSize);
+        mesh->setVertexOffset(vertexOffset);
+        mesh->setFirstIndex(firstIndex);
 
-        buffer.updateMemory(mesh->getVertices().data(), verticesSize, _currentVertexOffset);
-        buffer.updateMemory(mesh->getIndices().data() , indicesSize , _currentIndexOffset );
+        buffer.updateMemory(mesh->getVertices().data(), verticesSize, vertexByteOffset);
+        buffer.updateMemory(mesh->getIndices().data() , indicesSize , indexByteOffset);
 
-        _currentVertexOffset += verticesSize;
-        _currentIndexOffset  += indicesSize;
-    }
-}
+        vertexByteOffset += verticesSize;
+        indexByteOffset  += indicesSize;
 
-void VulkanMeshManager::assignBuffersToMeshes() const {
-    for (const auto& mesh : _meshes) {
-        if (!mesh || mesh->isBufferless()) continue;
-
-        mesh->setVertexBuffer(&_vertexBuffer);
-        mesh->setIndexBuffer(&_indexBuffer);
+        vertexOffset += static_cast<std::int32_t>(mesh->getVertices().size());
+        firstIndex   += static_cast<std::uint32_t>(mesh->getIndices().size());
     }
 }
 
 Expected<void> VulkanMeshManager::createMeshStagingBuffer() {
+
     const vk::DeviceSize stagingBufferSize = _vertexBufferSize + _indexBufferSize;
 
     TRY(_stagingBuffer.create(
@@ -111,6 +107,7 @@ Expected<void> VulkanMeshManager::createMeshStagingBuffer() {
 }
 
 Expected<void> VulkanMeshManager::createVertexBuffer() {
+
     TRY(_vertexBuffer.create(
         _vertexBufferSize,
         vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
@@ -124,6 +121,7 @@ Expected<void> VulkanMeshManager::createVertexBuffer() {
 }
 
 Expected<void> VulkanMeshManager::createIndexBuffer() {
+
     TRY(_indexBuffer.create(
         _indexBufferSize,
         vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,

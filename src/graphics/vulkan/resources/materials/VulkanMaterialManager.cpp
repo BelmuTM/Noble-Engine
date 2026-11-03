@@ -28,10 +28,13 @@ Expected<VulkanMaterial*> VulkanMaterialManager::getOrCreateMaterial(const Mater
     auto [cachedMaterial, inserted] = _materials.emplace(sourceMaterial, std::make_unique<VulkanMaterial>());
 
     if (inserted) {
+
         TRY_CATCH(
             cachedMaterial->second->create(sourceMaterial, _imageManager, _descriptorManager),
             _materials.erase(cachedMaterial)
         );
+
+        cachedMaterial->second->setId(_nextMaterialId++);
     }
 
     return Expected(cachedMaterial->second.get());

@@ -35,13 +35,18 @@ Expected<void> VulkanRenderGraphBuilder::build() {
 }
 
 Expected<VulkanGraphicsPass*> VulkanRenderGraphBuilder::allocatePass(const VulkanGraphicsPassDescriptor& descriptor) const {
+
     _context.renderGraph.addPass(std::make_unique<VulkanGraphicsPass>(descriptor));
 
-    return Expected(_context.renderGraph.getPasses().back().get());
+    VulkanGraphicsPass* passPtr = _context.renderGraph.getPasses().back().get();
+    passPtr->base().setIndex(_context.renderGraph.getPasses().size() - 1);
+
+    return Expected(passPtr);
 }
 
 
 Expected<void> VulkanRenderGraphBuilder::allocateResources() const {
+
     for (const auto& resourceDescriptor : _resourceDescriptors) {
 
         switch (resourceDescriptor.type) {
@@ -71,6 +76,7 @@ Expected<void> VulkanRenderGraphBuilder::allocateResources() const {
 }
 
 Expected<void> VulkanRenderGraphBuilder::resolveAttachments(VulkanGraphicsPass* pass) const {
+
     const VulkanGraphicsPassDescriptor& passDescriptor = pass->getGraphicsPassDescriptor();
 
     // Reads
@@ -127,16 +133,14 @@ Expected<void> VulkanRenderGraphBuilder::allocateDescriptors(VulkanPass* pass) c
 }
 
 Expected<void> VulkanRenderGraphBuilder::resolveDescriptorLayouts(VulkanGraphicsPass* pass) const {
+
     auto& layouts = pass->base().getPipelineLayoutDescriptor().descriptorLayouts;
     layouts.resize(BindingSlots::MaterialData + 1);
 
-    layouts[BindingSlots::FrameData]    = _context.frameResources.getDescriptorManager().getLayout();
+    layouts[BindingSlots::FrameData]  = _context.frameResources.getDescriptorManager().getLayout();
+    layouts[BindingSlots::ObjectData] = _context.drawBatchBuilder.getDescriptorManager().getLayout();
 
-    layouts[BindingSlots::ObjectData]   = _context.renderObjectManager.getDescriptorManager().getLayout();
-
-    layouts[BindingSlots::CullingData]  = _context.frameCuller.getDescriptorManager().getLayout();
-
-    layouts[BindingSlots::PassData]     = pass->base().getPassDescriptor().reads.empty()
+    layouts[BindingSlots::PassData] = pass->base().getPassDescriptor().reads.empty()
         ? _emptyDescriptorLayout
         : pass->base().getDescriptorManager()->getLayout();
 
@@ -146,6 +150,7 @@ Expected<void> VulkanRenderGraphBuilder::resolveDescriptorLayouts(VulkanGraphics
 }
 
 Expected<void> VulkanRenderGraphBuilder::resolvePushConstantRanges(VulkanGraphicsPass* pass) {
+
     for (const auto& pushConstant : pass->base().getShaderProgram()->getPushConstants()) {
         pass->base().getPipelineLayoutDescriptor().pushConstantRanges.emplace(pushConstant);
     }
@@ -154,6 +159,7 @@ Expected<void> VulkanRenderGraphBuilder::resolvePushConstantRanges(VulkanGraphic
 }
 
 Expected<void> VulkanRenderGraphBuilder::createPipeline(VulkanGraphicsPass* pass) const {
+
     VulkanGraphicsPipelineDescriptor descriptor{};
 
     descriptor.shaderStages = pass->base().getShaderProgram()->getStages();
@@ -179,6 +185,7 @@ Expected<void> VulkanRenderGraphBuilder::createPipeline(VulkanGraphicsPass* pass
 }
 
 void VulkanRenderGraphBuilder::scheduleResourceTransitions() const {
+
     const auto& writers = _context.renderResources.getResourceWriters();
     const auto& readers = _context.renderResources.getResourceReaders();
 

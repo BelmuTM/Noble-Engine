@@ -26,12 +26,12 @@ VSOutput vertMain(VSInput input) {
 
 layout (location = 0) out float4 swapchainOutput;
 
-layout (set = 3, binding = 0) Sampler2D depthBuffer;
-layout (set = 3, binding = 1) Sampler2D albedoBuffer;
-layout (set = 3, binding = 2) Sampler2D normalBuffer;
-layout (set = 3, binding = 3) Sampler2D debugBuffer;
+layout (set = 2, binding = 0) Sampler2D depthBuffer;
+layout (set = 2, binding = 1) Sampler2D albedoBuffer;
+layout (set = 2, binding = 2) Sampler2D normalBuffer;
+layout (set = 2, binding = 3) Sampler2D debugBuffer;
 
-layout (set = 3, binding = 4) Sampler2D compositeBuffer;
+layout (set = 2, binding = 4) Sampler2D compositeBuffer;
 
 void quantizeColor(inout float3 color, float quantizationPeriod) {
     color = floor((color + quantizationPeriod * 0.5) / quantizationPeriod) * quantizationPeriod;
