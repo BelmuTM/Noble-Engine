@@ -33,6 +33,8 @@ public:
     // Generates tangents for the entire mesh
     void generateTangents();
 
+    [[nodiscard]] static Mesh makeAABBLines(const Math::AABB& aabb);
+
     [[nodiscard]]       std::vector<Vertex>& getVertices()       noexcept { return _vertices; }
     [[nodiscard]] const std::vector<Vertex>& getVertices() const noexcept { return _vertices; }
 

@@ -116,6 +116,17 @@ Expected<void> VulkanRenderer::init(
         })
         .addPass({
             .base = {
+                .name = "Debug_Pass", .programPath = "debug",
+                .writes = {{"debugBuffer"}}
+            },
+            .record = recordMeshBatches,
+            .pipelineState = { .topology = vk::PrimitiveTopology::eLineList, .cullMode = vk::CullModeFlagBits::eNone },
+            .cullMode = VulkanGraphicsPassCullMode::Frustum,
+            .depthAttachmentDescriptor = {"depthBuffer"},
+            .drawFlags = DrawFlags::Bit::Debug
+        })
+        .addPass({
+            .base = {
                 .name = "Composite0_Pass", .programPath = "composite_0",
                 .reads  = {{"depthBuffer"}, {"albedoBuffer"}, {"normalBuffer"}},
                 .writes = {{"compositeBuffer"}}
@@ -151,6 +162,7 @@ void VulkanRenderer::shutdown() {
 }
 
 Expected<void> VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
+
     TRY(onFramebufferResize());
 
     VulkanSwapchain::SwapchainOp<uint32_t> imageAcquireResult;
@@ -217,6 +229,7 @@ Expected<void> VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
 }
 
 Expected<void> VulkanRenderer::onFramebufferResize() {
+
     if (!_window || !_window->isFramebufferResized()) return {};
 
     if (context.getDevice().getLogicalDevice()) {

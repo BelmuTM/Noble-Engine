@@ -61,7 +61,7 @@ Expected<void> VulkanRenderGraph::executePass(
         commandBuffer,
         frameContext,
         passBindings,
-        frameContext.drawBatchBuilder->getDrawBatch(pass)
+        frameContext.drawBatchBuilder->getDrawBatch(pass)  // TODO: Think of a better way to pass the batches
     );
 
     // Transition resources for current pass

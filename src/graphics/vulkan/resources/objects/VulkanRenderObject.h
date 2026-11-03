@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/Utility.h"
 #include "core/debug/ErrorHandling.h"
 
 #include "graphics/vulkan/resources/meshes/VulkanRenderMesh.h"
@@ -28,7 +29,9 @@ struct VulkanRenderObject {
         instanceHandle = VulkanInstanceHandle{objectIndex};
         object         = sourceObject;
 
-        meshes.reserve(object->getModel().meshes.size());
+        meshes.reserve(object->getModel().meshes.size() * 2);
+
+        std::size_t objectHash = 0;
 
         for (const Mesh& mesh : object->getModel().meshes) {
             // Load mesh
@@ -43,6 +46,17 @@ struct VulkanRenderObject {
             submesh.material = material;
 
             meshes.push_back(submesh);
+
+            // TODO: Move this somewhere else
+            VulkanRenderMesh debug{};
+            debug.mesh      = meshManager->allocateMesh(Mesh::makeAABBLines(mesh.getAABB()));
+            debug.material  = nullptr;
+            debug.drawFlags = DrawFlags::Bit::Debug;
+            meshes.push_back(debug);
+
+            HashUtils::combine(objectHash, MeshHash{}(mesh));
+
+            gpuData.debugColor = Utility::instanceColor(objectHash);
         }
 
         return {};

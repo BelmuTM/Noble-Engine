@@ -101,3 +101,17 @@ void Mesh::generateSmoothNormals(
 void Mesh::generateSmoothNormals() {
     generateSmoothNormals(0, _vertices.size(), 0, _indices.size());
 }
+
+Mesh Mesh::makeAABBLines(const Math::AABB& aabb) {
+    Mesh mesh{};
+
+    for (const auto& corner : aabb.getCorners())
+        mesh.addVertex(Vertex{.position = corner});
+
+    for (const auto index : Math::AABB::getLineIndices(0))
+        mesh.addIndex(index);
+
+    mesh.setAABB(aabb);
+
+    return mesh;
+}
