@@ -1,6 +1,7 @@
 #include "FrustumCuller.h"
 
 std::array<Math::Plane, 6> FrustumCuller::getFrustumPlanes(const glm::mat4& viewProjectionMatrix) {
+
     std::array<Math::Plane, 6> planes{};
     auto& m = viewProjectionMatrix;
 
@@ -39,15 +40,16 @@ std::array<Math::Plane, 6> FrustumCuller::getFrustumPlanes(const glm::mat4& view
 }
 
 
-bool FrustumCuller::testVisibility(const Math::AABB& aabb, const std::array<Math::Plane, 6>& frustumPlanes) {
+bool FrustumCuller::testVisibility(const Math::OBB& obb, const std::array<Math::Plane, 6>& frustumPlanes) {
+
     for (const auto& [normal, d] : frustumPlanes) {
-        glm::vec3 p = aabb.maxBound;
+        glm::vec3 p = obb.local.maxBound;
 
-        if (normal.x < 0.0) p.x = aabb.minBound.x;
-        if (normal.y < 0.0) p.y = aabb.minBound.y;
-        if (normal.z < 0.0) p.z = aabb.minBound.z;
+        if (normal.x < 0.0) p.x = obb.local.minBound.x;
+        if (normal.y < 0.0) p.y = obb.local.minBound.y;
+        if (normal.z < 0.0) p.z = obb.local.minBound.z;
 
-        if (glm::dot(normal, p) + d < 0.001f) {
+        if (glm::dot(normal, p) + d < 0.0f) {
             return false;
         }
     }

@@ -48,7 +48,7 @@ int main() {
         );
     }
 
-    Runtime runtime(sceneBistro, Engine::running);
+    Runtime runtime(sceneSponza, Engine::running);
 
     Engine::fatalOnFail(runtime.init());
 

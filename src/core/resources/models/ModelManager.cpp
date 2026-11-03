@@ -8,7 +8,9 @@
 #include <glm/gtc/type_ptr.hpp>
 
 ModelManager::ResourceHandlePointer ModelManager::load(const std::string& path) {
+
     return loadAsync(path, [path]() -> Expected<ResourcePointer>  {
+
         if (path.empty()) return Expected(ResourcePointer{});
 
         Logger::info("Loading model \"" + path + "\"...");
@@ -44,6 +46,7 @@ ModelManager::ResourceHandlePointer ModelManager::load(const std::string& path) 
 }
 
 Expected<const Model*> ModelManager::loadBlocking(const std::string& path) {
+
     const ResourceHandlePointer handle = load(path);
 
     if (!handle) {
@@ -109,6 +112,7 @@ Mesh ModelManager::processMesh_OBJ(
         std::size_t indexOffset = 0;
 
         for (std::size_t face = 0; face < objMesh.num_face_vertices.size(); face++) {
+
             const int materialIndex = objMesh.material_ids[face];
 
             // Skip faces that are not using this material
@@ -173,7 +177,7 @@ Mesh ModelManager::processMesh_OBJ(
         loadMaterial_OBJ(mesh, modelName, material);
     }
 
-    mesh.setAABB(aabb);
+    mesh.setOBB({.local = aabb});
 
     if (!hasNormals) {
         mesh.generateSmoothNormals();
@@ -271,17 +275,18 @@ void ModelManager::loadMaterial_glTF(
 
 // ------ Model ------
 
+namespace {
 struct AttributeData {
     const tinygltf::Accessor* accessor;
-    const unsigned char* base;
-    std::size_t stride = 0;
+    const unsigned char*      base;
+    std::size_t               stride = 0;
 
-    [[nodiscard]] const unsigned char* getData(const std::size_t index) const {
-        return base + index * stride;
-    }
+    [[nodiscard]] const unsigned char* getData(const std::size_t index) const { return base + index * stride; }
 };
+}
 
 static AttributeData getAttributeData(const tinygltf::Model& glTFModel, const int accessorIndex) {
+
     const tinygltf::Accessor&   accessor   = glTFModel.accessors[accessorIndex];
     const tinygltf::BufferView& bufferView = glTFModel.bufferViews[accessor.bufferView];
     const tinygltf::Buffer&     buffer     = glTFModel.buffers[bufferView.buffer];
@@ -461,12 +466,18 @@ void ModelManager::processNode_glTF(
 
         // For each primitive that forms the mesh
         for (const auto& glTFPrimitive : glTFMesh.primitives) {
+
             Mesh mesh = createMesh_glTF(model.name, glTFModel, glTFPrimitive);
 
             Math::AABB aabb{};
+            for (const auto& vertex : mesh.getVertices()) {
+                aabb.minBound = glm::min(aabb.minBound, vertex.position);
+                aabb.maxBound = glm::max(aabb.maxBound, vertex.position);
+            }
 
             // Apply the transform to the mesh's vertices
             for (auto& vertex : mesh.getVertices()) {
+
                 vertex.position = glm::vec3(worldTransform * glm::vec4(vertex.position, 1.0f));
                 vertex.normal   = glm::normalize(normalMatrix * vertex.normal);
 
@@ -476,13 +487,9 @@ void ModelManager::processNode_glTF(
                     glm::normalize(normalMatrix * glm::vec3(vertex.tangent)),
                     vertex.tangent.w * handedness
                 );
-
-                // Progressively find the bounds of the mesh
-                aabb.minBound = glm::min(aabb.minBound, vertex.position);
-                aabb.maxBound = glm::max(aabb.maxBound, vertex.position);
             }
 
-            mesh.setAABB(aabb);
+            mesh.setOBB({.local = aabb, .transformMatrix = worldTransform});
 
             model.addMesh(mesh);
         }
@@ -539,6 +546,7 @@ Expected<void> ModelManager::load_glTF(Model& model, const std::string& path, co
 
         // For each primitive that forms the mesh
         for (const auto& glTFPrimitive : glTFMesh.primitives) {
+
             Mesh mesh = createMesh_glTF(model.name, glTFModel, glTFPrimitive);
 
             if (!mesh.getVertices().empty()) {
@@ -550,7 +558,7 @@ Expected<void> ModelManager::load_glTF(Model& model, const std::string& path, co
                     aabb.maxBound = glm::max(aabb.maxBound, vertex.position);
                 }
 
-                mesh.setAABB(aabb);
+                mesh.setOBB({.local = aabb});
 
                 model.addMesh(mesh);
             }

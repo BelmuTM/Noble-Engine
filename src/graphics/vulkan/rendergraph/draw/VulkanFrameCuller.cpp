@@ -14,11 +14,23 @@ void VulkanFrameCuller::cull(const VulkanRenderObjectManager& renderObjectManage
     _visibleItems.clear();
 
     for (const auto& renderObject : renderObjectManager.getRenderObjects()) {
+
+        const glm::mat4& model = renderObject->object->getModelMatrix();
+
         for (const auto& renderMesh : renderObject->meshes) {
 
-            Math::AABB worldAABB = renderMesh.mesh->getAABB().transform(renderObject->object->getModelMatrix());
+            const Math::OBB& obb = renderMesh.mesh->getOBB();
 
-            if (FrustumCuller::testVisibility(worldAABB, frustumPlanes)) {
+            const glm::mat4 meshTransform = glm::transpose(model * obb.transformMatrix);
+
+            std::array<Math::Plane, 6> localPlanes{};
+
+            for (std::size_t i = 0; i < 6; i++) {
+                const glm::vec4 plane = meshTransform * glm::vec4(frustumPlanes[i].normal, frustumPlanes[i].d);
+                localPlanes[i] = {.normal = glm::vec3(plane), .d = plane.w};
+            }
+
+            if (FrustumCuller::testVisibility(obb, localPlanes)) {
                 _visibleItems.emplace_back(renderMesh, renderObject->instanceHandle);
             }
         }

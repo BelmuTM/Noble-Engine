@@ -49,7 +49,7 @@ struct VulkanRenderObject {
 
             // TODO: Move this somewhere else
             VulkanRenderMesh debug{};
-            debug.mesh      = meshManager->allocateMesh(Mesh::makeAABBLines(mesh.getAABB()));
+            debug.mesh      = meshManager->allocateMesh(Mesh::makeOBBLines(mesh.getOBB()));
             debug.material  = nullptr;
             debug.drawFlags = DrawFlags::Bit::Debug;
             meshes.push_back(debug);

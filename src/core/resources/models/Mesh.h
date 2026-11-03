@@ -22,7 +22,8 @@ public:
         return _vertices.size()  == other._vertices.size()
             && _indices.size()   == other._indices.size()
             && _vertices.front() == other._vertices.front()
-            && _vertices.back()  == other._vertices.back();
+            && _vertices.back()  == other._vertices.back()
+            && _obb              == other._obb;
     }
 
     // Generates averaged normals for a given range of vertices and indices
@@ -33,7 +34,7 @@ public:
     // Generates tangents for the entire mesh
     void generateTangents();
 
-    [[nodiscard]] static Mesh makeAABBLines(const Math::AABB& aabb);
+    [[nodiscard]] static Mesh makeOBBLines(const Math::OBB& obb);
 
     [[nodiscard]]       std::vector<Vertex>& getVertices()       noexcept { return _vertices; }
     [[nodiscard]] const std::vector<Vertex>& getVertices() const noexcept { return _vertices; }
@@ -44,7 +45,7 @@ public:
     [[nodiscard]] std::size_t getVerticesByteSize() const { return sizeof(Vertex) * _vertices.size(); }
     [[nodiscard]] std::size_t getIndicesByteSize() const { return sizeof(std::uint32_t) * _indices.size(); }
 
-    [[nodiscard]] const Math::AABB& getAABB() const noexcept { return _aabb; }
+    [[nodiscard]] const Math::OBB& getOBB() const noexcept { return _obb; }
 
     [[nodiscard]] const Material& getMaterial() const noexcept { return _material; }
 
@@ -56,7 +57,7 @@ public:
         _indices  = indices;
     }
 
-    void setAABB(const Math::AABB& aabb) noexcept { _aabb = aabb; }
+    void setOBB(const Math::OBB& obb) noexcept { _obb = obb; }
 
     void setMaterial(const Material& material) noexcept { _material = material; }
 
@@ -64,7 +65,7 @@ protected:
     std::vector<Vertex>        _vertices{};
     std::vector<std::uint32_t> _indices{};
 
-    Math::AABB _aabb{};
+    Math::OBB _obb{};
 
     Material _material{};
 };

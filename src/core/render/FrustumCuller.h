@@ -11,5 +11,5 @@ public:
 
     [[nodiscard]] static std::array<Math::Plane, 6> getFrustumPlanes(const glm::mat4& viewProjectionMatrix);
 
-    [[nodiscard]] static bool testVisibility(const Math::AABB& aabb, const std::array<Math::Plane, 6>& frustumPlanes);
+    [[nodiscard]] static bool testVisibility(const Math::OBB& obb, const std::array<Math::Plane, 6>& frustumPlanes);
 };

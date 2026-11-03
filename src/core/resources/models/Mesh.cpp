@@ -102,16 +102,16 @@ void Mesh::generateSmoothNormals() {
     generateSmoothNormals(0, _vertices.size(), 0, _indices.size());
 }
 
-Mesh Mesh::makeAABBLines(const Math::AABB& aabb) {
+Mesh Mesh::makeOBBLines(const Math::OBB& obb) {
     Mesh mesh{};
 
-    for (const auto& corner : aabb.getCorners())
-        mesh.addVertex(Vertex{.position = corner});
+    for (const auto& corner : obb.local.getCorners())
+        mesh.addVertex(Vertex{.position = glm::vec3(obb.transformMatrix * glm::vec4(corner, 1.0f))});
 
     for (const auto index : Math::AABB::getLineIndices(0))
         mesh.addIndex(index);
 
-    mesh.setAABB(aabb);
+    mesh.setOBB(obb);
 
     return mesh;
 }

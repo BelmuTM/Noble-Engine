@@ -6,6 +6,7 @@
 #include "libraries/stbUsage.h"
 
 ImageManager::ResourceHandlePointer ImageManager::load(const std::string& path, const bool hasMipmaps) {
+
     return loadAsync(path, [path, hasMipmaps]() -> Expected<ResourcePointer> {
 
         Logger::info("Loading texture \"" + path + "\"...");
@@ -39,6 +40,7 @@ ImageManager::ResourceHandlePointer ImageManager::load(const std::string& path, 
 }
 
 Expected<const Image*> ImageManager::loadBlocking(const std::string& path, const bool hasMipmaps) {
+
     const ResourceHandlePointer handle = load(path, hasMipmaps);
 
     if (!handle) {
