@@ -47,7 +47,8 @@ Expected<void> VulkanRenderer::init(
             &assetManager,
             &meshManager,
             &materialManager,
-            &storageBufferManager
+            &storageBufferManager,
+            _framesInFlight
         }
     ));
 

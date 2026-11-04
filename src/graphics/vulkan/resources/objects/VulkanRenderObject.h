@@ -12,58 +12,60 @@
 
 #include "core/entities/objects/Object.h"
 
-struct VulkanRenderObject {
-    Object*       object = nullptr;
-    ObjectDataGPU gpuData;
+class VulkanRenderObject {
+public:
+    VulkanRenderObject()  = default;
+    ~VulkanRenderObject() = default;
 
-    std::vector<VulkanRenderMesh> meshes{};
+    VulkanRenderObject(const VulkanRenderObject&)            = delete;
+    VulkanRenderObject& operator=(const VulkanRenderObject&) = delete;
 
-    VulkanInstanceHandle instanceHandle{};
+    VulkanRenderObject(VulkanRenderObject&&)            noexcept = default;
+    VulkanRenderObject& operator=(VulkanRenderObject&&) noexcept = default;
 
     Expected<void> create(
-        const std::uint32_t    objectIndex,
+        std::uint32_t          objectIndex,
         Object*                sourceObject,
         VulkanMeshManager*     meshManager,
-        VulkanMaterialManager* materialManager
-    ) {
-        instanceHandle = VulkanInstanceHandle{objectIndex};
-        object         = sourceObject;
+        VulkanMaterialManager* materialManager,
+        std::uint32_t          framesInFlight
+    );
 
-        meshes.reserve(object->getModel().meshes.size() * 2);
+    void update();
 
-        std::size_t objectHash = 0;
+    bool sync();
 
-        for (const Mesh& mesh : object->getModel().meshes) {
-            // Load mesh
-            VulkanRenderMesh submesh{};
-
-            submesh.mesh = meshManager->allocateMesh(mesh);
-
-            // Load material
-            VulkanMaterial* material;
-            TRY_ASSIGN(material, materialManager->getOrCreateMaterial(mesh.getMaterial()));
-
-            submesh.material = material;
-
-            meshes.push_back(submesh);
-
-            // TODO: Move this somewhere else
-            VulkanRenderMesh debug{};
-            debug.mesh      = meshManager->allocateMesh(Mesh::makeOBBLines(mesh.getOBB()));
-            debug.material  = nullptr;
-            debug.drawFlags = DrawFlags::Bit::Debug;
-            meshes.push_back(debug);
-
-            HashUtils::combine(objectHash, MeshHash{}(mesh));
-
-            gpuData.debugColor = Utility::instanceColor(objectHash);
-        }
-
-        return {};
+    [[nodiscard]] bool isDirty(const std::uint32_t frameIndex) const noexcept {
+        return (_dirtyFrames & (1 << frameIndex)) != 0;
     }
 
-    void update() {
-        gpuData.modelMatrix  = object->getModelMatrix();
-        gpuData.normalMatrix = object->getNormalMatrix();
+    void markDirty() noexcept {
+        _dirtyFrames = _allFramesMask;
     }
+
+    void clearDirty(const std::uint32_t frameIndex) noexcept {
+        _dirtyFrames &= ~(1 << frameIndex);
+    }
+
+    [[nodiscard]] const Object& getObject() const noexcept { return *_object; }
+
+    [[nodiscard]] const ObjectDataGPU& getGPUData() const noexcept { return _gpuData; }
+
+    [[nodiscard]] const std::vector<VulkanRenderMesh>& getMeshes() const noexcept { return _meshes; }
+
+    [[nodiscard]] VulkanInstanceHandle getInstanceHandle() const noexcept { return _instanceHandle; }
+
+private:
+    Object* _object = nullptr;
+
+    std::uint32_t _syncedVersion = 0;
+
+    ObjectDataGPU _gpuData;
+
+    std::vector<VulkanRenderMesh> _meshes{};
+
+    VulkanInstanceHandle _instanceHandle{};
+
+    std::uint32_t _allFramesMask = 0;
+    std::uint32_t _dirtyFrames   = 0;
 };

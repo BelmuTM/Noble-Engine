@@ -47,7 +47,11 @@ Expected<void> VulkanRenderObjectManager::createRenderObjects(const ObjectManage
 
         _renderObjects.push_back(std::make_unique<VulkanRenderObject>());
 
-        TRY(_renderObjects.back()->create(i, objects[i].get(), _context.meshManager, _context.materialManager));
+        TRY(
+            _renderObjects.back()->create(
+                i, objects[i].get(), _context.meshManager, _context.materialManager, _context.framesInFlight
+            )
+        );
     }
 
     rebuildRenderItems();
@@ -59,23 +63,30 @@ void VulkanRenderObjectManager::rebuildRenderItems() {
     _renderItems.clear();
 
     for (const auto& renderObject : _renderObjects) {
-        for (const VulkanRenderMesh& renderMesh : renderObject->meshes) {
-            _renderItems.emplace_back(renderMesh, renderObject->instanceHandle);
+        for (const VulkanRenderMesh& renderMesh : renderObject->getMeshes()) {
+            _renderItems.emplace_back(renderMesh, renderObject->getInstanceHandle());
         }
     }
 }
 
 void VulkanRenderObjectManager::updateObjects(const std::uint32_t frameIndex) const {
-    std::vector<ObjectDataGPU> dataToGPU(_renderObjects.size());
 
-    // Batched object data update
-    for (std::size_t i = 0; i < _renderObjects.size(); i++) {
-        VulkanRenderObject& renderObject = *_renderObjects[i];
+    for (const auto& renderObject : _renderObjects) {
 
-        renderObject.update();
+        // Propagate CPU-side changes to the GPU data
+        renderObject->sync();
 
-        dataToGPU[i] = renderObject.gpuData;
+        // Upload only if this frame's buffer is outdated
+        if (!renderObject->isDirty(frameIndex)) {
+            continue;
+        }
+
+        _objectBuffer->updateMemory(
+            frameIndex,
+            renderObject->getGPUData(),
+            renderObject->getInstanceHandle().objectIndex * sizeof(ObjectDataGPU)
+        );
+
+        renderObject->clearDirty(frameIndex);
     }
-
-    _objectBuffer->updateArrayMemory(frameIndex, dataToGPU);
 }

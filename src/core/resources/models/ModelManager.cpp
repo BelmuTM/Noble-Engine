@@ -494,6 +494,14 @@ Expected<void> ModelManager::load_glTF(Model& model, const std::string& path, co
     tinygltf::Model    glTFModel;
     tinygltf::TinyGLTF glTFloader;
 
+    // Disable textures loading
+    glTFloader.SetImageLoader(
+        [](tinygltf::Image*, int, std::string*, std::string*, int, int, const unsigned char*, int, void*) {
+            return true;
+        },
+        nullptr
+    );
+
     std::string errorMessage;
     std::string warningMessage;
 

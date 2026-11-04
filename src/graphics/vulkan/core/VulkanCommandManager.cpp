@@ -82,6 +82,11 @@ Expected<void> VulkanCommandManager::endSingleTimeCommands(vk::CommandBuffer& co
     VK_TRY(graphicsQueue.submit(submitInfo));
     VK_TRY(graphicsQueue.waitIdle());
 
+    const vk::Device& logicalDevice = _device->getLogicalDevice();
+
+    logicalDevice.freeCommandBuffers(_commandPool, commandBuffer);
+    commandBuffer = VK_NULL_HANDLE;
+
     return {};
 }
 

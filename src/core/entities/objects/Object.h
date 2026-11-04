@@ -37,10 +37,43 @@ public:
 
     void updateMatrices();
 
+    // Getters
+
     [[nodiscard]] const Model& getModel() const noexcept { return *_model; }
+
+    [[nodiscard]] const glm::vec3& getPosition() const noexcept { return _position; }
+    [[nodiscard]] const glm::vec3& getRotation() const noexcept { return _rotation; }
+    [[nodiscard]] const glm::vec3& getScale() const noexcept { return _scale; }
 
     [[nodiscard]] const glm::mat4& getModelMatrix() const noexcept { return _modelMatrix; }
     [[nodiscard]] const glm::mat4& getNormalMatrix() const noexcept { return _normalMatrix; }
+
+    [[nodiscard]] std::uint32_t getVersion() const noexcept { return _version; }
+
+    // Setters
+
+    void setModel(const Model* model) noexcept { _model = model; }
+
+    void setPosition(const glm::vec3& position) noexcept {
+        if (_position == position) return;
+
+        _position = position;
+        _stale    = true;
+    }
+
+    void setRotation(const glm::vec3& rotation) noexcept {
+        if (_rotation == rotation) return;
+
+        _rotation = rotation;
+        _stale    = true;
+    }
+
+    void setScale(const glm::vec3& scale) noexcept {
+        if (_scale == scale) return;
+
+        _scale = scale;
+        _stale = true;
+    }
 
 private:
     const Model* _model =  nullptr;
@@ -55,4 +88,7 @@ private:
 
     glm::mat4 _modelMatrix{};
     glm::mat4 _normalMatrix{};
+
+    bool          _stale   = true;
+    std::uint32_t _version = 0;
 };

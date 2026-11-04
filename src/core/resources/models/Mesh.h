@@ -19,6 +19,8 @@ public:
     Mesh& operator=(Mesh&&) noexcept = default;
 
     bool operator==(const Mesh& other) const noexcept {
+        if (_vertices.empty() && other._vertices.empty()) { return true; }
+
         return _vertices.size()  == other._vertices.size()
             && _indices.size()   == other._indices.size()
             && _vertices.front() == other._vertices.front()

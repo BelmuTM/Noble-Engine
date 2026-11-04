@@ -4,10 +4,12 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <cstdint>
 #include <deque>
 #include <functional>
 #include <future>
 #include <memory>
+#include <mutex>
 #include <random>
 #include <thread>
 #include <vector>
@@ -33,6 +35,10 @@ public:
 
     ~ThreadPool() {
         running.store(false, std::memory_order_release);
+
+        {
+            std::lock_guard lock(waitMutex);
+        }
 
         condition.notify_all();
 
@@ -63,6 +69,12 @@ public:
             queues[queueIndex].emplace_back([task] { (*task)(); });
         }
 
+        pending.fetch_add(1, std::memory_order_release);
+
+        {
+            std::lock_guard lock(waitMutex);
+        }
+
         condition.notify_one();
 
         return taskResult;
@@ -73,7 +85,6 @@ private:
         ThreadScope scope("ThreadPool Worker " + std::to_string(queueIndex));
 
         std::mt19937 rng(std::random_device{}());
-        std::uniform_int_distribution<std::size_t> distribution(0, queues.size() - 1);
 
         while (running.load(std::memory_order_acquire)) {
             std::function<void()> task;
@@ -92,39 +103,38 @@ private:
 
             // If the current thread has no task to process
             if (!task) {
-                // Try to steal a task from other threads
-                for (std::size_t i = 0; i < queues.size(); i++) {
-                    // Randomly pick the victim to reduce contention (vs round-robin)
-                    const std::size_t victim = distribution(rng);
-                    if (victim == queueIndex) continue;
 
-                    std::lock_guard lock(*queueMutexes[victim]);
+                const std::size_t queuesCount = queues.size();
 
-                    // Found a valid victim, steal its oldest task
-                    if (!queues[victim].empty()) {
-                        task = std::move(queues[victim].front());
-                        queues[victim].pop_front();
-                        break;
+                if (queuesCount > 1) {
+                    const std::size_t first = rng() % (queuesCount - 1);
+
+                    for (std::size_t i = 0; i < queuesCount - 1 && !task; i++) {
+
+                        const auto victim = (queueIndex + 1 + (first + i) % (queuesCount - 1)) % queuesCount;
+
+                        std::lock_guard lock(*queueMutexes[victim]);
+
+                        // Found a valid victim, steal its oldest task
+                        if (!queues[victim].empty()) {
+                            task = std::move(queues[victim].front());
+                            queues[victim].pop_front();
+                            break;
+                        }
                     }
                 }
             }
 
             // Execute the task or wait
             if (task) {
+                pending.fetch_sub(1, std::memory_order_relaxed);
                 task();
+
             } else {
                 std::unique_lock lock(waitMutex);
-                condition.wait(lock, [this] { return !running || hasPendingTasks(); });
+                condition.wait(lock, [this] { return !running || pending.load(std::memory_order_acquire) > 0; });
             }
         }
-    }
-
-    [[nodiscard]] bool hasPendingTasks() const {
-        for (std::size_t i = 0; i < queues.size(); i++) {
-            std::lock_guard lock(*queueMutexes[i]);
-            if (!queues[i].empty()) return true;
-        }
-        return false;
     }
 
     std::vector<std::thread> workerThreads;
@@ -138,4 +148,6 @@ private:
     std::atomic<bool> running{false};
 
     std::atomic<std::size_t> nextQueue{0};
+
+    std::atomic<std::int32_t> pending{0};
 };

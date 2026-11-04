@@ -18,9 +18,8 @@ void Object::create(
 }
 
 void Object::updateMatrices() {
-    if (glm::all(glm::epsilonEqual(_lastPosition, _position, Math::EPSILON)) &&
-        glm::all(glm::epsilonEqual(_lastRotation, _rotation, Math::EPSILON)) &&
-        glm::all(glm::epsilonEqual(_lastScale, _scale, Math::EPSILON))) {
+
+    if (!_stale) {
         return;
     }
 
@@ -40,4 +39,7 @@ void Object::updateMatrices() {
 
     _modelMatrix  = translation * rotation * scaling;
     _normalMatrix = glm::mat4(glm::transpose(glm::inverse(glm::mat3(_modelMatrix))));
+
+    _stale = false;
+    ++_version;
 }

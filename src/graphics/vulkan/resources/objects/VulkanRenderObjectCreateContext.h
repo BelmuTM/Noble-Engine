@@ -15,4 +15,6 @@ struct VulkanRenderObjectCreateContext {
     VulkanMaterialManager* materialManager = nullptr;
 
     VulkanStorageBufferManager* storageBufferManager = nullptr;
+
+    std::uint32_t framesInFlight = 0;
 };

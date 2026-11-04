@@ -15,9 +15,9 @@ void VulkanFrameCuller::cull(const VulkanRenderObjectManager& renderObjectManage
 
     for (const auto& renderObject : renderObjectManager.getRenderObjects()) {
 
-        const glm::mat4& model = renderObject->object->getModelMatrix();
+        const glm::mat4& model = renderObject->getObject().getModelMatrix();
 
-        for (const auto& renderMesh : renderObject->meshes) {
+        for (const auto& renderMesh : renderObject->getMeshes()) {
 
             const Math::OBB& obb = renderMesh.mesh->getOBB();
 
@@ -32,7 +32,7 @@ void VulkanFrameCuller::cull(const VulkanRenderObjectManager& renderObjectManage
             }
 
             if (FrustumCuller::testVisibility(obb, localPlanes)) {
-                _visibleItems.emplace_back(renderMesh, renderObject->instanceHandle);
+                _visibleItems.emplace_back(renderMesh, renderObject->getInstanceHandle());
             }
         }
     }
