@@ -34,6 +34,8 @@ public:
     // Generates tangents for the entire mesh
     void generateTangents();
 
+    void computeOBB(const glm::mat3& hintFrame = glm::mat3(1.0f));
+
     [[nodiscard]] static Mesh makeOBBLines(const Math::OBB& obb);
 
     [[nodiscard]]       std::vector<Vertex>& getVertices()       noexcept { return _vertices; }

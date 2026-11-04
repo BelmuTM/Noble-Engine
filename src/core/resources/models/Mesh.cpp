@@ -102,14 +102,28 @@ void Mesh::generateSmoothNormals() {
     generateSmoothNormals(0, _vertices.size(), 0, _indices.size());
 }
 
+void Mesh::computeOBB(const glm::mat3& hintFrame) {
+
+    std::vector<glm::vec3> positions;
+    positions.reserve(_vertices.size());
+
+    for (const Vertex& v : _vertices) {
+        positions.push_back(v.position);
+    }
+
+    _obb = Math::fitOBB(positions, hintFrame);
+}
+
 Mesh Mesh::makeOBBLines(const Math::OBB& obb) {
     Mesh mesh{};
 
-    for (const auto& corner : obb.local.getCorners())
+    for (const auto& corner : obb.local.getCorners()) {
         mesh.addVertex(Vertex{.position = glm::vec3(obb.transformMatrix * glm::vec4(corner, 1.0f))});
+    }
 
-    for (const auto index : Math::AABB::getLineIndices(0))
+    for (const auto index : Math::AABB::getLineIndices(0)) {
         mesh.addIndex(index);
+    }
 
     mesh.setOBB(obb);
 

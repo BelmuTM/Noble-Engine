@@ -103,7 +103,6 @@ Mesh ModelManager::processMesh_OBJ(
     Mesh mesh{};
 
     std::unordered_map<Vertex, std::uint32_t> uniqueVertices{};
-    Math::AABB aabb{};
 
     const bool hasNormals       = !attributes.normals.empty();
     const bool hasTextureCoords = !attributes.texcoords.empty();
@@ -156,10 +155,6 @@ Mesh ModelManager::processMesh_OBJ(
                 // Color
                 vertex.color = {1.0f, 1.0f, 1.0f};
 
-                // AABB
-                aabb.minBound = glm::min(aabb.minBound, vertex.position);
-                aabb.maxBound = glm::max(aabb.maxBound, vertex.position);
-
                 if (!uniqueVertices.contains(vertex)) {
                     uniqueVertices[vertex] = static_cast<std::uint32_t>(mesh.getVertices().size());
 
@@ -177,7 +172,7 @@ Mesh ModelManager::processMesh_OBJ(
         loadMaterial_OBJ(mesh, modelName, material);
     }
 
-    mesh.setOBB({.local = aabb});
+    mesh.computeOBB();
 
     if (!hasNormals) {
         mesh.generateSmoothNormals();
@@ -469,12 +464,6 @@ void ModelManager::processNode_glTF(
 
             Mesh mesh = createMesh_glTF(model.name, glTFModel, glTFPrimitive);
 
-            Math::AABB aabb{};
-            for (const auto& vertex : mesh.getVertices()) {
-                aabb.minBound = glm::min(aabb.minBound, vertex.position);
-                aabb.maxBound = glm::max(aabb.maxBound, vertex.position);
-            }
-
             // Apply the transform to the mesh's vertices
             for (auto& vertex : mesh.getVertices()) {
 
@@ -489,7 +478,7 @@ void ModelManager::processNode_glTF(
                 );
             }
 
-            mesh.setOBB({.local = aabb, .transformMatrix = worldTransform});
+            mesh.computeOBB(glm::mat3(worldTransform));
 
             model.addMesh(mesh);
         }
@@ -550,15 +539,8 @@ Expected<void> ModelManager::load_glTF(Model& model, const std::string& path, co
             Mesh mesh = createMesh_glTF(model.name, glTFModel, glTFPrimitive);
 
             if (!mesh.getVertices().empty()) {
-                // Progressively find the bounds of the mesh
-                Math::AABB aabb{};
 
-                for (auto& vertex : mesh.getVertices()) {
-                    aabb.minBound = glm::min(aabb.minBound, vertex.position);
-                    aabb.maxBound = glm::max(aabb.maxBound, vertex.position);
-                }
-
-                mesh.setOBB({.local = aabb});
+                mesh.computeOBB();
 
                 model.addMesh(mesh);
             }

@@ -23,6 +23,7 @@ void VulkanFrameCuller::cull(const VulkanRenderObjectManager& renderObjectManage
 
             const glm::mat4 meshTransform = glm::transpose(model * obb.transformMatrix);
 
+            // Transform world-space frustum planes to local model space
             std::array<Math::Plane, 6> localPlanes{};
 
             for (std::size_t i = 0; i < 6; i++) {

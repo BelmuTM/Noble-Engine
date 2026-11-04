@@ -2,6 +2,8 @@
 
 #include <glm/glm.hpp>
 
+#include <span>
+
 class Math {
 public:
     static constexpr float EPSILON = 1e-5f;
@@ -28,6 +30,8 @@ public:
 
         bool operator==(const OBB&) const noexcept = default;
     };
+
+    [[nodiscard]] static OBB fitOBB(std::span<const glm::vec3> points, const glm::mat3& hintFrame = glm::mat3(1.0f));
 
     struct Plane {
         glm::vec3 normal;
