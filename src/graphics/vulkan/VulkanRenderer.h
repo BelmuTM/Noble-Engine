@@ -25,7 +25,7 @@
 #include "graphics/vulkan/rendergraph/VulkanRenderGraph.h"
 #include "graphics/vulkan/rendergraph/draw/VulkanDrawBatchBuilder.h"
 #include "graphics/vulkan/rendergraph/draw/VulkanFrameCuller.h"
-#include "graphics/vulkan/rendergraph/resources/VulkanRenderResourceManager.h"
+#include "graphics/vulkan/rendergraph/resources/VulkanGraphResourceManager.h"
 
 class VulkanRenderer final : public GraphicsAPI, public VulkanEntityOwner<VulkanRenderer> {
 public:
@@ -62,8 +62,8 @@ private:
     VulkanStorageBufferManager storageBufferManager{};
     VulkanUniformBufferManager uniformBufferManager{};
 
-    VulkanFrameResources        frameResources{};
-    VulkanRenderResourceManager renderResources{};
+    VulkanFrameResources       frameResources{};
+    VulkanGraphResourceManager graphResources{};
 
     VulkanMaterialManager     materialManager{};
     VulkanRenderObjectManager renderObjectManager{};

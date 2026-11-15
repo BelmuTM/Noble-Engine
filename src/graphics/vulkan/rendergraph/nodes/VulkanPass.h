@@ -3,7 +3,7 @@
 #include "graphics/vulkan/pipeline/VulkanPipeline.h"
 #include "graphics/vulkan/pipeline/shaders/VulkanShaderProgram.h"
 
-#include "graphics/vulkan/rendergraph/resources/VulkanGraphicsPassAttachment.h"
+#include "graphics/vulkan/rendergraph/resources/VulkanGraphResource.h"
 
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorSets.h"
@@ -12,12 +12,9 @@
 #include <ranges>
 
 struct VulkanPassTransition {
-    VulkanPassResource* resource     = nullptr;
-    vk::ImageLayout     targetLayout = vk::ImageLayout::eUndefined;
-
-    bool operator==(const VulkanPassTransition& other) const {
-        return resource == other.resource && targetLayout == other.targetLayout;
-    }
+    VulkanGraphResource*     resource = nullptr;
+    VulkanGraphResourceState src{};
+    VulkanGraphResourceState dst{};
 };
 
 // Immutable, describes the pass identity
@@ -26,8 +23,19 @@ struct VulkanPassDescriptor {
 
     std::string programPath;
 
-    std::vector<VulkanGraphicsPassAttachmentDescriptor> reads{};
-    std::vector<VulkanGraphicsPassAttachmentDescriptor> writes{};
+    std::vector<VulkanPassResourceUse> resources{};
+
+    [[nodiscard]] std::vector<std::string> getSampledResourcesNames() const {
+        std::vector<std::string> names{};
+
+        for (const auto& use : resources) {
+            if (use.usage == VulkanGraphResourceUsage::SampledRead) {
+                names.push_back(use.name);
+            }
+        }
+
+        return names;
+    }
 };
 
 // Mutable, describes the pass state (data subject to hot reloading)
@@ -102,19 +110,11 @@ public:
     }
 
     VulkanPass& addEntryTransition(const VulkanPassTransition& entryTransition) {
-        const auto cachedTransition = std::ranges::find(_entryTransitions, entryTransition);
-        if (cachedTransition == _entryTransitions.end()) {
-            _entryTransitions.push_back(entryTransition);
-        }
-        return *this;
+        _entryTransitions.push_back(entryTransition); return *this;
     }
 
     VulkanPass& addExitTransition(const VulkanPassTransition& exitTransition) {
-        const auto cachedTransition = std::ranges::find(_exitTransitions, exitTransition);
-        if (cachedTransition == _exitTransitions.end()) {
-            _exitTransitions.push_back(exitTransition);
-        }
-        return *this;
+        _exitTransitions.push_back(exitTransition); return *this;
     }
 
 private:

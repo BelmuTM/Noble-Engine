@@ -9,7 +9,7 @@
 #include <memory>
 #include <vector>
 
-class VulkanRenderResourceManager;
+class VulkanGraphResourceManager;
 
 class VulkanRenderGraph {
 public:
@@ -26,11 +26,18 @@ public:
 
     void destroy() noexcept;
 
-    Expected<void> execute(vk::CommandBuffer commandBuffer, const VulkanFrameContext& frameContext) const;
+    Expected<void> execute(
+        vk::CommandBuffer                 commandBuffer,
+        const VulkanFrameContext&         frameContext,
+        const VulkanGraphResourceManager& resources
+    ) const;
 
     static Expected<void> executePass(
-        vk::CommandBuffer commandBuffer, const VulkanFrameContext& frameContext, const VulkanGraphicsPass& pass
-    ) ;
+        vk::CommandBuffer                 commandBuffer,
+        const VulkanFrameContext&         frameContext,
+        const VulkanGraphResourceManager& resources,
+        const VulkanGraphicsPass&         pass
+    );
 
     [[nodiscard]]       std::vector<std::unique_ptr<VulkanGraphicsPass>>& getPasses()       noexcept { return _passes; }
     [[nodiscard]] const std::vector<std::unique_ptr<VulkanGraphicsPass>>& getPasses() const noexcept { return _passes; }

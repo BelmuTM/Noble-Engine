@@ -4,7 +4,7 @@
 #include "graphics/vulkan/rendergraph/draw/VulkanRenderItem.h"
 #include "graphics/vulkan/rendergraph/nodes/VulkanGraphicsPass.h"
 
-#include "graphics/vulkan/rendergraph/resources/VulkanRenderResourceManager.h"
+#include "graphics/vulkan/rendergraph/resources/VulkanGraphResourceManager.h"
 
 #include "graphics/vulkan/resources/meshes/VulkanRenderMesh.h"
 #include "graphics/vulkan/resources/ssbo/VulkanStorageBufferManager.h"

@@ -55,5 +55,6 @@ private:
     std::vector<vk::PipelineShaderStageCreateInfo> _shaderStages{};
 
     std::vector<std::string> _stageOutputs{};
-    VulkanPushConstantRangesMap   _pushConstants{};
+
+    VulkanPushConstantRangesMap _pushConstants{};
 };

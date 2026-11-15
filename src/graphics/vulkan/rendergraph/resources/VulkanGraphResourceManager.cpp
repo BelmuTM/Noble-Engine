@@ -1,4 +1,4 @@
-#include "VulkanRenderResourceManager.h"
+#include "VulkanGraphResourceManager.h"
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
@@ -6,24 +6,20 @@
 
 #include <ranges>
 
-Expected<void> VulkanRenderResourceManager::create(
-    const VulkanDevice&         device,
-    const VulkanSwapchain&      swapchain,
-    const VulkanCommandManager& commandManager,
-    const std::uint32_t         framesInFlight
+Expected<void> VulkanGraphResourceManager::create(
+    const VulkanDevice&    device,
+    const VulkanSwapchain& swapchain,
+    const std::uint32_t    framesInFlight
 ) noexcept {
     _device         = &device;
     _swapchain      = &swapchain;
-    _commandManager = &commandManager;
     _framesInFlight = framesInFlight;
 
     return {};
 }
 
-void VulkanRenderResourceManager::destroy() noexcept {
+void VulkanGraphResourceManager::destroy() noexcept {
     _resources.clear();
-    _resourceReaders.clear();
-    _resourceWriters.clear();
 
     for (const auto& resourceImage : _resourceImages | std::views::values) {
         if (resourceImage) {
@@ -33,12 +29,11 @@ void VulkanRenderResourceManager::destroy() noexcept {
 
     _resourceImages.clear();
 
-    _device         = nullptr;
-    _swapchain      = nullptr;
-    _commandManager = nullptr;
+    _device    = nullptr;
+    _swapchain = nullptr;
 }
 
-Expected<void> VulkanRenderResourceManager::recreate(VulkanRenderGraph& renderGraph) {
+Expected<void> VulkanGraphResourceManager::recreate(VulkanRenderGraph& renderGraph) {
     // Recreate resource images
     for (const auto& resourceImage : _resourceImages | std::views::values) {
         if (!resourceImage) continue;
@@ -46,7 +41,10 @@ Expected<void> VulkanRenderResourceManager::recreate(VulkanRenderGraph& renderGr
         resourceImage->destroy();
 
         TRY(createResourceImage(
-            *resourceImage, resourceImage->getFormat(), _swapchain->getExtent(), _device, _commandManager
+            *resourceImage,
+            resourceImage->getFormat(),
+            _swapchain->getExtent(),
+            _device
         ));
     }
 
@@ -56,17 +54,21 @@ Expected<void> VulkanRenderResourceManager::recreate(VulkanRenderGraph& renderGr
     return {};
 }
 
-Expected<void> VulkanRenderResourceManager::createResource(const VulkanPassResourceDescriptor& descriptor) {
+Expected<void> VulkanGraphResourceManager::createResource(const VulkanGraphResourceDescriptor& descriptor) {
+
     auto [cachedResource, inserted] = _resourceImages.emplace(descriptor.name, std::make_unique<VulkanImage>());
 
     TRY_CATCH(
         createResourceImage(
-            *cachedResource->second, descriptor.format, _swapchain->getExtent(), _device, _commandManager
+            *cachedResource->second,
+            descriptor.format,
+            _swapchain->getExtent(),
+            _device
         ),
         _resourceImages.erase(cachedResource)
     );
 
-    VulkanPassResource resource(descriptor);
+    VulkanGraphResource resource(descriptor);
     resource.setImage(cachedResource->second.get());
 
     addResource(resource);
@@ -74,28 +76,23 @@ Expected<void> VulkanRenderResourceManager::createResource(const VulkanPassResou
     return {};
 }
 
-Expected<void> VulkanRenderResourceManager::createResourceImage(
-    VulkanImage&                resourceImage,
-    const vk::Format            format,
-    const vk::Extent2D          extent,
-    const VulkanDevice*         device,
-    const VulkanCommandManager* commandManager
+Expected<void> VulkanGraphResourceManager::createResourceImage(
+    VulkanImage&        resourceImage,
+    const vk::Format    format,
+    const vk::Extent2D  extent,
+    const VulkanDevice* device
 ) {
-    bool isDepth = VulkanImage::isDepthBuffer(format);
+    const bool isDepth = VulkanImage::isDepthBuffer(format);
 
     const auto extent3D = vk::Extent3D(extent.width, extent.height, 1);
 
-    vk::ImageUsageFlags usageFlags = isDepth
+    const vk::ImageUsageFlags usageFlags = isDepth
         ? vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled
         : vk::ImageUsageFlagBits::eColorAttachment        | vk::ImageUsageFlagBits::eSampled;
 
     vk::ImageAspectFlags aspectFlags = isDepth
         ? vk::ImageAspectFlagBits::eDepth
         : vk::ImageAspectFlagBits::eColor;
-
-    vk::ImageLayout targetLayout = isDepth
-        ? vk::ImageLayout::eDepthStencilAttachmentOptimal
-        : vk::ImageLayout::eColorAttachmentOptimal;
 
     if (isDepth && VulkanImage::hasStencilComponent(format)) {
         aspectFlags |= vk::ImageAspectFlagBits::eStencil;
@@ -114,22 +111,21 @@ Expected<void> VulkanRenderResourceManager::createResourceImage(
 
     TRY(resourceImage.createImageView(vk::ImageViewType::e2D, format, aspectFlags, 1, device));
 
-    TRY(resourceImage.transitionLayout(commandManager, vk::ImageLayout::eUndefined, targetLayout));
-
     TRY(resourceImage.createSampler(vk::Filter::eLinear, vk::SamplerAddressMode::eClampToEdge, device));
 
     return {};
 }
 
-Expected<void> VulkanRenderResourceManager::allocateDescriptors(VulkanPass* pass) {
-    const auto& reads = pass->getPassDescriptor().reads;
-    if (reads.empty()) return {};
+Expected<void> VulkanGraphResourceManager::allocateDescriptors(VulkanPass* pass) {
+
+    const auto sampledResourcesNames = pass->getPassDescriptor().getSampledResourcesNames();
+    if (sampledResourcesNames.empty()) return {};
 
     // Building the descriptor scheme for the resources read in this pass
     VulkanDescriptorScheme scheme{};
-    scheme.reserve(reads.size());
+    scheme.reserve(sampledResourcesNames.size());
 
-    for (std::size_t i = 0; i < reads.size(); i++) {
+    for (std::size_t i = 0; i < sampledResourcesNames.size(); i++) {
         scheme.emplace_back(i, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment);
     }
 
@@ -140,7 +136,7 @@ Expected<void> VulkanRenderResourceManager::allocateDescriptors(VulkanPass* pass
     VulkanDescriptorSets* descriptorSets = nullptr;
     TRY(descriptorManager->allocate(descriptorSets));
 
-    bindDescriptors(descriptorSets, reads);
+    bindDescriptors(descriptorSets, sampledResourcesNames);
 
     pass->setDescriptorManager(std::move(descriptorManager));
     pass->setDescriptorSets(descriptorSets);
@@ -148,11 +144,12 @@ Expected<void> VulkanRenderResourceManager::allocateDescriptors(VulkanPass* pass
     return {};
 }
 
-void VulkanRenderResourceManager::bindDescriptors(
-    const VulkanDescriptorSets* descriptorSets, const std::vector<VulkanGraphicsPassAttachmentDescriptor>& reads
+void VulkanGraphResourceManager::bindDescriptors(
+    const VulkanDescriptorSets* descriptorSets, const std::vector<std::string>& sampledResourcesNames
 ) {
-    for (std::uint32_t i = 0; i < reads.size(); i++) {
-        const VulkanPassResource* resource = getResource(reads[i].name);
+    for (std::uint32_t i = 0; i < sampledResourcesNames.size(); i++) {
+
+        const VulkanGraphResource* resource = getResource(sampledResourcesNames[i]);
         if (!resource || !resource->image) continue;
 
         // Bind resource for each frame in flight
@@ -160,13 +157,15 @@ void VulkanRenderResourceManager::bindDescriptors(
     }
 }
 
-void VulkanRenderResourceManager::rebindDescriptors(VulkanRenderGraph& renderGraph) {
+void VulkanGraphResourceManager::rebindDescriptors(VulkanRenderGraph& renderGraph) {
+
     for (const auto& pass : renderGraph.getPasses()) {
-        const auto& reads = pass->base().getPassDescriptor().reads;
-        if (reads.empty()) continue;
+
+        const auto& sampledResourcesNames = pass->base().getPassDescriptor().getSampledResourcesNames();
+        if (sampledResourcesNames.empty()) continue;
 
         if (const VulkanDescriptorSets* sets = pass->base().getDescriptorSets()) {
-            bindDescriptors(sets, reads);
+            bindDescriptors(sets, sampledResourcesNames);
         }
     }
 }

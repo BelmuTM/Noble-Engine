@@ -29,26 +29,14 @@ public:
         vk::ImageLayout   oldLayout,
         vk::ImageLayout   newLayout,
         std::uint32_t     mipLevels = 1
-    );
+    ) const;
 
     [[nodiscard]] Expected<void> transitionLayout(
         const VulkanCommandManager* commandManager,
         vk::ImageLayout             oldLayout,
         vk::ImageLayout             newLayout,
         std::uint32_t               mipLevels = 1
-    );
-
-    [[nodiscard]] Expected<void> transitionLayout(
-        vk::CommandBuffer commandBuffer,
-        vk::ImageLayout   newLayout,
-        std::uint32_t     mipLevels = 1
-    );
-
-    [[nodiscard]] Expected<void> transitionLayout(
-        const VulkanCommandManager* commandManager,
-        vk::ImageLayout             newLayout,
-        std::uint32_t               mipLevels = 1
-    );
+    ) const;
 
     [[nodiscard]] Expected<void> createImage(
         vk::ImageType       type,
@@ -125,7 +113,6 @@ public:
     [[nodiscard]] vk::Extent3D getExtent() const noexcept { return _extent; }
     [[nodiscard]] vk::ImageUsageFlags getUsageFlags() const noexcept { return _usageFlags; }
     [[nodiscard]] vk::ImageAspectFlags getAspectFlags() const noexcept { return _aspectFlags; }
-    [[nodiscard]] vk::ImageLayout getLayout() const noexcept { return _layout; }
 
     VulkanImage& setHandle(const vk::Image image) noexcept { _image = image; return *this; }
     VulkanImage& setImageView(const vk::ImageView imageView) noexcept { _imageView = imageView; return *this; }
@@ -137,7 +124,6 @@ public:
         _aspectFlags = aspectFlags; return *this;
     }
     VulkanImage& setExtent(const vk::Extent3D extent) noexcept { _extent = extent; return *this; }
-    VulkanImage& setLayout(const vk::ImageLayout layout) noexcept { _layout = layout; return *this; }
     VulkanImage& setDescriptorType(const vk::DescriptorType descriptorType) noexcept {
         _descriptorType = descriptorType; return *this;
     }
@@ -156,8 +142,6 @@ private:
 
     vk::ImageUsageFlags  _usageFlags  = vk::ImageUsageFlagBits::eColorAttachment;
     vk::ImageAspectFlags _aspectFlags = vk::ImageAspectFlagBits::eColor;
-
-    vk::ImageLayout _layout = vk::ImageLayout::eUndefined;
 
     vk::DescriptorType _descriptorType = vk::DescriptorType::eCombinedImageSampler;
 };

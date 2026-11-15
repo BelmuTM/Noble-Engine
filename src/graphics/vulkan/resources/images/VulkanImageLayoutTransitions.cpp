@@ -10,36 +10,7 @@ namespace VulkanImageLayoutTransitions {
     ) {
         using ImageLayout = vk::ImageLayout;
 
-        // Supported layout transitions
-        if (oldLayout == ImageLayout::eUndefined &&
-            newLayout == ImageLayout::eColorAttachmentOptimal)
-            return LayoutTransition{
-                {}, vk::AccessFlagBits2::eColorAttachmentWrite,
-                vk::PipelineStageFlagBits2::eTopOfPipe, vk::PipelineStageFlagBits2::eColorAttachmentOutput
-            };
-
-        if (oldLayout == ImageLayout::eUndefined &&
-            newLayout == ImageLayout::eDepthStencilAttachmentOptimal)
-            return LayoutTransition{
-                {}, vk::AccessFlagBits2::eDepthStencilAttachmentRead | vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
-                vk::PipelineStageFlagBits2::eTopOfPipe, vk::PipelineStageFlagBits2::eEarlyFragmentTests
-            };
-
-        if (oldLayout == ImageLayout::eDepthStencilAttachmentOptimal &&
-            newLayout == ImageLayout::eShaderReadOnlyOptimal)
-            return LayoutTransition{
-                vk::AccessFlagBits2::eDepthStencilAttachmentRead | vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
-                vk::AccessFlagBits2::eShaderRead,
-                vk::PipelineStageFlagBits2::eEarlyFragmentTests, vk::PipelineStageFlagBits2::eFragmentShader
-            };
-
-        if (oldLayout == ImageLayout::eShaderReadOnlyOptimal &&
-            newLayout == ImageLayout::eDepthStencilAttachmentOptimal)
-            return LayoutTransition{
-                vk::AccessFlagBits2::eShaderRead,
-                vk::AccessFlagBits2::eDepthStencilAttachmentRead | vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
-                vk::PipelineStageFlagBits2::eFragmentShader, vk::PipelineStageFlagBits2::eEarlyFragmentTests
-            };
+        // Layout transitions used by texture uploads and mipmap generation
 
         if (oldLayout == ImageLayout::eUndefined &&
             newLayout == ImageLayout::eTransferDstOptimal)
@@ -69,36 +40,6 @@ namespace VulkanImageLayoutTransitions {
             return LayoutTransition{
                 vk::AccessFlagBits2::eTransferWrite, vk::AccessFlagBits2::eShaderRead,
                 vk::PipelineStageFlagBits2::eTransfer, vk::PipelineStageFlagBits2::eFragmentShader
-            };
-
-        if (oldLayout == ImageLayout::eColorAttachmentOptimal &&
-            newLayout == ImageLayout::eShaderReadOnlyOptimal) {
-            return LayoutTransition{
-                vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eShaderRead,
-                vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eFragmentShader
-            };
-        }
-
-        if (oldLayout == ImageLayout::eShaderReadOnlyOptimal &&
-            newLayout == ImageLayout::eColorAttachmentOptimal) {
-            return LayoutTransition{
-                vk::AccessFlagBits2::eShaderRead, vk::AccessFlagBits2::eColorAttachmentWrite,
-                vk::PipelineStageFlagBits2::eFragmentShader, vk::PipelineStageFlagBits2::eColorAttachmentOutput
-            };
-        }
-
-        if (oldLayout == ImageLayout::eColorAttachmentOptimal &&
-            newLayout == ImageLayout::ePresentSrcKHR)
-            return LayoutTransition{
-                vk::AccessFlagBits2::eColorAttachmentWrite, {},
-                vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eBottomOfPipe
-            };
-
-        if (oldLayout == ImageLayout::ePresentSrcKHR &&
-            newLayout == ImageLayout::eColorAttachmentOptimal)
-            return LayoutTransition{
-                {}, vk::AccessFlagBits2::eColorAttachmentWrite,
-                vk::PipelineStageFlagBits2::eBottomOfPipe, vk::PipelineStageFlagBits2::eColorAttachmentOutput
             };
 
         return std::nullopt;

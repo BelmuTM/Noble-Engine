@@ -67,8 +67,7 @@ void VulkanSwapchain::createImages() {
             ->setHandle(_imageHandles[i])
             .setImageView(_imageViews[i])
             .setFormat(_format)
-            .setExtent(vk::Extent3D{_extent, 1})
-            .setLayout(vk::ImageLayout::eUndefined);
+            .setExtent(vk::Extent3D{_extent, 1});
     }
 }
 

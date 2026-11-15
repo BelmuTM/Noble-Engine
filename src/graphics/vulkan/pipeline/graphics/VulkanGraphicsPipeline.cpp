@@ -134,7 +134,7 @@ Expected<void> VulkanGraphicsPipeline::createGraphicsPipeline(
     vk::PipelineDepthStencilStateCreateInfo depthStencilState{};
     depthStencilState
         .setDepthTestEnable(vk::True)
-        .setDepthWriteEnable(vk::True)
+        .setDepthWriteEnable(descriptor.depthWrite)
         .setDepthCompareOp(vk::CompareOp::eGreaterOrEqual)
         .setDepthBoundsTestEnable(vk::False)
         .setStencilTestEnable(vk::False);

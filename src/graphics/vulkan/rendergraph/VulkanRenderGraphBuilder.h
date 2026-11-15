@@ -24,8 +24,8 @@ struct VulkanRenderGraphBuilderContext {
     VulkanMeshManager&          meshManager;
     const VulkanImageManager&   imageManager;
 
-    VulkanFrameResources&        frameResources;
-    VulkanRenderResourceManager& renderResources;
+    VulkanFrameResources&       frameResources;
+    VulkanGraphResourceManager& graphResources;
 
     VulkanMaterialManager&      materialManager;
     VulkanRenderObjectManager&  renderObjectManager;
@@ -50,7 +50,7 @@ public:
 
     [[nodiscard]] Expected<void> build();
 
-    VulkanRenderGraphBuilder& registerResource(const VulkanPassResourceDescriptor& descriptor) {
+    VulkanRenderGraphBuilder& registerResource(const VulkanGraphResourceDescriptor& descriptor) {
         _resourceDescriptors.push_back(descriptor);
         return *this;
     }
@@ -61,11 +61,15 @@ public:
     }
 
 private:
+    using ResourceStates = std::unordered_map<VulkanGraphResource*, VulkanGraphResourceState>;
+
     [[nodiscard]] Expected<VulkanGraphicsPass*> allocatePass(const VulkanGraphicsPassDescriptor& descriptor) const;
 
     [[nodiscard]] Expected<void> allocateResources() const;
 
-    [[nodiscard]] Expected<void> resolveAttachments(VulkanGraphicsPass* pass) const;
+    [[nodiscard]] Expected<void> scheduleTransitions(
+        VulkanPass& pass, ResourceStates& resourceStates, vk::PipelineStageFlags2 shaderStages
+    ) const;
 
     [[nodiscard]] Expected<void> allocateDescriptors(VulkanPass* pass) const;
 
@@ -74,12 +78,10 @@ private:
     [[nodiscard]] static Expected<void> resolvePushConstantRanges(VulkanGraphicsPass* pass);
 
     [[nodiscard]] Expected<void> createPipeline(VulkanGraphicsPass* pass) const;
-    
-    void scheduleResourceTransitions() const;
 
     const VulkanRenderGraphBuilderContext _context;
 
-    std::vector<VulkanPassResourceDescriptor> _resourceDescriptors{};
+    std::vector<VulkanGraphResourceDescriptor> _resourceDescriptors{};
 
     std::vector<VulkanGraphicsPassDescriptor> _passDescriptors{};
 

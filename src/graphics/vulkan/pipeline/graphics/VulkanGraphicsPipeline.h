@@ -16,6 +16,8 @@ struct VulkanGraphicsPipelineDescriptor {
 
     std::vector<vk::Format> colorAttachmentFormats{};
     vk::Format              depthAttachmentFormat = vk::Format::eUndefined;
+
+    bool depthWrite = true;
 };
 
 class VulkanGraphicsPipeline final : public VulkanPipeline {

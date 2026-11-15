@@ -20,12 +20,14 @@ void VulkanRenderGraph::destroy() noexcept {
 }
 
 Expected<void> VulkanRenderGraph::execute(
-    const vk::CommandBuffer commandBuffer, const VulkanFrameContext& frameContext
+    const vk::CommandBuffer           commandBuffer,
+    const VulkanFrameContext&         frameContext,
+    const VulkanGraphResourceManager& resources
 ) const {
     commandBuffer.resetQueryPool(frameContext.queryPool, 0, 1);
 
     for (const auto& pass : _passes) {
-        TRY(executePass(commandBuffer, frameContext, *pass));
+        TRY(executePass(commandBuffer, frameContext, resources, *pass));
     }
 
     return {};
@@ -33,22 +35,69 @@ Expected<void> VulkanRenderGraph::execute(
 
 namespace {
 
-Expected<void> executePassTransitions(
+void recordTransitions(
     const vk::CommandBuffer commandBuffer, const VulkanPass::TransitionsVector& transitions
 ) {
-    for (const auto& [resource, targetLayout] : transitions) {
-        if (VulkanImage* resourceImage = resource->resolveImage()) {
-            TRY(resourceImage->transitionLayout(commandBuffer, targetLayout));
-        }
+    std::vector<vk::ImageMemoryBarrier2> barriers{};
+    barriers.reserve(transitions.size());
+
+    for (const auto& [resource, src, dst] : transitions) {
+
+        VulkanImage* resourceImage = resource->resolveImage();
+        if (!resourceImage) continue;
+
+        // Specify which region of the image to transition
+        vk::ImageSubresourceRange subresourceRange{};
+        subresourceRange
+            .setAspectMask(resourceImage->getAspectFlags())
+            .setBaseMipLevel(0)
+            .setLevelCount(vk::RemainingMipLevels)
+            .setBaseArrayLayer(0)
+            .setLayerCount(vk::RemainingArrayLayers);
+
+        barriers.emplace_back(
+            vk::ImageMemoryBarrier2{}
+                .setSrcStageMask(src.stages)
+                .setSrcAccessMask(src.access)
+                .setDstStageMask(dst.stages)
+                .setDstAccessMask(dst.access)
+                .setOldLayout(src.layout)
+                .setNewLayout(dst.layout)
+                .setSrcQueueFamilyIndex(vk::QueueFamilyIgnored)
+                .setDstQueueFamilyIndex(vk::QueueFamilyIgnored)
+                .setImage(resourceImage->handle())
+                .setSubresourceRange(subresourceRange)
+        );
     }
 
-    return {};
+    if (barriers.empty()) return;
+
+    vk::DependencyInfo dependencyInfo{};
+    dependencyInfo.setImageMemoryBarriers(barriers);
+
+    commandBuffer.pipelineBarrier2(dependencyInfo);
+}
+
+[[nodiscard]] vk::RenderingAttachmentInfo makeAttachmentInfo(
+    const VulkanGraphResource& resource, const VulkanPassResourceUse& use
+) {
+    const auto [loadOp, storeOp] = use.attachment.value_or(VulkanAttachmentOps{});
+
+    return vk::RenderingAttachmentInfo{}
+        .setImageView(resource.resolveImage()->getImageView())
+        .setImageLayout(VulkanGraphResourceState::stateForUsage(use.usage, {}).layout)
+        .setLoadOp(loadOp)
+        .setStoreOp(storeOp)
+        .setClearValue(resource.descriptor.clearValue);
 }
 
 }
 
 Expected<void> VulkanRenderGraph::executePass(
-    const vk::CommandBuffer commandBuffer, const VulkanFrameContext& frameContext, const VulkanGraphicsPass& pass
+    vk::CommandBuffer                 commandBuffer,
+    const VulkanFrameContext&         frameContext,
+    const VulkanGraphResourceManager& resources,
+    const VulkanGraphicsPass&         pass
 ) {
 
     VulkanPassBindings passBindings{
@@ -65,12 +114,31 @@ Expected<void> VulkanRenderGraph::executePass(
     );
 
     // Transition resources for current pass
-    TRY(executePassTransitions(commandBuffer, pass.base().getEntryTransitions()));
+    recordTransitions(commandBuffer, pass.base().getEntryTransitions());
 
-    // Color attachments
-    std::vector<vk::RenderingAttachmentInfo> colorAttachments{};
-    for (const auto& colorAttachment : pass.getColorAttachments()) {
-        colorAttachments.push_back(colorAttachment->getInfo());
+    // Attachments
+    std::vector<vk::RenderingAttachmentInfo>   colorAttachments{};
+    std::optional<vk::RenderingAttachmentInfo> depthAttachment{};
+
+    for (const auto& use : pass.base().getPassDescriptor().resources) {
+
+        if (!VulkanPassResourceUse::isAttachmentUsage(use.usage)) continue;
+
+        const VulkanGraphResource* resource = resources.getResource(use.name);
+
+        if (!resource || !resource->resolveImage()) {
+            return VK_FAIL("Attachment resource \"" + use.name + "\" has no image.");
+        }
+
+        const vk::RenderingAttachmentInfo attachmentInfo = makeAttachmentInfo(*resource, use);
+
+        if (VulkanPassResourceUse::isDepthUsage(use.usage)) {
+            // Depth attachment
+            depthAttachment = attachmentInfo;
+        } else {
+            // Color attachment
+            colorAttachments.push_back(attachmentInfo);
+        }
     }
 
     // Rendering info
@@ -80,11 +148,8 @@ Expected<void> VulkanRenderGraph::executePass(
         .setLayerCount(1)
         .setColorAttachments(colorAttachments);
 
-    // Depth attachment
-    vk::RenderingAttachmentInfo depthAttachment{};
-    if (const auto* depth = pass.getDepthAttachment()) {
-        depthAttachment = depth->getInfo();
-        renderingInfo.setPDepthAttachment(&depthAttachment);
+    if (depthAttachment) {
+        renderingInfo.setPDepthAttachment(&*depthAttachment);
     }
 
 #ifdef VULKAN_DEBUG_UTILS
@@ -110,7 +175,7 @@ Expected<void> VulkanRenderGraph::executePass(
 #endif
 
     // Transition resources for next pass
-    TRY(executePassTransitions(commandBuffer, pass.base().getExitTransitions()));
+    recordTransitions(commandBuffer, pass.base().getExitTransitions());
 
     return {};
 }

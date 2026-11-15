@@ -32,7 +32,7 @@ Expected<void> VulkanImage::transitionLayout(
     const vk::ImageLayout   oldLayout,
     const vk::ImageLayout   newLayout,
     const std::uint32_t     mipLevels
-) {
+) const {
     TRY(VulkanImageLayoutTransitions::transitionImageLayout(
         commandBuffer,
         _image,
@@ -42,8 +42,6 @@ Expected<void> VulkanImage::transitionLayout(
         mipLevels
     ));
 
-    _layout = newLayout;
-
     return {};
 }
 
@@ -52,45 +50,11 @@ Expected<void> VulkanImage::transitionLayout(
     const vk::ImageLayout       oldLayout,
     const vk::ImageLayout       newLayout,
     const std::uint32_t         mipLevels
-) {
+) const {
     vk::CommandBuffer commandBuffer{};
     TRY(commandManager->beginSingleTimeCommands(commandBuffer));
 
     TRY(transitionLayout(commandBuffer, oldLayout, newLayout, mipLevels));
-
-    TRY(commandManager->endSingleTimeCommands(commandBuffer));
-
-    return {};
-}
-
-Expected<void> VulkanImage::transitionLayout(
-    const vk::CommandBuffer commandBuffer,
-    const vk::ImageLayout   newLayout,
-    const std::uint32_t     mipLevels
-) {
-    TRY(VulkanImageLayoutTransitions::transitionImageLayout(
-        commandBuffer,
-        _image,
-        _aspectFlags,
-        _layout,
-        newLayout,
-        mipLevels
-    ));
-
-    _layout = newLayout;
-
-    return {};
-}
-
-Expected<void> VulkanImage::transitionLayout(
-    const VulkanCommandManager* commandManager,
-    const vk::ImageLayout       newLayout,
-    const std::uint32_t         mipLevels
-) {
-    vk::CommandBuffer commandBuffer{};
-    TRY(commandManager->beginSingleTimeCommands(commandBuffer));
-
-    TRY(transitionLayout(commandBuffer, newLayout, mipLevels));
 
     TRY(commandManager->endSingleTimeCommands(commandBuffer));
 
@@ -379,7 +343,7 @@ Expected<void> VulkanImage::createFromBuffer(
 
     TRY(createImage(vk::ImageType::e2D, format, extent, mipLevels, _usageFlags, VMA_MEMORY_USAGE_GPU_ONLY, device));
 
-    TRY(transitionLayout(commandBuffer, vk::ImageLayout::eTransferDstOptimal, mipLevels));
+    TRY(transitionLayout(commandBuffer, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, mipLevels));
 
     copyBufferToImage(commandBuffer, buffer.handle(), bufferOffset);
 
@@ -388,7 +352,12 @@ Expected<void> VulkanImage::createFromBuffer(
         generateMipmaps(commandBuffer, extent, mipLevels);
 
     } else {
-        TRY(transitionLayout(commandBuffer, vk::ImageLayout::eShaderReadOnlyOptimal, mipLevels));
+        TRY(transitionLayout(
+            commandBuffer,
+            vk::ImageLayout::eTransferDstOptimal,
+            vk::ImageLayout::eShaderReadOnlyOptimal,
+            mipLevels
+        ));
     }
 
     TRY(createImageView(vk::ImageViewType::e2D, format, _aspectFlags, mipLevels, device));
