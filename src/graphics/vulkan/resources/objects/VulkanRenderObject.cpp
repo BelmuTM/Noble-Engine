@@ -30,17 +30,6 @@ Expected<void> VulkanRenderObject::create(
         submesh.material = material;
 
         _meshes.push_back(submesh);
-
-        // TODO: Move this somewhere else
-        VulkanRenderMesh debug{};
-        debug.mesh      = meshManager->allocateMesh(Mesh::makeOBBLines(mesh.getOBB()));
-        debug.material  = nullptr;
-        debug.drawFlags = DrawFlags::Bit::Debug;
-        //_meshes.push_back(debug);
-
-        HashUtils::combine(objectHash, MeshHash{}(mesh));
-
-        _gpuData.debugColor = Utility::instanceColor(objectHash);
     }
 
     return {};

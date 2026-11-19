@@ -8,8 +8,6 @@
 
 #include "core/multithreading/ThreadPool.h"
 
-#define MULTITHREADED_OBJECTS_LOAD 1
-
 class ObjectManager {
 public:
     using ObjectsVector = std::vector<std::unique_ptr<Object>>;

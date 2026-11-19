@@ -22,8 +22,6 @@ void ObjectManager::addScene(const Scene& scene) {
 
 void ObjectManager::createObjects() {
 
-#if MULTITHREADED_OBJECTS_LOAD
-
     // Multithreaded objects loading (models, textures) using a thread pool
     unsigned int numThreads = std::thread::hardware_concurrency();
     if (numThreads == 0) numThreads = 4; // Fail-safe
@@ -88,43 +86,4 @@ void ObjectManager::createObjects() {
                 _objects.push_back(std::move(object));
         }
     }
-
-#else
-
-    for (const auto& [modelPath, position, rotation, scale] : _objectDescriptors) {
-        // Load model
-        Expected<const Model*> model = _assetManager.getModelManager().loadBlocking(modelPath);
-
-        if (model.failed()) {
-            Logger::error(model.failure());
-            continue;
-        }
-
-        // Load textures and map them to their respective path
-        for (const auto& texturePath : model.value()->texturePaths) {
-            // Texture is already cached
-            if (_assetManager.getTextures().contains(texturePath)) continue;
-
-            Expected<const Image*> texture =
-                _assetManager.getImageManager().loadBlocking(texturePath, AssetManager::MIPMAPS_ENABLED);
-
-            if (!texture) {
-                Logger::error(texture.failure());
-                continue;
-            }
-
-            ImageManager::ResourceHandlePointer handle = _assetManager.getImageManager().getHandle(texturePath);
-
-            if (handle)
-                _assetManager.getTextures().emplace(texturePath, std::move(handle));
-        }
-
-        // Create the object and push its pointer to the vector
-        _objects.push_back(std::make_unique<Object>());
-
-        _objects.back()->create(model.value(), position, rotation, scale);
-    }
-
-#endif
-
 }

@@ -101,7 +101,7 @@ Expected<void> VulkanRenderer::init(
         .registerResource({"depthBuffer", vk::Format::eD32Sfloat})
         .registerResource({"albedoBuffer"})
         .registerResource({"normalBuffer"})
-        .registerResource({"debugBuffer", vk::Format::eR32G32B32A32Sfloat})
+        .registerResource({"debugBuffer", vk::Format::eR8G8B8A8Unorm})
         .registerResource({"compositeBuffer", vk::Format::eR16G16B16A16Sfloat})
         .registerResource({"swapchainOutput", vk::Format::eB8G8R8A8Srgb, VulkanGraphResourceType::SwapchainOutput})
 
