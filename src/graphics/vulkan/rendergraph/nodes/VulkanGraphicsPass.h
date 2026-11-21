@@ -40,8 +40,6 @@ public:
     VulkanGraphicsPass(VulkanGraphicsPass&&)            = delete;
     VulkanGraphicsPass& operator=(VulkanGraphicsPass&&) = delete;
 
-    void destroy() const noexcept;
-
     // Getters
 
     [[nodiscard]]       VulkanPass& base()       noexcept { return _pass; }
@@ -65,5 +63,5 @@ private:
 
     VulkanGraphicsPassDescriptor _graphicsPassDescriptor;
 
-    const VulkanGraphicsPipeline*  _graphicsPipeline = nullptr;
+    const VulkanGraphicsPipeline* _graphicsPipeline = nullptr;
 };

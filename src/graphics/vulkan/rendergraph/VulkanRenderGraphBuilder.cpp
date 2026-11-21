@@ -15,18 +15,26 @@ Expected<void> VulkanRenderGraphBuilder::build() {
 
     // Build passes
     for (const auto& passDescriptor : _passDescriptors) {
+
         VulkanGraphicsPass* pass;
         TRY_ASSIGN(pass, allocatePass(passDescriptor));
 
-        TRY_ASSIGN(
-            pass->base().getShaderProgram(), _context.shaderProgramManager.load(passDescriptor.base.programPath)
-        );
+        VulkanShaderProgram* shaderProgram = nullptr;
+        TRY_ASSIGN(shaderProgram, _context.shaderProgramManager.load(passDescriptor.base.programPath));
 
-        TRY(resolvePushConstantRanges(pass));
+        VulkanPipelineLayoutDescriptor pipelineLayoutDescriptor{};
+
+        TRY(resolvePushConstantRanges(shaderProgram, pipelineLayoutDescriptor));
         TRY(scheduleTransitions(pass->base(), resourceStates, vk::PipelineStageFlagBits2::eFragmentShader));
-        TRY(allocateDescriptors(&pass->base()));
-        TRY(resolveDescriptorLayouts(pass));
-        TRY(createPipeline(pass));
+
+        const VulkanPassDescriptorBinding* descriptorBinding = nullptr;
+        TRY_ASSIGN(descriptorBinding, _context.graphResources.allocateDescriptors(pass->base().getPassDescriptor()));
+
+        pass->base().setDescriptorSets(descriptorBinding ? descriptorBinding->sets : nullptr);
+
+        TRY(resolveDescriptorLayouts(pipelineLayoutDescriptor, descriptorBinding));
+
+        TRY(createPipeline(pass, shaderProgram, pipelineLayoutDescriptor));
     }
 
     Logger::debug("Built render graph");
@@ -125,47 +133,50 @@ Expected<void> VulkanRenderGraphBuilder::scheduleTransitions(
     return {};
 }
 
-Expected<void> VulkanRenderGraphBuilder::allocateDescriptors(VulkanPass* pass) const {
-    TRY(_context.graphResources.allocateDescriptors(pass));
+Expected<void> VulkanRenderGraphBuilder::resolveDescriptorLayouts(
+    VulkanPipelineLayoutDescriptor&    pipelineLayoutDescriptor,
+    const VulkanPassDescriptorBinding* passDescriptorBinding
+) const {
 
-    return {};
-}
+    auto& layouts = pipelineLayoutDescriptor.descriptorLayouts;
 
-Expected<void> VulkanRenderGraphBuilder::resolveDescriptorLayouts(VulkanGraphicsPass* pass) const {
-
-    auto& layouts = pass->base().getPipelineLayoutDescriptor().descriptorLayouts;
     layouts.resize(BindingSlots::MaterialData + 1);
 
     layouts[BindingSlots::FrameData]  = _context.frameResources.getDescriptorManager().getLayout();
     layouts[BindingSlots::ObjectData] = _context.drawBatchBuilder.getDescriptorManager().getLayout();
 
-    layouts[BindingSlots::PassData] = pass->base().getPassDescriptor().getSampledResourcesNames().empty()
-        ? _emptyDescriptorLayout
-        : pass->base().getDescriptorManager()->getLayout();
+    layouts[BindingSlots::PassData] = passDescriptorBinding
+        ? passDescriptorBinding->manager.getLayout()
+        : _emptyDescriptorLayout;
 
     layouts[BindingSlots::MaterialData] = _context.materialManager.getDescriptorManager().getLayout();
 
     return {};
 }
 
-Expected<void> VulkanRenderGraphBuilder::resolvePushConstantRanges(VulkanGraphicsPass* pass) {
-
-    for (const auto& pushConstant : pass->base().getShaderProgram()->getPushConstants()) {
-        pass->base().getPipelineLayoutDescriptor().pushConstantRanges.emplace(pushConstant);
-    }
+Expected<void> VulkanRenderGraphBuilder::resolvePushConstantRanges(
+    const VulkanShaderProgram*      shaderProgram,
+    VulkanPipelineLayoutDescriptor& layoutDescriptor
+) {
+    layoutDescriptor.pushConstantRanges = shaderProgram->getPushConstants();
 
     return {};
 }
 
-Expected<void> VulkanRenderGraphBuilder::createPipeline(VulkanGraphicsPass* pass) const {
+Expected<void> VulkanRenderGraphBuilder::createPipeline(
+    VulkanGraphicsPass*                   pass,
+    const VulkanShaderProgram*            shaderProgram,
+    const VulkanPipelineLayoutDescriptor& layoutDescriptor
+) const {
 
     VulkanGraphicsPipelineDescriptor descriptor{};
 
-    descriptor.shaderStages = pass->base().getShaderProgram()->getStages();
+    descriptor.shaderStages = shaderProgram->getStages();
     descriptor.state        = pass->getGraphicsPassDescriptor().pipelineState;
-    descriptor.layout       = pass->base().getPipelineLayoutDescriptor();
+    descriptor.layout       = layoutDescriptor;
 
     for (const auto& use : pass->base().getPassDescriptor().resources) {
+
         if (!VulkanPassResourceUse::isAttachmentUsage(use.usage)) continue;
 
         const vk::Format format = _context.graphResources.getResource(use.name)->resolveImage()->getFormat();

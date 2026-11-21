@@ -29,7 +29,7 @@ void VulkanRecordContext::bindPassDescriptors() const {
 void VulkanRecordContext::pushConstantRaw(
     const std::string& name, const void* data, const std::uint32_t typeSize
 ) const {
-    const auto& ranges = _pass.layoutDescriptor->pushConstantRanges;
+    const auto& ranges = _pass.pipeline->getPushConstantRanges();
 
     const auto rangeIt = ranges.find(name);
     assert(rangeIt != ranges.end());

@@ -4,7 +4,7 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "graphics/vulkan/pipeline/shader_interface/VulkanPushConstant.h"
+#include "graphics/vulkan/pipeline/interface/VulkanPushConstant.h"
 
 #include <unordered_map>
 #include <vector>
@@ -37,7 +37,7 @@ public:
 private:
     void clearShaderModules();
 
-    Expected<vk::ShaderModule> createShaderModule(const std::vector<std::uint32_t>& bytecode) const;
+    [[nodiscard]] Expected<vk::ShaderModule> createShaderModule(const std::vector<std::uint32_t>& bytecode) const;
 
     [[nodiscard]] Expected<void> reflectShaderResources(
         const std::vector<std::uint32_t>& bytecode, vk::ShaderStageFlags stage

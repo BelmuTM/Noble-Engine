@@ -4,7 +4,7 @@
 
 #include "graphics/vulkan/common/VulkanHeader.h"
 
-#include "graphics/vulkan/pipeline/shader_interface/VulkanPushConstant.h"
+#include "graphics/vulkan/pipeline/interface/VulkanPushConstant.h"
 
 struct VulkanPipelineLayoutDescriptor {
     std::vector<vk::DescriptorSetLayout> descriptorLayouts{};
@@ -34,9 +34,15 @@ public:
 
     [[nodiscard]] virtual vk::PipelineBindPoint getBindPoint() const noexcept = 0;
 
+    [[nodiscard]] const VulkanPushConstantRangesMap& getPushConstantRanges() const noexcept {
+        return _pushConstantRanges;
+    }
+
 protected:
     vk::Device _device{};
 
     vk::Pipeline       _pipeline{};
     vk::PipelineLayout _pipelineLayout{};
+
+    VulkanPushConstantRangesMap _pushConstantRanges{};
 };

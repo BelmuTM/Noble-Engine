@@ -71,13 +71,21 @@ private:
         VulkanPass& pass, ResourceStates& resourceStates, vk::PipelineStageFlags2 shaderStages
     ) const;
 
-    [[nodiscard]] Expected<void> allocateDescriptors(VulkanPass* pass) const;
+    [[nodiscard]] Expected<void> resolveDescriptorLayouts(
+        VulkanPipelineLayoutDescriptor&    pipelineLayoutDescriptor,
+        const VulkanPassDescriptorBinding* passDescriptorBinding
+    ) const;
 
-    [[nodiscard]] Expected<void> resolveDescriptorLayouts(VulkanGraphicsPass* pass) const;
+    [[nodiscard]] static Expected<void> resolvePushConstantRanges(
+        const VulkanShaderProgram*      shaderProgram,
+        VulkanPipelineLayoutDescriptor& layoutDescriptor
+    );
 
-    [[nodiscard]] static Expected<void> resolvePushConstantRanges(VulkanGraphicsPass* pass);
-
-    [[nodiscard]] Expected<void> createPipeline(VulkanGraphicsPass* pass) const;
+    [[nodiscard]] Expected<void> createPipeline(
+        VulkanGraphicsPass*                   pass,
+        const VulkanShaderProgram*            shaderProgram,
+        const VulkanPipelineLayoutDescriptor& layoutDescriptor
+    ) const;
 
     const VulkanRenderGraphBuilderContext _context;
 

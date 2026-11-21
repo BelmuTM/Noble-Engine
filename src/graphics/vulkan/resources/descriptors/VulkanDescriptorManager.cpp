@@ -36,16 +36,16 @@ void VulkanDescriptorManager::destroy() noexcept {
     _device = VK_NULL_HANDLE;
 }
 
-Expected<void> VulkanDescriptorManager::allocate(VulkanDescriptorSets*& descriptorSets) {
-    VulkanDescriptorSets tempDescriptorSets{*this};
+Expected<VulkanDescriptorSets*> VulkanDescriptorManager::allocate() {
 
-    TRY(tempDescriptorSets.allocate());
+    auto sets = std::make_unique<VulkanDescriptorSets>(*this);
 
-    _descriptorSets.push_back(std::make_unique<VulkanDescriptorSets>(std::move(tempDescriptorSets)));
+    TRY(sets->allocate());
 
-    descriptorSets = _descriptorSets.back().get();
+    VulkanDescriptorSets* setsPtr = sets.get();
+    _descriptorSets.push_back(std::move(sets));
 
-    return {};
+    return Expected(setsPtr);
 }
 
 Expected<void> VulkanDescriptorManager::allocateSets(

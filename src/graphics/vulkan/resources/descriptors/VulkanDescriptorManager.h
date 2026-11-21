@@ -28,7 +28,7 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] Expected<void> allocate(VulkanDescriptorSets*& descriptorSets);
+    [[nodiscard]] Expected<VulkanDescriptorSets*> allocate();
 
     [[nodiscard]] Expected<void> allocateSets(
         std::vector<vk::DescriptorSet>&      descriptorSets,

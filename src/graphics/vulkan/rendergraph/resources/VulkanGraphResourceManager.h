@@ -13,7 +13,11 @@
 #include <unordered_map>
 #include <vector>
 
-class VulkanRenderGraph;
+struct VulkanPassDescriptorBinding {
+    VulkanDescriptorManager  manager{};
+    VulkanDescriptorSets*    sets = nullptr;
+    std::vector<std::string> sampledResourceNames{};
+};
 
 class VulkanGraphResourceManager {
 public:
@@ -38,11 +42,13 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] Expected<void> recreate(VulkanRenderGraph& renderGraph);
+    [[nodiscard]] Expected<void> recreate();
 
     [[nodiscard]] Expected<void> createResource(const VulkanGraphResourceDescriptor& descriptor);
 
-    [[nodiscard]] Expected<void> allocateDescriptors(VulkanPass* pass);
+    [[nodiscard]] Expected<const VulkanPassDescriptorBinding*> allocateDescriptors(
+        const VulkanPassDescriptor& passDescriptor
+    );
 
     [[nodiscard]] const ResourcesMap& getResources() const noexcept { return _resources; }
 
@@ -70,11 +76,9 @@ private:
         const VulkanDevice* device
     );
 
-    void bindDescriptors(
-        const VulkanDescriptorSets* descriptorSets, const std::vector<std::string>& sampledResourcesNames
-    );
+    void bindDescriptors(const VulkanPassDescriptorBinding* binding);
 
-    void rebindDescriptors(VulkanRenderGraph& renderGraph);
+    void rebindDescriptors();
 
     const VulkanDevice*    _device    = nullptr;
     const VulkanSwapchain* _swapchain = nullptr;
@@ -86,4 +90,7 @@ private:
 
     // Instances of the images that resources hold pointers of
     ResourceImagesMap _resourceImages{};
+
+    // Per-pass descriptor bindings
+    std::vector<std::unique_ptr<VulkanPassDescriptorBinding>> _passBindings{};
 };

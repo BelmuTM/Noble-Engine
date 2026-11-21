@@ -17,7 +17,7 @@ Expected<void> VulkanFrameResources::create(
 
     TRY_ASSIGN(_frameUBO, uniformBufferManager.allocateBuffer<VulkanFrameUniformBuffer>());
 
-    TRY(_descriptorManager.allocate(_frameUBODescriptors));
+    TRY_ASSIGN(_frameUBODescriptors, _descriptorManager.allocate());
 
     _frameUBODescriptors->updatePerFrameUBODescriptorSets(*_frameUBO, 0);
 

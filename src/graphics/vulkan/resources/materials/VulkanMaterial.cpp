@@ -11,7 +11,7 @@ Expected<void> VulkanMaterial::create(
     TRY(loadTextures(imageManager));
 
     // Allocate descriptor sets
-    TRY(descriptorManager.allocate(_descriptorSets));
+    TRY_ASSIGN(_descriptorSets, descriptorManager.allocate());
 
     bindDescriptorSets();
 

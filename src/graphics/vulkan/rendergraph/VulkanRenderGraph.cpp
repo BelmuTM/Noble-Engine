@@ -12,10 +12,6 @@ Expected<void> VulkanRenderGraph::create() noexcept {
 }
 
 void VulkanRenderGraph::destroy() noexcept {
-    for (const auto& pass : _passes) {
-        pass->destroy();
-    }
-
     _passes.clear();
 }
 
@@ -43,7 +39,7 @@ void recordTransitions(
 
     for (const auto& [resource, src, dst] : transitions) {
 
-        VulkanImage* resourceImage = resource->resolveImage();
+        const VulkanImage* resourceImage = resource->resolveImage();
         if (!resourceImage) continue;
 
         // Specify which region of the image to transition
@@ -100,11 +96,10 @@ Expected<void> VulkanRenderGraph::executePass(
     const VulkanGraphicsPass&         pass
 ) {
 
-    VulkanPassBindings passBindings{
+    VulkanPassBindings passBindings(
         pass.getGraphicsPipeline(),
-        &pass.base().getPipelineLayoutDescriptor(),
         pass.base().getDescriptorSets()
-    };
+    );
 
     VulkanGraphicsRecordContext recordContext(
         commandBuffer,

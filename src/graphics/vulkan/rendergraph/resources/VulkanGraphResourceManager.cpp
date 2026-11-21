@@ -29,11 +29,17 @@ void VulkanGraphResourceManager::destroy() noexcept {
 
     _resourceImages.clear();
 
+    for (const auto& passBinding : _passBindings) {
+        passBinding->manager.destroy();
+    }
+
+    _passBindings.clear();
+
     _device    = nullptr;
     _swapchain = nullptr;
 }
 
-Expected<void> VulkanGraphResourceManager::recreate(VulkanRenderGraph& renderGraph) {
+Expected<void> VulkanGraphResourceManager::recreate() {
     // Recreate resource images
     for (const auto& resourceImage : _resourceImages | std::views::values) {
         if (!resourceImage) continue;
@@ -49,7 +55,7 @@ Expected<void> VulkanGraphResourceManager::recreate(VulkanRenderGraph& renderGra
     }
 
     // Re-bind descriptor sets
-    rebindDescriptors(renderGraph);
+    rebindDescriptors();
 
     return {};
 }
@@ -116,56 +122,55 @@ Expected<void> VulkanGraphResourceManager::createResourceImage(
     return {};
 }
 
-Expected<void> VulkanGraphResourceManager::allocateDescriptors(VulkanPass* pass) {
+Expected<const VulkanPassDescriptorBinding*> VulkanGraphResourceManager::allocateDescriptors(
+    const VulkanPassDescriptor& passDescriptor
+) {
 
-    const auto sampledResourcesNames = pass->getPassDescriptor().getSampledResourcesNames();
-    if (sampledResourcesNames.empty()) return {};
+    auto passBinding = std::make_unique<VulkanPassDescriptorBinding>();
+
+    passBinding->sampledResourceNames = passDescriptor.getSampledResourcesNames();
+
+    if (passBinding->sampledResourceNames.empty()) {
+        return Expected<const VulkanPassDescriptorBinding*>(nullptr);
+    }
 
     // Building the descriptor scheme for the resources read in this pass
     VulkanDescriptorScheme scheme{};
-    scheme.reserve(sampledResourcesNames.size());
+    scheme.reserve(passBinding->sampledResourceNames.size());
 
-    for (std::size_t i = 0; i < sampledResourcesNames.size(); i++) {
+    for (std::size_t i = 0; i < passBinding->sampledResourceNames.size(); i++) {
         scheme.emplace_back(i, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment);
     }
 
-    // Create a descriptor manager for this pass
-    auto descriptorManager = std::make_unique<VulkanDescriptorManager>();
-    TRY(descriptorManager->create(_device->getLogicalDevice(), scheme, _framesInFlight, 1));
+    // Create a descriptor manager for this pass and allocate its descriptor sets
+    TRY(passBinding->manager.create(_device->getLogicalDevice(), scheme, _framesInFlight, 1));
 
-    VulkanDescriptorSets* descriptorSets = nullptr;
-    TRY(descriptorManager->allocate(descriptorSets));
+    TRY_ASSIGN(passBinding->sets, passBinding->manager.allocate());
 
-    bindDescriptors(descriptorSets, sampledResourcesNames);
+    const VulkanPassDescriptorBinding* passBindingPtr = passBinding.get();
 
-    pass->setDescriptorManager(std::move(descriptorManager));
-    pass->setDescriptorSets(descriptorSets);
+    bindDescriptors(passBindingPtr);
 
-    return {};
+    _passBindings.emplace_back(std::move(passBinding));
+
+    return Expected(passBindingPtr);
 }
 
-void VulkanGraphResourceManager::bindDescriptors(
-    const VulkanDescriptorSets* descriptorSets, const std::vector<std::string>& sampledResourcesNames
-) {
-    for (std::uint32_t i = 0; i < sampledResourcesNames.size(); i++) {
+void VulkanGraphResourceManager::bindDescriptors(const VulkanPassDescriptorBinding* binding) {
 
-        const VulkanGraphResource* resource = getResource(sampledResourcesNames[i]);
+    for (std::uint32_t i = 0; i < binding->sampledResourceNames.size(); i++) {
+
+        const VulkanGraphResource* resource = getResource(binding->sampledResourceNames[i]);
         if (!resource || !resource->image) continue;
 
         // Bind resource for each frame in flight
-        descriptorSets->updatePerFrameDescriptorSets(resource->image->getDescriptorInfo(i));
+        binding->sets->updatePerFrameDescriptorSets(resource->image->getDescriptorInfo(i));
     }
 }
 
-void VulkanGraphResourceManager::rebindDescriptors(VulkanRenderGraph& renderGraph) {
+void VulkanGraphResourceManager::rebindDescriptors() {
 
-    for (const auto& pass : renderGraph.getPasses()) {
-
-        const auto& sampledResourcesNames = pass->base().getPassDescriptor().getSampledResourcesNames();
-        if (sampledResourcesNames.empty()) continue;
-
-        if (const VulkanDescriptorSets* sets = pass->base().getDescriptorSets()) {
-            bindDescriptors(sets, sampledResourcesNames);
-        }
+    for (const auto& passBinding : _passBindings) {
+        bindDescriptors(passBinding.get());
     }
 }

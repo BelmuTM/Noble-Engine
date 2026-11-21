@@ -42,14 +42,14 @@ Expected<void> VulkanRenderer::init(
     TRY(createVulkanEntity(&materialManager, device, imageManager, _framesInFlight));
 
     TRY(createVulkanEntity(&renderObjectManager,
-        VulkanRenderObjectCreateContext{
+        VulkanRenderObjectCreateContext(
             &objectManager,
             &assetManager,
             &meshManager,
             &materialManager,
             &storageBufferManager,
             _framesInFlight
-        }
+        )
     ));
 
     TRY(
@@ -63,7 +63,7 @@ Expected<void> VulkanRenderer::init(
     TRY(createVulkanEntity(&pipelineManager, logicalDevice));
 
     VulkanRenderGraphBuilder renderGraphBuilder(
-        VulkanRenderGraphBuilderContext{
+        VulkanRenderGraphBuilderContext(
             renderGraph,
             device,
             swapchain,
@@ -77,7 +77,7 @@ Expected<void> VulkanRenderer::init(
             drawBatchBuilder,
             shaderProgramManager,
             pipelineManager
-        }
+        )
     );
 
     const auto recordMeshBatches = [](VulkanGraphicsRecordContext& ctx) -> Expected<void> {
@@ -98,20 +98,20 @@ Expected<void> VulkanRenderer::init(
     static constexpr VulkanAttachmentOps loadOps{.loadOp = vk::AttachmentLoadOp::eLoad};
 
     renderGraphBuilder
-        .registerResource({"depthBuffer", vk::Format::eD32Sfloat})
-        .registerResource({"albedoBuffer"})
-        .registerResource({"normalBuffer"})
-        .registerResource({"debugBuffer", vk::Format::eR8G8B8A8Unorm})
-        .registerResource({"compositeBuffer", vk::Format::eR16G16B16A16Sfloat})
-        .registerResource({"swapchainOutput", vk::Format::eB8G8R8A8Srgb, VulkanGraphResourceType::SwapchainOutput})
+        .registerResource({.name = "depthBuffer", .format = vk::Format::eD32Sfloat})
+        .registerResource({.name = "albedoBuffer"})
+        .registerResource({.name = "normalBuffer"})
+        .registerResource({.name = "debugBuffer", .format = vk::Format::eR8G8B8A8Unorm})
+        .registerResource({.name = "compositeBuffer", .format = vk::Format::eR16G16B16A16Sfloat})
+        .registerResource({.name = "swapchainOutput", .format = vk::Format::eB8G8R8A8Srgb, .type = VulkanGraphResourceType::SwapchainOutput})
 
         .addPass({
             .base = {
                 .name = "Gbuffer_Pass", .programPath = "mesh_render",
                 .resources = {
-                    {"albedoBuffer", VulkanGraphResourceUsage::ColorAttachment},
-                    {"normalBuffer", VulkanGraphResourceUsage::ColorAttachment},
-                    {"depthBuffer", VulkanGraphResourceUsage::DepthAttachment}
+                    {.name = "albedoBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment},
+                    {.name = "normalBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment},
+                    {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::DepthAttachment}
                 }
             },
             .record = recordMeshBatches,
@@ -123,8 +123,8 @@ Expected<void> VulkanRenderer::init(
             .base = {
                 .name = "Debug_Pass", .programPath = "debug",
                 .resources = {
-                    {"debugBuffer", VulkanGraphResourceUsage::ColorAttachment},
-                    {"depthBuffer", VulkanGraphResourceUsage::DepthAttachment, loadOps}
+                    {.name = "debugBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment},
+                    {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::DepthAttachment, .attachment = loadOps}
                 }
             },
             .record = recordMeshBatches,
@@ -136,10 +136,10 @@ Expected<void> VulkanRenderer::init(
             .base = {
                 .name = "Composite0_Pass", .programPath = "composite_0",
                 .resources  = {
-                    {"depthBuffer", VulkanGraphResourceUsage::SampledRead},
-                    {"albedoBuffer", VulkanGraphResourceUsage::SampledRead},
-                    {"normalBuffer", VulkanGraphResourceUsage::SampledRead},
-                    {"compositeBuffer", VulkanGraphResourceUsage::ColorAttachment}
+                    {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
+                    {.name = "albedoBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
+                    {.name = "normalBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
+                    {.name = "compositeBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment}
                 }
             },
             .record = recordFullscreen,
@@ -149,12 +149,12 @@ Expected<void> VulkanRenderer::init(
             .base = {
                 .name = "Composite1_Pass", .programPath = "composite_1",
                 .resources  = {
-                    {"depthBuffer", VulkanGraphResourceUsage::SampledRead},
-                    {"albedoBuffer", VulkanGraphResourceUsage::SampledRead},
-                    {"normalBuffer", VulkanGraphResourceUsage::SampledRead},
-                    {"debugBuffer", VulkanGraphResourceUsage::SampledRead},
-                    {"compositeBuffer", VulkanGraphResourceUsage::SampledRead},
-                    {"swapchainOutput", VulkanGraphResourceUsage::ColorAttachment}
+                    {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
+                    {.name = "albedoBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
+                    {.name = "normalBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
+                    {.name = "debugBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
+                    {.name = "compositeBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
+                    {.name = "swapchainOutput", .usage = VulkanGraphResourceUsage::ColorAttachment}
                 }
             },
             .record = recordFullscreen,
@@ -254,7 +254,7 @@ Expected<void> VulkanRenderer::onFramebufferResize() {
     }
 
     TRY(swapchainManager.recreateSwapchain());
-    TRY(graphResources.recreate(renderGraph));
+    TRY(graphResources.recreate());
 
     _window->setFramebufferResized(false);
 

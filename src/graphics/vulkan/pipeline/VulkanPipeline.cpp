@@ -36,5 +36,7 @@ Expected<void> VulkanPipeline::createPipelineLayout(
 
     VK_CREATE(_pipelineLayout, device.createPipelineLayout(layoutInfo));
 
+    _pushConstantRanges = descriptor.pushConstantRanges;
+
     return {};
 }

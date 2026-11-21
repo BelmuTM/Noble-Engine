@@ -1,15 +1,10 @@
 #pragma once
 
-#include "graphics/vulkan/pipeline/VulkanPipeline.h"
-#include "graphics/vulkan/pipeline/shaders/VulkanShaderProgram.h"
-
 #include "graphics/vulkan/rendergraph/resources/VulkanGraphResource.h"
 
-#include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorSets.h"
 
-#include <memory>
-#include <ranges>
+#include <vector>
 
 struct VulkanPassTransition {
     VulkanGraphResource*     resource = nullptr;
@@ -53,29 +48,14 @@ public:
     VulkanPass(VulkanPass&&)            = delete;
     VulkanPass& operator=(VulkanPass&&) = delete;
 
-    void destroy() const noexcept;
-
     // Getters
 
     [[nodiscard]] std::uint32_t getIndex() const noexcept { return _index; }
 
     [[nodiscard]] const VulkanPassDescriptor& getPassDescriptor() const noexcept { return _passDescriptor; }
 
-    [[nodiscard]]       VulkanShaderProgram*& getShaderProgram()       noexcept { return _shaderProgram; }
-    [[nodiscard]] const VulkanShaderProgram*  getShaderProgram() const noexcept { return _shaderProgram; }
-
-    [[nodiscard]]       VulkanDescriptorManager* getDescriptorManager()       noexcept { return _descriptorManager.get(); }
-    [[nodiscard]] const VulkanDescriptorManager* getDescriptorManager() const noexcept { return _descriptorManager.get(); }
-
     [[nodiscard]]       VulkanDescriptorSets* getDescriptorSets()       noexcept { return _descriptorSets; }
     [[nodiscard]] const VulkanDescriptorSets* getDescriptorSets() const noexcept { return _descriptorSets; }
-
-    [[nodiscard]] VulkanPipelineLayoutDescriptor& getPipelineLayoutDescriptor() noexcept {
-        return _pipelineLayoutDescriptor;
-    }
-    [[nodiscard]] const VulkanPipelineLayoutDescriptor& getPipelineLayoutDescriptor() const noexcept {
-        return _pipelineLayoutDescriptor;
-    }
 
     [[nodiscard]]       TransitionsVector& getEntryTransitions()       noexcept { return _entryTransitions; }
     [[nodiscard]] const TransitionsVector& getEntryTransitions() const noexcept { return _entryTransitions; }
@@ -87,25 +67,8 @@ public:
 
     void setIndex(const std::uint32_t index) noexcept { _index = index; }
 
-    VulkanPass& setShaderProgram(VulkanShaderProgram* shaderProgram) noexcept {
-        _shaderProgram = shaderProgram;
-        return *this;
-    }
-
-    VulkanPass& setDescriptorManager(std::unique_ptr<VulkanDescriptorManager> descriptorManager) noexcept {
-        _descriptorManager = std::move(descriptorManager);
-        return *this;
-    }
-
     VulkanPass& setDescriptorSets(VulkanDescriptorSets* descriptorSets) noexcept {
         _descriptorSets = descriptorSets;
-        return *this;
-    }
-
-    VulkanPass& setPipelineLayoutDescriptor(
-        const VulkanPipelineLayoutDescriptor& pipelineLayoutDescriptor
-    ) noexcept {
-        _pipelineLayoutDescriptor = pipelineLayoutDescriptor;
         return *this;
     }
 
@@ -122,12 +85,7 @@ private:
 
     std::uint32_t _index = 0;
 
-    VulkanShaderProgram* _shaderProgram = nullptr;
-
-    VulkanPipelineLayoutDescriptor _pipelineLayoutDescriptor{};
-
-    std::unique_ptr<VulkanDescriptorManager> _descriptorManager{};
-    VulkanDescriptorSets*                    _descriptorSets = nullptr;
+    VulkanDescriptorSets* _descriptorSets = nullptr;
 
     TransitionsVector _entryTransitions{};
     TransitionsVector _exitTransitions{};

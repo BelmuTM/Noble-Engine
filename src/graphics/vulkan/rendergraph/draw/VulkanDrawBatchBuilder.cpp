@@ -18,7 +18,7 @@ Expected<void> VulkanDrawBatchBuilder::create(
     TRY_ASSIGN(_indirectionBuffer, storageBufferManager.allocateBuffer(MAX_INSTANCES * sizeof(uint32_t)));
 
     // Allocate descriptors
-    TRY(_descriptorManager.allocate(_descriptors));
+    TRY_ASSIGN(_descriptors, _descriptorManager.allocate());
 
     // Update descriptors
     _descriptors->updatePerFrameSSBODescriptorSets(*objectBuffer, 0);
