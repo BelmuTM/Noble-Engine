@@ -13,7 +13,7 @@ Expected<void> VulkanRenderObject::create(
     _allFramesMask = (1 << framesInFlight) - 1;
     _dirtyFrames   = _allFramesMask;
 
-    _meshes.reserve(_object->getModel().meshes.size());
+    _meshes.reserve(_object->getModel().meshes.size() * 2);
 
     std::size_t objectHash = 0;
 
@@ -28,6 +28,17 @@ Expected<void> VulkanRenderObject::create(
         TRY_ASSIGN(material, materialManager->getOrCreateMaterial(mesh.getMaterial()));
 
         submesh.material = material;
+
+        // TODO: Move this somewhere else
+        VulkanRenderMesh debug{};
+        debug.mesh      = meshManager->allocateMesh(Mesh::makeOBBLines(mesh.getOBB()));
+        debug.material  = nullptr;
+        debug.drawFlags = DrawFlags::Bit::Debug;
+        _meshes.push_back(debug);
+
+        HashUtils::combine(objectHash, MeshHash{}(mesh));
+
+        _gpuData.debugColor = Utility::instanceColor(objectHash);
 
         _meshes.push_back(submesh);
     }

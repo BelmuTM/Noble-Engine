@@ -1,6 +1,7 @@
 #include "VulkanRenderObjectManager.h"
 
 #include "core/debug/Logger.h"
+#include "core/debug/ScopedTimer.h"
 
 Expected<void> VulkanRenderObjectManager::create(const VulkanRenderObjectCreateContext& context) noexcept {
     _context = context;
@@ -10,17 +11,15 @@ Expected<void> VulkanRenderObjectManager::create(const VulkanRenderObjectCreateC
 
     // Load textures
 
-    Logger::debug("Loading object textures");
+    ScopedTimer renderObjectTimer([](const std::string& name, auto duration) {
+        Logger::info(name + " took " + std::to_string(duration.count()) + " ms");
+    });
 
-    const auto startTime = std::chrono::high_resolution_clock::now();
+    renderObjectTimer.start("Uploading GPU textures");
 
     TRY(context.materialManager->loadTextures(context.assetManager->getTextures()));
 
-    const auto endTime = std::chrono::high_resolution_clock::now();
-
-    const auto loadDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
-
-    Logger::debug("Loaded object textures in " + std::to_string(loadDuration) + " ms");
+    renderObjectTimer.stop();
 
     // Create render objects
 

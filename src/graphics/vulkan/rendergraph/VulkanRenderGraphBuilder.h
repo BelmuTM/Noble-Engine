@@ -6,7 +6,7 @@
 
 #include "graphics/vulkan/core/VulkanSwapchain.h"
 
-#include "graphics/vulkan/pipeline/graphics/VulkanGraphicsPipelineManager.h"
+#include "graphics/vulkan/pipeline/VulkanPipelineManager.h"
 #include "graphics/vulkan/pipeline/shaders/VulkanShaderProgramManager.h"
 
 #include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
@@ -32,8 +32,8 @@ struct VulkanRenderGraphBuilderContext {
 
     VulkanDrawBatchBuilder& drawBatchBuilder;
 
-    VulkanShaderProgramManager&    shaderProgramManager;
-    VulkanGraphicsPipelineManager& pipelineManager;
+    VulkanShaderProgramManager& shaderProgramManager;
+    VulkanPipelineManager&      pipelineManager;
 };
 
 class VulkanRenderGraphBuilder {
@@ -52,6 +52,11 @@ public:
 
     VulkanRenderGraphBuilder& registerResource(const VulkanGraphResourceDescriptor& descriptor) {
         _resourceDescriptors.push_back(descriptor);
+        return *this;
+    }
+
+    VulkanRenderGraphBuilder& registerPipeline(const VulkanGraphicsPipelineDefinition& definition) {
+        _graphicsPipelineDefinitions.emplace(definition.name, definition);
         return *this;
     }
 
@@ -76,20 +81,15 @@ private:
         const VulkanPassDescriptorBinding* passDescriptorBinding
     ) const;
 
-    [[nodiscard]] static Expected<void> resolvePushConstantRanges(
-        const VulkanShaderProgram*      shaderProgram,
-        VulkanPipelineLayoutDescriptor& layoutDescriptor
-    );
-
-    [[nodiscard]] Expected<void> createPipeline(
-        VulkanGraphicsPass*                   pass,
-        const VulkanShaderProgram*            shaderProgram,
-        const VulkanPipelineLayoutDescriptor& layoutDescriptor
+    Expected<void> linkPipelines(
+        VulkanGraphicsPass* pass, const VulkanPassDescriptorBinding* binding
     ) const;
 
     const VulkanRenderGraphBuilderContext _context;
 
     std::vector<VulkanGraphResourceDescriptor> _resourceDescriptors{};
+
+    std::unordered_map<std::string, VulkanGraphicsPipelineDefinition> _graphicsPipelineDefinitions{};
 
     std::vector<VulkanGraphicsPassDescriptor> _passDescriptors{};
 

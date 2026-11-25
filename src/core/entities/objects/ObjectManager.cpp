@@ -1,6 +1,7 @@
 #include "ObjectManager.h"
 
 #include "core/debug/Logger.h"
+#include "core/debug/ScopedTimer.h"
 
 #include <memory>
 #include <ranges>
@@ -35,13 +36,15 @@ void ObjectManager::createObjects() {
         _modelPaths.push_back(objectDescriptor.modelPath);
     }
 
-    auto startTime = std::chrono::high_resolution_clock::now();
+    ScopedTimer assetTimer([](const std::string& name, auto duration) {
+        Logger::info(name + " took " + std::to_string(duration.count()) + " ms");
+    });
+
+    assetTimer.start("Loading models");
 
     _assetManager.loadModelsAsync(threadPool, _modelPaths);
 
-    auto loadDuration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count();
-
-    Logger::info("Loaded models in " + std::to_string(loadDuration) + "ms");
+    assetTimer.stop();
 
     // Load textures
     _texturePaths.clear();
@@ -56,13 +59,11 @@ void ObjectManager::createObjects() {
         }
     }
 
-    startTime = std::chrono::high_resolution_clock::now();
+    assetTimer.start("Loading textures");
 
     _assetManager.loadTexturesAsync(threadPool, _texturePaths);
 
-    loadDuration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count();
-
-    Logger::info("Loaded textures in " + std::to_string(loadDuration) + "ms");
+    assetTimer.stop();
 
     // Create objects
     std::vector<std::future<std::unique_ptr<Object>>> objectFutures;

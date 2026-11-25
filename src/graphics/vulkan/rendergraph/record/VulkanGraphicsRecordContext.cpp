@@ -8,7 +8,7 @@ void VulkanGraphicsRecordContext::bindMaterial(const VulkanMaterial* material) {
     if (!material || material == _lastBoundMaterial) return;
 
     _commandBuffer.bindDescriptorSets(
-        _pass.pipeline->getBindPoint(), _pass.pipeline->getLayout(),
+        _boundPipeline->getBindPoint(), _boundPipeline->getLayout(),
         BindingSlots::MaterialData,
         material->getDescriptorSets()->getSet(_frame.frameIndex), nullptr
     );

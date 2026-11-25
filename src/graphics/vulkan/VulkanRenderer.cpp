@@ -81,14 +81,14 @@ Expected<void> VulkanRenderer::init(
     );
 
     const auto recordMeshBatches = [](VulkanGraphicsRecordContext& ctx) -> Expected<void> {
-        ctx.bindPipeline(); ctx.bindGlobalDescriptors(); ctx.bindPassDescriptors();
+        ctx.bindPipeline(0); ctx.bindGlobalDescriptors(); ctx.bindPassDescriptors();
         ctx.setViewport(); ctx.setScissor();
         ctx.drawBatches();
         return {};
     };
 
-    const auto recordFullscreen = [](const VulkanGraphicsRecordContext& ctx) -> Expected<void> {
-        ctx.bindPipeline(); ctx.bindGlobalDescriptors(); ctx.bindPassDescriptors();
+    const auto recordFullscreen = [](VulkanGraphicsRecordContext& ctx) -> Expected<void> {
+        ctx.bindPipeline(0); ctx.bindGlobalDescriptors(); ctx.bindPassDescriptors();
         ctx.setViewport(); ctx.setScissor();
         ctx.bindGeometryBuffers();
         ctx.draw(3);
@@ -105,15 +105,36 @@ Expected<void> VulkanRenderer::init(
         .registerResource({.name = "compositeBuffer", .format = vk::Format::eR16G16B16A16Sfloat})
         .registerResource({.name = "swapchainOutput", .format = vk::Format::eB8G8R8A8Srgb, .type = VulkanGraphResourceType::SwapchainOutput})
 
+        .registerPipeline({
+            .name = "gbuffer",
+            .programPath = "mesh_render"
+        })
+        .registerPipeline({
+            .name = "debug",
+            .programPath = "debug",
+            .state = { .topology = vk::PrimitiveTopology::eLineList, .cullMode = vk::CullModeFlagBits::eNone }
+        })
+        .registerPipeline({
+            .name = "composite_0",
+            .programPath = "composite_0",
+            .state = { .cullMode = vk::CullModeFlagBits::eNone, .meshVertexInput = false }
+        })
+        .registerPipeline({
+            .name = "composite_1",
+            .programPath = "composite_1",
+            .state = { .cullMode = vk::CullModeFlagBits::eNone, .meshVertexInput = false }
+        })
+
         .addPass({
             .base = {
-                .name = "Gbuffer_Pass", .programPath = "mesh_render",
+                .name = "Gbuffer_Pass",
                 .resources = {
                     {.name = "albedoBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment},
                     {.name = "normalBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment},
                     {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::DepthAttachment}
                 }
             },
+            .pipelines = {"gbuffer"},
             .record = recordMeshBatches,
             .cullMode = VulkanGraphicsPassCullMode::Frustum,
             .drawFlags = DrawFlags::Bit::Opaque,
@@ -121,20 +142,20 @@ Expected<void> VulkanRenderer::init(
         })
         .addPass({
             .base = {
-                .name = "Debug_Pass", .programPath = "debug",
+                .name = "Debug_Pass",
                 .resources = {
                     {.name = "debugBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment},
                     {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::DepthAttachment, .attachment = loadOps}
                 }
             },
+            .pipelines = {"debug"},
             .record = recordMeshBatches,
-            .pipelineState = { .topology = vk::PrimitiveTopology::eLineList, .cullMode = vk::CullModeFlagBits::eNone },
             .cullMode = VulkanGraphicsPassCullMode::Frustum,
             .drawFlags = DrawFlags::Bit::Debug
         })
         .addPass({
             .base = {
-                .name = "Composite0_Pass", .programPath = "composite_0",
+                .name = "Composite0_Pass",
                 .resources  = {
                     {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
                     {.name = "albedoBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
@@ -142,12 +163,12 @@ Expected<void> VulkanRenderer::init(
                     {.name = "compositeBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment}
                 }
             },
-            .record = recordFullscreen,
-            .pipelineState = { .cullMode = vk::CullModeFlagBits::eNone, .meshVertexInput = false }
+            .pipelines = {"composite_0"},
+            .record = recordFullscreen
         })
         .addPass({
             .base = {
-                .name = "Composite1_Pass", .programPath = "composite_1",
+                .name = "Composite1_Pass",
                 .resources  = {
                     {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
                     {.name = "albedoBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
@@ -157,8 +178,8 @@ Expected<void> VulkanRenderer::init(
                     {.name = "swapchainOutput", .usage = VulkanGraphResourceUsage::ColorAttachment}
                 }
             },
-            .record = recordFullscreen,
-            .pipelineState = { .cullMode = vk::CullModeFlagBits::eNone, .meshVertexInput = false }
+            .pipelines = {"composite_1"},
+            .record = recordFullscreen
         });
 
     TRY(renderGraphBuilder.build());

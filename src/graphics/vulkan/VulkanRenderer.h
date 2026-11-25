@@ -19,7 +19,7 @@
 #include "graphics/vulkan/resources/ssbo/VulkanStorageBufferManager.h"
 #include "graphics/vulkan/resources/ubo/VulkanUniformBufferManager.h"
 
-#include "graphics/vulkan/pipeline/graphics/VulkanGraphicsPipelineManager.h"
+#include "graphics/vulkan/pipeline/VulkanPipelineManager.h"
 #include "graphics/vulkan/pipeline/shaders/VulkanShaderProgramManager.h"
 
 #include "graphics/vulkan/rendergraph/VulkanRenderGraph.h"
@@ -71,7 +71,8 @@ private:
     VulkanFrameCuller      frameCuller{};
     VulkanDrawBatchBuilder drawBatchBuilder{};
 
-    VulkanShaderProgramManager    shaderProgramManager{};
-    VulkanGraphicsPipelineManager pipelineManager{};
-    VulkanRenderGraph             renderGraph{};
+    VulkanShaderProgramManager shaderProgramManager{};
+    VulkanPipelineManager      pipelineManager{};
+
+    VulkanRenderGraph renderGraph{};
 };

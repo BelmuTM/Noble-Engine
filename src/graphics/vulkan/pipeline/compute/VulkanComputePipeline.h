@@ -13,8 +13,7 @@ struct VulkanComputePipelineDescriptor {
 
 class VulkanComputePipeline final : public VulkanPipeline {
 public:
-    VulkanComputePipeline()           = default;
-    ~VulkanComputePipeline() override = default;
+    VulkanComputePipeline() = default;
 
     VulkanComputePipeline(const VulkanComputePipeline&)            = delete;
     VulkanComputePipeline& operator=(const VulkanComputePipeline&) = delete;

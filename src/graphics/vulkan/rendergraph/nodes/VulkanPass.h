@@ -6,6 +6,8 @@
 
 #include <vector>
 
+#include "graphics/vulkan/pipeline/VulkanPipeline.h"
+
 struct VulkanPassTransition {
     VulkanGraphResource*     resource = nullptr;
     VulkanGraphResourceState src{};
@@ -15,8 +17,6 @@ struct VulkanPassTransition {
 // Immutable, describes the pass identity
 struct VulkanPassDescriptor {
     std::string name = "Undefined_Pass";
-
-    std::string programPath;
 
     std::vector<VulkanPassResourceUse> resources{};
 
@@ -54,6 +54,8 @@ public:
 
     [[nodiscard]] const VulkanPassDescriptor& getPassDescriptor() const noexcept { return _passDescriptor; }
 
+    [[nodiscard]] std::span<const VulkanPipeline* const> getPipelines() const noexcept { return _pipelines; }
+
     [[nodiscard]]       VulkanDescriptorSets* getDescriptorSets()       noexcept { return _descriptorSets; }
     [[nodiscard]] const VulkanDescriptorSets* getDescriptorSets() const noexcept { return _descriptorSets; }
 
@@ -67,9 +69,10 @@ public:
 
     void setIndex(const std::uint32_t index) noexcept { _index = index; }
 
+    VulkanPass& addPipeline(const VulkanPipeline* pipeline) { _pipelines.push_back(pipeline); return *this; }
+
     VulkanPass& setDescriptorSets(VulkanDescriptorSets* descriptorSets) noexcept {
-        _descriptorSets = descriptorSets;
-        return *this;
+        _descriptorSets = descriptorSets; return *this;
     }
 
     VulkanPass& addEntryTransition(const VulkanPassTransition& entryTransition) {
@@ -84,6 +87,8 @@ private:
     const VulkanPassDescriptor _passDescriptor;
 
     std::uint32_t _index = 0;
+
+    std::vector<const VulkanPipeline*> _pipelines{};
 
     VulkanDescriptorSets* _descriptorSets = nullptr;
 

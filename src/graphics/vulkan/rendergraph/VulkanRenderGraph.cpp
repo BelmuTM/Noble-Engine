@@ -97,7 +97,7 @@ Expected<void> VulkanRenderGraph::executePass(
 ) {
 
     VulkanPassBindings passBindings(
-        pass.getGraphicsPipeline(),
+        pass.base().getPipelines(),
         pass.base().getDescriptorSets()
     );
 

@@ -12,6 +12,8 @@ enum class InputAction : std::uint8_t {
     MoveRight,
     MoveUp,
     MoveDown,
+    RollClockwise,
+    RollAntiClockwise,
     IncreaseSpeed,
     ToggleDebugView
 };

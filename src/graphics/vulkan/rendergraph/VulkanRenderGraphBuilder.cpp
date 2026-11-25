@@ -1,10 +1,17 @@
 #include "VulkanRenderGraphBuilder.h"
 
+#include "core/debug/ScopedTimer.h"
 #include "core/render/BindingSlots.h"
 
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
 Expected<void> VulkanRenderGraphBuilder::build() {
+
+    ScopedTimer renderGraphTimer("Building render graph", [](const std::string& name, auto duration) {
+        Logger::info(name + " took " + std::to_string(duration.count()) + " ms");
+    });
+
+    renderGraphTimer.start();
 
     vk::DescriptorSetLayoutCreateInfo emptyInfo{};
     VK_CREATE(_emptyDescriptorLayout, _context.device.getLogicalDevice().createDescriptorSetLayout(emptyInfo));
@@ -19,12 +26,6 @@ Expected<void> VulkanRenderGraphBuilder::build() {
         VulkanGraphicsPass* pass;
         TRY_ASSIGN(pass, allocatePass(passDescriptor));
 
-        VulkanShaderProgram* shaderProgram = nullptr;
-        TRY_ASSIGN(shaderProgram, _context.shaderProgramManager.load(passDescriptor.base.programPath));
-
-        VulkanPipelineLayoutDescriptor pipelineLayoutDescriptor{};
-
-        TRY(resolvePushConstantRanges(shaderProgram, pipelineLayoutDescriptor));
         TRY(scheduleTransitions(pass->base(), resourceStates, vk::PipelineStageFlagBits2::eFragmentShader));
 
         const VulkanPassDescriptorBinding* descriptorBinding = nullptr;
@@ -32,19 +33,17 @@ Expected<void> VulkanRenderGraphBuilder::build() {
 
         pass->base().setDescriptorSets(descriptorBinding ? descriptorBinding->sets : nullptr);
 
-        TRY(resolveDescriptorLayouts(pipelineLayoutDescriptor, descriptorBinding));
-
-        TRY(createPipeline(pass, shaderProgram, pipelineLayoutDescriptor));
+        TRY(linkPipelines(pass, descriptorBinding));
     }
-
-    Logger::debug("Built render graph");
 
     // TODO: Add validation step
 
     return {};
 }
 
-Expected<VulkanGraphicsPass*> VulkanRenderGraphBuilder::allocatePass(const VulkanGraphicsPassDescriptor& descriptor) const {
+Expected<VulkanGraphicsPass*> VulkanRenderGraphBuilder::allocatePass(
+    const VulkanGraphicsPassDescriptor& descriptor
+) const {
 
     _context.renderGraph.addPass(std::make_unique<VulkanGraphicsPass>(descriptor));
 
@@ -154,26 +153,12 @@ Expected<void> VulkanRenderGraphBuilder::resolveDescriptorLayouts(
     return {};
 }
 
-Expected<void> VulkanRenderGraphBuilder::resolvePushConstantRanges(
-    const VulkanShaderProgram*      shaderProgram,
-    VulkanPipelineLayoutDescriptor& layoutDescriptor
-) {
-    layoutDescriptor.pushConstantRanges = shaderProgram->getPushConstants();
-
-    return {};
-}
-
-Expected<void> VulkanRenderGraphBuilder::createPipeline(
-    VulkanGraphicsPass*                   pass,
-    const VulkanShaderProgram*            shaderProgram,
-    const VulkanPipelineLayoutDescriptor& layoutDescriptor
+Expected<void> VulkanRenderGraphBuilder::linkPipelines(
+    VulkanGraphicsPass* pass, const VulkanPassDescriptorBinding* binding
 ) const {
 
-    VulkanGraphicsPipelineDescriptor descriptor{};
-
-    descriptor.shaderStages = shaderProgram->getStages();
-    descriptor.state        = pass->getGraphicsPassDescriptor().pipelineState;
-    descriptor.layout       = layoutDescriptor;
+    VulkanGraphicsPipelineTarget target{};
+    TRY(resolveDescriptorLayouts(target.layout, binding));
 
     for (const auto& use : pass->base().getPassDescriptor().resources) {
 
@@ -183,19 +168,31 @@ Expected<void> VulkanRenderGraphBuilder::createPipeline(
 
         if (VulkanPassResourceUse::isDepthUsage(use.usage)) {
             // Depth attachment format
-            descriptor.depthAttachmentFormat = format;
-            descriptor.depthWrite            = use.usage == VulkanGraphResourceUsage::DepthAttachment;
+            target.depthAttachmentFormat = format;
+            target.depthWrite            = use.usage == VulkanGraphResourceUsage::DepthAttachment;
 
         } else {
             // Color attachment formats
-            descriptor.colorAttachmentFormats.push_back(format);
+            target.colorAttachmentFormats.push_back(format);
         }
     }
 
-    const VulkanGraphicsPipeline* pipeline = nullptr;
-    TRY_ASSIGN(pipeline, _context.pipelineManager.createGraphicsPipeline(descriptor));
+    for (const auto& name : pass->getGraphicsPassDescriptor().pipelines) {
 
-    pass->setGraphicsPipeline(pipeline);
+        const auto definitionIt = _graphicsPipelineDefinitions.find(name);
+
+        if (definitionIt == _graphicsPipelineDefinitions.end()) {
+            return VK_FAIL("Pass \"" + pass->base().getPassDescriptor().name + "\" uses unregistered pipeline \"" + name + "\".");
+        }
+
+        VulkanShaderProgram* program = nullptr;
+        TRY_ASSIGN(program, _context.shaderProgramManager.load(definitionIt->second.programPath));
+
+        const VulkanGraphicsPipeline* pipeline = nullptr;
+        TRY_ASSIGN(pipeline, _context.pipelineManager.getOrCreate(definitionIt->second, *program, target));
+
+        pass->base().addPipeline(pipeline);
+    }
 
     return {};
 }

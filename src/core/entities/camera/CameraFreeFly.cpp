@@ -2,12 +2,12 @@
 
 #include "Camera.h"
 
-#include <glm/gtc/matrix_transform.hpp>
-
 static constexpr float speedIncrease = 3.0f;
 static constexpr float speedDecrease = 0.2f;
 
 static constexpr float cameraSmoothing = 6.0f;
+
+static constexpr float rollSpeed = 50.0f;
 
 CameraFreeFly::CameraFreeFly(Camera& camera, InputManager& inputManager, GLFWwindow* window)
     : ICameraBehavior(camera), IInputListener(inputManager), _window(window)
@@ -59,7 +59,17 @@ void CameraFreeFly::update(const float deltaTime) {
 
         _camera.addYaw  (-delta.x * sensitivity);
         _camera.addPitch(-delta.y * sensitivity);
-        _camera.updateRotation();
+        _camera.updateRotationBasis();
+    }
+
+    if (_inputManager.isHeld(InputAction::RollClockwise)) {
+        _camera.addRoll(rollSpeed * deltaTime);
+        _camera.updateRotationBasis();
+    }
+
+    if (_inputManager.isHeld(InputAction::RollAntiClockwise)) {
+        _camera.addRoll(-rollSpeed * deltaTime);
+        _camera.updateRotationBasis();
     }
 
     // Update camera data

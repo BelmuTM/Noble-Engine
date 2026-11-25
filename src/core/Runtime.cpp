@@ -30,6 +30,8 @@ Expected<void> Runtime::init() {
     keyMap.bind(GLFW_KEY_D, InputAction::MoveRight);
     keyMap.bind(GLFW_KEY_SPACE, InputAction::MoveUp);
     keyMap.bind(GLFW_KEY_LEFT_CONTROL, InputAction::MoveDown);
+    keyMap.bind(GLFW_KEY_E, InputAction::RollClockwise);
+    keyMap.bind(GLFW_KEY_Q, InputAction::RollAntiClockwise);
     keyMap.bind(GLFW_KEY_LEFT_SHIFT, InputAction::IncreaseSpeed);
     keyMap.bind(GLFW_KEY_TAB, InputAction::ToggleDebugView);
 

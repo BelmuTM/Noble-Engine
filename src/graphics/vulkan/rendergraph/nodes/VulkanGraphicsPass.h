@@ -13,9 +13,9 @@ enum class VulkanGraphicsPassCullMode : std::uint8_t { None, Frustum };
 struct VulkanGraphicsPassDescriptor {
     VulkanPassDescriptor base;
 
-    std::function<Expected<void>(VulkanGraphicsRecordContext&)> record;
+    std::vector<std::string> pipelines{};
 
-    VulkanGraphicsPipelineState pipelineState{};
+    std::function<Expected<void>(VulkanGraphicsRecordContext&)> record;
 
     VulkanGraphicsPassCullMode cullMode = VulkanGraphicsPassCullMode::None;
 

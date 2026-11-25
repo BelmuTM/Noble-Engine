@@ -18,7 +18,7 @@ public:
     VulkanRecordContext(VulkanRecordContext&&)            = delete;
     VulkanRecordContext& operator=(VulkanRecordContext&&) = delete;
 
-    void bindPipeline() const;
+    void bindPipeline(std::size_t slot);
     void bindGlobalDescriptors() const;
     void bindPassDescriptors() const;
 
@@ -49,6 +49,8 @@ protected:
 
     const VulkanFrameContext& _frame;
     const VulkanPassBindings& _pass;
+
+    const VulkanPipeline* _boundPipeline = nullptr;
 
 private:
     void pushConstantRaw(const std::string& name, const void* data, std::uint32_t typeSize) const;

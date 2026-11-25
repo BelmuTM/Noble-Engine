@@ -7,12 +7,29 @@
 #include "graphics/vulkan/pipeline/VulkanPipeline.h"
 #include "graphics/vulkan/pipeline/graphics/VulkanGraphicsPipelineState.h"
 
-struct VulkanGraphicsPipelineDescriptor {
+struct VulkanGraphicsPipelineDefinition {
+    std::string name = "Undefined_Pipeline";
+
+    std::string programPath;
+
+    VulkanGraphicsPipelineState state{};
+};
+
+struct VulkanGraphicsPipelineTarget {
     VulkanPipelineLayoutDescriptor layout{};
 
+    std::vector<vk::Format> colorAttachmentFormats{};
+    vk::Format              depthAttachmentFormat = vk::Format::eUndefined;
+
+    bool depthWrite = true;
+};
+
+struct VulkanGraphicsPipelineDescriptor {
     std::vector<vk::PipelineShaderStageCreateInfo> shaderStages{};
 
     VulkanGraphicsPipelineState state{};
+
+    VulkanPipelineLayoutDescriptor layout{};
 
     std::vector<vk::Format> colorAttachmentFormats{};
     vk::Format              depthAttachmentFormat = vk::Format::eUndefined;
@@ -22,8 +39,7 @@ struct VulkanGraphicsPipelineDescriptor {
 
 class VulkanGraphicsPipeline final : public VulkanPipeline {
 public:
-    VulkanGraphicsPipeline()           = default;
-    ~VulkanGraphicsPipeline() override = default;
+    VulkanGraphicsPipeline() = default;
 
     VulkanGraphicsPipeline(const VulkanGraphicsPipeline&)            = delete;
     VulkanGraphicsPipeline& operator=(const VulkanGraphicsPipeline&) = delete;
