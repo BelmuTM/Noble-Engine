@@ -1,11 +1,8 @@
 #include "VulkanRenderGraph.h"
 
-#include "draw/VulkanDrawBatchBuilder.h"
 #include "graphics/vulkan/common/VulkanDebugger.h"
 
-#include "graphics/vulkan/pipeline/graphics/VulkanGraphicsPipeline.h"
-
-#include "graphics/vulkan/rendergraph/record/VulkanGraphicsRecordContext.h"
+#include "graphics/vulkan/rendergraph/record/VulkanRecordContext.h"
 
 Expected<void> VulkanRenderGraph::create() noexcept {
     return {};
@@ -93,29 +90,29 @@ Expected<void> VulkanRenderGraph::executePass(
     vk::CommandBuffer                 commandBuffer,
     const VulkanFrameContext&         frameContext,
     const VulkanGraphResourceManager& resources,
-    const VulkanGraphicsPass&         pass
+    const VulkanPass&                 pass
 ) {
 
     VulkanPassBindings passBindings(
-        pass.base().getPipelines(),
-        pass.base().getDescriptorSets()
+        pass.getPipelines(),
+        pass.getDescriptorSets()
     );
 
-    VulkanGraphicsRecordContext recordContext(
+    VulkanRecordContext recordContext(
         commandBuffer,
         frameContext,
         passBindings,
-        frameContext.drawBatchBuilder->getDrawBatch(pass)  // TODO: Think of a better way to pass the batches
+        frameContext.drawBatchBuilder->getDrawList(pass.getPassDescriptor().drawListId)
     );
 
     // Transition resources for current pass
-    recordTransitions(commandBuffer, pass.base().getEntryTransitions());
+    recordTransitions(commandBuffer, pass.getEntryTransitions());
 
     // Attachments
     std::vector<vk::RenderingAttachmentInfo>   colorAttachments{};
     std::optional<vk::RenderingAttachmentInfo> depthAttachment{};
 
-    for (const auto& use : pass.base().getPassDescriptor().resources) {
+    for (const auto& use : pass.getPassDescriptor().resources) {
 
         if (!VulkanPassResourceUse::isAttachmentUsage(use.usage)) continue;
 
@@ -148,19 +145,15 @@ Expected<void> VulkanRenderGraph::executePass(
     }
 
 #ifdef VULKAN_DEBUG_UTILS
-    VulkanDebugger::beginLabel(commandBuffer, *frameContext.dispatchLoader, pass.getGraphicsPassDescriptor().base.name);
+    VulkanDebugger::beginLabel(commandBuffer, *frameContext.dispatchLoader, pass.getPassDescriptor().name);
 #endif
 
-    const VulkanGraphicsPassDescriptor& passDescriptor = pass.getGraphicsPassDescriptor();
+    const VulkanPassDescriptor& passDescriptor = pass.getPassDescriptor();
 
     // Start rendering
     commandBuffer.beginRendering(renderingInfo);
 
-    if (passDescriptor.countPrimitives) commandBuffer.beginQuery(frameContext.queryPool, 0, {});
-
     TRY(passDescriptor.record(recordContext));
-
-    if (passDescriptor.countPrimitives) commandBuffer.endQuery(frameContext.queryPool, 0);
 
     // Stop rendering
     commandBuffer.endRendering();
@@ -170,7 +163,7 @@ Expected<void> VulkanRenderGraph::executePass(
 #endif
 
     // Transition resources for next pass
-    recordTransitions(commandBuffer, pass.base().getExitTransitions());
+    recordTransitions(commandBuffer, pass.getExitTransitions());
 
     return {};
 }

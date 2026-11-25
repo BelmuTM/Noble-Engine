@@ -4,6 +4,9 @@
 
 #include "graphics/vulkan/rendergraph/VulkanRenderGraph.h"
 
+#include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
+#include "graphics/vulkan/resources/descriptors/VulkanDescriptorSets.h"
+
 #include <ranges>
 
 Expected<void> VulkanGraphResourceManager::create(

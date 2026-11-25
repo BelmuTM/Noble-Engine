@@ -60,7 +60,7 @@ public:
         return *this;
     }
 
-    VulkanRenderGraphBuilder& addPass(const VulkanGraphicsPassDescriptor& descriptor) {
+    VulkanRenderGraphBuilder& addPass(const VulkanPassDescriptor& descriptor) {
         _passDescriptors.push_back(descriptor);
         return *this;
     }
@@ -68,12 +68,12 @@ public:
 private:
     using ResourceStates = std::unordered_map<VulkanGraphResource*, VulkanGraphResourceState>;
 
-    [[nodiscard]] Expected<VulkanGraphicsPass*> allocatePass(const VulkanGraphicsPassDescriptor& descriptor) const;
+    [[nodiscard]] Expected<VulkanPass*> allocatePass(const VulkanPassDescriptor& descriptor) const;
 
     [[nodiscard]] Expected<void> allocateResources() const;
 
     [[nodiscard]] Expected<void> scheduleTransitions(
-        VulkanPass& pass, ResourceStates& resourceStates, vk::PipelineStageFlags2 shaderStages
+        VulkanPass* pass, ResourceStates& resourceStates, vk::PipelineStageFlags2 shaderStages
     ) const;
 
     [[nodiscard]] Expected<void> resolveDescriptorLayouts(
@@ -82,7 +82,7 @@ private:
     ) const;
 
     Expected<void> linkPipelines(
-        VulkanGraphicsPass* pass, const VulkanPassDescriptorBinding* binding
+        VulkanPass* pass, const VulkanPassDescriptorBinding* binding
     ) const;
 
     const VulkanRenderGraphBuilderContext _context;
@@ -91,7 +91,7 @@ private:
 
     std::unordered_map<std::string, VulkanGraphicsPipelineDefinition> _graphicsPipelineDefinitions{};
 
-    std::vector<VulkanGraphicsPassDescriptor> _passDescriptors{};
+    std::vector<VulkanPassDescriptor> _passDescriptors{};
 
     // Placeholder descriptor layout for passes with no incoming data
     vk::DescriptorSetLayout _emptyDescriptorLayout{};

@@ -5,7 +5,7 @@
 #include "graphics/vulkan/rendergraph/VulkanRenderGraphBuilder.h"
 
 #include "graphics/vulkan/rendergraph/VulkanFrameContext.h"
-#include "graphics/vulkan/rendergraph/record/VulkanGraphicsRecordContext.h"
+#include "graphics/vulkan/rendergraph/record/VulkanRecordContext.h"
 
 VulkanRenderer::VulkanRenderer(const std::uint32_t framesInFlight) : _framesInFlight(framesInFlight) {}
 
@@ -80,14 +80,23 @@ Expected<void> VulkanRenderer::init(
         )
     );
 
-    const auto recordMeshBatches = [](VulkanGraphicsRecordContext& ctx) -> Expected<void> {
+    const auto recordGbuffer = [](VulkanRecordContext& ctx) -> Expected<void> {
+        ctx.beginQuery();
+        ctx.bindPipeline(0); ctx.bindGlobalDescriptors(); ctx.bindPassDescriptors();
+        ctx.setViewport(); ctx.setScissor();
+        ctx.drawBatches();
+        ctx.endQuery();
+        return {};
+    };
+
+    const auto recordDebug = [](VulkanRecordContext& ctx) -> Expected<void> {
         ctx.bindPipeline(0); ctx.bindGlobalDescriptors(); ctx.bindPassDescriptors();
         ctx.setViewport(); ctx.setScissor();
         ctx.drawBatches();
         return {};
     };
 
-    const auto recordFullscreen = [](VulkanGraphicsRecordContext& ctx) -> Expected<void> {
+    const auto recordFullscreen = [](VulkanRecordContext& ctx) -> Expected<void> {
         ctx.bindPipeline(0); ctx.bindGlobalDescriptors(); ctx.bindPassDescriptors();
         ctx.setViewport(); ctx.setScissor();
         ctx.bindGeometryBuffers();
@@ -126,57 +135,46 @@ Expected<void> VulkanRenderer::init(
         })
 
         .addPass({
-            .base = {
-                .name = "Gbuffer_Pass",
-                .resources = {
-                    {.name = "albedoBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment},
-                    {.name = "normalBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment},
-                    {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::DepthAttachment}
-                }
+            .name = "Gbuffer_Pass",
+            .resources = {
+                {.name = "albedoBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment},
+                {.name = "normalBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment},
+                {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::DepthAttachment}
             },
             .pipelines = {"gbuffer"},
-            .record = recordMeshBatches,
-            .cullMode = VulkanGraphicsPassCullMode::Frustum,
-            .drawFlags = DrawFlags::Bit::Opaque,
-            .countPrimitives = true
+            .drawListId = drawBatchBuilder.registerDrawList({.drawFlags = DrawFlags::Bit::Opaque, .cullMode = CullMode::Frustum}),
+            .record = recordGbuffer
         })
         .addPass({
-            .base = {
-                .name = "Debug_Pass",
-                .resources = {
-                    {.name = "debugBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment},
-                    {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::DepthAttachment, .attachment = loadOps}
-                }
+            .name = "Debug_Pass",
+            .resources = {
+                {.name = "debugBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment},
+                {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::DepthAttachment, .attachment = loadOps}
             },
             .pipelines = {"debug"},
-            .record = recordMeshBatches,
-            .cullMode = VulkanGraphicsPassCullMode::Frustum,
-            .drawFlags = DrawFlags::Bit::Debug
+            .drawListId = drawBatchBuilder.registerDrawList({.drawFlags = DrawFlags::Bit::Debug, .cullMode = CullMode::Frustum}),
+            .record = recordDebug
         })
         .addPass({
-            .base = {
-                .name = "Composite0_Pass",
-                .resources  = {
-                    {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
-                    {.name = "albedoBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
-                    {.name = "normalBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
-                    {.name = "compositeBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment}
-                }
+            .name = "Composite0_Pass",
+            .resources  = {
+                {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
+                {.name = "albedoBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
+                {.name = "normalBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
+                {.name = "compositeBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment}
             },
             .pipelines = {"composite_0"},
             .record = recordFullscreen
         })
         .addPass({
-            .base = {
-                .name = "Composite1_Pass",
-                .resources  = {
-                    {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
-                    {.name = "albedoBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
-                    {.name = "normalBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
-                    {.name = "debugBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
-                    {.name = "compositeBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
-                    {.name = "swapchainOutput", .usage = VulkanGraphResourceUsage::ColorAttachment}
-                }
+            .name = "Composite1_Pass",
+            .resources  = {
+                {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
+                {.name = "albedoBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
+                {.name = "normalBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
+                {.name = "debugBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
+                {.name = "compositeBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
+                {.name = "swapchainOutput", .usage = VulkanGraphResourceUsage::ColorAttachment}
             },
             .pipelines = {"composite_1"},
             .record = recordFullscreen
@@ -222,7 +220,6 @@ Expected<void> VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
     // Build draw commands
     TRY(
         drawBatchBuilder.build(
-            renderGraph.getPasses(),
             renderObjectManager.getRenderItems(),
             frameCuller.getVisibleItems(),
             currentFrame
@@ -234,8 +231,8 @@ Expected<void> VulkanRenderer::drawFrame(const FrameUniforms& uniforms) {
         .extent     = context.getSwapchain().getExtent(),
         .frameIndex = currentFrame,
         .globalSets = {
-            frameResources     .getDescriptorSets()->getSet(currentFrame),
-            drawBatchBuilder   .getDescriptorSets()->getSet(currentFrame)
+            frameResources  .getDescriptorSets()->getSet(currentFrame),
+            drawBatchBuilder.getDescriptorSets()->getSet(currentFrame)
         },
         .vertexBuffer     = meshManager.getVertexBuffer().handle(),
         .indexBuffer      = meshManager.getIndexBuffer().handle(),

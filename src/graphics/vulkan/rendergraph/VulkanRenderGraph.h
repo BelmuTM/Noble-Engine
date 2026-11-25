@@ -4,7 +4,7 @@
 
 #include "VulkanFrameContext.h"
 
-#include "nodes/VulkanGraphicsPass.h"
+#include "nodes/VulkanPass.h"
 
 #include <memory>
 #include <vector>
@@ -36,16 +36,16 @@ public:
         vk::CommandBuffer                 commandBuffer,
         const VulkanFrameContext&         frameContext,
         const VulkanGraphResourceManager& resources,
-        const VulkanGraphicsPass&         pass
+        const VulkanPass&         pass
     );
 
-    [[nodiscard]]       std::vector<std::unique_ptr<VulkanGraphicsPass>>& getPasses()       noexcept { return _passes; }
-    [[nodiscard]] const std::vector<std::unique_ptr<VulkanGraphicsPass>>& getPasses() const noexcept { return _passes; }
+    [[nodiscard]]       std::vector<std::unique_ptr<VulkanPass>>& getPasses()       noexcept { return _passes; }
+    [[nodiscard]] const std::vector<std::unique_ptr<VulkanPass>>& getPasses() const noexcept { return _passes; }
 
-    void addPass(std::unique_ptr<VulkanGraphicsPass> pass) {
+    void addPass(std::unique_ptr<VulkanPass> pass) {
         _passes.push_back(std::move(pass));
     }
 
 private:
-    std::vector<std::unique_ptr<VulkanGraphicsPass>> _passes{};
+    std::vector<std::unique_ptr<VulkanPass>> _passes{};
 };

@@ -23,15 +23,15 @@ Expected<void> VulkanRenderGraphBuilder::build() {
     // Build passes
     for (const auto& passDescriptor : _passDescriptors) {
 
-        VulkanGraphicsPass* pass;
+        VulkanPass* pass;
         TRY_ASSIGN(pass, allocatePass(passDescriptor));
 
-        TRY(scheduleTransitions(pass->base(), resourceStates, vk::PipelineStageFlagBits2::eFragmentShader));
+        TRY(scheduleTransitions(pass, resourceStates, vk::PipelineStageFlagBits2::eFragmentShader));
 
         const VulkanPassDescriptorBinding* descriptorBinding = nullptr;
-        TRY_ASSIGN(descriptorBinding, _context.graphResources.allocateDescriptors(pass->base().getPassDescriptor()));
+        TRY_ASSIGN(descriptorBinding, _context.graphResources.allocateDescriptors(pass->getPassDescriptor()));
 
-        pass->base().setDescriptorSets(descriptorBinding ? descriptorBinding->sets : nullptr);
+        pass->setDescriptorSets(descriptorBinding ? descriptorBinding->sets : nullptr);
 
         TRY(linkPipelines(pass, descriptorBinding));
     }
@@ -41,16 +41,12 @@ Expected<void> VulkanRenderGraphBuilder::build() {
     return {};
 }
 
-Expected<VulkanGraphicsPass*> VulkanRenderGraphBuilder::allocatePass(
-    const VulkanGraphicsPassDescriptor& descriptor
+Expected<VulkanPass*> VulkanRenderGraphBuilder::allocatePass(
+    const VulkanPassDescriptor& descriptor
 ) const {
 
-    _context.renderGraph.addPass(std::make_unique<VulkanGraphicsPass>(descriptor));
-
-    VulkanGraphicsPass* passPtr = _context.renderGraph.getPasses().back().get();
-    passPtr->base().setIndex(_context.renderGraph.getPasses().size() - 1);
-
-    return Expected(passPtr);
+    _context.renderGraph.addPass(std::make_unique<VulkanPass>(descriptor));
+    return Expected(_context.renderGraph.getPasses().back().get());
 }
 
 
@@ -85,13 +81,13 @@ Expected<void> VulkanRenderGraphBuilder::allocateResources() const {
 }
 
 Expected<void> VulkanRenderGraphBuilder::scheduleTransitions(
-    VulkanPass& pass, ResourceStates& resourceStates, const vk::PipelineStageFlags2 shaderStages
+    VulkanPass* pass, ResourceStates& resourceStates, const vk::PipelineStageFlags2 shaderStages
 ) const {
     const auto presentState = VulkanGraphResourceState::stateForUsage(VulkanGraphResourceUsage::Present, {});
 
     std::unordered_set<std::string> usedInPass{};
 
-    for (const auto& [name, usage, attachment] : pass.getPassDescriptor().resources) {
+    for (const auto& [name, usage, attachment] : pass->getPassDescriptor().resources) {
         VulkanGraphResource* resource = _context.graphResources.getResource(name);
 
         if (!resource) {
@@ -100,7 +96,7 @@ Expected<void> VulkanRenderGraphBuilder::scheduleTransitions(
 
         if (!usedInPass.insert(name).second) {
             return VK_FAIL(
-                "Pass \"" + pass.getPassDescriptor().name + "\" uses resource \"" + name + "\" more than once."
+                "Pass \"" + pass->getPassDescriptor().name + "\" uses resource \"" + name + "\" more than once."
             );
         }
 
@@ -116,12 +112,12 @@ Expected<void> VulkanRenderGraphBuilder::scheduleTransitions(
         auto&      currentState = resourceStates.try_emplace(resource).first->second;
 
         if (currentState.needsBarrierTo(nextState)) {
-            pass.addEntryTransition({.resource = resource, .src = currentState, .dst = nextState});
+            pass->addEntryTransition({.resource = resource, .src = currentState, .dst = nextState});
         }
 
         // Swapchain images go back to the present layout at the end of every pass that uses them
         if (resource->descriptor.type == VulkanGraphResourceType::SwapchainOutput) {
-            pass.addExitTransition({.resource = resource, .src = nextState, .dst = presentState});
+            pass->addExitTransition({.resource = resource, .src = nextState, .dst = presentState});
             currentState = presentState;
 
         } else {
@@ -154,13 +150,13 @@ Expected<void> VulkanRenderGraphBuilder::resolveDescriptorLayouts(
 }
 
 Expected<void> VulkanRenderGraphBuilder::linkPipelines(
-    VulkanGraphicsPass* pass, const VulkanPassDescriptorBinding* binding
+    VulkanPass* pass, const VulkanPassDescriptorBinding* binding
 ) const {
 
     VulkanGraphicsPipelineTarget target{};
     TRY(resolveDescriptorLayouts(target.layout, binding));
 
-    for (const auto& use : pass->base().getPassDescriptor().resources) {
+    for (const auto& use : pass->getPassDescriptor().resources) {
 
         if (!VulkanPassResourceUse::isAttachmentUsage(use.usage)) continue;
 
@@ -177,12 +173,12 @@ Expected<void> VulkanRenderGraphBuilder::linkPipelines(
         }
     }
 
-    for (const auto& name : pass->getGraphicsPassDescriptor().pipelines) {
+    for (const auto& name : pass->getPassDescriptor().pipelines) {
 
         const auto definitionIt = _graphicsPipelineDefinitions.find(name);
 
         if (definitionIt == _graphicsPipelineDefinitions.end()) {
-            return VK_FAIL("Pass \"" + pass->base().getPassDescriptor().name + "\" uses unregistered pipeline \"" + name + "\".");
+            return VK_FAIL("Pass \"" + pass->getPassDescriptor().name + "\" uses unregistered pipeline \"" + name + "\".");
         }
 
         VulkanShaderProgram* program = nullptr;
@@ -191,7 +187,7 @@ Expected<void> VulkanRenderGraphBuilder::linkPipelines(
         const VulkanGraphicsPipeline* pipeline = nullptr;
         TRY_ASSIGN(pipeline, _context.pipelineManager.getOrCreate(definitionIt->second, *program, target));
 
-        pass->base().addPipeline(pipeline);
+        pass->addPipeline(pipeline);
     }
 
     return {};

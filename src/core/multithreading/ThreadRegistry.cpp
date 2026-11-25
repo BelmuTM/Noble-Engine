@@ -23,7 +23,7 @@ namespace ThreadRegistry {
     }
 
     void unregisterThread() {
-        threadNameLocal = DEFAULT_THREAD_NAME; // Before lock in case of throws
+        threadNameLocal = DEFAULT_THREAD_NAME; // Before lock, in case of throws
 
         std::unique_lock lock(mutex);
         threadRegistry.erase(std::this_thread::get_id());

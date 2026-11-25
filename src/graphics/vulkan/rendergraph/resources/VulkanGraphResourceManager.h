@@ -5,7 +5,8 @@
 #include "graphics/vulkan/core/VulkanDevice.h"
 #include "graphics/vulkan/core/VulkanSwapchain.h"
 
-#include "graphics/vulkan/rendergraph/nodes/VulkanPass.h"
+#include "graphics/vulkan/rendergraph/nodes/VulkanPassBindings.h"
+#include "graphics/vulkan/rendergraph/nodes/VulkanPassDescriptor.h"
 #include "graphics/vulkan/rendergraph/resources/VulkanGraphResource.h"
 
 #include <memory>
@@ -13,17 +14,10 @@
 #include <unordered_map>
 #include <vector>
 
-struct VulkanPassDescriptorBinding {
-    VulkanDescriptorManager  manager{};
-    VulkanDescriptorSets*    sets = nullptr;
-    std::vector<std::string> sampledResourceNames{};
-};
-
 class VulkanGraphResourceManager {
 public:
-    using ResourcesMap         = std::unordered_map<std::string, std::unique_ptr<VulkanGraphResource>>;
-    using ResourceAccessorsMap = std::unordered_map<std::string, std::vector<VulkanPass*>>;
-    using ResourceImagesMap    = std::unordered_map<std::string, std::unique_ptr<VulkanImage>>;
+    using ResourcesMap      = std::unordered_map<std::string, std::unique_ptr<VulkanGraphResource>>;
+    using ResourceImagesMap = std::unordered_map<std::string, std::unique_ptr<VulkanImage>>;
 
     VulkanGraphResourceManager()  = default;
     ~VulkanGraphResourceManager() = default;

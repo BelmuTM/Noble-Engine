@@ -60,26 +60,21 @@ VulkanDrawCommand makeDrawCommand(
 }
 
 Expected<void> VulkanDrawBatchBuilder::build(
-    const std::span<const std::unique_ptr<VulkanGraphicsPass>> passes,
-    const std::span<const VulkanRenderItem>                    allItems,
-    const std::span<const VulkanRenderItem>                    visibleItems,
-    const std::uint32_t                                        frameIndex
+    const std::span<const VulkanRenderItem> allItems,
+    const std::span<const VulkanRenderItem> visibleItems,
+    const std::uint32_t                     frameIndex
 ) {
-
-    _drawBatches.resize(passes.size());
     _indirection.clear();
 
-    for (const auto& pass : passes) {
-        const auto& desc = pass->getGraphicsPassDescriptor();
+    for (auto& [descriptor, batches] : _drawLists) {
 
-        auto& batches = _drawBatches[pass->base().getIndex()];
         batches.clear();
 
-        if (desc.drawFlags.empty()) continue;
+        if (descriptor.drawFlags.empty()) continue;
 
         _entries.clear();
 
-        const auto renderItems = desc.cullMode == VulkanGraphicsPassCullMode::None
+        const auto renderItems = descriptor.cullMode == CullMode::None
             ? allItems
             : visibleItems;
 
@@ -87,7 +82,7 @@ Expected<void> VulkanDrawBatchBuilder::build(
             if (
                 !renderMesh.mesh ||
                 renderMesh.mesh->getIndices().empty() ||
-                !renderMesh.drawFlags.intersects(desc.drawFlags)
+                !renderMesh.drawFlags.intersects(descriptor.drawFlags)
             ) continue;
 
             _entries.emplace_back(makeSortKey(renderMesh), handle.objectIndex, renderMesh);

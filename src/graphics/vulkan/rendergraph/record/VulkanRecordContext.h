@@ -3,24 +3,62 @@
 #include "graphics/vulkan/common/VulkanHeader.h"
 
 #include "graphics/vulkan/rendergraph/VulkanFrameContext.h"
+#include "graphics/vulkan/rendergraph/draw/VulkanDrawCommand.h"
 #include "graphics/vulkan/rendergraph/nodes/VulkanPassBindings.h"
 
 #include <string>
 #include <type_traits>
 
+#include "core/render/DrawList.h"
+#include "graphics/vulkan/rendergraph/draw/VulkanDrawBatchBuilder.h"
+
 class VulkanMaterial;
 
 class VulkanRecordContext {
 public:
+    VulkanRecordContext(
+        const vk::CommandBuffer   commandBuffer,
+        const VulkanFrameContext& frame,
+        const VulkanPassBindings& pass,
+        const VulkanDrawCommandsVector& drawBatches
+    ) noexcept
+        :
+        _commandBuffer(commandBuffer), _frame(frame), _pass(pass), _drawBatches(drawBatches)
+    {}
+
+    ~VulkanRecordContext() = default;
+
     VulkanRecordContext(const VulkanRecordContext&)            = delete;
     VulkanRecordContext& operator=(const VulkanRecordContext&) = delete;
 
     VulkanRecordContext(VulkanRecordContext&&)            = delete;
     VulkanRecordContext& operator=(VulkanRecordContext&&) = delete;
 
+    // Binding
+
     void bindPipeline(std::size_t slot);
     void bindGlobalDescriptors() const;
     void bindPassDescriptors() const;
+
+    void bindMaterial(const VulkanMaterial* material);
+    void bindGeometryBuffers() const;
+
+    // Drawing
+
+    void draw(
+        std::uint32_t vertexCount,
+        std::uint32_t instanceCount = 1,
+        std::uint32_t firstVertex   = 0,
+        std::uint32_t firstInstance = 0
+    ) const;
+
+    void drawBatch(const VulkanDrawCommand& batch);
+    void drawBatches();
+
+    // Dynamic state
+
+    void setViewport() const;
+    void setScissor() const;
 
     template<typename PushConstantType>
     void pushConstant(const std::string& name, const PushConstantType& value) {
@@ -30,28 +68,24 @@ public:
         pushConstantRaw(name, &value, static_cast<std::uint32_t>(sizeof(PushConstantType)));
     }
 
+    // Query
+
+    void beginQuery() const;
+    void endQuery() const;
+
     [[nodiscard]] vk::CommandBuffer commandBuffer() const noexcept { return _commandBuffer; }
     [[nodiscard]] vk::Extent2D extent() const noexcept { return _frame.extent; }
     [[nodiscard]] std::uint32_t frameIndex() const noexcept { return _frame.frameIndex; }
 
-protected:
-    VulkanRecordContext(
-        const vk::CommandBuffer   commandBuffer,
-        const VulkanFrameContext& frame,
-        const VulkanPassBindings& pass
-    ) noexcept
-        : _commandBuffer(commandBuffer), _frame(frame), _pass(pass)
-    {}
-
-    ~VulkanRecordContext() = default;
+private:
+    void pushConstantRaw(const std::string& name, const void* data, std::uint32_t typeSize) const;
 
     vk::CommandBuffer _commandBuffer;
 
     const VulkanFrameContext& _frame;
     const VulkanPassBindings& _pass;
+    const VulkanDrawCommandsVector& _drawBatches;
 
     const VulkanPipeline* _boundPipeline = nullptr;
-
-private:
-    void pushConstantRaw(const std::string& name, const void* data, std::uint32_t typeSize) const;
+    const VulkanMaterial* _boundMaterial = nullptr;
 };
