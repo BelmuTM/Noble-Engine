@@ -6,9 +6,17 @@
 
 #include "graphics/vulkan/pipeline/VulkanPipeline.h"
 
+struct VulkanComputePipelineDefinition {
+    std::string name = "Undefined_Compute_Pipeline";
+
+    std::string programPath;
+
+    bool operator==(const VulkanComputePipelineDefinition&) const = default;
+};
+
 struct VulkanComputePipelineDescriptor {
-    VulkanPipelineLayoutDescriptor    layout{};
     vk::PipelineShaderStageCreateInfo shaderStage;
+    VulkanPipelineLayoutDescriptor    layout{};
 };
 
 class VulkanComputePipeline final : public VulkanPipeline {

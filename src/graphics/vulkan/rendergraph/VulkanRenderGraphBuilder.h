@@ -2,27 +2,18 @@
 
 #include "core/debug/ErrorHandling.h"
 
-#include "graphics/vulkan/rendergraph/VulkanRenderGraph.h"
-
-#include "graphics/vulkan/core/VulkanSwapchain.h"
-
 #include "graphics/vulkan/pipeline/VulkanPipelineManager.h"
-#include "graphics/vulkan/pipeline/shaders/VulkanShaderProgramManager.h"
+
+#include "graphics/vulkan/rendergraph/VulkanRenderGraph.h"
+#include "graphics/vulkan/rendergraph/draw/VulkanDrawBatchBuilder.h"
 
 #include "graphics/vulkan/resources/frame/VulkanFrameResources.h"
 #include "graphics/vulkan/resources/objects/VulkanRenderObjectManager.h"
-
-#include "graphics/vulkan/rendergraph/draw/VulkanDrawBatchBuilder.h"
 
 struct VulkanRenderGraphBuilderContext {
     VulkanRenderGraph&          renderGraph;
 
     const VulkanDevice&         device;
-    const VulkanSwapchain&      swapchain;
-    const VulkanCommandManager& commandManager;
-
-    VulkanMeshManager&          meshManager;
-    const VulkanImageManager&   imageManager;
 
     VulkanFrameResources&       frameResources;
     VulkanGraphResourceManager& graphResources;
@@ -30,9 +21,8 @@ struct VulkanRenderGraphBuilderContext {
     VulkanMaterialManager&      materialManager;
     VulkanRenderObjectManager&  renderObjectManager;
 
-    VulkanDrawBatchBuilder& drawBatchBuilder;
+    VulkanDrawBatchBuilder&     drawBatchBuilder;
 
-    VulkanShaderProgramManager& shaderProgramManager;
     VulkanPipelineManager&      pipelineManager;
 };
 
@@ -49,11 +39,6 @@ public:
     VulkanRenderGraphBuilder& operator=(VulkanRenderGraphBuilder&&) = delete;
 
     [[nodiscard]] Expected<void> build();
-
-    VulkanRenderGraphBuilder& registerPipeline(const VulkanGraphicsPipelineDefinition& definition) {
-        _graphicsPipelineDefinitions.emplace(definition.name, definition);
-        return *this;
-    }
 
     VulkanRenderGraphBuilder& addPass(const VulkanPassDescriptor& descriptor) {
         _passDescriptors.push_back(descriptor);
@@ -79,8 +64,6 @@ private:
     ) const;
 
     const VulkanRenderGraphBuilderContext _context;
-
-    std::unordered_map<std::string, VulkanGraphicsPipelineDefinition> _graphicsPipelineDefinitions{};
 
     std::vector<VulkanPassDescriptor> _passDescriptors{};
 

@@ -6,6 +6,8 @@
 
 #include "graphics/vulkan/pipeline/interface/VulkanPushConstant.h"
 
+using VulkanPipelineId = std::uint32_t;
+
 struct VulkanPipelineLayoutDescriptor {
     std::vector<vk::DescriptorSetLayout> descriptorLayouts{};
     VulkanPushConstantRangesMap          pushConstantRanges{};

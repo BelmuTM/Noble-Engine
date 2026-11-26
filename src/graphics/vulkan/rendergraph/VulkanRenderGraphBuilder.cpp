@@ -141,19 +141,10 @@ Expected<void> VulkanRenderGraphBuilder::linkPipelines(
         }
     }
 
-    for (const auto& name : pass->getPassDescriptor().pipelines) {
-
-        const auto definitionIt = _graphicsPipelineDefinitions.find(name);
-
-        if (definitionIt == _graphicsPipelineDefinitions.end()) {
-            return VK_FAIL("Pass \"" + pass->getPassDescriptor().name + "\" uses unregistered pipeline \"" + name + "\".");
-        }
-
-        VulkanShaderProgram* program = nullptr;
-        TRY_ASSIGN(program, _context.shaderProgramManager.load(definitionIt->second.programPath));
+    for (const auto& pipelineId : pass->getPassDescriptor().pipelines) {
 
         const VulkanGraphicsPipeline* pipeline = nullptr;
-        TRY_ASSIGN(pipeline, _context.pipelineManager.getOrCreate(definitionIt->second, *program, target));
+        TRY_ASSIGN(pipeline, _context.pipelineManager.getOrCreate(pipelineId, target));
 
         pass->addPipeline(pipeline);
     }

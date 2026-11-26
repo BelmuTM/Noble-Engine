@@ -18,13 +18,14 @@ void VulkanShaderProgramManager::destroy() noexcept {
     _device = VK_NULL_HANDLE;
 }
 
-Expected<VulkanShaderProgram*> VulkanShaderProgramManager::load(const std::string& path) {
+Expected<const VulkanShaderProgram*> VulkanShaderProgramManager::load(const std::string& path) {
     {
         // Fast path: shader program already in cache
         std::lock_guard lock(_mutex);
 
         if (const auto cachedProgram = _programCache.find(path); cachedProgram != _programCache.end()) {
-            return Expected(cachedProgram->second.get());
+            const VulkanShaderProgram* cachedProgramPtr = cachedProgram->second.get();
+            return Expected(cachedProgramPtr);
         }
     }
 
@@ -40,5 +41,7 @@ Expected<VulkanShaderProgram*> VulkanShaderProgramManager::load(const std::strin
     auto [cachedProgram, inserted] =
         _programCache.try_emplace(path, std::make_unique<VulkanShaderProgram>(std::move(tempProgram)));
 
-    return Expected(cachedProgram->second.get());
+    const VulkanShaderProgram* cachedProgramPtr = cachedProgram->second.get();
+
+    return Expected(cachedProgramPtr);
 }

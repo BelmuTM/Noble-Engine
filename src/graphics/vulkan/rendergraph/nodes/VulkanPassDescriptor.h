@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include "graphics/vulkan/pipeline/VulkanPipeline.h"
+
 class VulkanRecordContext;
 
 // Immutable, describes the pass identity
@@ -17,7 +19,7 @@ struct VulkanPassDescriptor {
 
     std::vector<VulkanPassResourceUse> resources{};
 
-    std::vector<std::string> pipelines{};
+    std::vector<VulkanPipelineId> pipelines{};
 
     std::function<Expected<void>(VulkanRecordContext&)> record;
 
@@ -28,8 +30,8 @@ struct VulkanPassDescriptor {
         return *this;
     }
 
-    VulkanPassDescriptor& pipeline(std::string _name) {
-        pipelines.push_back(std::move(_name));
+    VulkanPassDescriptor& pipeline(const VulkanPipelineId id) {
+        pipelines.push_back(id);
         return *this;
     }
 

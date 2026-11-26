@@ -68,13 +68,15 @@ void Camera::update(const float deltaTime) {
 }
 
 glm::vec3 Camera::toWorldSpace(const glm::vec3 vector) const {
+
+    static constexpr glm::vec3 worldUp = {0.0f, 0.0f, 1.0f};
     
     const glm::vec3 forward = glm::normalize(glm::vec3(_forward.x, _forward.y, 0.0f));
-    const glm::vec3 right   = glm::normalize(glm::cross(forward, _up));
+    const glm::vec3 right   = glm::normalize(glm::cross(forward, worldUp));
 
     return vector.x * forward
          + vector.y * right
-         + vector.z * _up;
+         + vector.z * worldUp;
 }
 
 void Camera::updateRotationBasis() {

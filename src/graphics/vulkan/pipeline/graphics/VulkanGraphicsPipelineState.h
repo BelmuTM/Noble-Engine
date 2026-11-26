@@ -8,4 +8,6 @@ struct VulkanGraphicsPipelineState {
     vk::CullModeFlags     cullMode        = vk::CullModeFlagBits::eBack;
     float                 lineWidth       = 1.0f;
     bool                  meshVertexInput = true;
+
+    bool operator==(const VulkanGraphicsPipelineState&) const = default;
 };

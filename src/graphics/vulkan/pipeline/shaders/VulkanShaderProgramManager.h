@@ -25,7 +25,7 @@ public:
 
     void destroy() noexcept;
 
-    [[nodiscard]] Expected<VulkanShaderProgram*> load(const std::string& path);
+    [[nodiscard]] Expected<const VulkanShaderProgram*> load(const std::string& path);
 
 private:
     vk::Device _device{};

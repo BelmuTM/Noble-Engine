@@ -8,11 +8,13 @@
 #include "graphics/vulkan/pipeline/graphics/VulkanGraphicsPipelineState.h"
 
 struct VulkanGraphicsPipelineDefinition {
-    std::string name = "Undefined_Pipeline";
+    std::string name = "Undefined_Graphics_Pipeline";
 
     std::string programPath;
 
     VulkanGraphicsPipelineState state{};
+
+    bool operator==(const VulkanGraphicsPipelineDefinition&) const = default;
 };
 
 struct VulkanGraphicsPipelineTarget {
