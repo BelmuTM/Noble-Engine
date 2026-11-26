@@ -50,11 +50,6 @@ public:
 
     [[nodiscard]] Expected<void> build();
 
-    VulkanRenderGraphBuilder& registerResource(const VulkanGraphResourceDescriptor& descriptor) {
-        _resourceDescriptors.push_back(descriptor);
-        return *this;
-    }
-
     VulkanRenderGraphBuilder& registerPipeline(const VulkanGraphicsPipelineDefinition& definition) {
         _graphicsPipelineDefinitions.emplace(definition.name, definition);
         return *this;
@@ -70,8 +65,6 @@ private:
 
     [[nodiscard]] Expected<VulkanPass*> allocatePass(const VulkanPassDescriptor& descriptor) const;
 
-    [[nodiscard]] Expected<void> allocateResources() const;
-
     [[nodiscard]] Expected<void> scheduleTransitions(
         VulkanPass* pass, ResourceStates& resourceStates, vk::PipelineStageFlags2 shaderStages
     ) const;
@@ -86,8 +79,6 @@ private:
     ) const;
 
     const VulkanRenderGraphBuilderContext _context;
-
-    std::vector<VulkanGraphResourceDescriptor> _resourceDescriptors{};
 
     std::unordered_map<std::string, VulkanGraphicsPipelineDefinition> _graphicsPipelineDefinitions{};
 

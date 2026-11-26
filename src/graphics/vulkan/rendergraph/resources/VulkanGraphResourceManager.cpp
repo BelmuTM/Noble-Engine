@@ -7,24 +7,23 @@
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorSets.h"
 
-#include <ranges>
-
 Expected<void> VulkanGraphResourceManager::create(
-    const VulkanDevice&    device,
-    const VulkanSwapchain& swapchain,
-    const std::uint32_t    framesInFlight
+    const VulkanDevice& device,
+    const std::uint32_t framesInFlight
 ) noexcept {
     _device         = &device;
-    _swapchain      = &swapchain;
     _framesInFlight = framesInFlight;
 
     return {};
 }
 
 void VulkanGraphResourceManager::destroy() noexcept {
+
+    _registrations.clear();
+
     _resources.clear();
 
-    for (const auto& resourceImage : _resourceImages | std::views::values) {
+    for (const auto& resourceImage : _resourceImages) {
         if (resourceImage) {
             resourceImage->destroy();
         }
@@ -38,13 +37,12 @@ void VulkanGraphResourceManager::destroy() noexcept {
 
     _passBindings.clear();
 
-    _device    = nullptr;
-    _swapchain = nullptr;
+    _device = nullptr;
 }
 
-Expected<void> VulkanGraphResourceManager::recreate() {
+Expected<void> VulkanGraphResourceManager::recreate(const vk::Extent2D extent) {
     // Recreate resource images
-    for (const auto& resourceImage : _resourceImages | std::views::values) {
+    for (const auto& resourceImage : _resourceImages) {
         if (!resourceImage) continue;
 
         resourceImage->destroy();
@@ -52,35 +50,13 @@ Expected<void> VulkanGraphResourceManager::recreate() {
         TRY(createResourceImage(
             *resourceImage,
             resourceImage->getFormat(),
-            _swapchain->getExtent(),
+            extent,
             _device
         ));
     }
 
     // Re-bind descriptor sets
     rebindDescriptors();
-
-    return {};
-}
-
-Expected<void> VulkanGraphResourceManager::createResource(const VulkanGraphResourceDescriptor& descriptor) {
-
-    auto [cachedResource, inserted] = _resourceImages.emplace(descriptor.name, std::make_unique<VulkanImage>());
-
-    TRY_CATCH(
-        createResourceImage(
-            *cachedResource->second,
-            descriptor.format,
-            _swapchain->getExtent(),
-            _device
-        ),
-        _resourceImages.erase(cachedResource)
-    );
-
-    VulkanGraphResource resource(descriptor);
-    resource.setImage(cachedResource->second.get());
-
-    addResource(resource);
 
     return {};
 }
@@ -125,23 +101,52 @@ Expected<void> VulkanGraphResourceManager::createResourceImage(
     return {};
 }
 
+Expected<void> VulkanGraphResourceManager::allocateResources(const vk::Extent2D extent) {
+
+    _resources.resize(_registrations.size());
+    _resourceImages.resize(_registrations.size());
+
+    for (VulkanGraphResourceId id = 0; id < _registrations.size(); id++) {
+
+        const auto& [descriptor, resolver] = _registrations[id];
+        auto resource = std::make_unique<VulkanGraphResource>(descriptor);
+
+        if (resolver) {
+            resource->setImageResolver(resolver);
+
+        } else {
+
+            auto image = std::make_unique<VulkanImage>();
+            TRY(createResourceImage(*image, descriptor.format, extent, _device));
+
+            resource->setImage(image.get());
+
+            _resourceImages[id] = std::move(image);
+        }
+
+        _resources[id] = std::move(resource);
+    }
+
+    return {};
+}
+
 Expected<const VulkanPassDescriptorBinding*> VulkanGraphResourceManager::allocateDescriptors(
     const VulkanPassDescriptor& passDescriptor
 ) {
 
     auto passBinding = std::make_unique<VulkanPassDescriptorBinding>();
 
-    passBinding->sampledResourceNames = passDescriptor.getSampledResourcesNames();
+    passBinding->sampledResources = passDescriptor.getSampledResources();
 
-    if (passBinding->sampledResourceNames.empty()) {
+    if (passBinding->sampledResources.empty()) {
         return Expected<const VulkanPassDescriptorBinding*>(nullptr);
     }
 
     // Building the descriptor scheme for the resources read in this pass
     VulkanDescriptorScheme scheme{};
-    scheme.reserve(passBinding->sampledResourceNames.size());
+    scheme.reserve(passBinding->sampledResources.size());
 
-    for (std::size_t i = 0; i < passBinding->sampledResourceNames.size(); i++) {
+    for (std::size_t i = 0; i < passBinding->sampledResources.size(); i++) {
         scheme.emplace_back(i, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment);
     }
 
@@ -161,9 +166,9 @@ Expected<const VulkanPassDescriptorBinding*> VulkanGraphResourceManager::allocat
 
 void VulkanGraphResourceManager::bindDescriptors(const VulkanPassDescriptorBinding* binding) {
 
-    for (std::uint32_t i = 0; i < binding->sampledResourceNames.size(); i++) {
+    for (std::uint32_t i = 0; i < binding->sampledResources.size(); i++) {
 
-        const VulkanGraphResource* resource = getResource(binding->sampledResourceNames[i]);
+        const VulkanGraphResource* resource = getResource(binding->sampledResources[i]);
         if (!resource || !resource->image) continue;
 
         // Bind resource for each frame in flight

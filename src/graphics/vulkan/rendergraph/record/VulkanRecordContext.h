@@ -9,7 +9,6 @@
 #include <string>
 #include <type_traits>
 
-#include "core/render/DrawList.h"
 #include "graphics/vulkan/rendergraph/draw/VulkanDrawBatchBuilder.h"
 
 class VulkanMaterial;
@@ -19,11 +18,10 @@ public:
     VulkanRecordContext(
         const vk::CommandBuffer   commandBuffer,
         const VulkanFrameContext& frame,
-        const VulkanPassBindings& pass,
-        const VulkanDrawCommandsVector& drawBatches
+        const VulkanPassBindings& pass
     ) noexcept
         :
-        _commandBuffer(commandBuffer), _frame(frame), _pass(pass), _drawBatches(drawBatches)
+        _commandBuffer(commandBuffer), _frame(frame), _pass(pass)
     {}
 
     ~VulkanRecordContext() = default;
@@ -53,7 +51,7 @@ public:
     ) const;
 
     void drawBatch(const VulkanDrawCommand& batch);
-    void drawBatches();
+    void drawBatches(DrawListId drawListId);
 
     // Dynamic state
 
@@ -84,7 +82,6 @@ private:
 
     const VulkanFrameContext& _frame;
     const VulkanPassBindings& _pass;
-    const VulkanDrawCommandsVector& _drawBatches;
 
     const VulkanPipeline* _boundPipeline = nullptr;
     const VulkanMaterial* _boundMaterial = nullptr;

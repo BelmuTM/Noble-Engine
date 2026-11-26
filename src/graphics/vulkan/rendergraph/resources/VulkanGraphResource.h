@@ -5,6 +5,8 @@
 #include <functional>
 #include <utility>
 
+using VulkanGraphResourceId = std::uint32_t;
+
 enum class VulkanGraphResourceType : std::uint8_t { Transient, External, SwapchainOutput };
 
 enum class VulkanGraphResourceUsage : std::uint8_t {
@@ -26,8 +28,8 @@ struct VulkanAttachmentOps {
 };
 
 struct VulkanPassResourceUse {
-    std::string                        name;
-    VulkanGraphResourceUsage           usage = VulkanGraphResourceUsage::ColorAttachment;
+    VulkanGraphResourceId              resourceId = 0;
+    VulkanGraphResourceUsage           usage      = VulkanGraphResourceUsage::ColorAttachment;
     std::optional<VulkanAttachmentOps> attachment;
 
     [[nodiscard]] static constexpr bool isAttachmentUsage(const VulkanGraphResourceUsage u) noexcept {

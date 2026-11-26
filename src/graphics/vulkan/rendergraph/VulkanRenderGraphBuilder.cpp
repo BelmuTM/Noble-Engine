@@ -16,8 +16,6 @@ Expected<void> VulkanRenderGraphBuilder::build() {
     vk::DescriptorSetLayoutCreateInfo emptyInfo{};
     VK_CREATE(_emptyDescriptorLayout, _context.device.getLogicalDevice().createDescriptorSetLayout(emptyInfo));
 
-    TRY(allocateResources());
-
     ResourceStates resourceStates;
 
     // Build passes
@@ -49,54 +47,24 @@ Expected<VulkanPass*> VulkanRenderGraphBuilder::allocatePass(
     return Expected(_context.renderGraph.getPasses().back().get());
 }
 
-
-Expected<void> VulkanRenderGraphBuilder::allocateResources() const {
-
-    for (const auto& resourceDescriptor : _resourceDescriptors) {
-
-        switch (resourceDescriptor.type) {
-            case VulkanGraphResourceType::Transient:
-                TRY(_context.graphResources.createResource(resourceDescriptor));
-                break;
-
-            case VulkanGraphResourceType::SwapchainOutput: {
-
-                VulkanGraphResource swapchainOutput(resourceDescriptor);
-                swapchainOutput.setImageResolver(
-                    [&swapchain = _context.swapchain, &frameResources = _context.frameResources] {
-                        return swapchain.getImage(frameResources.getImageIndex());
-                    }
-                );
-
-                _context.graphResources.addResource(swapchainOutput);
-                break;
-            }
-
-            default:
-                break;
-        }
-    }
-
-    return {};
-}
-
 Expected<void> VulkanRenderGraphBuilder::scheduleTransitions(
     VulkanPass* pass, ResourceStates& resourceStates, const vk::PipelineStageFlags2 shaderStages
 ) const {
     const auto presentState = VulkanGraphResourceState::stateForUsage(VulkanGraphResourceUsage::Present, {});
 
-    std::unordered_set<std::string> usedInPass{};
+    std::unordered_set<VulkanGraphResourceId> usedInPass{};
 
-    for (const auto& [name, usage, attachment] : pass->getPassDescriptor().resources) {
-        VulkanGraphResource* resource = _context.graphResources.getResource(name);
+    for (const auto& [resourceId, usage, attachment] : pass->getPassDescriptor().resources) {
+
+        VulkanGraphResource* resource = _context.graphResources.getResource(resourceId);
 
         if (!resource) {
-            return VK_FAIL("Failed to resolve resource \"" + name + "\".");
+            return VK_FAIL("Failed to resolve resource \"" + resource->descriptor.name + "\".");
         }
 
-        if (!usedInPass.insert(name).second) {
+        if (!usedInPass.insert(resourceId).second) {
             return VK_FAIL(
-                "Pass \"" + pass->getPassDescriptor().name + "\" uses resource \"" + name + "\" more than once."
+                "Pass \"" + pass->getPassDescriptor().name + "\" uses resource \"" + resource->descriptor.name + "\" more than once."
             );
         }
 
@@ -105,7 +73,7 @@ Expected<void> VulkanRenderGraphBuilder::scheduleTransitions(
             usage == VulkanGraphResourceUsage::DepthReadOnly &&
             attachment.value_or(VulkanAttachmentOps{}).loadOp == vk::AttachmentLoadOp::eClear
         ) {
-            return VK_FAIL("Read-only depth attachment \"" + name + "\" must declare loadOp = Load.");
+            return VK_FAIL("Read-only depth attachment \"" + resource->descriptor.name + "\" must declare loadOp = Load.");
         }
 
         const auto nextState    = VulkanGraphResourceState::stateForUsage(usage, shaderStages);
@@ -160,7 +128,7 @@ Expected<void> VulkanRenderGraphBuilder::linkPipelines(
 
         if (!VulkanPassResourceUse::isAttachmentUsage(use.usage)) continue;
 
-        const vk::Format format = _context.graphResources.getResource(use.name)->resolveImage()->getFormat();
+        const vk::Format format = _context.graphResources.getResource(use.resourceId)->resolveImage()->getFormat();
 
         if (VulkanPassResourceUse::isDepthUsage(use.usage)) {
             // Depth attachment format

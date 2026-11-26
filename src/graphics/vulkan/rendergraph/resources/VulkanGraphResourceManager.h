@@ -2,22 +2,20 @@
 
 #include "core/debug/ErrorHandling.h"
 
+#include "graphics/vulkan/common/VulkanHeader.h"
+
 #include "graphics/vulkan/core/VulkanDevice.h"
-#include "graphics/vulkan/core/VulkanSwapchain.h"
 
 #include "graphics/vulkan/rendergraph/nodes/VulkanPassBindings.h"
 #include "graphics/vulkan/rendergraph/nodes/VulkanPassDescriptor.h"
 #include "graphics/vulkan/rendergraph/resources/VulkanGraphResource.h"
 
 #include <memory>
-#include <string>
-#include <unordered_map>
 #include <vector>
 
 class VulkanGraphResourceManager {
 public:
-    using ResourcesMap      = std::unordered_map<std::string, std::unique_ptr<VulkanGraphResource>>;
-    using ResourceImagesMap = std::unordered_map<std::string, std::unique_ptr<VulkanImage>>;
+    using ResourcesMap = std::vector<std::unique_ptr<VulkanGraphResource>>;
 
     VulkanGraphResourceManager()  = default;
     ~VulkanGraphResourceManager() = default;
@@ -28,17 +26,25 @@ public:
     VulkanGraphResourceManager(VulkanGraphResourceManager&&)            = delete;
     VulkanGraphResourceManager& operator=(VulkanGraphResourceManager&&) = delete;
 
-    [[nodiscard]] Expected<void> create(
-        const VulkanDevice&    device,
-        const VulkanSwapchain& swapchain,
-        std::uint32_t          framesInFlight
-    ) noexcept;
+    [[nodiscard]] Expected<void> create(const VulkanDevice& device, std::uint32_t framesInFlight) noexcept;
 
     void destroy() noexcept;
 
-    [[nodiscard]] Expected<void> recreate();
+    [[nodiscard]] VulkanGraphResourceId registerResource(const VulkanGraphResourceDescriptor& descriptor) {
+        _registrations.push_back({.descriptor = descriptor});
+        return static_cast<VulkanGraphResourceId>(_registrations.size() - 1);
+    }
 
-    [[nodiscard]] Expected<void> createResource(const VulkanGraphResourceDescriptor& descriptor);
+    [[nodiscard]] VulkanGraphResourceId registerExternalResource(
+        const VulkanGraphResourceDescriptor& descriptor, const std::function<VulkanImage*()>& imageResolver
+    ) {
+        _registrations.push_back({.descriptor = descriptor, .imageResolver = imageResolver});
+        return static_cast<VulkanGraphResourceId>(_registrations.size() - 1);
+    }
+
+    [[nodiscard]] Expected<void> recreate(vk::Extent2D extent);
+
+    [[nodiscard]] Expected<void> allocateResources(vk::Extent2D extent);
 
     [[nodiscard]] Expected<const VulkanPassDescriptorBinding*> allocateDescriptors(
         const VulkanPassDescriptor& passDescriptor
@@ -46,23 +52,20 @@ public:
 
     [[nodiscard]] const ResourcesMap& getResources() const noexcept { return _resources; }
 
-    [[nodiscard]] VulkanGraphResource* getResource(const std::string& name) noexcept {
-        const auto cachedRenderResource = _resources.find(name);
-        return cachedRenderResource != _resources.end() ? cachedRenderResource->second.get() : nullptr;
+    [[nodiscard]] VulkanGraphResource* getResource(const VulkanGraphResourceId id) noexcept {
+        return id < _resources.size() ? _resources[id].get() : nullptr;
     }
 
-    [[nodiscard]] const VulkanGraphResource* getResource(const std::string& name) const noexcept {
-        const auto cachedRenderResource = _resources.find(name);
-        return cachedRenderResource != _resources.end() ? cachedRenderResource->second.get() : nullptr;
-    }
-
-    void addResource(const VulkanGraphResource& resource) {
-        if (!_resources.contains(resource.descriptor.name)) {
-            _resources[resource.descriptor.name] = std::make_unique<VulkanGraphResource>(resource);
-        }
+    [[nodiscard]] const VulkanGraphResource* getResource(const VulkanGraphResourceId id) const noexcept {
+        return id < _resources.size() ? _resources[id].get() : nullptr;
     }
 
 private:
+    struct Registration {
+        VulkanGraphResourceDescriptor descriptor;
+        std::function<VulkanImage*()> imageResolver{};
+    };
+
     [[nodiscard]] static Expected<void> createResourceImage(
         VulkanImage&        resourceImage,
         vk::Format          format,
@@ -74,16 +77,17 @@ private:
 
     void rebindDescriptors();
 
-    const VulkanDevice*    _device    = nullptr;
-    const VulkanSwapchain* _swapchain = nullptr;
+    const VulkanDevice* _device = nullptr;
 
     std::uint32_t _framesInFlight = 0;
+
+    std::vector<Registration> _registrations{};
 
     // Global resources cache
     ResourcesMap _resources{};
 
     // Instances of the images that resources hold pointers of
-    ResourceImagesMap _resourceImages{};
+    std::vector<std::unique_ptr<VulkanImage>> _resourceImages{};
 
     // Per-pass descriptor bindings
     std::vector<std::unique_ptr<VulkanPassDescriptorBinding>> _passBindings{};

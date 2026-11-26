@@ -101,8 +101,7 @@ Expected<void> VulkanRenderGraph::executePass(
     VulkanRecordContext recordContext(
         commandBuffer,
         frameContext,
-        passBindings,
-        frameContext.drawBatchBuilder->getDrawList(pass.getPassDescriptor().drawListId)
+        passBindings
     );
 
     // Transition resources for current pass
@@ -116,10 +115,14 @@ Expected<void> VulkanRenderGraph::executePass(
 
         if (!VulkanPassResourceUse::isAttachmentUsage(use.usage)) continue;
 
-        const VulkanGraphResource* resource = resources.getResource(use.name);
+        const VulkanGraphResource* resource = resources.getResource(use.resourceId);
 
-        if (!resource || !resource->resolveImage()) {
-            return VK_FAIL("Attachment resource \"" + use.name + "\" has no image.");
+        if (!resource) {
+            return VK_FAIL("Attachment resource ID \"" + std::to_string(use.resourceId) + "\" does not exist.");
+        }
+
+        if (!resource->resolveImage()) {
+            return VK_FAIL("Attachment resource \"" + resource->descriptor.name + "\" has no image.");
         }
 
         const vk::RenderingAttachmentInfo attachmentInfo = makeAttachmentInfo(*resource, use);

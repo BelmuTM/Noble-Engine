@@ -38,8 +38,8 @@ public:
 
     [[nodiscard]] DrawListId registerDrawList(const DrawListDescriptor& descriptor) {
 
-        for (DrawListId i = 0; i < _drawLists.size(); i++) {
-            if (_drawLists[i].descriptor == descriptor) return i;
+        for (DrawListId id = 0; id < _drawLists.size(); id++) {
+            if (_drawLists[id].descriptor == descriptor) return id;
         }
 
         _drawLists.push_back({.descriptor = descriptor});

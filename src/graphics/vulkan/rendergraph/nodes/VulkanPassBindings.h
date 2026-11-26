@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "graphics/vulkan/rendergraph/resources/VulkanGraphResource.h"
 #include "graphics/vulkan/resources/descriptors/VulkanDescriptorManager.h"
 
 class VulkanPipeline;
@@ -18,5 +19,5 @@ struct VulkanPassDescriptorBinding {
     VulkanDescriptorManager manager{};
     VulkanDescriptorSets*   sets = nullptr;
 
-    std::vector<std::string> sampledResourceNames{};
+    std::vector<VulkanGraphResourceId> sampledResources{};
 };

@@ -36,7 +36,7 @@ Expected<void> VulkanRenderer::init(
     TRY(createVulkanEntity(&uniformBufferManager, device, _framesInFlight));
     TRY(createVulkanEntity(&storageBufferManager, device, _framesInFlight));
 
-    TRY(createVulkanEntity(&graphResources, device, swapchain, _framesInFlight));
+    TRY(createVulkanEntity(&graphResources, device, _framesInFlight));
     TRY(createVulkanEntity(&frameResources, device, imageManager, uniformBufferManager, _framesInFlight));
 
     TRY(createVulkanEntity(&materialManager, device, imageManager, _framesInFlight));
@@ -80,19 +80,35 @@ Expected<void> VulkanRenderer::init(
         )
     );
 
-    const auto recordGbuffer = [](VulkanRecordContext& ctx) -> Expected<void> {
+    const DrawListId opaqueDrawList = drawBatchBuilder.registerDrawList({.drawFlags = DrawFlags::Bit::Opaque, .cullMode = CullMode::Frustum});
+    const DrawListId debugDrawList  = drawBatchBuilder.registerDrawList({.drawFlags = DrawFlags::Bit::Debug, .cullMode = CullMode::Frustum});
+
+    const VulkanGraphResourceId depthBuffer = graphResources.registerResource({.name = "depthBuffer", .format = vk::Format::eD32Sfloat});
+    const VulkanGraphResourceId albedoBuffer = graphResources.registerResource({.name = "albedoBuffer"});
+    const VulkanGraphResourceId normalBuffer = graphResources.registerResource({.name = "normalBuffer"});
+    const VulkanGraphResourceId debugBuffer = graphResources.registerResource({.name = "debugBuffer", .format = vk::Format::eR8G8B8A8Unorm});
+    const VulkanGraphResourceId compositeBuffer = graphResources.registerResource({.name = "compositeBuffer", .format = vk::Format::eR16G16B16A16Sfloat});
+
+    const VulkanGraphResourceId swapchainOutput = graphResources.registerExternalResource(
+        {.name = "swapchainOutput", .format = vk::Format::eB8G8R8A8Srgb, .type = VulkanGraphResourceType::SwapchainOutput},
+        [&] { return swapchain.getImage(frameResources.getImageIndex()); }
+    );
+
+    TRY(graphResources.allocateResources(swapchain.getExtent()));
+
+    const auto recordGbuffer = [opaqueDrawList](VulkanRecordContext& ctx) -> Expected<void> {
         ctx.beginQuery();
         ctx.bindPipeline(0); ctx.bindGlobalDescriptors(); ctx.bindPassDescriptors();
         ctx.setViewport(); ctx.setScissor();
-        ctx.drawBatches();
+        ctx.drawBatches(opaqueDrawList);
         ctx.endQuery();
         return {};
     };
 
-    const auto recordDebug = [](VulkanRecordContext& ctx) -> Expected<void> {
+    const auto recordDebug = [debugDrawList](VulkanRecordContext& ctx) -> Expected<void> {
         ctx.bindPipeline(0); ctx.bindGlobalDescriptors(); ctx.bindPassDescriptors();
         ctx.setViewport(); ctx.setScissor();
-        ctx.drawBatches();
+        ctx.drawBatches(debugDrawList);
         return {};
     };
 
@@ -107,13 +123,6 @@ Expected<void> VulkanRenderer::init(
     static constexpr VulkanAttachmentOps loadOps{.loadOp = vk::AttachmentLoadOp::eLoad};
 
     renderGraphBuilder
-        .registerResource({.name = "depthBuffer", .format = vk::Format::eD32Sfloat})
-        .registerResource({.name = "albedoBuffer"})
-        .registerResource({.name = "normalBuffer"})
-        .registerResource({.name = "debugBuffer", .format = vk::Format::eR8G8B8A8Unorm})
-        .registerResource({.name = "compositeBuffer", .format = vk::Format::eR16G16B16A16Sfloat})
-        .registerResource({.name = "swapchainOutput", .format = vk::Format::eB8G8R8A8Srgb, .type = VulkanGraphResourceType::SwapchainOutput})
-
         .registerPipeline({
             .name = "gbuffer",
             .programPath = "mesh_render"
@@ -134,51 +143,41 @@ Expected<void> VulkanRenderer::init(
             .state = { .cullMode = vk::CullModeFlagBits::eNone, .meshVertexInput = false }
         })
 
-        .addPass({
-            .name = "Gbuffer_Pass",
-            .resources = {
-                {.name = "albedoBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment},
-                {.name = "normalBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment},
-                {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::DepthAttachment}
-            },
-            .pipelines = {"gbuffer"},
-            .drawListId = drawBatchBuilder.registerDrawList({.drawFlags = DrawFlags::Bit::Opaque, .cullMode = CullMode::Frustum}),
-            .record = recordGbuffer
-        })
-        .addPass({
-            .name = "Debug_Pass",
-            .resources = {
-                {.name = "debugBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment},
-                {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::DepthAttachment, .attachment = loadOps}
-            },
-            .pipelines = {"debug"},
-            .drawListId = drawBatchBuilder.registerDrawList({.drawFlags = DrawFlags::Bit::Debug, .cullMode = CullMode::Frustum}),
-            .record = recordDebug
-        })
-        .addPass({
-            .name = "Composite0_Pass",
-            .resources  = {
-                {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
-                {.name = "albedoBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
-                {.name = "normalBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
-                {.name = "compositeBuffer", .usage = VulkanGraphResourceUsage::ColorAttachment}
-            },
-            .pipelines = {"composite_0"},
-            .record = recordFullscreen
-        })
-        .addPass({
-            .name = "Composite1_Pass",
-            .resources  = {
-                {.name = "depthBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
-                {.name = "albedoBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
-                {.name = "normalBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
-                {.name = "debugBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
-                {.name = "compositeBuffer", .usage = VulkanGraphResourceUsage::SampledRead},
-                {.name = "swapchainOutput", .usage = VulkanGraphResourceUsage::ColorAttachment}
-            },
-            .pipelines = {"composite_1"},
-            .record = recordFullscreen
-        });
+        .addPass(
+            VulkanPassDescriptor("Gbuffer_Pass")
+                .resource({.resourceId = albedoBuffer, .usage = VulkanGraphResourceUsage::ColorAttachment})
+                .resource({.resourceId = normalBuffer, .usage = VulkanGraphResourceUsage::ColorAttachment})
+                .resource({.resourceId = depthBuffer, .usage = VulkanGraphResourceUsage::DepthAttachment})
+                .pipeline("gbuffer")
+                .execute(recordGbuffer)
+        )
+        .addPass(
+            VulkanPassDescriptor("Debug_Pass")
+                .resource({.resourceId = debugBuffer, .usage = VulkanGraphResourceUsage::ColorAttachment})
+                .resource({.resourceId = depthBuffer, .usage = VulkanGraphResourceUsage::DepthAttachment, .attachment = loadOps})
+                .pipeline("debug")
+                .execute(recordDebug)
+        )
+        .addPass(
+            VulkanPassDescriptor("Composite0_Pass")
+                .resource({.resourceId = depthBuffer, .usage = VulkanGraphResourceUsage::SampledRead})
+                .resource({.resourceId = albedoBuffer, .usage = VulkanGraphResourceUsage::SampledRead})
+                .resource({.resourceId = normalBuffer, .usage = VulkanGraphResourceUsage::SampledRead})
+                .resource({.resourceId = compositeBuffer, .usage = VulkanGraphResourceUsage::ColorAttachment})
+                .pipeline("composite_0")
+                .execute(recordFullscreen)
+        )
+        .addPass(
+            VulkanPassDescriptor("Composite1_Pass")
+                .resource({.resourceId = depthBuffer, .usage = VulkanGraphResourceUsage::SampledRead})
+                .resource({.resourceId = albedoBuffer, .usage = VulkanGraphResourceUsage::SampledRead})
+                .resource({.resourceId = normalBuffer, .usage = VulkanGraphResourceUsage::SampledRead})
+                .resource({.resourceId = debugBuffer, .usage = VulkanGraphResourceUsage::SampledRead})
+                .resource({.resourceId = compositeBuffer, .usage = VulkanGraphResourceUsage::SampledRead})
+                .resource({.resourceId = swapchainOutput, .usage = VulkanGraphResourceUsage::ColorAttachment})
+                .pipeline("composite_1")
+                .execute(recordFullscreen)
+        );
 
     TRY(renderGraphBuilder.build());
 
@@ -272,7 +271,7 @@ Expected<void> VulkanRenderer::onFramebufferResize() {
     }
 
     TRY(swapchainManager.recreateSwapchain());
-    TRY(graphResources.recreate());
+    TRY(graphResources.recreate(context.getSwapchain().getExtent()));
 
     _window->setFramebufferResized(false);
 

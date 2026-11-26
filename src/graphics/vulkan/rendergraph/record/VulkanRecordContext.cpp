@@ -62,12 +62,14 @@ void VulkanRecordContext::drawBatch(const VulkanDrawCommand& batch) {
     _commandBuffer.drawIndexed(cmd.indexCount, cmd.instanceCount, cmd.firstIndex, cmd.vertexOffset, cmd.firstInstance);
 }
 
-void VulkanRecordContext::drawBatches() {
-    if (_drawBatches.empty()) return;
+void VulkanRecordContext::drawBatches(const DrawListId drawListId) {
+    const auto& drawBatches = _frame.drawBatchBuilder->getDrawList(drawListId);
+
+    if (drawBatches.empty()) return;
 
     bindGeometryBuffers();
 
-    for (const VulkanDrawCommand& batch : _drawBatches) {
+    for (const VulkanDrawCommand& batch : drawBatches) {
         drawBatch(batch);
     }
 }
